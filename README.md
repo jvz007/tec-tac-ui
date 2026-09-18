@@ -1,6 +1,11 @@
 # Tec-Tac UI
 
-**Version:** 0.3.0
+**Version:** 0.5.0
+
+
+## 0.5.0 focus: drag/drop package queue
+
+0.5.0 replaces the single file-picker-first Modules workflow with a drag-and-drop package intake and ordered installation queue. Multiple package files can be staged together, inspected, and reordered before installation. Required dependency sequencing is enforced in the UI and revalidated by Tec-Tac Framework 1.5.0; only otherwise-independent packages can be rearranged. The release also removes the hardcoded footer version and injects the package version at build time.
 
 ## 0.3.0 focus: system updates and navigation categories
 

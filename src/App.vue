@@ -13,6 +13,7 @@ const dynamicNav = inject('tecTacNavigation', [])
 const theme = ref(localStorage.getItem('tec_tac_theme') || 'dark')
 const query = ref('')
 const signingOut = ref(false)
+const uiVersion = __TEC_TAC_UI_VERSION__
 const publicRoute = computed(() => route.meta?.public === true || route.path.startsWith('/public/'))
 
 const coreNav = computed(() => {
@@ -115,7 +116,7 @@ function signOut() { requestLeave(doSignOut) }
         </template>
       </template>
       <div v-else class="grp label">Session gate</div>
-      <div class="foot"><div class="kv"><span>UI</span><b>0.3.0</b></div><div class="kv"><span>Context</span><b>{{ state.contextSource }}</b></div><div class="kv"><span>Auth</span><b :class="state.authStatus === 'verified' ? 'oktxt' : (state.authStatus === 'verifying' ? 'warntxt' : 'dangertext')">{{ accountStatus }}</b></div></div>
+      <div class="foot"><div class="kv"><span>UI</span><b>{{ uiVersion }}</b></div><div class="kv"><span>Context</span><b>{{ state.contextSource }}</b></div><div class="kv"><span>Auth</span><b :class="state.authStatus === 'verified' ? 'oktxt' : (state.authStatus === 'verifying' ? 'warntxt' : 'dangertext')">{{ accountStatus }}</b></div></div>
     </aside>
 
     <main class="main">
