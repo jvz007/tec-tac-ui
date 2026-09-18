@@ -79,3 +79,10 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .schedule-json{width:100%;resize:vertical;min-height:84px}
 .schedule-result{max-width:420px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:1050px){.schedule-layout{grid-template-columns:1fr}.schedule-editor{position:static}}
+
+/* 0.9.0 developer public contract catalog */
+.contracts-toolbar{display:flex;align-items:center;gap:12px;padding:10px 12px;margin-bottom:12px;border:1px solid var(--line);background:var(--surface)}
+.contracts-toolbar>div{display:flex;align-items:baseline;gap:9px;min-width:0}.contracts-toolbar .label{margin-right:2px}.contracts-toolbar .smalltext{white-space:nowrap}.contracts-search{margin-left:auto;min-width:320px}.contract-rules{display:flex;gap:10px;align-items:flex-start}.contract-rules b{white-space:nowrap}.contract-wrap{white-space:normal;overflow-wrap:anywhere;max-width:520px}
+@media(max-width:850px){.contracts-toolbar{align-items:stretch;flex-direction:column}.contracts-toolbar>div{flex-wrap:wrap}.contracts-search{margin-left:0;min-width:0;width:100%}.contract-rules{flex-direction:column}}
+.contract-meta{margin-top:5px}.contract-meta summary{cursor:pointer;color:var(--accent);font-size:10.5px}.contract-meta pre{max-width:620px;max-height:220px;overflow:auto;margin:6px 0 0;padding:8px;border:1px solid var(--line);background:var(--bg-2);color:var(--ink-2);font:10.5px/1.45 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
+.contract-meta{margin-top:5px}.contract-meta summary{cursor:pointer;color:var(--accent);font-size:10.5px}.contract-meta pre{max-width:620px;max-height:220px;overflow:auto;margin:6px 0 0;padding:8px;border:1px solid var(--line);background:var(--bg-2);color:var(--ink-2);font:10.5px/1.45 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}

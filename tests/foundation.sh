@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.8.0" ]] || fail "VERSION is not 0.8.0"
+[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.9.0" ]] || fail "VERSION is not 0.9.0"
 for f in \
   src/module-loader.js \
   src/views/PublicPendingView.vue \
@@ -71,7 +71,7 @@ node --check "${ROOT}/src/router.js"
 python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
-assert package['version']=='0.8.0'
+assert package['version']=='0.9.0'
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
 assert manifest['id']=='reference'
 assert manifest['entry']=='ui/index.js'
@@ -121,3 +121,12 @@ grep -q "'/schedules'" "${ROOT}/src/router.js" || fail "scheduler route missing"
 grep -q "FRAMEWORK SCHEDULER" "${ROOT}/src/views/SchedulesView.vue" || fail "scheduler workspace missing"
 grep -q "Run now" "${ROOT}/src/views/SchedulesView.vue" || fail "scheduler run-now UI missing"
 node --check "${ROOT}/src/scheduler.js"
+
+# 0.9.0 developer contract catalog
+grep -q "'/api/tfd/contracts/'" "${ROOT}/src/contracts.js" || fail "developer contract catalog API missing"
+grep -q "contracts/export/" "${ROOT}/src/contracts.js" || fail "developer contract export API missing"
+grep -q "'/contracts'" "${ROOT}/src/router.js" || fail "developer contract route missing"
+grep -q "Public Contracts" "${ROOT}/src/views/ContractsView.vue" || fail "developer contracts workspace missing"
+grep -q "Export Markdown" "${ROOT}/src/views/ContractsView.vue" || fail "markdown export control missing"
+grep -q "Export Text" "${ROOT}/src/views/ContractsView.vue" || fail "text export control missing"
+node --check "${ROOT}/src/contracts.js"

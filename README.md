@@ -1,5 +1,7 @@
 # Tec-Tac UI
 
+Version **0.9.0** adds Administration → Public Contracts with live Markdown/Text exports for module developers and coding agents.
+
 Version **0.8.0** adds Operations → Schedules for Framework 1.8.0.
 
 Historical release notes are archived under `docs/releases/`; only the current release note remains at repository root.

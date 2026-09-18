@@ -24,6 +24,7 @@ const coreNav = computed(() => {
     { label: 'Modules', icon: '▦', to: '/modules', section: 'Administration', visible: true },
     { label: 'Access', icon: '⛨', to: '/access', section: 'Administration', visible: capabilities.list_accounts !== false || capabilities.list_roles !== false },
     { label: 'System Updates', icon: '⇧', to: '/system/updates', section: 'Administration', visible: capabilities.manage_modules === true || state.context.user?.superuser === true },
+    { label: 'Public Contracts', icon: '⌘', to: '/contracts', section: 'Administration', visible: capabilities.manage_modules === true || state.context.user?.superuser === true },
   ]
 })
 

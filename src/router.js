@@ -4,6 +4,7 @@ import ModulesView from './views/ModulesView.vue'
 import AccessView from './views/AccessView.vue'
 import SystemUpdatesView from './views/SystemUpdatesView.vue'
 import SchedulesView from './views/SchedulesView.vue'
+import ContractsView from './views/ContractsView.vue'
 import PublicPendingView from './views/PublicPendingView.vue'
 import { requestLeave, unsavedState } from './unsaved'
 
@@ -15,6 +16,7 @@ export const router = createRouter({
     { path: '/schedules', name: 'schedules', component: SchedulesView, meta: { title: 'Schedules' } },
     { path: '/access', name: 'access', component: AccessView, meta: { title: 'Access' } },
     { path: '/system/updates', name: 'system-updates', component: SystemUpdatesView, meta: { title: 'System Updates' } },
+    { path: '/contracts', name: 'contracts', component: ContractsView, meta: { title: 'Public Contracts' } },
     { path: '/public/:pathMatch(.*)*', name: 'public-pending', component: PublicPendingView, meta: { title: 'Public', public: true } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
