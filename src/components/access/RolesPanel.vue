@@ -206,7 +206,10 @@ onBeforeUnmount(() => { window.removeEventListener('beforeunload', beforeUnload)
           </template>
         </article>
 
-        <div class="sticky-actions"><button class="btn primary" :disabled="saving || !dirty || (capabilityResolved && !canManage)" @click="saveRole">{{ saving ? 'Saving…' : 'Save role & permissions' }}</button><button class="btn danger" :disabled="saving || (capabilityResolved && !canManage)" @click="removeRole">Delete role</button></div>
+        <div class="sticky-actions role-focus-bar">
+          <div class="role-focus-copy"><span class="eyebrow">ROLE IN FOCUS</span><b>{{ selected.name }}</b><span class="mono">#{{ selected.id }}</span><span class="pill" :class="dirty ? 'warn' : 'ok'">{{ dirty ? 'UNSAVED' : 'SAVED' }}</span></div>
+          <div class="role-focus-actions"><button class="btn primary" :disabled="saving || !dirty || (capabilityResolved && !canManage)" @click="saveRole">{{ saving ? 'Saving…' : 'Save role & permissions' }}</button><button class="btn danger" :disabled="saving || (capabilityResolved && !canManage)" @click="removeRole">Delete role</button></div>
+        </div>
       </div>
       <div v-else class="card empty-editor">Select a role to manage permissions.</div>
     </div>

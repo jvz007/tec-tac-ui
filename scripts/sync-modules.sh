@@ -41,6 +41,28 @@ if extensions_root.is_dir():
         entry = str(payload.get("entry", "")).strip()
         if not module_id or module_id != extension.name:
             raise SystemExit(f"invalid UI module id in {manifest}")
+
+        extension_manifest = extension / "tec_tac.json"
+        if not extension_manifest.is_file():
+            raise SystemExit(f"missing extension manifest for UI module: {extension_manifest}")
+        extension_payload = json.loads(extension_manifest.read_text(encoding="utf-8"))
+        if str(extension_payload.get("id", "")).strip() != module_id:
+            raise SystemExit(f"extension/UI manifest id mismatch in {extension}")
+        declared_permissions = {
+            code
+            for values in (extension_payload.get("permission_groups") or {}).values()
+            for code in values
+        }
+        ui_permissions = payload.get("permissions") or []
+        if not isinstance(ui_permissions, list):
+            raise SystemExit(f"UI permissions must be an array in {manifest}")
+        unknown_permissions = sorted(set(ui_permissions) - declared_permissions)
+        if unknown_permissions:
+            raise SystemExit(
+                f"UI module {module_id} references undeclared extension permissions: "
+                + ", ".join(unknown_permissions)
+            )
+
         if not entry:
             raise SystemExit(f"missing entry in {manifest}")
         src_entry = (extension / entry).resolve()
@@ -65,7 +87,7 @@ if extensions_root.is_dir():
                 "section": "Extensions",
                 "icon": "◇",
             },
-            "permissions": payload.get("permissions") or [],
+            "permissions": ui_permissions,
         })
 
 (out_root / "modules.json").write_text(json.dumps(modules, indent=2) + "\n", encoding="utf-8")

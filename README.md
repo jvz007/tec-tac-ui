@@ -1,8 +1,19 @@
 # Tec-Tac UI
 
-**Version:** 0.1.4
+**Version:** 0.2.0
 
 Tec-Tac UI is the standalone Vue frontend for Tec-Tac. It is intentionally kept in a separate repository from the Tec-Tac backend/framework (`tac-net-rep`). The UI is installed below Tactical's existing frontend at `/tec-tac/`.
+
+
+## 0.2.0 focus: module discovery and lifecycle
+
+0.2.0 turns the Modules workspace into an operational catalog for installed Tec-Tac extension/ReportSet pairs. With backend/framework 1.2.0 it can inspect an uploaded `.zip`, `.tar.gz`, or `.tgz` package before installation, show extension/ReportSet/UI metadata, install a new pair, explicitly replace an installed pair, remove module code while preserving data, and follow the asynchronous lifecycle job while Tactical services restart.
+
+Module installation is a trusted-code operation. The UI requires the backend `manage_modules` capability, which maps to Tactical's native `can_do_server_maint` permission (or effective superuser). Package inspection validates archive paths, the paired registry contract, optional UI manifest paths, and UI permission references before the privileged worker is dispatched.
+
+After a successful lifecycle job, the backend worker runs the deployed UI module synchronizer when available. Reload Tec-Tac to load a newly installed runtime UI module into the current browser application.
+
+The 0.1.4 role editing safeguards remain in place. The floating role action bar now also shows the role name, role ID, and SAVED/UNSAVED state while scrolling long permission lists.
 
 ## 0.1.2 focus: Tactical-native sign-in
 
@@ -213,7 +224,7 @@ The current deployment is renamed to a timestamped backup instead of being perma
 
 The role editor now keeps the newly created role selected and protects unsaved role/permission changes. A dirty role shows a persistent warning banner, and attempts to switch roles, switch Access sections, navigate elsewhere, open Tactical, or sign out are intercepted with Save / Discard / Stay choices. Browser refresh/close also receives a native unsaved-change warning.
 
-Tec-Tac backend 1.1.0 remains the paired backend for this UI release; no backend changes are required for 0.1.4.
+Tec-Tac backend 1.2.0 is required for the 0.2.0 module lifecycle API. The earlier 0.1.4 role-editing behavior remains compatible with that backend.
 
 ## Access management in 0.1.3
 

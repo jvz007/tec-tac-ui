@@ -35,7 +35,8 @@ function buildHeaders(options = {}) {
   const token = tacticalToken()
   const headers = new Headers(options.headers || {})
   headers.set('Accept', 'application/json')
-  if (options.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
+  if (options.body && !isFormData && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
   if (token) headers.set('Authorization', `Token ${token}`)
   return headers
 }
