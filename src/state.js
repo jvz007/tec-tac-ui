@@ -4,10 +4,13 @@ import {
   loadStaticModuleManifest,
   tacticalIdentityFromStorage,
   tacticalToken,
+  validateTacticalSession,
 } from './api'
 
 export const state = reactive({
   status: 'loading',
+  authStatus: 'verifying',
+  authDetail: null,
   error: null,
   contextSource: 'none',
   context: {
@@ -31,21 +34,53 @@ function normalizeStaticModules(modules) {
   }))
 }
 
+function setUnauthenticated(error = null) {
+  state.error = error
+  state.status = 'unauthenticated'
+  state.authStatus = 'required'
+  state.contextSource = 'browser'
+  state.context = {
+    user: tacticalIdentityFromStorage(),
+    permissions: [],
+    modules: [],
+  }
+}
+
 export async function loadContext() {
+  state.status = 'loading'
+  state.authStatus = 'verifying'
+  state.authDetail = null
+  state.error = null
+  state.contextSource = 'none'
+
+  const browserUser = tacticalIdentityFromStorage()
+  state.context.user = browserUser
+
   if (!tacticalToken()) {
-    state.status = 'unauthenticated'
-    state.contextSource = 'browser'
+    setUnauthenticated()
     return state.context
   }
 
-  state.status = 'loading'
-  state.error = null
-  const browserUser = tacticalIdentityFromStorage()
+  try {
+    const verification = await validateTacticalSession()
+    state.authDetail = verification.reason
 
-  // Optional richer Tec-Tac backend contract. 0.1.0 does not require it.
-  // If /api/tfd/ui/context/ exists, it may supply role, effective permissions,
-  // and per-user module authorization. If not, the UI remains usable against
-  // the unmodified Tec-Tac 1.0.1 backend and loads the local module manifest.
+    if (!verification.authenticated) {
+      setUnauthenticated()
+      return state.context
+    }
+
+    state.authStatus = 'verified'
+  } catch (error) {
+    state.error = error
+    state.status = 'failed'
+    state.authStatus = 'error'
+    return state.context
+  }
+
+  // Optional richer Tec-Tac backend contract. A 404 means the current
+  // backend does not implement it yet; only then do we enter compatibility
+  // mode. Authentication has already been independently verified above.
   try {
     const context = await apiFetch('/api/tfd/ui/context/')
     state.context = {
@@ -58,8 +93,20 @@ export async function loadContext() {
     return state.context
   } catch (error) {
     if (error.status === 401) {
+      setUnauthenticated(error)
+      return state.context
+    }
+
+    if (error.status === 403) {
       state.error = error
-      state.status = 'unauthenticated'
+      state.status = 'denied'
+      state.contextSource = 'backend'
+      return state.context
+    }
+
+    if (error.status !== 404) {
+      state.error = error
+      state.status = 'failed'
       return state.context
     }
   }
@@ -75,13 +122,8 @@ export async function loadContext() {
     state.status = 'ready'
   } catch (error) {
     state.error = error
-    state.context = {
-      user: browserUser,
-      permissions: [],
-      modules: [],
-    }
-    state.contextSource = 'browser'
-    state.status = 'ready'
+    state.status = 'failed'
+    state.contextSource = 'local-manifest'
   }
 
   return state.context
