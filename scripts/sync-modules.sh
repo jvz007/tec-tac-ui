@@ -21,7 +21,14 @@ if state_file.is_file():
     state=json.loads(state_file.read_text(encoding="utf-8"))
 def module_record(mid): return state.get("modules",{}).get(mid) or {}
 def enabled(mid): return bool(module_record(mid).get("enabled", True))
-def visible(mid): return bool(module_record(mid).get("visible", True))
+def package_default_visible(payload):
+    if isinstance(payload.get("visible"), bool): return payload["visible"]
+    nav=payload.get("navigation")
+    if isinstance(nav,dict) and isinstance(nav.get("visible"), bool): return nav["visible"]
+    return True
+def visible(mid,payload):
+    record=module_record(mid)
+    return bool(record["visible"]) if "visible" in record else package_default_visible(payload)
 modules=[]
 if extensions_root.is_dir():
   for extension in sorted(p for p in extensions_root.iterdir() if p.is_dir()):
@@ -52,7 +59,11 @@ if extensions_root.is_dir():
     src=resolve(entry,"UI entry"); pub=resolve(public_entry,"Public UI entry")
     if src and pub and src.parent != pub.parent: raise SystemExit(f"authenticated/public entries must share a bundle directory in {manifest}")
     bundle=(src or pub).parent; dst=out_root/mid; shutil.copytree(bundle,dst)
-    modules.append({"id":mid,"version":str(payload.get("version","0.0.0")),"visible":visible(mid),"entry":f"/tec-tac/modules/{mid}/{src.name}" if src else None,"public":{"entry":f"/tec-tac/modules/{mid}/{pub.name}","base_path":public_base} if pub else None,"navigation":payload.get("navigation") or {"label":mid,"section":"Extensions","icon":"◇"},"permissions":ui_permissions})
+    effective_visible=visible(mid,payload)
+    navigation=payload.get("navigation") or {"label":mid,"section":"Extensions","icon":"◇"}
+    if not isinstance(navigation,dict): raise SystemExit(f"navigation must be an object in {manifest}")
+    navigation=dict(navigation); navigation["visible"]=effective_visible
+    modules.append({"id":mid,"version":str(payload.get("version","0.0.0")),"visible":effective_visible,"entry":f"/tec-tac/modules/{mid}/{src.name}" if src else None,"public":{"entry":f"/tec-tac/modules/{mid}/{pub.name}","base_path":public_base} if pub else None,"navigation":navigation,"permissions":ui_permissions})
 (out_root/"modules.json").write_text(json.dumps(modules,indent=2)+"\n",encoding="utf-8")
 print(f"discovered={len(modules)}")
 PY

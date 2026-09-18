@@ -1,5 +1,6 @@
 # Tec-Tac UI
 
+Version **0.6.1** fixes navigation visibility precedence so an operator Show/Hide override wins over a module package default.
 **Version:** 0.5.0
 
 
@@ -323,3 +324,7 @@ The Modules table should expose **Runtime** and **Visibility** as separate colum
 ## Module visibility (0.6.0)
 
 The Modules administration view separates runtime state from navigation visibility. Operators can **Hide** or **Show** a managed module without disabling it. Hidden modules still register their authenticated UI routes/components and remain available to internal links; only their top-level `addNavigation()` entries are suppressed. Hidden modules always remain listed in Modules administration so they can be restored.
+
+### Visibility precedence
+
+Module navigation visibility resolves as **operator override > package default > visible**. A module that ships hidden can therefore be shown from Module Manager without changing or rebuilding the module package.
