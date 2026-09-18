@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.2.4" ]] || fail "VERSION is not 0.2.4"
+[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.2.5" ]] || fail "VERSION is not 0.2.5"
 for f in \
   src/module-loader.js \
   src/views/PublicPendingView.vue \
@@ -63,7 +63,7 @@ node --check "${ROOT}/src/router.js"
 python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
-assert package['version']=='0.2.4'
+assert package['version']=='0.2.5'
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
 assert manifest['id']=='reference'
 assert manifest['entry']=='ui/index.js'

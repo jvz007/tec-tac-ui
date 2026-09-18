@@ -1,6 +1,10 @@
 # Tec-Tac UI
 
-**Version:** 0.2.4
+**Version:** 0.2.5
+
+## 0.2.5 focus: clearer authenticator enrollment
+
+0.2.5 changes the TOTP enrollment area from two columns to two stacked rows. The locally generated QR code is now larger and centered as the primary enrollment path, with the manual setup key moved below it as a fallback. Authentication behavior is unchanged.
 
 Tec-Tac UI is the standalone Vue frontend for Tec-Tac. It is intentionally kept in a separate repository from the Tec-Tac backend/framework (`tac-net-rep`). The UI is installed below Tactical's existing frontend at `/tec-tac/`.
 
