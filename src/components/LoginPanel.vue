@@ -3,6 +3,7 @@ import { computed, nextTick, ref } from 'vue'
 import {
   checkTacticalCredentials,
   clearTacticalSession,
+  fetchTacticalTotpQr,
   loginTacticalWithTotp,
   setupTacticalTotp,
 } from '../api'
@@ -14,6 +15,8 @@ const step = ref('credentials')
 const busy = ref(false)
 const error = ref('')
 const setup = ref(null)
+const qrSrc = ref('')
+const qrError = ref('')
 const copied = ref(false)
 const totpInput = ref(null)
 
@@ -56,13 +59,28 @@ async function submitCredentials() {
   }
 }
 
+function clearQr() {
+  if (qrSrc.value) URL.revokeObjectURL(qrSrc.value)
+  qrSrc.value = ''
+  qrError.value = ''
+}
+
 async function beginTotpSetup() {
   error.value = ''
+  clearQr()
   const result = await setupTacticalTotp()
   if (!result || !result.totp_key || !result.qr_url) {
     throw Object.assign(new Error('Tactical did not return the authenticator setup details.'), { status: 502 })
   }
   setup.value = result
+  try {
+    const qrBlob = await fetchTacticalTotpQr()
+    qrSrc.value = URL.createObjectURL(qrBlob)
+  } catch (err) {
+    // Enrollment is already active at this point. Keep the manual key visible
+    // and report QR failure without abandoning the setup flow.
+    qrError.value = err?.message || 'QR code could not be generated.'
+  }
   twofactor.value = ''
   step.value = 'setup'
   await nextTick()
@@ -106,6 +124,7 @@ function backToCredentials() {
   // A no-TOTP credential check creates a short-lived Tactical setup token.
   // Never leave that token behind when the operator abandons enrollment.
   clearTacticalSession()
+  clearQr()
   step.value = 'credentials'
   setup.value = null
   twofactor.value = ''
@@ -117,6 +136,7 @@ function backToCredentials() {
 function finishLogin() {
   password.value = ''
   twofactor.value = ''
+  clearQr()
   setup.value = null
   window.location.reload()
 }
@@ -194,14 +214,28 @@ function openTactical() {
           <p class="setup-copy">Add a new time-based account in Microsoft Authenticator, Google Authenticator, 1Password, or another TOTP-compatible app.</p>
         </div>
 
-        <div class="totp-secret-card">
-          <span class="eyebrow">MANUAL SETUP KEY</span>
-          <code class="totp-secret mono">{{ setupKey }}</code>
-          <div class="totp-secret-actions">
-            <button class="btn sm" type="button" @click="copySetupKey">{{ copied ? 'Copied' : 'Copy key' }}</button>
-            <a v-if="setupUri" class="btn sm ghost" :href="setupUri">Open authenticator URI</a>
+        <div class="totp-enrollment-card">
+          <div class="totp-qr-panel">
+            <span class="eyebrow">SCAN QR CODE</span>
+            <div class="totp-qr-frame">
+              <img v-if="qrSrc" :src="qrSrc" alt="Authenticator enrollment QR code" class="totp-qr-image" />
+              <div v-else class="totp-qr-placeholder">
+                <span class="mono">QR UNAVAILABLE</span>
+                <small>{{ qrError || 'Generating QR code…' }}</small>
+              </div>
+            </div>
+            <p class="field-help">Scan this code with your authenticator app. The QR is generated locally by Tec-Tac and is never sent to a third-party QR service.</p>
           </div>
-          <p class="field-help">Use a time-based (TOTP) account. Keep this key private; anyone with it can generate valid codes.</p>
+
+          <div class="totp-secret-card">
+            <span class="eyebrow">MANUAL SETUP KEY</span>
+            <code class="totp-secret mono">{{ setupKey }}</code>
+            <div class="totp-secret-actions">
+              <button class="btn sm" type="button" @click="copySetupKey">{{ copied ? 'Copied' : 'Copy key' }}</button>
+              <a v-if="setupUri" class="btn sm ghost" :href="setupUri">Open authenticator URI</a>
+            </div>
+            <p class="field-help">Manual fallback. Use a time-based (TOTP) account. Keep this key private; anyone with it can generate valid codes.</p>
+          </div>
         </div>
       </div>
 
@@ -232,7 +266,7 @@ function openTactical() {
     <div class="login-foot">
       <span>AUTHORITY</span><b>Tactical RMM</b>
       <span>SESSION</span><b>Knox token</b>
-      <span>UI</span><b>0.2.3</b>
+      <span>UI</span><b>0.2.4</b>
     </div>
   </section>
 </template>

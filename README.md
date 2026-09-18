@@ -1,8 +1,12 @@
 # Tec-Tac UI
 
-**Version:** 0.2.3
+**Version:** 0.2.4
 
 Tec-Tac UI is the standalone Vue frontend for Tec-Tac. It is intentionally kept in a separate repository from the Tec-Tac backend/framework (`tac-net-rep`). The UI is installed below Tactical's existing frontend at `/tec-tac/`.
+
+## 0.2.4 focus: local authenticator QR code
+
+0.2.4 adds the missing QR code to Tec-Tac's first-login TOTP enrollment screen. After Tactical creates the user's TOTP secret, the UI requests `GET /api/tfd/auth/totp/qr/` from Tec-Tac framework 1.2.5 and displays the returned SVG locally. The manual key remains available as a fallback. No external QR service receives the TOTP provisioning URI or secret.
 
 ## 0.2.3 focus: Tactical-native TOTP enrollment
 

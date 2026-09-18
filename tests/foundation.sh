@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.2.3" ]] || fail "VERSION is not 0.2.3"
+[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.2.4" ]] || fail "VERSION is not 0.2.4"
 for f in \
   src/module-loader.js \
   src/views/PublicPendingView.vue \
@@ -23,6 +23,9 @@ done
 for needle in "'/v2/checkcreds/'" "'/v2/login/'" "'/accounts/users/setup_totp/'" "'/logout/'"; do
   grep -q "${needle}" "${ROOT}/src/api.js" || fail "Tactical auth endpoint ${needle} missing"
 done
+grep -q 'fetchTacticalTotpQr' "${ROOT}/src/api.js" || fail "TOTP QR helper missing"
+grep -q '/api/tfd/auth/totp/qr/' "${ROOT}/src/api.js" || fail "Tec-Tac TOTP QR endpoint missing"
+grep -q 'totp-qr-image' "${ROOT}/src/components/LoginPanel.vue" || fail "TOTP QR image UI missing"
 grep -q "'/api/tfd/modules/'" "${ROOT}/src/modules.js" || fail "module catalog API missing"
 grep -q "modules/packages/inspect/" "${ROOT}/src/modules.js" || fail "module package inspect API missing"
 grep -q "discardModulePackage" "${ROOT}/src/modules.js" || fail "staged package cleanup API missing"
@@ -60,7 +63,7 @@ node --check "${ROOT}/src/router.js"
 python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
-assert package['version']=='0.2.3'
+assert package['version']=='0.2.4'
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
 assert manifest['id']=='reference'
 assert manifest['entry']=='ui/index.js'

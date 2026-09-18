@@ -167,6 +167,43 @@ export async function setupTacticalTotp() {
   return data
 }
 
+export async function fetchTacticalTotpQr() {
+  const base = apiBase()
+  const token = tacticalToken()
+  if (!base) throw new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.')
+  if (!token) {
+    const error = new Error('No Tactical setup token is present in this browser session.')
+    error.status = 401
+    throw error
+  }
+
+  const response = await fetch(`${base}/api/tfd/auth/totp/qr/`, {
+    method: 'GET',
+    headers: {
+      Accept: 'image/svg+xml, application/json',
+      Authorization: `Token ${token}`,
+    },
+    credentials: 'include',
+    cache: 'no-store',
+  })
+
+  if (!response.ok) {
+    const payload = await parseResponsePayload(response)
+    const error = new Error(messageFromPayload(payload, `TOTP QR request failed: ${response.status} ${response.statusText}`))
+    error.status = response.status
+    error.payload = payload
+    throw error
+  }
+
+  const blob = await response.blob()
+  if (!blob.type.includes('svg') && !blob.type.includes('image')) {
+    const error = new Error('Tec-Tac did not return a QR image.')
+    error.status = 502
+    throw error
+  }
+  return blob
+}
+
 export async function validateTacticalSession() {
   const base = apiBase()
   const token = tacticalToken()
