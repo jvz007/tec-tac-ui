@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.3.0" ]] || fail "VERSION is not 0.3.0"
+[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.4.0" ]] || fail "VERSION is not 0.4.0"
 for f in \
   src/module-loader.js \
   src/views/PublicPendingView.vue \
@@ -27,12 +27,12 @@ done
 grep -q 'fetchTacticalTotpQr' "${ROOT}/src/api.js" || fail "TOTP QR helper missing"
 grep -q '/api/tfd/auth/totp/qr/' "${ROOT}/src/api.js" || fail "Tec-Tac TOTP QR endpoint missing"
 grep -q 'totp-qr-image' "${ROOT}/src/components/LoginPanel.vue" || fail "TOTP QR image UI missing"
-grep -q "'/api/tfd/modules/'" "${ROOT}/src/modules.js" || fail "module catalog API missing"
-grep -q "modules/packages/inspect/" "${ROOT}/src/modules.js" || fail "module package inspect API missing"
-grep -q "discardModulePackage" "${ROOT}/src/modules.js" || fail "staged package cleanup API missing"
-grep -q "installModulePackage" "${ROOT}/src/views/ModulesView.vue" || fail "module install UI missing"
+grep -q "'/api/tfd/modules/v2/'" "${ROOT}/src/modules.js" || fail "module v2 catalog API missing"
+grep -q "modules/v2/packages/inspect/" "${ROOT}/src/modules.js" || fail "module v2 package inspect API missing"
+grep -q "setModuleEnabled" "${ROOT}/src/modules.js" || fail "module enable/disable API missing"
+grep -q "installModuleArtifact" "${ROOT}/src/views/ModulesView.vue" || fail "module v2 install UI missing"
 grep -q "removeModule" "${ROOT}/src/views/ModulesView.vue" || fail "module remove UI missing"
-grep -q "can_do_server_maint" "${ROOT}/src/views/ModulesView.vue" || fail "module management permission explanation missing"
+grep -q "cascade" "${ROOT}/src/views/ModulesView.vue" || fail "cascade disable UI missing"
 grep -q "ROLE IN FOCUS" "${ROOT}/src/components/access/RolesPanel.vue" || fail "role focus QoL missing"
 grep -q "FormData" "${ROOT}/src/api.js" || fail "multipart request handling missing"
 grep -q "logoutTacticalSession" "${ROOT}/src/App.vue" || fail "topbar logout missing"
@@ -54,6 +54,7 @@ grep -q 'Upload offline package' "${ROOT}/src/views/SystemUpdatesView.vue" || fa
 grep -q "section: 'Administration'" "${ROOT}/src/App.vue" || fail "grouped administration navigation missing"
 grep -q 'TEC_TAC_UI_DEPLOY_BASE:-/var/lib/tec-tac/ui' "${ROOT}/scripts/install.sh" || fail "persistent UI deployment path missing"
 grep -q '/var/lib/tec-tac/ui/tec-tac' "${ROOT}/scripts/sync-modules.sh" || fail "module sync still targets Tactical dist"
+grep -q 'module-state.json' "${ROOT}/scripts/sync-modules.sh" || fail "module enabled-state sync missing"
 grep -q 'sites-available/frontend.conf' "${ROOT}/scripts/repair-nginx.sh" || fail "frontend nginx repair target missing"
 grep -q 'nginx -t' "${ROOT}/scripts/repair-nginx.sh" || fail "nginx validation missing"
 if grep -q '/var/www/rmm/dist/tec-tac' "${ROOT}/scripts/install.sh"; then fail "installer still deploys under Tactical dist"; fi
@@ -70,7 +71,7 @@ node --check "${ROOT}/src/router.js"
 python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
-assert package['version']=='0.3.0'
+assert package['version']=='0.4.0'
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
 assert manifest['id']=='reference'
 assert manifest['entry']=='ui/index.js'

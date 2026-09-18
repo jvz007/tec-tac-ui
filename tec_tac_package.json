@@ -1,5 +1,5 @@
 {
-  "type": "tec-tac-ui-patch",
+  "type": "tec-tac-ui",
   "id": "tec-tac-ui",
   "version": "0.4.0",
   "requires": {
