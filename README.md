@@ -333,3 +333,8 @@ Module navigation visibility resolves as **operator override > package default >
 ### Visibility runtime precedence
 
 The resolved module descriptor is authoritative at runtime. Module code may declare a default `visible: false`, but once an operator chooses Show or Hide, the persisted Module Manager override wins and the module loader normalizes the navigation item accordingly.
+
+
+### UI 0.6.4
+
+The Modules workspace surfaces browser-side module UI load diagnostics (loaded, skipped, failed, and error details) so a broken extension UI cannot masquerade as a visibility/runtime-state issue.
