@@ -1,10 +1,10 @@
 import { reactive } from 'vue'
 import { createApp } from 'vue'
 import App from './App.vue'
-import { apiFetch } from './api'
+import { apiFetch, loadStaticModuleManifest, publicApiFetch } from './api'
 import { router } from './router'
 import { state, loadContext } from './state'
-import { loadUiModules } from './module-loader'
+import { loadPublicUiModules, loadUiModules } from './module-loader'
 import './styles.css'
 
 async function bootstrap() {
@@ -20,11 +20,30 @@ async function bootstrap() {
   app.provide('tecTacState', state)
   app.provide('tecTacNavigation', navigation)
   app.use(router)
+  const initialHashTarget = window.location.hash.startsWith('#/public/')
+    ? window.location.hash.slice(1)
+    : null
 
-  // Mount the shell first so the operator sees an explicit session-verification
-  // state instead of a blank page or a dashboard based on stale browser data.
+  // Public module routes must be registered before authentication is required.
+  // This lets anonymous visitors open /public/<extension-id>/... directly.
+  let staticModules = []
+  try {
+    staticModules = await loadStaticModuleManifest()
+    state.publicModules = staticModules.filter((item) => item?.public?.entry)
+    state.publicModuleLoad = await loadPublicUiModules(
+      { app, router, publicApi: publicApiFetch },
+      state.publicModules,
+    )
+  } catch (error) {
+    state.publicModuleLoad = { loaded: [], failed: [{ id: 'manifest', message: error?.message || String(error) }] }
+  }
+
   app.mount('#app')
+  await router.isReady()
+  if (initialHashTarget) await router.replace(initialHashTarget)
 
+  // Authenticated context still loads normally. Public routes render regardless
+  // of whether this resolves to ready, unauthenticated, or an auth error.
   await loadContext()
 
   if (state.status === 'ready') {
@@ -39,7 +58,7 @@ async function bootstrap() {
           state.context.user?.superuser || state.context.permissions.includes(code)
         ),
       },
-      state.context.modules || [],
+      state.context.modules || staticModules,
     )
   }
 }

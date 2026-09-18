@@ -5,8 +5,12 @@
   "navigation": {
     "label": "Reference Module",
     "section": "Extensions",
-    "icon": "◇",
+    "icon": "\u25c7",
     "order": 900
   },
-  "permissions": []
+  "permissions": [],
+  "public": {
+    "entry": "ui/public.js",
+    "base_path": "/public/reference"
+  }
 }

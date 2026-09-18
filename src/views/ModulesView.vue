@@ -28,7 +28,8 @@ const filtered = computed(() => modules.value.filter((item) => {
 }))
 const selected = computed(() => modules.value.find((item) => item.id === selectedId.value) || null)
 const installedCount = computed(() => modules.value.filter((item) => item.managed).length)
-const uiCount = computed(() => modules.value.filter((item) => item.ui_enabled).length)
+const adminUiCount = computed(() => modules.value.filter((item) => item.authenticated_ui_enabled).length)
+const publicUiCount = computed(() => modules.value.filter((item) => item.public_ui_enabled).length)
 const protectedCount = computed(() => modules.value.filter((item) => !item.managed).length)
 const stagedPreview = computed(() => staged.value?.preview || null)
 const jobRunning = computed(() => activeJob.value && !['succeeded','failed','dispatch_failed'].includes(activeJob.value.status))
@@ -155,8 +156,8 @@ onBeforeUnmount(() => clearTimeout(pollTimer))
     <div class="grid g4 mb">
       <article class="tile"><div class="lbl">Catalog entries</div><div class="big">{{ modules.length }}</div><div class="brk">first-class + protected compatibility</div></article>
       <article class="tile"><div class="lbl">Managed modules</div><div class="big">{{ installedCount }}</div><div class="brk">installable/removable pairs</div></article>
-      <article class="tile"><div class="lbl">UI enabled</div><div class="big">{{ uiCount }}</div><div class="brk">runtime UI manifests discovered</div></article>
-      <article class="tile"><div class="lbl">Protected</div><div class="big">{{ protectedCount }}</div><div class="brk">framework reference / legacy</div></article>
+      <article class="tile"><div class="lbl">Admin UI</div><div class="big">{{ adminUiCount }}</div><div class="brk">authenticated runtime surfaces</div></article>
+      <article class="tile"><div class="lbl">Public UI</div><div class="big">{{ publicUiCount }}</div><div class="brk">anonymous extension surfaces</div></article>
     </div>
 
     <div v-if="loading" class="callout mono">Discovering installed Tec-Tac modules…</div>
@@ -170,17 +171,18 @@ onBeforeUnmount(() => clearTimeout(pollTimer))
         </div>
         <div class="tablewrap">
           <table>
-            <thead><tr><th>Module</th><th>Extension</th><th>ReportSet</th><th>UI</th><th>Permissions</th><th>Status</th></tr></thead>
+            <thead><tr><th>Module</th><th>Extension</th><th>ReportSet</th><th>Admin UI</th><th>Public UI</th><th>Permissions</th><th>Status</th></tr></thead>
             <tbody>
               <tr v-for="item in filtered" :key="item.id" class="clickrow" :class="{ selected: selectedId === item.id }" @click="chooseModule(item.id)">
                 <td><b>{{ item.id }}</b><span v-if="item.legacy" class="sub">legacy compatibility</span><span v-else-if="item.protected" class="sub">framework protected</span></td>
                 <td class="mono">{{ item.extension_version || '—' }}</td>
                 <td class="mono">{{ item.reportset_version || '—' }}</td>
-                <td><span class="pill" :class="item.ui_enabled ? 'ok' : ''">{{ item.ui_enabled ? 'enabled' : 'none' }}</span></td>
+                <td><span class="pill" :class="item.authenticated_ui_enabled ? 'ok' : ''">{{ item.authenticated_ui_enabled ? 'enabled' : 'none' }}</span></td>
+                <td><span class="pill" :class="item.public_ui_enabled ? 'ok' : ''">{{ item.public_ui_enabled ? 'enabled' : 'none' }}</span></td>
                 <td class="mono">{{ item.permission_count }}</td>
                 <td><span class="pill" :class="item.status === 'installed' ? 'ok' : 'warn'">{{ item.status }}</span></td>
               </tr>
-              <tr v-if="!filtered.length"><td colspan="6" class="empty">No matching modules.</td></tr>
+              <tr v-if="!filtered.length"><td colspan="7" class="empty">No matching modules.</td></tr>
             </tbody>
           </table>
         </div>
@@ -192,16 +194,22 @@ onBeforeUnmount(() => clearTimeout(pollTimer))
           <dt>Extension</dt><dd class="mono">v{{ selected.extension_version || '—' }}</dd>
           <dt>ReportSet</dt><dd class="mono">{{ selected.reportset_version ? `v${selected.reportset_version}` : '—' }}</dd>
           <dt>Versions</dt><dd>{{ selected.versions_match === false ? 'mismatch' : (selected.versions_match === true ? 'aligned' : 'n/a') }}</dd>
-          <dt>UI module</dt><dd>{{ selected.ui_enabled ? `v${selected.ui?.version || '0.0.0'}` : 'not provided' }}</dd>
+          <dt>Admin UI</dt><dd>{{ selected.authenticated_ui_enabled ? `v${selected.ui?.version || '0.0.0'}` : 'not provided' }}</dd>
+          <dt>Public UI</dt><dd>{{ selected.public_ui_enabled ? selected.ui?.public?.base_path : 'not provided' }}</dd>
           <dt>Django apps</dt><dd class="mono">{{ selected.django_apps?.length || 0 }}</dd>
           <dt>Permissions</dt><dd class="mono">{{ selected.permission_count || 0 }}</dd>
           <dt>Managed</dt><dd>{{ selected.managed ? 'yes' : 'no' }}</dd>
         </dl>
         <div v-if="selected.ui_error" class="state-inline warning mt"><b>UI manifest invalid.</b> {{ selected.ui_error }}</div>
-        <div v-if="selected.ui_enabled" class="section-divider">UI registration</div>
-        <div v-if="selected.ui_enabled" class="module-meta">
+        <div v-if="selected.authenticated_ui_enabled" class="section-divider">Authenticated UI registration</div>
+        <div v-if="selected.authenticated_ui_enabled" class="module-meta">
           <span class="mono">{{ selected.ui.entry }}</span>
           <span>{{ selected.ui.navigation?.section || 'Extensions' }} / {{ selected.ui.navigation?.label || selected.id }}</span>
+        </div>
+        <div v-if="selected.public_ui_enabled" class="section-divider">Public UI registration</div>
+        <div v-if="selected.public_ui_enabled" class="module-meta">
+          <span class="mono">{{ selected.ui.public.entry }}</span>
+          <span class="mono">{{ selected.ui.public.base_path }}</span>
         </div>
         <div v-if="selected.permission_groups?.length" class="section-divider">Permission groups</div>
         <div v-for="group in selected.permission_groups" :key="group.name" class="module-meta"><b>{{ group.name }}</b><span class="mono">{{ group.permissions.length }} grant{{ group.permissions.length === 1 ? '' : 's' }}</span></div>
@@ -230,7 +238,8 @@ onBeforeUnmount(() => clearTimeout(pollTimer))
           <div><span>Extension</span><b class="mono">v{{ stagedPreview.extension_version }}</b></div>
           <div><span>ReportSet</span><b class="mono">v{{ stagedPreview.reportset_version }}</b></div>
           <div><span>Permissions</span><b class="mono">{{ stagedPreview.permission_count }}</b></div>
-          <div><span>UI</span><b>{{ stagedPreview.ui_enabled ? `v${stagedPreview.ui.version}` : 'none' }}</b></div>
+          <div><span>Admin UI</span><b>{{ stagedPreview.authenticated_ui_enabled ? `v${stagedPreview.ui.version}` : 'none' }}</b></div>
+          <div><span>Public UI</span><b>{{ stagedPreview.public_ui_enabled ? stagedPreview.ui.public.base_path : 'none' }}</b></div>
         </div>
         <div class="state-inline" :class="stagedPreview.versions_match ? '' : 'warning'"><b>{{ stagedPreview.versions_match ? 'Package pair validated.' : 'Version mismatch — installation blocked.' }}</b> Extension and ReportSet IDs were registry-validated before this package was staged.</div>
         <div v-if="!stagedPreview.installable && stagedPreview.install_block_reason" class="state-inline warning mt"><b>Installation blocked.</b> {{ stagedPreview.install_block_reason }}</div>

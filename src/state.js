@@ -21,7 +21,9 @@ export const state = reactive({
     capabilities: null,
     modules: [],
   },
-  moduleLoad: { loaded: [], failed: [] },
+  moduleLoad: { loaded: [], failed: [], skipped: [] },
+  publicModuleLoad: { loaded: [], failed: [] },
+  publicModules: [],
 })
 
 function normalizeStaticModules(modules, context = state.context) {

@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Sync trusted Tec-Tac UI modules from an installed backend extension tree into
-# the deployed Tec-Tac UI directory. This script only reads the backend repo.
-
 EXTENSIONS_ROOT="${TEC_TAC_EXTENSIONS_ROOT:-/opt/tec-tac/extensions}"
 UI_ROOT="${TEC_TAC_UI_ROOT:-/var/www/rmm/dist/tec-tac}"
 MODULES_ROOT="${UI_ROOT}/modules"
@@ -39,8 +36,21 @@ if extensions_root.is_dir():
         payload = json.loads(manifest.read_text(encoding="utf-8"))
         module_id = str(payload.get("id", "")).strip()
         entry = str(payload.get("entry", "")).strip()
+        public = payload.get("public")
+        if public is not None and not isinstance(public, dict):
+            raise SystemExit(f"public must be an object in {manifest}")
+        public_entry = str((public or {}).get("entry", "")).strip()
+        expected_public_base = f"/public/{module_id}"
+        public_base = str((public or {}).get("base_path", expected_public_base)).strip() if public else ""
+
         if not module_id or module_id != extension.name:
             raise SystemExit(f"invalid UI module id in {manifest}")
+        if public and not public_entry:
+            raise SystemExit(f"public.entry is required in {manifest}")
+        if public_entry and public_base != expected_public_base:
+            raise SystemExit(f"public base_path must be exactly {expected_public_base} in {manifest}")
+        if not entry and not public_entry:
+            raise SystemExit(f"UI module must declare entry, public.entry, or both in {manifest}")
 
         extension_manifest = extension / "tec_tac.json"
         if not extension_manifest.is_file():
@@ -63,25 +73,41 @@ if extensions_root.is_dir():
                 + ", ".join(unknown_permissions)
             )
 
-        if not entry:
-            raise SystemExit(f"missing entry in {manifest}")
-        src_entry = (extension / entry).resolve()
-        try:
-            src_entry.relative_to(extension.resolve())
-        except ValueError:
-            raise SystemExit(f"UI entry escapes extension root: {manifest}")
-        if not src_entry.is_file():
-            raise SystemExit(f"UI entry not found: {src_entry}")
+        def resolve_entry(value, label):
+            if not value:
+                return None
+            resolved = (extension / value).resolve()
+            try:
+                resolved.relative_to(extension.resolve())
+            except ValueError:
+                raise SystemExit(f"{label} escapes extension root: {manifest}")
+            if not resolved.is_file():
+                raise SystemExit(f"{label} not found: {resolved}")
+            return resolved
 
-        src_ui = src_entry.parent
+        src_entry = resolve_entry(entry, "UI entry")
+        src_public_entry = resolve_entry(public_entry, "Public UI entry")
+        if src_entry and src_public_entry and src_entry.parent != src_public_entry.parent:
+            raise SystemExit(f"authenticated and public UI entries must share one bundle directory in {manifest}")
+
+        bundle_entry = src_entry or src_public_entry
+        src_ui = bundle_entry.parent
         dst = out_root / module_id
         shutil.copytree(src_ui, dst)
 
-        public_entry = f"/tec-tac/modules/{module_id}/{src_entry.name}"
+        auth_url = f"/tec-tac/modules/{module_id}/{src_entry.name}" if src_entry else None
+        public_payload = None
+        if src_public_entry:
+            public_payload = {
+                "entry": f"/tec-tac/modules/{module_id}/{src_public_entry.name}",
+                "base_path": public_base,
+            }
+
         modules.append({
             "id": module_id,
             "version": str(payload.get("version", "0.0.0")),
-            "entry": public_entry,
+            "entry": auth_url,
+            "public": public_payload,
             "navigation": payload.get("navigation") or {
                 "label": module_id,
                 "section": "Extensions",
@@ -93,7 +119,10 @@ if extensions_root.is_dir():
 (out_root / "modules.json").write_text(json.dumps(modules, indent=2) + "\n", encoding="utf-8")
 print(f"discovered={len(modules)}")
 for module in modules:
-    print(f"module={module['id']} version={module['version']} entry={module['entry']}")
+    print(
+        f"module={module['id']} version={module['version']} "
+        f"auth={'yes' if module['entry'] else 'no'} public={'yes' if module['public'] else 'no'}"
+    )
 PY
 
 rm -rf "${MODULES_ROOT}"

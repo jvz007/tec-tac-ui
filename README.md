@@ -1,6 +1,6 @@
 # Tec-Tac UI
 
-**Version:** 0.2.0
+**Version:** 0.2.1
 
 Tec-Tac UI is the standalone Vue frontend for Tec-Tac. It is intentionally kept in a separate repository from the Tec-Tac backend/framework (`tac-net-rep`). The UI is installed below Tactical's existing frontend at `/tec-tac/`.
 
@@ -224,8 +224,27 @@ The current deployment is renamed to a timestamped backup instead of being perma
 
 The role editor now keeps the newly created role selected and protects unsaved role/permission changes. A dirty role shows a persistent warning banner, and attempts to switch roles, switch Access sections, navigate elsewhere, open Tactical, or sign out are intercepted with Save / Discard / Stay choices. Browser refresh/close also receives a native unsaved-change warning.
 
-Tec-Tac backend 1.2.0 is required for the 0.2.0 module lifecycle API. The earlier 0.1.4 role-editing behavior remains compatible with that backend.
+Tec-Tac backend 1.2.1 is required for the 0.2.1 public-module contract and retains the 1.2.0 lifecycle API. The earlier 0.1.4 role-editing behavior remains compatible with that backend.
 
 ## Access management in 0.1.3
 
 The Access workspace now manages Tactical users and roles using Tactical's native authenticated APIs. Native role permissions stay authoritative in Tactical. Tec-Tac extension permissions are attached to the same Tactical role IDs through the paired backend 1.1.0 access API. See `RELEASE_NOTES_0.1.3.md` for the release scope.
+
+## Public extension UI in 0.2.1
+
+A module may expose an anonymous browser surface in addition to, or instead of, its authenticated Tec-Tac UI.
+
+```json
+{
+  "id": "statusportal",
+  "version": "1.0.0",
+  "entry": "ui/index.js",
+  "public": {
+    "entry": "ui/public.js",
+    "base_path": "/public/statusportal"
+  },
+  "permissions": ["statusportal.manage"]
+}
+```
+
+The public entry exports `registerPublic(context)` and is loaded before Tactical authentication is required. The public runtime intentionally exposes only Vue, app, descriptor, `addPublicRoute(route)`, and `publicApi(path, options)`. Routes are constrained to `/public/<extension-id>` and descendants. `publicApi()` never attaches the Tactical browser token; any backend endpoint intended for anonymous use must explicitly permit that access server-side.

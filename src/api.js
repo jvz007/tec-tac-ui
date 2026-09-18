@@ -233,6 +233,35 @@ export async function logoutTacticalSession() {
   if (failure && failure.status !== 401) throw failure
 }
 
+export async function publicApiFetch(path, options = {}) {
+  const base = apiBase()
+  if (!base) throw new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.')
+  if (typeof path !== 'string' || !path.startsWith('/')) throw new Error('Public API path must be relative to the Tactical API root.')
+
+  const headers = new Headers(options.headers || {})
+  headers.set('Accept', 'application/json')
+  const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
+  if (options.body && !isFormData && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  // Deliberately do not attach Tactical's browser token. Public extension APIs
+  // must explicitly opt into anonymous access server-side (for example AllowAny).
+  headers.delete('Authorization')
+
+  const response = await fetch(`${base}${path}`, {
+    ...options,
+    headers,
+    credentials: 'omit',
+    cache: options.cache || 'no-store',
+  })
+  const payload = response.status === 204 ? null : await parseResponsePayload(response)
+  if (!response.ok) {
+    const error = new Error(messageFromPayload(payload, `Public API request failed: ${response.status} ${response.statusText}`))
+    error.status = response.status
+    error.payload = payload
+    throw error
+  }
+  return payload
+}
+
 export async function loadStaticModuleManifest() {
   const response = await fetch('/tec-tac/modules/modules.json', { cache: 'no-store' })
   if (!response.ok) throw new Error(`Module manifest failed: ${response.status} ${response.statusText}`)
