@@ -88,7 +88,11 @@ export async function loadUiModules(runtime, modules) {
       }
       const addNavigation = (item) => {
         if (descriptor.visible === false) return
-        runtime.addNavigation(item)
+        // Package/module navigation may declare a default visibility, but the
+        // resolved descriptor is authoritative after installation. Strip any
+        // stale module-supplied visibility flag so an operator Show override
+        // cannot be hidden again by register().
+        runtime.addNavigation({ ...item, visible: true })
       }
       await plugin.register({ ...runtime, addNavigation, Vue, descriptor })
       loaded.push(descriptor.id)
