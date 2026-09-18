@@ -1,6 +1,6 @@
 # Tec-Tac UI
 
-**Version:** 0.1.3
+**Version:** 0.1.4
 
 Tec-Tac UI is the standalone Vue frontend for Tec-Tac. It is intentionally kept in a separate repository from the Tec-Tac backend/framework (`tac-net-rep`). The UI is installed below Tactical's existing frontend at `/tec-tac/`.
 
@@ -207,6 +207,13 @@ sudo bash scripts/uninstall.sh
 ```
 
 The current deployment is renamed to a timestamped backup instead of being permanently deleted.
+
+
+## Role editing safeguards in 0.1.4
+
+The role editor now keeps the newly created role selected and protects unsaved role/permission changes. A dirty role shows a persistent warning banner, and attempts to switch roles, switch Access sections, navigate elsewhere, open Tactical, or sign out are intercepted with Save / Discard / Stay choices. Browser refresh/close also receives a native unsaved-change warning.
+
+Tec-Tac backend 1.1.0 remains the paired backend for this UI release; no backend changes are required for 0.1.4.
 
 ## Access management in 0.1.3
 

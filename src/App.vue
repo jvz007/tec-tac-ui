@@ -2,8 +2,10 @@
 import { computed, inject, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import LoginPanel from './components/LoginPanel.vue'
+import UnsavedChangesDialog from './components/UnsavedChangesDialog.vue'
 import { logoutTacticalSession } from './api'
 import { state, loadContext } from './state'
+import { requestLeave } from './unsaved'
 
 const route = useRoute()
 const router = useRouter()
@@ -48,12 +50,14 @@ async function retry() {
   await loadContext()
   if (state.status === 'ready') window.location.reload()
 }
-function backToTactical() { window.location.href = '/' }
-async function signOut() {
+function navigate(to) { requestLeave(() => router.push(to)) }
+function backToTactical() { requestLeave(() => { window.location.href = '/' }) }
+async function doSignOut() {
   if (signingOut.value) return
   signingOut.value = true
   try { await logoutTacticalSession() } finally { window.location.reload() }
 }
+function signOut() { requestLeave(doSignOut) }
 </script>
 
 <template>
@@ -79,10 +83,10 @@ async function signOut() {
     <aside class="rail">
       <template v-if="state.status === 'ready'">
         <div class="grp label">Workspace</div>
-        <button v-for="item in allNav" :key="item.to" class="navitem" :class="{ active: route.path === item.to }" @click="router.push(item.to)"><span class="ico">{{ item.icon }}</span><span>{{ item.label }}</span><span v-if="item.badge" class="count">{{ item.badge }}</span></button>
+        <button v-for="item in allNav" :key="item.to" class="navitem" :class="{ active: route.path === item.to }" @click="navigate(item.to)"><span class="ico">{{ item.icon }}</span><span>{{ item.label }}</span><span v-if="item.badge" class="count">{{ item.badge }}</span></button>
       </template>
       <div v-else class="grp label">Session gate</div>
-      <div class="foot"><div class="kv"><span>UI</span><b>0.1.3</b></div><div class="kv"><span>Context</span><b>{{ state.contextSource }}</b></div><div class="kv"><span>Auth</span><b :class="state.authStatus === 'verified' ? 'oktxt' : (state.authStatus === 'verifying' ? 'warntxt' : 'dangertext')">{{ accountStatus }}</b></div></div>
+      <div class="foot"><div class="kv"><span>UI</span><b>0.1.4</b></div><div class="kv"><span>Context</span><b>{{ state.contextSource }}</b></div><div class="kv"><span>Auth</span><b :class="state.authStatus === 'verified' ? 'oktxt' : (state.authStatus === 'verifying' ? 'warntxt' : 'dangertext')">{{ accountStatus }}</b></div></div>
     </aside>
 
     <main class="main">
@@ -91,5 +95,6 @@ async function signOut() {
       <div v-else-if="state.status === 'failed'" class="state-panel danger-panel"><span class="eyebrow">SESSION OR BACKEND CHECK FAILED</span><h2>Tec-Tac could not complete startup</h2><p class="mono">{{ state.error?.message }}</p><div class="row"><button class="btn" @click="retry">Retry</button><button class="btn ghost" @click="backToTactical">Open Tactical</button></div></div>
       <router-view v-else-if="state.status === 'ready'" />
     </main>
+    <UnsavedChangesDialog />
   </div>
 </template>
