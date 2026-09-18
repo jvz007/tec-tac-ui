@@ -329,3 +329,46 @@ export async function loadStaticModuleManifest() {
   if (!Array.isArray(modules)) throw new Error('Module manifest must contain a JSON array.')
   return modules
 }
+
+// Tec-Tac 0.3.0 system update APIs
+export async function getSystemUpdateStatus() {
+  return apiFetch('/api/tfd/system/updates/')
+}
+
+export async function checkOnlineSystemUpdate(component) {
+  const query = new URLSearchParams({ component })
+  return apiFetch(`/api/tfd/system/updates/online/?${query.toString()}`)
+}
+
+export async function getSystemUpdateBranches(component) {
+  const query = new URLSearchParams({ component })
+  return apiFetch(`/api/tfd/system/updates/branches/?${query.toString()}`)
+}
+
+export async function stageOnlineSystemUpdate(component, sourceType = 'release', ref = null) {
+  return apiFetch('/api/tfd/system/updates/online/stage/', {
+    method: 'POST',
+    body: JSON.stringify({ component, source_type: sourceType, ref }),
+  })
+}
+
+export async function inspectSystemUpdatePackage(file) {
+  const form = new FormData()
+  form.append('package', file)
+  return apiFetch('/api/tfd/system/updates/packages/inspect/', { method: 'POST', body: form })
+}
+
+export async function discardSystemUpdatePackage(uploadId) {
+  return apiFetch(`/api/tfd/system/updates/packages/${uploadId}/`, { method: 'DELETE' })
+}
+
+export async function installSystemUpdatePackage(uploadId, allowDowngrade = false) {
+  return apiFetch(`/api/tfd/system/updates/packages/${uploadId}/install/`, {
+    method: 'POST',
+    body: JSON.stringify({ allow_downgrade: Boolean(allowDowngrade) }),
+  })
+}
+
+export async function getSystemUpdateJob(jobId) {
+  return apiFetch(`/api/tfd/system/updates/jobs/${jobId}/`)
+}

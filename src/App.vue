@@ -15,16 +15,41 @@ const query = ref('')
 const signingOut = ref(false)
 const publicRoute = computed(() => route.meta?.public === true || route.path.startsWith('/public/'))
 
-const coreNav = [
-  { label: 'Overview', icon: '⌂', to: '/' },
-  { label: 'Modules', icon: '▦', to: '/modules' },
-  { label: 'Access', icon: '⛨', to: '/access' },
-]
+const coreNav = computed(() => {
+  const capabilities = state.context.capabilities || {}
+  return [
+    { label: 'Overview', icon: '⌂', to: '/', section: 'Workspace', visible: true },
+    { label: 'Modules', icon: '▦', to: '/modules', section: 'Administration', visible: true },
+    { label: 'Access', icon: '⛨', to: '/access', section: 'Administration', visible: capabilities.list_accounts !== false || capabilities.list_roles !== false },
+    { label: 'System Updates', icon: '⇧', to: '/system/updates', section: 'Administration', visible: capabilities.manage_modules === true || state.context.user?.superuser === true },
+  ]
+})
 
-const allNav = computed(() => [...coreNav, ...dynamicNav].filter((item) => {
+const allNav = computed(() => [...coreNav.value, ...dynamicNav].filter((item) => {
+  if (item.visible === false) return false
   if (!query.value.trim()) return true
   return item.label.toLowerCase().includes(query.value.toLowerCase())
 }))
+
+const sectionOrder = ['Workspace', 'Operations', 'Extensions', 'Administration', 'Configuration']
+const navGroups = computed(() => {
+  const grouped = new Map()
+  for (const item of allNav.value) {
+    const section = item.section || 'Extensions'
+    if (!grouped.has(section)) grouped.set(section, [])
+    grouped.get(section).push(item)
+  }
+  return [...grouped.entries()]
+    .map(([section, items]) => ({ section, items }))
+    .sort((a, b) => {
+      const ai = sectionOrder.indexOf(a.section)
+      const bi = sectionOrder.indexOf(b.section)
+      if (ai === -1 && bi === -1) return a.section.localeCompare(b.section)
+      if (ai === -1) return 1
+      if (bi === -1) return -1
+      return ai - bi
+    })
+})
 
 const initials = computed(() => {
   const value = state.context.user?.display_name || state.context.user?.username || 'TT'
@@ -84,11 +109,13 @@ function signOut() { requestLeave(doSignOut) }
 
     <aside v-if="!publicRoute" class="rail">
       <template v-if="state.status === 'ready'">
-        <div class="grp label">Workspace</div>
-        <button v-for="item in allNav" :key="item.to" class="navitem" :class="{ active: route.path === item.to }" @click="navigate(item.to)"><span class="ico">{{ item.icon }}</span><span>{{ item.label }}</span><span v-if="item.badge" class="count">{{ item.badge }}</span></button>
+        <template v-for="group in navGroups" :key="group.section">
+          <div class="grp label">{{ group.section }}</div>
+          <button v-for="item in group.items" :key="item.to" class="navitem" :class="{ active: route.path === item.to }" @click="navigate(item.to)"><span class="ico">{{ item.icon }}</span><span>{{ item.label }}</span><span v-if="item.badge" class="count">{{ item.badge }}</span></button>
+        </template>
       </template>
       <div v-else class="grp label">Session gate</div>
-      <div class="foot"><div class="kv"><span>UI</span><b>0.2.5</b></div><div class="kv"><span>Context</span><b>{{ state.contextSource }}</b></div><div class="kv"><span>Auth</span><b :class="state.authStatus === 'verified' ? 'oktxt' : (state.authStatus === 'verifying' ? 'warntxt' : 'dangertext')">{{ accountStatus }}</b></div></div>
+      <div class="foot"><div class="kv"><span>UI</span><b>0.3.0</b></div><div class="kv"><span>Context</span><b>{{ state.contextSource }}</b></div><div class="kv"><span>Auth</span><b :class="state.authStatus === 'verified' ? 'oktxt' : (state.authStatus === 'verifying' ? 'warntxt' : 'dangertext')">{{ accountStatus }}</b></div></div>
     </aside>
 
     <main class="main">

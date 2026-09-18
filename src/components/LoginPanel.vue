@@ -266,7 +266,7 @@ function openTactical() {
     <div class="login-foot">
       <span>AUTHORITY</span><b>Tactical RMM</b>
       <span>SESSION</span><b>Knox token</b>
-      <span>UI</span><b>0.2.5</b>
+      <span>UI</span><b>0.3.0</b>
     </div>
   </section>
 </template>

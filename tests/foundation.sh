@@ -3,10 +3,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.2.5" ]] || fail "VERSION is not 0.2.5"
+[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.3.0" ]] || fail "VERSION is not 0.3.0"
 for f in \
   src/module-loader.js \
   src/views/PublicPendingView.vue \
+  src/views/SystemUpdatesView.vue \
   src/modules.js \
   src/components/LoginPanel.vue \
   src/components/access/UsersPanel.vue \
@@ -45,6 +46,12 @@ grep -q "/public/:pathMatch" "${ROOT}/src/router.js" || fail "public route names
 grep -q "public.entry" "${ROOT}/scripts/sync-modules.sh" || fail "public UI sync validation missing"
 
 
+
+grep -q '/api/tfd/system/updates/' "${ROOT}/src/api.js" || fail "system update API missing"
+grep -q "'/system/updates'" "${ROOT}/src/router.js" || fail "system update route missing"
+grep -q 'Unlock branch sources' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "advanced branch unlock UI missing"
+grep -q 'Upload offline package' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "offline package update UI missing"
+grep -q "section: 'Administration'" "${ROOT}/src/App.vue" || fail "grouped administration navigation missing"
 grep -q 'TEC_TAC_UI_DEPLOY_BASE:-/var/lib/tec-tac/ui' "${ROOT}/scripts/install.sh" || fail "persistent UI deployment path missing"
 grep -q '/var/lib/tec-tac/ui/tec-tac' "${ROOT}/scripts/sync-modules.sh" || fail "module sync still targets Tactical dist"
 grep -q 'sites-available/frontend.conf' "${ROOT}/scripts/repair-nginx.sh" || fail "frontend nginx repair target missing"
@@ -63,7 +70,7 @@ node --check "${ROOT}/src/router.js"
 python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
-assert package['version']=='0.2.5'
+assert package['version']=='0.3.0'
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
 assert manifest['id']=='reference'
 assert manifest['entry']=='ui/index.js'

@@ -1,6 +1,13 @@
 # Tec-Tac UI
 
-**Version:** 0.2.5
+**Version:** 0.3.0
+
+## 0.3.0 focus: system updates and navigation categories
+
+0.3.0 adds a dedicated System → Updates workspace backed by Tec-Tac Framework 1.3.0. Framework and UI updates can be staged from stable GitHub releases, explicitly unlocked repository branches/custom builds, or offline repository archives. The page exposes package inspection, version/update classification, downgrade confirmation, lifecycle logs, rollback state, update history, and an explicit reload after UI replacement.
+
+The left rail is now grouped by navigation category. Workspace/extension pages are kept separate from Administration, while Configuration is reserved as a first-class section for future settings pages. Dynamic extensions retain ownership of their `navigation.section`.
+
 
 ## 0.2.5 focus: clearer authenticator enrollment
 
