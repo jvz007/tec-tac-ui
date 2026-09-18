@@ -1,0 +1,12 @@
+{
+  "id": "reference",
+  "version": "0.1.0",
+  "entry": "ui/index.js",
+  "navigation": {
+    "label": "Reference Module",
+    "section": "Extensions",
+    "icon": "◇",
+    "order": 900
+  },
+  "permissions": []
+}
