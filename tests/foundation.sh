@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.6.2" ]] || fail "VERSION is not 0.6.1"
+[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.6.3" ]] || fail "VERSION is not 0.6.1"
 for f in \
   src/module-loader.js \
   src/views/PublicPendingView.vue \
@@ -71,7 +71,7 @@ node --check "${ROOT}/src/router.js"
 python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
-assert package['version']=='0.6.2'
+assert package['version']=='0.6.3'
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
 assert manifest['id']=='reference'
 assert manifest['entry']=='ui/index.js'
@@ -85,6 +85,8 @@ bash -n "${ROOT}/scripts/install.sh"
 bash -n "${ROOT}/scripts/uninstall.sh"
 bash -n "${ROOT}/scripts/sync-modules.sh"
 bash -n "${ROOT}/scripts/repair-nginx.sh"
+grep -q 'Drag & drop an offline system update here' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "system update drag/drop package intake missing"
+grep -q 'Inspect package' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "system update explicit inspect action missing"
 echo "[TEST] PASS foundation"
 
 grep -q 'drop-zone' "${ROOT}/src/views/ModulesView.vue" || fail "drag/drop package intake missing"

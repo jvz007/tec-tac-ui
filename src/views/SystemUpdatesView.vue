@@ -22,6 +22,9 @@ const selectedBranch = ref({ framework: 'main', ui: 'main' })
 const branchBusy = ref({ framework: false, ui: false })
 const stage = ref(null)
 const stageBusy = ref(false)
+const offlineInput = ref(null)
+const offlineFile = ref(null)
+const offlineDropActive = ref(false)
 const allowDowngrade = ref(false)
 const job = ref(null)
 const pollTimer = ref(null)
@@ -90,6 +93,8 @@ async function loadBranches(component) {
 }
 
 async function stageOnline(component, sourceType) {
+  offlineFile.value = null
+  offlineDropActive.value = false
   stageBusy.value = true
   error.value = ''
   try {
@@ -106,14 +111,52 @@ async function stageOnline(component, sourceType) {
   }
 }
 
-async function onFile(event) {
+function pickOfflinePackage() {
+  if (stageBusy.value || stage.value) return
+  offlineInput.value?.click()
+}
+
+function selectOfflinePackage(file) {
+  if (!file) return
+  const name = String(file.name || '').toLowerCase()
+  if (!(name.endsWith('.zip') || name.endsWith('.tgz') || name.endsWith('.tar.gz'))) {
+    error.value = 'Offline system updates must be .zip, .tgz, or .tar.gz packages.'
+    return
+  }
+  offlineFile.value = file
+  offlineDropActive.value = false
+  error.value = ''
+}
+
+function onFile(event) {
   const file = event.target.files?.[0]
   event.target.value = ''
-  if (!file) return
+  selectOfflinePackage(file)
+}
+
+function onOfflineDrop(event) {
+  offlineDropActive.value = false
+  const files = [...(event.dataTransfer?.files || [])]
+  if (!files.length) return
+  if (files.length > 1) {
+    error.value = 'System Updates accepts one offline framework or UI package at a time.'
+    return
+  }
+  selectOfflinePackage(files[0])
+}
+
+function clearOfflineFile() {
+  offlineFile.value = null
+  offlineDropActive.value = false
+}
+
+async function inspectOfflinePackage() {
+  if (!offlineFile.value || stageBusy.value) return
   stageBusy.value = true
   error.value = ''
   try {
-    stage.value = await inspectSystemUpdatePackage(file)
+    stage.value = await inspectSystemUpdatePackage(offlineFile.value)
+    offlineFile.value = null
     allowDowngrade.value = false
   } catch (err) {
     error.value = err?.message || 'Unable to inspect update package.'
@@ -189,16 +232,53 @@ onBeforeUnmount(stopPolling)
         <h1>System Updates</h1>
         <p>Update the Tec-Tac framework or UI from a stable repository release, an explicitly unlocked branch, or an offline ZIP/TAR.GZ package.</p>
       </div>
-      <label class="btn" :class="{ disabled: stageBusy }">
-        Upload offline package
-        <input class="sr-only" type="file" accept=".zip,.tar.gz,.tgz" :disabled="stageBusy" @change="onFile" />
-      </label>
     </header>
 
     <div v-if="error" class="auth-error" role="alert">{{ error }}</div>
     <div v-if="loading" class="state-inline">Loading installed versions…</div>
 
-    <div v-else class="system-update-grid">
+    <article v-else class="card package-workspace mb" aria-labelledby="offline-package-title">
+      <div class="cardhead">
+        <div><span class="eyebrow">PACKAGE INTAKE</span><h3 id="offline-package-title">Upload offline package</h3></div>
+        <span v-if="offlineFile" class="pill">SELECTED</span>
+      </div>
+
+      <input ref="offlineInput" class="sr-only" type="file" accept=".zip,.tar.gz,.tgz" :disabled="stageBusy || !!stage" @change="onFile" />
+
+      <div
+        v-if="!offlineFile && !stage"
+        class="drop-zone"
+        :class="{ active: offlineDropActive, disabled: stageBusy }"
+        role="button"
+        tabindex="0"
+        @click="pickOfflinePackage"
+        @keydown.enter.prevent="pickOfflinePackage"
+        @keydown.space.prevent="pickOfflinePackage"
+        @dragenter.prevent="offlineDropActive=true"
+        @dragover.prevent="offlineDropActive=true"
+        @dragleave.prevent="offlineDropActive=false"
+        @drop.prevent="onOfflineDrop"
+      >
+        <div class="drop-icon">⇩</div>
+        <div><b>{{ offlineDropActive ? 'Drop update package here' : 'Drag & drop an offline system update here' }}</b><span>Framework and UI packages support .zip, .tgz, and .tar.gz. One system package is inspected at a time.</span></div>
+        <button class="btn sm" type="button" :disabled="stageBusy" @click.stop="pickOfflinePackage">Browse files</button>
+      </div>
+
+      <div v-if="offlineFile && !stage" class="package-queue">
+        <div class="queue-head"><span class="eyebrow">FILE TO INSPECT</span><span class="mono muted">1 package</span></div>
+        <div class="queue-row">
+          <span class="queue-grip mono" aria-hidden="true">PKG</span>
+          <span class="queue-index mono">1</span>
+          <div class="queue-main"><b>{{ offlineFile.name }}</b><span>{{ (offlineFile.size/1024).toFixed(1) }} KB</span></div>
+          <div class="queue-actions"><button class="iconbtn" title="Remove" :disabled="stageBusy" @click="clearOfflineFile">×</button></div>
+        </div>
+        <div class="queue-footer"><button class="btn" :disabled="stageBusy" @click="clearOfflineFile">Clear</button><span class="spacer"></span><button class="btn primary" :disabled="stageBusy" @click="inspectOfflinePackage">{{ stageBusy ? 'Inspecting…' : 'Inspect package' }}</button></div>
+      </div>
+
+      <div v-if="stage" class="state-inline"><b>Package staged.</b> Review the inspection result below before installation.</div>
+    </article>
+
+    <div v-if="!loading" class="system-update-grid">
       <article v-for="component in components" :key="component.id" class="card system-update-card">
         <div class="cardhead">
           <div>
