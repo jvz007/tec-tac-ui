@@ -6,6 +6,10 @@ export function tacticalToken() {
   return localStorage.getItem('access_token')
 }
 
+export function tacticalAuthStage() {
+  return localStorage.getItem('tec_tac_auth_stage')
+}
+
 export function tacticalIdentityFromStorage() {
   return {
     username: localStorage.getItem('user_name'),
@@ -19,14 +23,21 @@ export function tacticalIdentityFromStorage() {
 export function storeTacticalSession({ token, username, name }) {
   if (!token) throw new Error('Tactical did not return an access token.')
   localStorage.setItem('access_token', token)
+  localStorage.removeItem('tec_tac_auth_stage')
   if (username) localStorage.setItem('user_name', username)
   else localStorage.removeItem('user_name')
   if (name) localStorage.setItem('name', name)
   else localStorage.removeItem('name')
 }
 
+export function storeTacticalSetupSession({ token, username, name }) {
+  storeTacticalSession({ token, username, name })
+  localStorage.setItem('tec_tac_auth_stage', 'totp-setup')
+}
+
 export function clearTacticalSession() {
   localStorage.removeItem('access_token')
+  localStorage.removeItem('tec_tac_auth_stage')
   localStorage.removeItem('user_name')
   localStorage.removeItem('name')
 }
@@ -110,11 +121,11 @@ export async function checkTacticalCredentials(username, password) {
   }
 
   // Tactical deliberately issues a short-lived authenticated token when an
-  // account has no TOTP secret yet, then its own frontend sends the user to
-  // /totp_setup. Mirror that security flow: preserve the setup token but do
-  // not grant Tec-Tac access until enrollment is complete.
+  // account has no TOTP secret yet. Preserve that token only for Tec-Tac's
+  // native enrollment step; do not grant operational access until a TOTP code
+  // has been verified by Tactical's normal login endpoint.
   if (data.totp === false && data.token) {
-    storeTacticalSession({
+    storeTacticalSetupSession({
       token: data.token,
       username: data.username || username,
       name: data.name || null,
@@ -142,6 +153,18 @@ export async function loginTacticalWithTotp(username, password, twofactor) {
   })
 
   return { authenticated: true }
+}
+
+
+export async function setupTacticalTotp() {
+  const data = await apiFetch('/accounts/users/setup_totp/', { method: 'POST' })
+  if (!data || typeof data !== 'object' || !data.totp_key || !data.qr_url) {
+    const error = new Error('Tactical did not return TOTP enrollment details.')
+    error.status = 502
+    error.payload = data
+    throw error
+  }
+  return data
 }
 
 export async function validateTacticalSession() {

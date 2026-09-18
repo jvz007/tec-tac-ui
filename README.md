@@ -1,8 +1,14 @@
 # Tec-Tac UI
 
-**Version:** 0.2.2
+**Version:** 0.2.3
 
 Tec-Tac UI is the standalone Vue frontend for Tec-Tac. It is intentionally kept in a separate repository from the Tec-Tac backend/framework (`tac-net-rep`). The UI is installed below Tactical's existing frontend at `/tec-tac/`.
+
+## 0.2.3 focus: Tactical-native TOTP enrollment
+
+0.2.3 keeps first-time authenticator enrollment inside Tec-Tac. Accounts without a Tactical TOTP secret now use Tactical's short-lived credential-check token to call `POST /accounts/users/setup_totp/`, display the returned setup key and provisioning URI, and verify the generated code through Tactical's normal `POST /v2/login/` flow. No redirect to Tactical's frontend is required.
+
+The short-lived setup token is explicitly marked as enrollment-only and is never accepted as a normal Tec-Tac session. If the browser reloads mid-enrollment, Tec-Tac clears that token and starts sign-in again rather than exposing the operational shell.
 
 
 ## 0.2.0 focus: module discovery and lifecycle
@@ -40,7 +46,7 @@ POST /v2/checkcreds/
 
 For a normal enrolled account, sign-in remains entirely inside `/tec-tac/`. After Tactical returns a token, Tec-Tac reloads and verifies that token before the operational shell is exposed.
 
-If Tactical reports that the account has no TOTP secret yet, Tec-Tac preserves Tactical's short-lived setup token but **does not** grant Tec-Tac access. The operator is sent to Tactical's own `/totp_setup` route to complete first-time enrollment. This mirrors Tactical's native security flow rather than bypassing it.
+If Tactical reports that the account has no TOTP secret yet, Tec-Tac preserves Tactical's short-lived setup token only long enough to call `POST /accounts/users/setup_totp/`. Tec-Tac then shows the returned manual setup key and authenticator URI inside its own sign-in flow, asks for the newly generated code, and completes authentication through `POST /v2/login/`. The operator is never redirected to Tactical for enrollment. A setup-only token is explicitly marked in browser storage and can never unlock the Tec-Tac operational shell; if the page reloads mid-enrollment the temporary token is discarded and credentials must be entered again.
 
 The password and TOTP code are held only in the Vue component's runtime memory while the authentication requests are performed. They are not written to local storage. Only Tactical's returned session values (`access_token`, `user_name`, and `name`) are persisted, matching Tactical's current frontend behavior.
 

@@ -3,6 +3,7 @@ import {
   apiFetch,
   clearTacticalSession,
   loadStaticModuleManifest,
+  tacticalAuthStage,
   tacticalIdentityFromStorage,
   tacticalToken,
   validateTacticalSession,
@@ -78,6 +79,15 @@ export async function loadContext() {
   }
 
   if (!tacticalToken()) {
+    markUnauthenticated()
+    return state.context
+  }
+
+  // /v2/checkcreds/ issues a short-lived token before first-time TOTP
+  // enrollment. That token is setup-only and must never unlock Tec-Tac.
+  // If the browser reloads mid-enrollment, discard it and require the
+  // credential flow again so the password is never persisted.
+  if (tacticalAuthStage() === 'totp-setup') {
     markUnauthenticated()
     return state.context
   }
