@@ -88,7 +88,7 @@ function signOut() { requestLeave(doSignOut) }
         <button v-for="item in allNav" :key="item.to" class="navitem" :class="{ active: route.path === item.to }" @click="navigate(item.to)"><span class="ico">{{ item.icon }}</span><span>{{ item.label }}</span><span v-if="item.badge" class="count">{{ item.badge }}</span></button>
       </template>
       <div v-else class="grp label">Session gate</div>
-      <div class="foot"><div class="kv"><span>UI</span><b>0.2.1</b></div><div class="kv"><span>Context</span><b>{{ state.contextSource }}</b></div><div class="kv"><span>Auth</span><b :class="state.authStatus === 'verified' ? 'oktxt' : (state.authStatus === 'verifying' ? 'warntxt' : 'dangertext')">{{ accountStatus }}</b></div></div>
+      <div class="foot"><div class="kv"><span>UI</span><b>0.2.2</b></div><div class="kv"><span>Context</span><b>{{ state.contextSource }}</b></div><div class="kv"><span>Auth</span><b :class="state.authStatus === 'verified' ? 'oktxt' : (state.authStatus === 'verifying' ? 'warntxt' : 'dangertext')">{{ accountStatus }}</b></div></div>
     </aside>
 
     <main class="main">

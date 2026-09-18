@@ -2,7 +2,8 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TARGET_ROOT="${TEC_TAC_UI_ROOT:-/var/www/rmm/dist/tec-tac}"
+DEPLOY_BASE="${TEC_TAC_UI_DEPLOY_BASE:-/var/lib/tec-tac/ui}"
+TARGET_ROOT="${TEC_TAC_UI_ROOT:-${DEPLOY_BASE}/tec-tac}"
 TACTICAL_FRONTEND_ROOT="${TACTICAL_FRONTEND_ROOT:-/var/www/rmm/dist}"
 
 log() { printf '[TEC-TAC-UI] %s\n' "$*"; }
@@ -19,6 +20,7 @@ npm run build
 
 [[ -f "${REPO_ROOT}/dist/index.html" ]] || fail "Vite build did not create dist/index.html."
 
+mkdir -p "${DEPLOY_BASE}"
 BACKUP=""
 if [[ -d "${TARGET_ROOT}" ]]; then
   BACKUP="${TARGET_ROOT}.backup.$(date +%Y%m%dT%H%M%S)"
@@ -29,10 +31,16 @@ fi
 rm -rf "${TARGET_ROOT}"
 mkdir -p "${TARGET_ROOT}"
 cp -a "${REPO_ROOT}/dist/." "${TARGET_ROOT}/"
-chown -R www-data:www-data "${TARGET_ROOT}" 2>/dev/null || true
+chown -R www-data:www-data "${DEPLOY_BASE}" 2>/dev/null || true
 
-# Sync optional extension UI modules without changing the backend repository.
+# Sync optional extension UI modules into the persistent Tec-Tac deployment.
 TEC_TAC_UI_ROOT="${TARGET_ROOT}" bash "${REPO_ROOT}/scripts/sync-modules.sh"
 
+# Install/repair only the small nginx integration. The built UI itself is now
+# outside Tactical's /var/www/rmm/dist tree and therefore survives upgrades.
+TEC_TAC_UI_ROOT="${TARGET_ROOT}" TEC_TAC_UI_DEPLOY_BASE="${DEPLOY_BASE}" \
+  bash "${REPO_ROOT}/scripts/repair-nginx.sh"
+
 log "Installed tec-tac-ui at ${TARGET_ROOT}."
-log "Open https://<tactical-frontend>/tec-tac/ while signed into Tactical."
+log "The deployment is independent of Tactical's replaceable frontend dist tree."
+log "Open https://<tactical-frontend>/tec-tac/."

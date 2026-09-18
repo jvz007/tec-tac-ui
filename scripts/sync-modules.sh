@@ -2,7 +2,7 @@
 set -euo pipefail
 
 EXTENSIONS_ROOT="${TEC_TAC_EXTENSIONS_ROOT:-/opt/tec-tac/extensions}"
-UI_ROOT="${TEC_TAC_UI_ROOT:-/var/www/rmm/dist/tec-tac}"
+UI_ROOT="${TEC_TAC_UI_ROOT:-/var/lib/tec-tac/ui/tec-tac}"
 MODULES_ROOT="${UI_ROOT}/modules"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 

@@ -1,6 +1,6 @@
 # Tec-Tac UI
 
-**Version:** 0.2.1
+**Version:** 0.2.2
 
 Tec-Tac UI is the standalone Vue frontend for Tec-Tac. It is intentionally kept in a separate repository from the Tec-Tac backend/framework (`tac-net-rep`). The UI is installed below Tactical's existing frontend at `/tec-tac/`.
 
@@ -47,7 +47,7 @@ The password and TOTP code are held only in the Vue component's runtime memory w
 ## Design rules
 
 - Independent Vue 3 application; no Tactical tracked-source edits.
-- Deployment path: `/var/www/rmm/dist/tec-tac/`.
+- Deployment path: `/var/lib/tec-tac/ui/tec-tac/`, served by nginx at `/tec-tac/`.
 - Browser path: `https://<tactical-frontend>/tec-tac/`.
 - Tactical remains the authentication authority.
 - Existing Tactical browser tokens are verified before the operational UI is shown.
@@ -126,10 +126,10 @@ sudo bash scripts/install.sh
 The installer builds the Vue application and deploys it to:
 
 ```text
-/var/www/rmm/dist/tec-tac/
+/var/lib/tec-tac/ui/tec-tac/
 ```
 
-It does not edit Tactical source files or the Tec-Tac backend repo.
+It installs `/etc/nginx/snippets/tec-tac.conf` and adds one include to Tactical's frontend nginx server block so `/tec-tac/` is served from this persistent path. It does not edit Tactical tracked source files or the Tec-Tac backend repo. After a Tactical update, `sudo bash scripts/repair-nginx.sh` restores the nginx include if necessary without rebuilding the UI.
 
 ## Session verification
 
@@ -178,7 +178,7 @@ Example `tec_tac_ui.json`:
 }
 ```
 
-The UI repo's module synchronizer reads these manifests from `/opt/tec-tac/extensions` by default and copies only their UI bundles into the deployed frontend:
+The UI repo's module synchronizer reads these manifests from `/opt/tec-tac/extensions` by default and copies only their UI bundles into the persistent Tec-Tac deployment:
 
 ```bash
 sudo bash scripts/sync-modules.sh
@@ -248,3 +248,14 @@ A module may expose an anonymous browser surface in addition to, or instead of, 
 ```
 
 The public entry exports `registerPublic(context)` and is loaded before Tactical authentication is required. The public runtime intentionally exposes only Vue, app, descriptor, `addPublicRoute(route)`, and `publicApi(path, options)`. Routes are constrained to `/public/<extension-id>` and descendants. `publicApi()` never attaches the Tactical browser token; any backend endpoint intended for anonymous use must explicitly permit that access server-side.
+
+
+## Persistent deployment in 0.2.2
+
+Tactical replaces `/var/www/rmm/dist` during upgrades. Tec-Tac therefore no longer stores its built application or extension UI modules inside that tree. The persistent default is `/var/lib/tec-tac/ui/tec-tac`. `scripts/repair-nginx.sh` owns the small nginx integration required to expose that directory at `/tec-tac/`.
+
+The repair script validates nginx before reloading it and restores the previous frontend config if validation fails.
+
+## Readability in 0.2.2
+
+Text sizes are approximately 10% larger while retaining the existing compact SHTF/Tec-Tac layout and three-theme model.

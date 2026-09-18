@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.2.1" ]] || fail "VERSION is not 0.2.1"
+[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.2.2" ]] || fail "VERSION is not 0.2.2"
 for f in \
   src/module-loader.js \
   src/views/PublicPendingView.vue \
@@ -15,7 +15,8 @@ for f in \
   src/components/UnsavedChangesDialog.vue \
   src/unsaved.js \
   scripts/install.sh \
-  scripts/sync-modules.sh; do
+  scripts/sync-modules.sh \
+  scripts/repair-nginx.sh; do
   [[ -f "${ROOT}/${f}" ]] || fail "missing ${f}"
 done
 
@@ -38,6 +39,13 @@ grep -q "credentials: 'omit'" "${ROOT}/src/api.js" || fail "public API token iso
 grep -q "/public/:pathMatch" "${ROOT}/src/router.js" || fail "public route namespace missing"
 grep -q "public.entry" "${ROOT}/scripts/sync-modules.sh" || fail "public UI sync validation missing"
 
+
+grep -q 'TEC_TAC_UI_DEPLOY_BASE:-/var/lib/tec-tac/ui' "${ROOT}/scripts/install.sh" || fail "persistent UI deployment path missing"
+grep -q '/var/lib/tec-tac/ui/tec-tac' "${ROOT}/scripts/sync-modules.sh" || fail "module sync still targets Tactical dist"
+grep -q 'sites-available/frontend.conf' "${ROOT}/scripts/repair-nginx.sh" || fail "frontend nginx repair target missing"
+grep -q 'nginx -t' "${ROOT}/scripts/repair-nginx.sh" || fail "nginx validation missing"
+if grep -q '/var/www/rmm/dist/tec-tac' "${ROOT}/scripts/install.sh"; then fail "installer still deploys under Tactical dist"; fi
+
 node --check "${ROOT}/src/api.js"
 node --check "${ROOT}/src/access.js"
 node --check "${ROOT}/src/modules.js"
@@ -50,7 +58,7 @@ node --check "${ROOT}/src/router.js"
 python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
-assert package['version']=='0.2.1'
+assert package['version']=='0.2.2'
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
 assert manifest['id']=='reference'
 assert manifest['entry']=='ui/index.js'
@@ -63,4 +71,5 @@ PY
 bash -n "${ROOT}/scripts/install.sh"
 bash -n "${ROOT}/scripts/uninstall.sh"
 bash -n "${ROOT}/scripts/sync-modules.sh"
+bash -n "${ROOT}/scripts/repair-nginx.sh"
 echo "[TEST] PASS foundation"
