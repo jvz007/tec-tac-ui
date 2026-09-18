@@ -295,3 +295,31 @@ Disabled modules remain installed but `scripts/sync-modules.sh` excludes their U
 Native Tactical remains available through the existing **Open Tactical** control while Tec-Tac replacement workflows are still being proven.
 
 See `RELEASE_NOTES_0.4.0.md`.
+
+## Module visibility (planned)
+
+Tec-Tac will separate a module's runtime state from whether it appears as a standalone navigation destination.
+
+| Runtime | Visibility | UI behaviour |
+| --- | --- | --- |
+| Enabled | Visible | Module loads normally and contributes its declared navigation entry. |
+| Enabled | Hidden | Module loads normally, routes remain available, but its normal navigation entry is suppressed. |
+| Disabled | Hidden | Module is inactive and contributes no navigation entry. |
+
+This is intended for support-oriented modules such as **Checks** and **Automation**. They can remain enabled for use by Endpoints or other workflows without permanently occupying the left navigation rail.
+
+Important rules:
+
+- hidden modules remain listed in **Modules** administration;
+- hiding a module does not affect dependency satisfaction;
+- direct/internal links to an enabled hidden module may continue to work;
+- hiding is not an RBAC control;
+- missing visibility state defaults to **Visible** for backward compatibility;
+- disabled modules are always effectively hidden.
+
+The Modules table should expose **Runtime** and **Visibility** as separate columns, and Module Detail should provide a dedicated `Visible / Hidden` control rather than overloading Enable/Disable.
+
+
+## Module visibility (0.6.0)
+
+The Modules administration view separates runtime state from navigation visibility. Operators can **Hide** or **Show** a managed module without disabling it. Hidden modules still register their authenticated UI routes/components and remain available to internal links; only their top-level `addNavigation()` entries are suppressed. Hidden modules always remain listed in Modules administration so they can be restored.

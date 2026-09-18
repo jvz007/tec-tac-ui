@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.5.0" ]] || fail "VERSION is not 0.5.0"
+[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.6.0" ]] || fail "VERSION is not 0.6.0"
 for f in \
   src/module-loader.js \
   src/views/PublicPendingView.vue \
@@ -71,7 +71,7 @@ node --check "${ROOT}/src/router.js"
 python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
-assert package['version']=='0.5.0'
+assert package['version']=='0.6.0'
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
 assert manifest['id']=='reference'
 assert manifest['entry']=='ui/index.js'
@@ -91,3 +91,9 @@ grep -q 'drop-zone' "${ROOT}/src/views/ModulesView.vue" || fail "drag/drop packa
 grep -q 'discardModuleArtifact' "${ROOT}/src/modules.js" || fail "v2 staged discard API missing"
 grep -q '__TEC_TAC_UI_VERSION__' "${ROOT}/src/App.vue" || fail "dynamic footer UI version missing"
 grep -q '__TEC_TAC_UI_VERSION__' "${ROOT}/vite.config.js" || fail "Vite UI version injection missing"
+
+grep -q 'setModuleVisible' "${ROOT}/src/modules.js" || fail "module visibility API helper missing"
+grep -q 'descriptor.visible === false' "${ROOT}/src/module-loader.js" || fail "hidden module navigation suppression missing"
+grep -q '"visible":visible(mid)' "${ROOT}/scripts/sync-modules.sh" || fail "module visibility manifest sync missing"
+grep -q '>Hide<' "${ROOT}/src/views/ModulesView.vue" || fail "module hide control missing"
+grep -q '>Show<' "${ROOT}/src/views/ModulesView.vue" || fail "module show control missing"

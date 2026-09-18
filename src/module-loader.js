@@ -86,7 +86,11 @@ export async function loadUiModules(runtime, modules) {
       if (!plugin || typeof plugin.register !== 'function') {
         throw new Error('module does not export register(context)')
       }
-      await plugin.register({ ...runtime, Vue, descriptor })
+      const addNavigation = (item) => {
+        if (descriptor.visible === false) return
+        runtime.addNavigation(item)
+      }
+      await plugin.register({ ...runtime, addNavigation, Vue, descriptor })
       loaded.push(descriptor.id)
     } catch (error) {
       failed.push({ id: descriptor.id, message: error?.message || String(error) })

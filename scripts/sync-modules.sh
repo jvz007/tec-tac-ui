@@ -19,7 +19,9 @@ out_root.mkdir(parents=True, exist_ok=True)
 state={"modules":{}}
 if state_file.is_file():
     state=json.loads(state_file.read_text(encoding="utf-8"))
-def enabled(mid): return bool((state.get("modules",{}).get(mid) or {}).get("enabled", True))
+def module_record(mid): return state.get("modules",{}).get(mid) or {}
+def enabled(mid): return bool(module_record(mid).get("enabled", True))
+def visible(mid): return bool(module_record(mid).get("visible", True))
 modules=[]
 if extensions_root.is_dir():
   for extension in sorted(p for p in extensions_root.iterdir() if p.is_dir()):
@@ -50,10 +52,10 @@ if extensions_root.is_dir():
     src=resolve(entry,"UI entry"); pub=resolve(public_entry,"Public UI entry")
     if src and pub and src.parent != pub.parent: raise SystemExit(f"authenticated/public entries must share a bundle directory in {manifest}")
     bundle=(src or pub).parent; dst=out_root/mid; shutil.copytree(bundle,dst)
-    modules.append({"id":mid,"version":str(payload.get("version","0.0.0")),"entry":f"/tec-tac/modules/{mid}/{src.name}" if src else None,"public":{"entry":f"/tec-tac/modules/{mid}/{pub.name}","base_path":public_base} if pub else None,"navigation":payload.get("navigation") or {"label":mid,"section":"Extensions","icon":"◇"},"permissions":ui_permissions})
+    modules.append({"id":mid,"version":str(payload.get("version","0.0.0")),"visible":visible(mid),"entry":f"/tec-tac/modules/{mid}/{src.name}" if src else None,"public":{"entry":f"/tec-tac/modules/{mid}/{pub.name}","base_path":public_base} if pub else None,"navigation":payload.get("navigation") or {"label":mid,"section":"Extensions","icon":"◇"},"permissions":ui_permissions})
 (out_root/"modules.json").write_text(json.dumps(modules,indent=2)+"\n",encoding="utf-8")
 print(f"discovered={len(modules)}")
 PY
 rm -rf "${MODULES_ROOT}"; mkdir -p "${MODULES_ROOT}"; cp -a "${TMP}/modules/." "${MODULES_ROOT}/"
 chown -R www-data:www-data "${MODULES_ROOT}" 2>/dev/null || true
-log "UI modules synchronized with enabled-state filtering."
+log "UI modules synchronized with runtime-state and navigation-visibility metadata."

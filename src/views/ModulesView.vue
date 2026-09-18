@@ -9,6 +9,7 @@ import {
   listModules,
   removeModule,
   setModuleEnabled,
+  setModuleVisible,
 } from '../modules'
 
 const state = inject('tecTacState')
@@ -38,6 +39,7 @@ const filtered = computed(() => modules.value.filter((x) => !query.value.trim() 
 const selected = computed(() => modules.value.find((x) => x.id === selectedId.value) || null)
 const enabledCount = computed(() => modules.value.filter((x) => x.managed && x.enabled).length)
 const disabledCount = computed(() => modules.value.filter((x) => x.managed && !x.enabled).length)
+const hiddenCount = computed(() => modules.value.filter((x) => x.managed && x.enabled && x.visible === false).length)
 const dependencyCount = computed(() => modules.value.reduce((n, x) => n + Object.keys(x.dependencies || {}).length, 0))
 const jobRunning = computed(() => activeJob.value && !['succeeded', 'failed', 'dispatch_failed'].includes(activeJob.value.status))
 const preview = computed(() => staged.value?.preview || staged.value)
@@ -221,6 +223,17 @@ async function confirmAction() {
   } catch (e) { error.value = e.message }
 }
 
+
+async function setVisibility(item, visible) {
+  if (!item || !canManage.value || jobRunning.value) return
+  try {
+    const job = await setModuleVisible(item.id, visible)
+    beginPoll(job)
+  } catch (e) {
+    error.value = e.message || 'Unable to change module visibility.'
+  }
+}
+
 function beginPoll(job) { activeJob.value = job; clearTimeout(pollTimer); pollTimer = setTimeout(poll, 700) }
 async function poll() {
   if (!activeJob.value?.id) return
@@ -241,7 +254,7 @@ onBeforeUnmount(() => clearTimeout(pollTimer))
 <template>
 <section>
   <div class="phead">
-    <div><span class="eyebrow">MODULE MANAGEMENT V2</span><h1>Modules</h1><p>Install packages or bundles, control runtime state, and validate dependency/version requirements before Tec-Tac changes anything.</p></div>
+    <div><span class="eyebrow">MODULE MANAGEMENT V2</span><h1>Modules</h1><p>Install packages or bundles, control runtime and navigation visibility, and validate dependency/version requirements before Tec-Tac changes anything.</p></div>
   </div>
 
   <div v-if="error" class="auth-error">{{ error }}</div>
@@ -316,11 +329,11 @@ onBeforeUnmount(() => clearTimeout(pollTimer))
     </div>
   </section>
 
-  <div class="grid g4 mb"><article class="tile"><div class="lbl">Installed</div><div class="big">{{ modules.filter(x=>x.managed).length }}</div><div class="brk">managed modules</div></article><article class="tile"><div class="lbl">Enabled</div><div class="big">{{ enabledCount }}</div><div class="brk">active at runtime</div></article><article class="tile"><div class="lbl">Disabled</div><div class="big">{{ disabledCount }}</div><div class="brk">installed, inactive</div></article><article class="tile"><div class="lbl">Dependencies</div><div class="big">{{ dependencyCount }}</div><div class="brk">hard dependency links</div></article></div>
+  <div class="grid g4 mb"><article class="tile"><div class="lbl">Installed</div><div class="big">{{ modules.filter(x=>x.managed).length }}</div><div class="brk">managed modules</div></article><article class="tile"><div class="lbl">Enabled</div><div class="big">{{ enabledCount }}</div><div class="brk">active at runtime</div></article><article class="tile"><div class="lbl">Disabled</div><div class="big">{{ disabledCount }}</div><div class="brk">installed, inactive</div></article><article class="tile"><div class="lbl">Hidden</div><div class="big">{{ hiddenCount }}</div><div class="brk">active, not in navigation</div></article></div>
 
   <div v-if="loading" class="callout mono">Loading Module Management v2 catalog…</div>
-  <div v-else class="module-layout"><div><div class="toolbar"><label class="compact-input"><input v-model="query" placeholder="Search modules…"></label><span class="muted mono">{{ filtered.length }} shown</span><span class="spacer"></span><button class="btn sm" @click="refresh(selectedId)">Refresh</button></div><div class="tablewrap"><table><thead><tr><th>Module</th><th>Version</th><th>Runtime</th><th>Dependencies</th><th>Dependants</th><th>UI</th><th>Status</th></tr></thead><tbody><tr v-for="item in filtered" :key="item.id" class="clickrow" :class="{selected:selectedId===item.id}" @click="selectedId=item.id"><td><b>{{ item.id }}</b><span v-if="item.protected" class="sub">protected</span></td><td class="mono">{{ item.extension_version||'—' }}</td><td><span class="pill" :class="item.enabled?'ok':'warn'">{{ item.enabled?'enabled':'disabled' }}</span></td><td class="mono">{{ Object.keys(item.dependencies||{}).length }}</td><td class="mono">{{ item.dependants?.length||0 }}</td><td>{{ item.authenticated_ui_enabled?'admin':(item.public_ui_enabled?'public':'—') }}</td><td><span class="pill" :class="item.status==='enabled'?'ok':'warn'">{{ item.status }}</span></td></tr></tbody></table></div></div>
-    <aside v-if="selected" class="module-detail card"><div class="cardhead"><div><span class="eyebrow">MODULE DETAIL</span><h3>{{ selected.id }}</h3></div><span class="pill" :class="selected.enabled?'ok':'warn'">{{ selected.enabled?'ENABLED':'DISABLED' }}</span></div><dl class="kvlist module-kv"><dt>Extension</dt><dd class="mono">v{{ selected.extension_version }}</dd><dt>ReportSet</dt><dd class="mono">v{{ selected.reportset_version }}</dd><dt>Managed</dt><dd>{{ selected.managed?'yes':'no' }}</dd><dt>Permissions</dt><dd>{{ selected.permission_count||0 }}</dd></dl><div class="section-divider">Hard dependencies</div><div v-if="!Object.keys(selected.dependencies||{}).length" class="muted smalltext">None</div><div v-for="(constraint,id) in selected.dependencies" :key="id" class="module-meta"><b>{{ id }}</b><span class="mono">{{ constraint }}</span></div><div class="section-divider">Required by</div><div v-if="!selected.dependants?.length" class="muted smalltext">No installed dependants</div><div v-for="d in selected.dependants" :key="d.id" class="module-meta"><b>{{ d.id }}</b><span class="mono">{{ d.constraint }}</span></div><div v-if="selected.runtime_requirements?.length" class="section-divider">Runtime requirements</div><div v-for="r in selected.runtime_requirements" :key="r.component" class="module-meta"><b>{{ r.component }}</b><span class="mono">{{ r.current||'unknown' }} / {{ r.constraint }} {{ r.satisfied?'✓':'✕' }}</span></div><div v-if="selected.managed" class="module-actions"><button v-if="selected.enabled" class="btn warnbtn" :disabled="!canManage||jobRunning" @click="ask(selected,'disable')">Disable</button><button v-else class="btn primary" :disabled="!canManage||jobRunning" @click="ask(selected,'enable')">Enable</button><button class="btn danger" :disabled="!canManage||jobRunning" @click="ask(selected,'remove')">Remove</button></div></aside>
+  <div v-else class="module-layout"><div><div class="toolbar"><label class="compact-input"><input v-model="query" placeholder="Search modules…"></label><span class="muted mono">{{ filtered.length }} shown</span><span class="spacer"></span><button class="btn sm" @click="refresh(selectedId)">Refresh</button></div><div class="tablewrap"><table><thead><tr><th>Module</th><th>Version</th><th>Runtime</th><th>Visibility</th><th>Dependencies</th><th>Dependants</th><th>UI</th><th>Status</th></tr></thead><tbody><tr v-for="item in filtered" :key="item.id" class="clickrow" :class="{selected:selectedId===item.id}" @click="selectedId=item.id"><td><b>{{ item.id }}</b><span v-if="item.protected" class="sub">protected</span></td><td class="mono">{{ item.extension_version||'—' }}</td><td><span class="pill" :class="item.enabled?'ok':'warn'">{{ item.enabled?'enabled':'disabled' }}</span></td><td><span class="pill" :class="item.visible!==false?'ok':''">{{ item.visible!==false?'visible':'hidden' }}</span></td><td class="mono">{{ Object.keys(item.dependencies||{}).length }}</td><td class="mono">{{ item.dependants?.length||0 }}</td><td>{{ item.authenticated_ui_enabled?'admin':(item.public_ui_enabled?'public':'—') }}</td><td><span class="pill" :class="item.status==='enabled'?'ok':'warn'">{{ item.status }}</span></td></tr></tbody></table></div></div>
+    <aside v-if="selected" class="module-detail card"><div class="cardhead"><div><span class="eyebrow">MODULE DETAIL</span><h3>{{ selected.id }}</h3></div><span class="pill" :class="selected.enabled?'ok':'warn'">{{ selected.enabled?'ENABLED':'DISABLED' }}</span></div><dl class="kvlist module-kv"><dt>Extension</dt><dd class="mono">v{{ selected.extension_version }}</dd><dt>ReportSet</dt><dd class="mono">v{{ selected.reportset_version }}</dd><dt>Managed</dt><dd>{{ selected.managed?'yes':'no' }}</dd><dt>Navigation</dt><dd>{{ selected.visible!==false?'visible':'hidden' }}</dd><dt>Permissions</dt><dd>{{ selected.permission_count||0 }}</dd></dl><div class="section-divider">Hard dependencies</div><div v-if="!Object.keys(selected.dependencies||{}).length" class="muted smalltext">None</div><div v-for="(constraint,id) in selected.dependencies" :key="id" class="module-meta"><b>{{ id }}</b><span class="mono">{{ constraint }}</span></div><div class="section-divider">Required by</div><div v-if="!selected.dependants?.length" class="muted smalltext">No installed dependants</div><div v-for="d in selected.dependants" :key="d.id" class="module-meta"><b>{{ d.id }}</b><span class="mono">{{ d.constraint }}</span></div><div v-if="selected.runtime_requirements?.length" class="section-divider">Runtime requirements</div><div v-for="r in selected.runtime_requirements" :key="r.component" class="module-meta"><b>{{ r.component }}</b><span class="mono">{{ r.current||'unknown' }} / {{ r.constraint }} {{ r.satisfied?'✓':'✕' }}</span></div><div v-if="selected.managed" class="module-actions"><button v-if="selected.visible!==false" class="btn" :disabled="!canManage||jobRunning" title="Keep the module active but remove its top-level navigation entry" @click="setVisibility(selected,false)">Hide</button><button v-else class="btn" :disabled="!canManage||jobRunning" title="Restore the module's top-level navigation entry" @click="setVisibility(selected,true)">Show</button><button v-if="selected.enabled" class="btn warnbtn" :disabled="!canManage||jobRunning" @click="ask(selected,'disable')">Disable</button><button v-else class="btn primary" :disabled="!canManage||jobRunning" @click="ask(selected,'enable')">Enable</button><button class="btn danger" :disabled="!canManage||jobRunning" @click="ask(selected,'remove')">Remove</button></div></aside>
   </div>
 
   <div v-if="activeJob" class="job-panel card mt"><div class="cardhead"><div><span class="eyebrow">MODULE JOB</span><h3>{{ activeJob.action }} / {{ activeJob.plugin_id }}</h3></div><span class="pill" :class="activeJob.status==='succeeded'?'ok':'warn'">{{ activeJob.status }}</span></div><div v-if="activeJob.error" class="auth-error">{{ activeJob.error }}</div><pre v-if="activeJob.log_tail?.length" class="job-log">{{ activeJob.log_tail.join('\n') }}</pre><div v-if="activeJob.status==='succeeded'" class="row"><button class="btn primary" @click="reloadTecTac">Reload Tec-Tac</button></div></div>
