@@ -2,6 +2,8 @@
 
 Version **0.8.0** adds Operations → Schedules for Framework 1.8.0.
 
+Historical release notes are archived under `docs/releases/`; only the current release note remains at repository root.
+
 Version **0.7.1** deploys runtime version metadata and hardens Module Manager job-status polling.
 Version **0.6.2** fixes navigation visibility precedence so an operator Show/Hide override wins over a module package default.
 **Version:** 0.5.0
@@ -258,7 +260,7 @@ Tec-Tac backend 1.2.1 is required for the 0.2.1 public-module contract and retai
 
 ## Access management in 0.1.3
 
-The Access workspace now manages Tactical users and roles using Tactical's native authenticated APIs. Native role permissions stay authoritative in Tactical. Tec-Tac extension permissions are attached to the same Tactical role IDs through the paired backend 1.1.0 access API. See `RELEASE_NOTES_0.1.3.md` for the release scope.
+The Access workspace now manages Tactical users and roles using Tactical's native authenticated APIs. Native role permissions stay authoritative in Tactical. Tec-Tac extension permissions are attached to the same Tactical role IDs through the paired backend 1.1.0 access API. See `docs/releases/RELEASE_NOTES_0.1.3.md` for the release scope.
 
 ## Public extension UI in 0.2.1
 
@@ -298,7 +300,7 @@ Disabled modules remain installed but `scripts/sync-modules.sh` excludes their U
 
 Native Tactical remains available through the existing **Open Tactical** control while Tec-Tac replacement workflows are still being proven.
 
-See `RELEASE_NOTES_0.4.0.md`.
+See `docs/releases/RELEASE_NOTES_0.4.0.md`.
 
 ## Module visibility (planned)
 
