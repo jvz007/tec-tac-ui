@@ -335,6 +335,15 @@ Module navigation visibility resolves as **operator override > package default >
 The resolved module descriptor is authoritative at runtime. Module code may declare a default `visible: false`, but once an operator chooses Show or Hide, the persisted Module Manager override wins and the module loader normalizes the navigation item accordingly.
 
 
+
+### UI 0.7.0
+
+Module Manager now includes Installed, Online catalog, and Repositories views with multi-repository source management, sync health, compatibility/update reporting, and download-to-existing-inspection workflow.
+
 ### UI 0.6.4
 
 The Modules workspace surfaces browser-side module UI load diagnostics (loaded, skipped, failed, and error details) so a broken extension UI cannot masquerade as a visibility/runtime-state issue.
+
+## Module repositories (0.7.0)
+
+The Modules workspace now separates Installed, Online catalog, and Repositories. Repository downloads always enter the existing package inspection/install plan before execution; installed source provenance is shown and source changes are never implicit.

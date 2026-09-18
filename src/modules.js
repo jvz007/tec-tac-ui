@@ -8,3 +8,12 @@ export function setModuleVisible(moduleId,visible){ return apiFetch(`/api/tfd/mo
 export function checkModuleRemoval(moduleId){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/remove-check/`) }
 export function removeModule(moduleId){ return apiFetch(`/api/tfd/modules/${encodeURIComponent(moduleId)}/remove/`,{method:'POST',body:JSON.stringify({})}) }
 export function getModuleJob(jobId){ return apiFetch(`/api/tfd/modules/v2/jobs/${encodeURIComponent(jobId)}/`) }
+
+export function listModuleRepositories(){ return apiFetch('/api/tfd/modules/repositories/') }
+export function addModuleRepository(payload){ return apiFetch('/api/tfd/modules/repositories/',{method:'POST',body:JSON.stringify(payload)}) }
+export function updateModuleRepository(repositoryId,payload){ return apiFetch(`/api/tfd/modules/repositories/${encodeURIComponent(repositoryId)}/`,{method:'PATCH',body:JSON.stringify(payload)}) }
+export function deleteModuleRepository(repositoryId){ return apiFetch(`/api/tfd/modules/repositories/${encodeURIComponent(repositoryId)}/`,{method:'DELETE'}) }
+export function syncModuleRepository(repositoryId){ return apiFetch(`/api/tfd/modules/repositories/${encodeURIComponent(repositoryId)}/sync/`,{method:'POST',body:JSON.stringify({})}) }
+export function syncAllModuleRepositories(){ return apiFetch('/api/tfd/modules/repositories/sync/',{method:'POST',body:JSON.stringify({})}) }
+export function listOnlineModuleCatalog(){ return apiFetch('/api/tfd/modules/catalog/online/') }
+export function stageOnlineModulePackage(repositoryId,moduleId,version=null){ return apiFetch('/api/tfd/modules/catalog/online/stage/',{method:'POST',body:JSON.stringify({repository_id:repositoryId,module_id:moduleId,version})}) }

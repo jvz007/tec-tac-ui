@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.6.4" ]] || fail "VERSION is not 0.6.4"
+[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.7.0" ]] || fail "VERSION is not 0.7.0"
 for f in \
   src/module-loader.js \
   src/views/PublicPendingView.vue \
@@ -71,7 +71,7 @@ node --check "${ROOT}/src/router.js"
 python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
-assert package['version']=='0.6.4'
+assert package['version']=='0.7.0'
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
 assert manifest['id']=='reference'
 assert manifest['entry']=='ui/index.js'
@@ -105,3 +105,11 @@ grep -q '>Show<' "${ROOT}/src/views/ModulesView.vue" || fail "module show contro
 grep -q 'moduleLoadDiagnostic' "${ROOT}/src/views/ModulesView.vue" || fail "module UI load diagnostics missing"
 grep -q 'Authenticated UI failed to load' "${ROOT}/src/views/ModulesView.vue" || fail "module UI failure detail missing"
 grep -q 'module-load-summary' "${ROOT}/src/views/ModulesView.vue" || fail "module UI load failure summary missing"
+
+# 0.7.0 online repository/catalog UI
+grep -q 'listModuleRepositories' "${ROOT}/src/modules.js" || fail "module repository API helpers missing"
+grep -q 'listOnlineModuleCatalog' "${ROOT}/src/modules.js" || fail "online module catalog API helper missing"
+grep -q 'stageOnlineModulePackage' "${ROOT}/src/modules.js" || fail "online module staging API helper missing"
+grep -q 'Online catalog' "${ROOT}/src/views/ModulesView.vue" || fail "online catalog tab missing"
+grep -q 'Repositories' "${ROOT}/src/views/ModulesView.vue" || fail "repository management tab missing"
+grep -q 'Sync repositories' "${ROOT}/src/views/ModulesView.vue" || fail "repository sync UI missing"

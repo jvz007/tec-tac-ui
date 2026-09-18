@@ -1,15 +1,23 @@
 <script setup>
 import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
+  addModuleRepository,
   checkModuleRemoval,
+  deleteModuleRepository,
   discardModuleArtifact,
   getModuleJob,
   inspectModulePackages,
   installModuleArtifact,
+  listModuleRepositories,
+  listOnlineModuleCatalog,
   listModules,
   removeModule,
+  stageOnlineModulePackage,
+  syncAllModuleRepositories,
+  syncModuleRepository,
   setModuleEnabled,
   setModuleVisible,
+  updateModuleRepository,
 } from '../modules'
 
 const state = inject('tecTacState')
@@ -17,6 +25,15 @@ const modules = ref([])
 const loading = ref(true)
 const error = ref('')
 const query = ref('')
+const activeTab = ref('installed')
+const repositories = ref([])
+const onlineCatalog = ref([])
+const onlineQuery = ref('')
+const repositoryBusy = ref(false)
+const catalogBusy = ref(false)
+const selectedRepositoryId = ref(null)
+const repositoryDraft = ref({ name: '', url: '', priority: 100, trust: 'custom', enabled: true })
+const editingRepository = ref(false)
 const selectedId = ref(null)
 const managerAllowed = ref(false)
 const fileInput = ref(null)
@@ -36,6 +53,10 @@ let pollTimer = null
 
 const canManage = computed(() => managerAllowed.value && state.context.capabilities?.manage_modules !== false)
 const filtered = computed(() => modules.value.filter((x) => !query.value.trim() || [x.id, x.status, x.extension_version].some((v) => String(v || '').toLowerCase().includes(query.value.toLowerCase()))))
+const filteredOnline = computed(() => onlineCatalog.value.filter((x) => !onlineQuery.value.trim() || [x.id, x.name, x.installed_version, x.latest_version, x.selected_repository_name].some((v) => String(v || '').toLowerCase().includes(onlineQuery.value.toLowerCase()))))
+const updatesAvailable = computed(() => onlineCatalog.value.filter((x) => x.update_available).length)
+const repositoryErrors = computed(() => repositories.value.filter((x) => x.sync?.status === 'error').length)
+const selectedRepository = computed(() => repositories.value.find((x) => x.id === selectedRepositoryId.value) || null)
 const selected = computed(() => modules.value.find((x) => x.id === selectedId.value) || null)
 const enabledCount = computed(() => modules.value.filter((x) => x.managed && x.enabled).length)
 const disabledCount = computed(() => modules.value.filter((x) => x.managed && !x.enabled).length)
@@ -83,6 +104,135 @@ const orderedRows = computed(() => {
   const byId = new Map(stagedRows.value.map((row) => [row.id, row]))
   return installOrder.value.map((id) => byId.get(id)).filter(Boolean)
 })
+
+async function loadRepositories() {
+  try {
+    const payload = await listModuleRepositories()
+    repositories.value = payload.repositories || []
+    if (selectedRepositoryId.value && !repositories.value.some((x) => x.id === selectedRepositoryId.value)) selectedRepositoryId.value = null
+  } catch (e) {
+    error.value = e.message || 'Unable to load module repositories.'
+  }
+}
+
+async function loadOnlineCatalog() {
+  catalogBusy.value = true
+  try {
+    const payload = await listOnlineModuleCatalog()
+    onlineCatalog.value = payload.modules || []
+    if (payload.repositories) repositories.value = payload.repositories
+  } catch (e) {
+    error.value = e.message || 'Unable to load online module catalog.'
+  } finally {
+    catalogBusy.value = false
+  }
+}
+
+async function syncAllRepositories() {
+  if (!canManage.value || repositoryBusy.value) return
+  repositoryBusy.value = true
+  error.value = ''
+  try {
+    await syncAllModuleRepositories()
+    await Promise.all([loadRepositories(), loadOnlineCatalog()])
+  } catch (e) {
+    error.value = e.message || 'Unable to sync module repositories.'
+  } finally {
+    repositoryBusy.value = false
+  }
+}
+
+async function syncRepository(item) {
+  if (!item || !canManage.value || repositoryBusy.value) return
+  repositoryBusy.value = true
+  error.value = ''
+  try {
+    await syncModuleRepository(item.id)
+    await Promise.all([loadRepositories(), loadOnlineCatalog()])
+  } catch (e) {
+    error.value = e.message || `Unable to sync ${item.name}.`
+  } finally {
+    repositoryBusy.value = false
+  }
+}
+
+function newRepository() {
+  selectedRepositoryId.value = null
+  repositoryDraft.value = { name: '', url: '', priority: 100, trust: 'custom', enabled: true }
+  editingRepository.value = true
+}
+
+function editRepository(item) {
+  selectedRepositoryId.value = item.id
+  repositoryDraft.value = { name: item.name, url: item.url, priority: item.priority, trust: item.trust, enabled: item.enabled }
+  editingRepository.value = true
+}
+
+function cancelRepositoryEdit() {
+  editingRepository.value = false
+  selectedRepositoryId.value = null
+}
+
+async function saveRepository() {
+  if (!canManage.value || repositoryBusy.value) return
+  repositoryBusy.value = true
+  error.value = ''
+  try {
+    if (selectedRepositoryId.value) await updateModuleRepository(selectedRepositoryId.value, repositoryDraft.value)
+    else await addModuleRepository(repositoryDraft.value)
+    editingRepository.value = false
+    selectedRepositoryId.value = null
+    await loadRepositories()
+  } catch (e) {
+    error.value = e.message || 'Unable to save module repository.'
+  } finally {
+    repositoryBusy.value = false
+  }
+}
+
+async function toggleRepository(item) {
+  if (!canManage.value || repositoryBusy.value) return
+  repositoryBusy.value = true
+  error.value = ''
+  try {
+    await updateModuleRepository(item.id, { ...item, enabled: !item.enabled })
+    await Promise.all([loadRepositories(), loadOnlineCatalog()])
+  } catch (e) {
+    error.value = e.message || 'Unable to change repository state.'
+  } finally {
+    repositoryBusy.value = false
+  }
+}
+
+async function removeRepository(item) {
+  if (!item || !canManage.value || repositoryBusy.value) return
+  if (!window.confirm(`Remove repository ${item.name}? Installed modules remain installed and keep their recorded source provenance.`)) return
+  repositoryBusy.value = true
+  error.value = ''
+  try {
+    await deleteModuleRepository(item.id)
+    await Promise.all([loadRepositories(), loadOnlineCatalog()])
+  } catch (e) {
+    error.value = e.message || 'Unable to remove repository.'
+  } finally {
+    repositoryBusy.value = false
+  }
+}
+
+async function stageOnline(item) {
+  if (!item?.selected_repository_id || !item?.latest_version || !canManage.value || inspecting.value || jobRunning.value) return
+  inspecting.value = true
+  error.value = ''
+  try {
+    staged.value = await stageOnlineModulePackage(item.selected_repository_id, item.id, item.latest_version)
+    installOrder.value = [...(plan.value?.order || stagedRows.value.map((row) => row.id))]
+    activeTab.value = 'installed'
+  } catch (e) {
+    error.value = e.message || 'Unable to download and inspect online module package.'
+  } finally {
+    inspecting.value = false
+  }
+}
 
 async function refresh(preferred = null) {
   error.value = ''
@@ -263,14 +413,14 @@ async function poll() {
   try {
     activeJob.value = await getModuleJob(activeJob.value.id)
     if (['succeeded', 'failed', 'dispatch_failed'].includes(activeJob.value.status)) {
-      if (activeJob.value.status === 'succeeded') await refresh(activeJob.value.plugin_id)
+      if (activeJob.value.status === 'succeeded') { await refresh(activeJob.value.plugin_id); await loadOnlineCatalog() }
       return
     }
   } catch {}
   pollTimer = setTimeout(poll, 1800)
 }
 function reloadTecTac() { window.location.reload() }
-onMounted(refresh)
+onMounted(async () => { await refresh(); await Promise.all([loadRepositories(), loadOnlineCatalog()]) })
 onBeforeUnmount(() => clearTimeout(pollTimer))
 </script>
 
@@ -287,6 +437,13 @@ onBeforeUnmount(() => clearTimeout(pollTimer))
   </div>
   <div v-if="!canManage && !loading" class="state-inline warning"><b>Read-only module catalog.</b> Tactical <span class="mono">can_do_server_maint</span> is required.</div>
 
+  <div class="subtabs module-tabs mb" role="tablist" aria-label="Module management views">
+    <button :class="{active:activeTab==='installed'}" role="tab" @click="activeTab='installed'"><b>Installed</b><span>{{ modules.filter(x=>x.managed).length }} managed · {{ failedModuleLoads.length }} UI failures</span></button>
+    <button :class="{active:activeTab==='online'}" role="tab" @click="activeTab='online'"><b>Online catalog</b><span>{{ onlineCatalog.length }} modules · {{ updatesAvailable }} updates</span></button>
+    <button :class="{active:activeTab==='repositories'}" role="tab" @click="activeTab='repositories'"><b>Repositories</b><span>{{ repositories.length }} configured · {{ repositoryErrors }} errors</span></button>
+  </div>
+
+  <template v-if="activeTab==='installed'">
   <section class="card package-workspace mb" aria-labelledby="package-workspace-title">
     <div class="cardhead">
       <div><span class="eyebrow">PACKAGE INTAKE</span><h3 id="package-workspace-title">Install packages / bundle</h3></div>
@@ -326,7 +483,7 @@ onBeforeUnmount(() => clearTimeout(pollTimer))
     </div>
 
     <div v-if="staged" class="install-plan-workspace">
-      <div class="state-inline" :class="plan?.valid ? '' : 'warning'"><b>{{ plan?.valid ? 'Dependency plan resolved.' : 'Installation blocked.' }}</b> {{ plan?.valid ? 'Required dependency sequence is enforced. Independent packages may be reordered.' : 'Resolve the dependency/version problems before installation.' }}</div>
+      <div class="state-inline" :class="plan?.valid ? '' : 'warning'"><b>{{ plan?.valid ? 'Dependency plan resolved.' : 'Installation blocked.' }}</b> {{ plan?.valid ? 'Required dependency sequence is enforced. Independent packages may be reordered.' : 'Resolve the dependency/version problems before installation.' }}</div><div v-if="staged.source" class="state-inline mt"><b>Online source:</b> {{ staged.source.repository_name }} <span class="mono">· {{ staged.source.repository_trust }} · {{ staged.source.package_sha256.slice(0,12) }}…</span></div>
       <div v-if="queueWarning" class="state-inline warning mt"><b>Order not changed.</b> {{ queueWarning }}</div>
 
       <div class="queue-head mt"><span class="eyebrow">INSTALL SEQUENCE</span><span class="mono muted">{{ orderedRows.length }} package{{ orderedRows.length===1?'':'s' }}</span></div>
@@ -360,8 +517,53 @@ onBeforeUnmount(() => clearTimeout(pollTimer))
 
   <div v-if="loading" class="callout mono">Loading Module Management v2 catalog…</div>
   <div v-else class="module-layout"><div><div class="toolbar"><label class="compact-input"><input v-model="query" placeholder="Search modules…"></label><span class="muted mono">{{ filtered.length }} shown</span><span class="spacer"></span><button class="btn sm" @click="refresh(selectedId)">Refresh</button></div><div class="tablewrap"><table><thead><tr><th>Module</th><th>Version</th><th>Runtime</th><th>Visibility</th><th>Dependencies</th><th>Dependants</th><th>UI Load</th><th>Status</th></tr></thead><tbody><tr v-for="item in filtered" :key="item.id" class="clickrow" :class="{selected:selectedId===item.id}" @click="selectedId=item.id"><td><b>{{ item.id }}</b><span v-if="item.protected" class="sub">protected</span></td><td class="mono">{{ item.extension_version||'—' }}</td><td><span class="pill" :class="item.enabled?'ok':'warn'">{{ item.enabled?'enabled':'disabled' }}</span></td><td><span class="pill" :class="item.visible!==false?'ok':''">{{ item.visible!==false?'visible':'hidden' }}</span></td><td class="mono">{{ Object.keys(item.dependencies||{}).length }}</td><td class="mono">{{ item.dependants?.length||0 }}</td><td><span class="pill" :class="{ok:moduleLoadDiagnostic(item).state==='loaded',warn:['skipped','unknown'].includes(moduleLoadDiagnostic(item).state),danger:moduleLoadDiagnostic(item).state==='failed'}">{{ moduleLoadDiagnostic(item).label }}</span></td><td><span class="pill" :class="item.status==='enabled'?'ok':'warn'">{{ item.status }}</span></td></tr></tbody></table></div></div>
-    <aside v-if="selected" class="module-detail card"><div class="cardhead"><div><span class="eyebrow">MODULE DETAIL</span><h3>{{ selected.id }}</h3></div><span class="pill" :class="selected.enabled?'ok':'warn'">{{ selected.enabled?'ENABLED':'DISABLED' }}</span></div><dl class="kvlist module-kv"><dt>Extension</dt><dd class="mono">v{{ selected.extension_version }}</dd><dt>ReportSet</dt><dd class="mono">v{{ selected.reportset_version }}</dd><dt>Managed</dt><dd>{{ selected.managed?'yes':'no' }}</dd><dt>Navigation</dt><dd>{{ selected.visible!==false?'visible':'hidden' }}</dd><dt>UI load</dt><dd><span class="pill" :class="{ok:selectedLoad.state==='loaded',warn:['skipped','unknown'].includes(selectedLoad.state),danger:selectedLoad.state==='failed'}">{{ selectedLoad.label }}</span></dd><dt>Permissions</dt><dd>{{ selected.permission_count||0 }}</dd></dl><div v-if="selectedLoad.state==='failed'" class="state-inline denied module-load-error"><b>Authenticated UI failed to load.</b><code>{{ selectedLoad.detail }}</code><span>Runtime and visibility state are unchanged; fix the module UI package and reload Tec-Tac.</span></div><div v-else-if="selectedLoad.state==='skipped' || selectedLoad.state==='unknown'" class="state-inline warning module-load-error"><b>Authenticated UI {{ selectedLoad.label }}.</b><code>{{ selectedLoad.detail }}</code></div><div class="section-divider">Hard dependencies</div><div v-if="!Object.keys(selected.dependencies||{}).length" class="muted smalltext">None</div><div v-for="(constraint,id) in selected.dependencies" :key="id" class="module-meta"><b>{{ id }}</b><span class="mono">{{ constraint }}</span></div><div class="section-divider">Required by</div><div v-if="!selected.dependants?.length" class="muted smalltext">No installed dependants</div><div v-for="d in selected.dependants" :key="d.id" class="module-meta"><b>{{ d.id }}</b><span class="mono">{{ d.constraint }}</span></div><div v-if="selected.runtime_requirements?.length" class="section-divider">Runtime requirements</div><div v-for="r in selected.runtime_requirements" :key="r.component" class="module-meta"><b>{{ r.component }}</b><span class="mono">{{ r.current||'unknown' }} / {{ r.constraint }} {{ r.satisfied?'✓':'✕' }}</span></div><div v-if="selected.managed" class="module-actions"><button v-if="selected.visible!==false" class="btn" :disabled="!canManage||jobRunning" title="Keep the module active but remove its top-level navigation entry" @click="setVisibility(selected,false)">Hide</button><button v-else class="btn" :disabled="!canManage||jobRunning" title="Restore the module's top-level navigation entry" @click="setVisibility(selected,true)">Show</button><button v-if="selected.enabled" class="btn warnbtn" :disabled="!canManage||jobRunning" @click="ask(selected,'disable')">Disable</button><button v-else class="btn primary" :disabled="!canManage||jobRunning" @click="ask(selected,'enable')">Enable</button><button class="btn danger" :disabled="!canManage||jobRunning" @click="ask(selected,'remove')">Remove</button></div></aside>
+    <aside v-if="selected" class="module-detail card"><div class="cardhead"><div><span class="eyebrow">MODULE DETAIL</span><h3>{{ selected.id }}</h3></div><span class="pill" :class="selected.enabled?'ok':'warn'">{{ selected.enabled?'ENABLED':'DISABLED' }}</span></div><dl class="kvlist module-kv"><dt>Extension</dt><dd class="mono">v{{ selected.extension_version }}</dd><dt>ReportSet</dt><dd class="mono">v{{ selected.reportset_version }}</dd><dt>Managed</dt><dd>{{ selected.managed?'yes':'no' }}</dd><dt>Navigation</dt><dd>{{ selected.visible!==false?'visible':'hidden' }}</dd><dt>UI load</dt><dd><span class="pill" :class="{ok:selectedLoad.state==='loaded',warn:['skipped','unknown'].includes(selectedLoad.state),danger:selectedLoad.state==='failed'}">{{ selectedLoad.label }}</span></dd><dt>Source</dt><dd class="module-source">{{ selected.source?.repository_name || selected.source?.repository_id || 'local / offline' }}</dd><dt>SHA256</dt><dd class="mono module-source">{{ selected.source?.package_sha256 ? selected.source.package_sha256.slice(0,16)+'…' : '—' }}</dd><dt>Permissions</dt><dd>{{ selected.permission_count||0 }}</dd></dl><div v-if="selectedLoad.state==='failed'" class="state-inline denied module-load-error"><b>Authenticated UI failed to load.</b><code>{{ selectedLoad.detail }}</code><span>Runtime and visibility state are unchanged; fix the module UI package and reload Tec-Tac.</span></div><div v-else-if="selectedLoad.state==='skipped' || selectedLoad.state==='unknown'" class="state-inline warning module-load-error"><b>Authenticated UI {{ selectedLoad.label }}.</b><code>{{ selectedLoad.detail }}</code></div><div class="section-divider">Hard dependencies</div><div v-if="!Object.keys(selected.dependencies||{}).length" class="muted smalltext">None</div><div v-for="(constraint,id) in selected.dependencies" :key="id" class="module-meta"><b>{{ id }}</b><span class="mono">{{ constraint }}</span></div><div class="section-divider">Required by</div><div v-if="!selected.dependants?.length" class="muted smalltext">No installed dependants</div><div v-for="d in selected.dependants" :key="d.id" class="module-meta"><b>{{ d.id }}</b><span class="mono">{{ d.constraint }}</span></div><div v-if="selected.runtime_requirements?.length" class="section-divider">Runtime requirements</div><div v-for="r in selected.runtime_requirements" :key="r.component" class="module-meta"><b>{{ r.component }}</b><span class="mono">{{ r.current||'unknown' }} / {{ r.constraint }} {{ r.satisfied?'✓':'✕' }}</span></div><div v-if="selected.managed" class="module-actions"><button v-if="selected.visible!==false" class="btn" :disabled="!canManage||jobRunning" title="Keep the module active but remove its top-level navigation entry" @click="setVisibility(selected,false)">Hide</button><button v-else class="btn" :disabled="!canManage||jobRunning" title="Restore the module's top-level navigation entry" @click="setVisibility(selected,true)">Show</button><button v-if="selected.enabled" class="btn warnbtn" :disabled="!canManage||jobRunning" @click="ask(selected,'disable')">Disable</button><button v-else class="btn primary" :disabled="!canManage||jobRunning" @click="ask(selected,'enable')">Enable</button><button class="btn danger" :disabled="!canManage||jobRunning" @click="ask(selected,'remove')">Remove</button></div></aside>
   </div>
+
+  </template>
+
+  <template v-else-if="activeTab==='online'">
+    <section class="card online-catalog-head mb">
+      <div class="cardhead"><div><span class="eyebrow">ONLINE MODULE CATALOG</span><h3>Available modules</h3></div><button class="btn" :disabled="!canManage || repositoryBusy" @click="syncAllRepositories">{{ repositoryBusy ? 'Syncing…' : 'Sync repositories' }}</button></div>
+      <p class="compact-copy muted">Installed modules stay pinned to their recorded repository source. Tec-Tac will not silently switch an installed module to another repository.</p>
+    </section>
+    <div class="toolbar"><label class="compact-input"><input v-model="onlineQuery" placeholder="Search online catalog…"></label><span class="muted mono">{{ filteredOnline.length }} shown</span><span class="spacer"></span><button class="btn sm" :disabled="catalogBusy" @click="loadOnlineCatalog">{{ catalogBusy ? 'Loading…' : 'Refresh catalog' }}</button></div>
+    <div v-if="!repositories.length" class="state-inline warning"><b>No repositories configured.</b> Add a module repository before using the online catalog.</div>
+    <div v-else class="tablewrap"><table><thead><tr><th>Module</th><th>Installed</th><th>Available</th><th>Source</th><th>Compatibility</th><th>Status</th><th></th></tr></thead><tbody>
+      <tr v-for="item in filteredOnline" :key="item.id">
+        <td><b>{{ item.name || item.id }}</b><span class="sub mono">{{ item.id }}</span></td>
+        <td class="mono">{{ item.installed_version || '—' }}</td>
+        <td class="mono">{{ item.latest_version || '—' }}</td>
+        <td><span>{{ item.selected_repository_name || 'local only' }}</span><span v-if="item.selected_repository_trust" class="sub mono">{{ item.selected_repository_trust }}</span></td>
+        <td><span v-if="item.compatible===true" class="pill ok">compatible</span><span v-else-if="item.compatible===false" class="pill danger">blocked</span><span v-else class="pill">unknown</span></td>
+        <td><span v-if="item.source_conflict" class="pill danger">source unavailable</span><span v-else-if="item.update_available" class="pill warn">update available</span><span v-else-if="item.installed" class="pill ok">up to date</span><span v-else class="pill">available</span></td>
+        <td class="catalog-action"><button class="btn sm" :class="item.update_available?'primary':''" :disabled="!canManage || !item.latest_version || item.compatible===false || item.source_conflict || inspecting" @click="stageOnline(item)">{{ item.installed ? (item.update_available ? 'Download update' : 'Inspect') : 'Download & inspect' }}</button></td>
+      </tr>
+    </tbody></table></div>
+  </template>
+
+  <template v-else>
+    <div class="repository-layout">
+      <section>
+        <div class="toolbar"><span class="muted mono">{{ repositories.length }} repositories</span><span class="spacer"></span><button class="btn" :disabled="!canManage || repositoryBusy" @click="syncAllRepositories">Sync all</button><button class="btn primary" :disabled="!canManage || repositoryBusy" @click="newRepository">Add repository</button></div>
+        <div v-if="!repositories.length" class="state-inline"><b>No module repositories configured.</b> Add an official, internal, or custom repository to populate the online catalog.</div>
+        <div v-else class="tablewrap"><table><thead><tr><th>Repository</th><th>Trust</th><th>Priority</th><th>State</th><th>Sync</th><th>Modules</th><th></th></tr></thead><tbody>
+          <tr v-for="repo in repositories" :key="repo.id" class="clickrow" :class="{selected:selectedRepositoryId===repo.id}" @click="editRepository(repo)">
+            <td><b>{{ repo.name }}</b><span class="sub mono">{{ repo.id }}</span></td><td><span class="pill">{{ repo.trust }}</span></td><td class="mono">{{ repo.priority }}</td><td><span class="pill" :class="repo.enabled?'ok':'warn'">{{ repo.enabled?'enabled':'disabled' }}</span></td><td><span class="pill" :class="{ok:repo.sync?.status==='ok',danger:repo.sync?.status==='error',warn:repo.sync?.status==='never'}">{{ repo.sync?.status || 'never' }}</span><span v-if="repo.sync?.error" class="sub dangertext">{{ repo.sync.error }}</span></td><td class="mono">{{ repo.sync?.module_count || 0 }}</td><td><button class="btn sm" :disabled="!canManage || repositoryBusy || !repo.enabled" @click.stop="syncRepository(repo)">Sync</button></td>
+          </tr>
+        </tbody></table></div>
+      </section>
+      <aside v-if="editingRepository" class="card repository-editor">
+        <div class="cardhead"><div><span class="eyebrow">REPOSITORY</span><h3>{{ selectedRepository ? 'Edit source' : 'Add source' }}</h3></div></div>
+        <label class="field"><span>Name</span><input v-model="repositoryDraft.name" autocomplete="off"></label>
+        <label class="field"><span>Index URL</span><input v-model="repositoryDraft.url" class="mono" autocomplete="off" placeholder="https://…/index.json"></label>
+        <div class="field-grid"><label class="field"><span>Priority</span><input v-model.number="repositoryDraft.priority" type="number" min="0" max="10000"></label><label class="field"><span>Trust</span><select v-model="repositoryDraft.trust"><option value="official">Official</option><option value="internal">Internal</option><option value="custom">Custom</option></select></label></div>
+        <label class="checkline"><input v-model="repositoryDraft.enabled" type="checkbox"> Enabled</label>
+        <div v-if="selectedRepository?.sync?.error" class="state-inline denied mt"><b>Last sync failed.</b> {{ selectedRepository.sync.error }}</div>
+        <div class="editor-actions"><button class="btn primary" :disabled="!canManage || repositoryBusy || !repositoryDraft.name || !repositoryDraft.url" @click="saveRepository">Save</button><button class="btn" @click="cancelRepositoryEdit">Cancel</button><button v-if="selectedRepository" class="btn danger" :disabled="!canManage || repositoryBusy" @click="removeRepository(selectedRepository)">Remove</button></div>
+      </aside>
+    </div>
+  </template>
 
   <div v-if="activeJob" class="job-panel card mt"><div class="cardhead"><div><span class="eyebrow">MODULE JOB</span><h3>{{ activeJob.action }} / {{ activeJob.plugin_id }}</h3></div><span class="pill" :class="activeJob.status==='succeeded'?'ok':'warn'">{{ activeJob.status }}</span></div><div v-if="activeJob.error" class="auth-error">{{ activeJob.error }}</div><pre v-if="activeJob.log_tail?.length" class="job-log">{{ activeJob.log_tail.join('\n') }}</pre><div v-if="activeJob.status==='succeeded'" class="row"><button class="btn primary" @click="reloadTecTac">Reload Tec-Tac</button></div></div>
 
