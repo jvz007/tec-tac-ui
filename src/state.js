@@ -1,6 +1,7 @@
 import { reactive } from 'vue'
 import {
   apiFetch,
+  clearTacticalSession,
   loadStaticModuleManifest,
   tacticalIdentityFromStorage,
   tacticalToken,
@@ -9,8 +10,8 @@ import {
 
 export const state = reactive({
   status: 'loading',
-  authStatus: 'verifying',
-  authDetail: null,
+  authStatus: 'unknown',
+  authProof: null,
   error: null,
   contextSource: 'none',
   context: {
@@ -34,11 +35,13 @@ function normalizeStaticModules(modules) {
   }))
 }
 
-function setUnauthenticated(error = null) {
+function markUnauthenticated(error = null) {
+  clearTacticalSession()
   state.error = error
-  state.status = 'unauthenticated'
   state.authStatus = 'required'
-  state.contextSource = 'browser'
+  state.authProof = null
+  state.status = 'unauthenticated'
+  state.contextSource = 'tactical-auth'
   state.context = {
     user: tacticalIdentityFromStorage(),
     permissions: [],
@@ -49,38 +52,44 @@ function setUnauthenticated(error = null) {
 export async function loadContext() {
   state.status = 'loading'
   state.authStatus = 'verifying'
-  state.authDetail = null
+  state.authProof = null
   state.error = null
   state.contextSource = 'none'
-
-  const browserUser = tacticalIdentityFromStorage()
-  state.context.user = browserUser
+  state.context = {
+    user: tacticalIdentityFromStorage(),
+    permissions: [],
+    modules: [],
+  }
 
   if (!tacticalToken()) {
-    setUnauthenticated()
+    markUnauthenticated()
     return state.context
   }
 
+  let verification
   try {
-    const verification = await validateTacticalSession()
-    state.authDetail = verification.reason
-
-    if (!verification.authenticated) {
-      setUnauthenticated()
-      return state.context
-    }
-
-    state.authStatus = 'verified'
+    verification = await validateTacticalSession()
   } catch (error) {
     state.error = error
-    state.status = 'failed'
     state.authStatus = 'error'
+    state.status = 'failed'
+    state.contextSource = 'tactical-auth'
     return state.context
   }
 
-  // Optional richer Tec-Tac backend contract. A 404 means the current
-  // backend does not implement it yet; only then do we enter compatibility
-  // mode. Authentication has already been independently verified above.
+  if (!verification.authenticated) {
+    markUnauthenticated()
+    return state.context
+  }
+
+  state.authStatus = 'verified'
+  state.authProof = verification.status === 403 ? 'authenticated-rbac-denied' : 'authenticated'
+
+  const browserUser = tacticalIdentityFromStorage()
+
+  // Optional richer Tec-Tac backend contract. The shell first proves that the
+  // Tactical token is valid. Only then may a missing context endpoint fall back
+  // to the local module manifest for compatibility with Tec-Tac backend 1.0.1.
   try {
     const context = await apiFetch('/api/tfd/ui/context/')
     state.context = {
@@ -93,20 +102,16 @@ export async function loadContext() {
     return state.context
   } catch (error) {
     if (error.status === 401) {
-      setUnauthenticated(error)
+      markUnauthenticated(error)
       return state.context
     }
 
-    if (error.status === 403) {
-      state.error = error
-      state.status = 'denied'
-      state.contextSource = 'backend'
-      return state.context
-    }
-
+    // 404 means the optional Tec-Tac context API is not installed yet.
+    // Any other response is treated as an actual backend/context failure.
     if (error.status !== 404) {
       state.error = error
       state.status = 'failed'
+      state.contextSource = 'backend'
       return state.context
     }
   }
@@ -122,8 +127,13 @@ export async function loadContext() {
     state.status = 'ready'
   } catch (error) {
     state.error = error
-    state.status = 'failed'
+    state.context = {
+      user: browserUser,
+      permissions: [],
+      modules: [],
+    }
     state.contextSource = 'local-manifest'
+    state.status = 'failed'
   }
 
   return state.context

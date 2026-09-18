@@ -1,20 +1,50 @@
 # Tec-Tac UI
 
-**Version:** 0.1.1
+**Version:** 0.1.2
 
-Tec-Tac UI is the standalone Vue frontend for Tec-Tac. It is intentionally kept in a separate repository from the Tec-Tac backend/framework (`tac-net-rep`). The UI is installed below Tactical's existing frontend at `/tec-tac/` and reuses Tactical's browser authentication state.
+Tec-Tac UI is the standalone Vue frontend for Tec-Tac. It is intentionally kept in a separate repository from the Tec-Tac backend/framework (`tac-net-rep`). The UI is installed below Tactical's existing frontend at `/tec-tac/`.
+
+## 0.1.2 focus: Tactical-native sign-in
+
+0.1.2 adds a Tec-Tac login surface that authenticates directly against Tactical's existing authentication API. Tec-Tac does **not** maintain a second user database and does not validate passwords itself.
+
+Authentication flow:
+
+```text
+Tec-Tac username + password
+        |
+        v
+POST /v2/checkcreds/
+        |
+        +-- TOTP configured --> prompt for authenticator code
+        |                         |
+        |                         v
+        |                    POST /v2/login/
+        |                         |
+        |                         v
+        |                    Tactical token
+        |
+        +-- TOTP not configured --> Tactical TOTP enrollment required
+```
+
+For a normal enrolled account, sign-in remains entirely inside `/tec-tac/`. After Tactical returns a token, Tec-Tac reloads and verifies that token before the operational shell is exposed.
+
+If Tactical reports that the account has no TOTP secret yet, Tec-Tac preserves Tactical's short-lived setup token but **does not** grant Tec-Tac access. The operator is sent to Tactical's own `/totp_setup` route to complete first-time enrollment. This mirrors Tactical's native security flow rather than bypassing it.
+
+The password and TOTP code are held only in the Vue component's runtime memory while the authentication requests are performed. They are not written to local storage. Only Tactical's returned session values (`access_token`, `user_name`, and `name`) are persisted, matching Tactical's current frontend behavior.
 
 ## Design rules
 
 - Independent Vue 3 application; no Tactical tracked-source edits.
 - Deployment path: `/var/www/rmm/dist/tec-tac/`.
 - Browser path: `https://<tactical-frontend>/tec-tac/`.
-- Reads Tactical's existing `access_token`, `user_name`, and `name` browser storage values, but does not trust storage alone as proof of authentication.
-- Verifies the Tactical token against the Tactical API before rendering the operational shell.
-- Sends API credentials the same way as Tactical's current frontend: `Authorization: Token <token>`.
+- Tactical remains the authentication authority.
+- Existing Tactical browser tokens are verified before the operational UI is shown.
+- New local-login sessions use Tactical's `/v2/checkcreds/` and `/v2/login/` endpoints.
+- Sends authenticated API credentials as `Authorization: Token <token>`.
 - Backend APIs remain authoritative for authorization.
 - Dynamic UI modules are trusted code and can be loaded without rebuilding the shell.
-- Hash routing is used in 0.1.0 so no nginx SPA rewrite is required.
+- Hash routing is used so no nginx SPA rewrite is required.
 - Dark, light, and high-contrast themes are supported.
 
 ## Repository layout
@@ -35,6 +65,8 @@ tec-tac-ui/
 │   ├── router.js
 │   ├── state.js
 │   ├── styles.css
+│   ├── components/
+│   │   └── LoginPanel.vue
 │   └── views/
 ├── scripts/
 │   ├── install.sh
@@ -53,7 +85,7 @@ npm install
 npm run dev
 ```
 
-The development browser still needs access to a Tactical API and a valid Tactical browser token. The production build uses `/env-config.js` from the Tactical frontend to discover the API URL.
+The production build uses Tactical's `/env-config.js` to discover the Tactical API URL.
 
 ## Build
 
@@ -66,7 +98,7 @@ Vite builds the UI with the base path `/tec-tac/`.
 
 ## Install on a Tactical server
 
-Clone the UI repository separately from the backend repository, for example:
+Keep the UI repo separate from the backend repo:
 
 ```text
 /opt/tec-tac/       backend/framework repo
@@ -88,30 +120,22 @@ The installer builds the Vue application and deploys it to:
 
 It does not edit Tactical source files or the Tec-Tac backend repo.
 
-## Tactical authentication
+## Session verification
 
-Tactical's current Vue frontend stores the logged-in browser token as `access_token`. Tec-Tac UI reads that same token and sends it to the Tactical/Tec-Tac API using the `Token` authorization scheme. The shell does not implement a second login system.
+On startup Tec-Tac first validates any existing Tactical token. The shell does not trust stale browser identity values by themselves.
 
-Starting with 0.1.1, Tec-Tac does **not** treat the presence of `access_token`, `user_name`, or `name` in browser storage as proof that a Tactical session is valid. Before any operational route is shown it performs a harmless authenticated request to Tactical's existing `/accounts/users/ui/` endpoint. Tactical authenticates the request before returning the endpoint's expected `405 Method Not Allowed` response for GET, which is treated as successful token verification. A `401` is treated as an expired or invalid Tactical session.
+- valid token -> continue startup
+- missing/invalid token -> show Tec-Tac login
+- verification failure other than an authentication failure -> fail closed and show a startup error
 
-The startup states are therefore:
-
-```text
-VERIFYING -> VERIFIED -> load Tec-Tac workspace
-VERIFYING -> AUTH REQUIRED -> open Tactical / retry
-VERIFYING -> AUTH ERROR -> retry / open Tactical
-```
-
-The browser username may be displayed during verification, but role and superuser status are not inferred from the username. Those fields are only trusted when supplied by the Tec-Tac backend context endpoint.
+After verification the optional `GET /api/tfd/ui/context/` contract is attempted. If that endpoint is not installed and returns `404`, the shell uses the locally generated module manifest for compatibility with the unmodified Tec-Tac backend 1.0.1.
 
 ## Backend context compatibility
 
-0.1.1 supports two context modes after Tactical authentication has been verified:
-
 1. **Backend context mode** — if `GET /api/tfd/ui/context/` exists, the shell uses the richer user, role, permission, and module context returned by the backend.
-2. **Compatibility mode** — if that endpoint does not exist, the shell continues to work with the unmodified Tec-Tac 1.0.1 backend. It uses Tactical browser identity plus the locally generated module manifest.
+2. **Compatibility mode** — if that endpoint returns `404`, the shell uses verified Tactical browser identity plus the locally generated module manifest.
 
-This means Tec-Tac UI 0.1.1 does not require modifying the 1.0.1 backend just to load the shell. Authentication is still verified directly against Tactical before compatibility mode is allowed.
+Role, superuser state, and effective Tec-Tac permissions are not guessed by the UI when the richer backend context endpoint is unavailable.
 
 ## Dynamic UI modules
 
@@ -149,13 +173,11 @@ The UI repo's module synchronizer reads these manifests from `/opt/tec-tac/exten
 sudo bash scripts/sync-modules.sh
 ```
 
-This is a **read-only integration with the backend repo**. No backend files are changed.
-
-A module exports a `register()` function. See `examples/reference-module/` for a minimal working example.
+This is a read-only integration with the backend repo. No backend files are changed.
 
 ## Module runtime contract
 
-The shell currently exposes the following trusted-module context:
+The shell exposes the following trusted-module context:
 
 ```text
 Vue
@@ -169,12 +191,6 @@ descriptor
 ```
 
 Backend authorization must still be enforced by every backend API. Hiding a route or button is not a security control.
-
-## Reference module
-
-`examples/reference-module/` is deliberately kept outside the production `public/modules` tree. It documents the module contract without automatically enabling a fake production module.
-
-To test it manually, copy the example into an extension or into the deployed modules directory and add a matching entry to `modules/modules.json`.
 
 ## Test
 
@@ -191,12 +207,3 @@ sudo bash scripts/uninstall.sh
 ```
 
 The current deployment is renamed to a timestamped backup instead of being permanently deleted.
-
-## 0.1.1 changes
-
-- Gate the operational shell until Tactical token verification completes.
-- Add explicit `VERIFYING`, `VERIFIED`, `AUTH REQUIRED`, and authentication-error states.
-- Prevent stale browser identity values from being treated as an authenticated Tec-Tac session.
-- Only fall back to the local module manifest when `/api/tfd/ui/context/` returns `404`; network/server errors now fail closed instead of silently becoming compatibility mode.
-- Keep role and superuser state unresolved unless supplied by backend context.
-- Update Vite to 6.4.3, matching the dependency version successfully tested on the development server.

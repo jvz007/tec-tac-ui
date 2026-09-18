@@ -28,7 +28,7 @@ export default {
               Vue.h('div', { class: 'list' }, [
                 Vue.h('div', { class: 'listrow' }, [Vue.h('span', { class: 'dot ok' }), Vue.h('b', {}, 'No shell rebuild'), Vue.h('span', {}, 'route registered dynamically')]),
                 Vue.h('div', { class: 'listrow' }, [Vue.h('span', { class: 'dot ok' }), Vue.h('b', {}, 'Shared visual grammar'), Vue.h('span', {}, 'uses shell classes and tokens')]),
-                Vue.h('div', { class: 'listrow' }, [Vue.h('span', { class: 'dot ok' }), Vue.h('b', {}, 'Trusted modules only'), Vue.h('span', {}, '0.1.1 rule')]),
+                Vue.h('div', { class: 'listrow' }, [Vue.h('span', { class: 'dot ok' }), Vue.h('b', {}, 'Trusted modules only'), Vue.h('span', {}, '0.1.0 rule')]),
               ]),
             ]),
           ]),

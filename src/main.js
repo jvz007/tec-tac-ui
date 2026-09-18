@@ -1,10 +1,10 @@
 import { reactive } from 'vue'
 import { createApp } from 'vue'
 import App from './App.vue'
+import { apiFetch } from './api'
 import { router } from './router'
 import { state, loadContext } from './state'
 import { loadUiModules } from './module-loader'
-import { apiFetch } from './api'
 import './styles.css'
 
 async function bootstrap() {
@@ -21,16 +21,20 @@ async function bootstrap() {
   app.provide('tecTacNavigation', navigation)
   app.use(router)
 
+  // Mount the shell first so the operator sees an explicit session-verification
+  // state instead of a blank page or a dashboard based on stale browser data.
+  app.mount('#app')
+
   await loadContext()
 
-  if (state.status === 'ready' && state.authStatus === 'verified') {
+  if (state.status === 'ready') {
     state.moduleLoad = await loadUiModules(
       {
         app,
         router,
         state,
         addNavigation,
-        api: (path, options) => apiFetch(path, options),
+        api: apiFetch,
         hasPermission: (code) => (
           state.context.user?.superuser || state.context.permissions.includes(code)
         ),
@@ -38,20 +42,11 @@ async function bootstrap() {
       state.context.modules || [],
     )
   }
-
-  app.mount('#app')
 }
 
 bootstrap().catch((error) => {
   console.error('[TEC-TAC-UI] Bootstrap failed.', error)
-
-  const root = document.querySelector('#app')
-  if (root) {
-    root.innerHTML = `
-      <main style="font-family:system-ui,sans-serif;padding:24px">
-        <h1>Tec-Tac failed to start</h1>
-        <p>Open the browser developer console for details.</p>
-      </main>
-    `
-  }
+  state.error = error
+  state.authStatus = state.authStatus === 'verified' ? 'verified' : 'error'
+  state.status = 'failed'
 })

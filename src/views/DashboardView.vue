@@ -7,12 +7,12 @@ const blocked = computed(() => (state.context.modules || []).filter((m) => m.all
 
 <template>
   <section>
-    <div class="phead"><div><span class="eyebrow">TEC-TAC BETA</span><h1>Operational overview</h1><p>Independent Vue shell under Tactical's frontend. Tactical authentication is verified before the operational workspace is shown; backend APIs remain authoritative for authorization.</p></div></div>
+    <div class="phead"><div><span class="eyebrow">TEC-TAC BETA</span><h1>Operational overview</h1><p>Independent Vue shell under Tactical's frontend. Tactical authentication is verified before operational pages or dynamic modules are exposed.</p></div></div>
     <div class="grid g4 mb">
-      <article class="tile"><div class="lbl">Authentication</div><div class="big">VERIFIED</div><div class="brk"><span>{{ state.context.user?.username || '—' }}</span></div></article>
-      <article class="tile"><div class="lbl">Role</div><div class="big compact">{{ state.context.user?.role || 'UNRESOLVED' }}</div><div class="brk"><span>{{ state.contextSource === 'backend' ? `ID ${state.context.user?.role_id ?? '—'}` : 'requires backend context' }}</span></div></article>
+      <article class="tile"><div class="lbl">Session</div><div class="big">VERIFIED</div><div class="brk"><span>{{ state.context.user?.username || '—' }}</span></div></article>
+      <article class="tile"><div class="lbl">Role</div><div class="big compact">{{ state.context.user?.role || '—' }}</div><div class="brk"><span>ID {{ state.context.user?.role_id ?? '—' }}</span></div></article>
       <article class="tile"><div class="lbl">Allowed modules</div><div class="big">{{ allowed.length }}</div><div class="brk"><span>{{ state.context.modules?.length || 0 }} discovered</span></div></article>
-      <article class="tile"><div class="lbl">Permissions</div><div class="big">{{ state.context.permissions?.length || 0 }}</div><div class="brk"><span>{{ state.contextSource === 'backend' ? (state.context.user?.superuser ? 'superuser' : 'effective grants') : 'not supplied in compatibility mode' }}</span></div></article>
+      <article class="tile"><div class="lbl">Permissions</div><div class="big">{{ state.context.permissions?.length || 0 }}</div><div class="brk"><span>{{ state.context.user?.superuser ? 'superuser' : 'effective grants' }}</span></div></article>
     </div>
     <div class="grid g2">
       <article class="card"><div class="cardhead"><div><span class="eyebrow">MODULE RUNTIME</span><h3>Loaded modules</h3></div><span class="pill ok">{{ state.moduleLoad.loaded.length }} loaded</span></div><div class="list"><div v-for="id in state.moduleLoad.loaded" :key="id" class="listrow"><span class="dot ok"></span><b class="mono">{{ id }}</b><span>registered at runtime</span></div><div v-if="!state.moduleLoad.loaded.length" class="empty">No dynamic module loaded.</div></div></article>
