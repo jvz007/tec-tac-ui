@@ -20,6 +20,7 @@ const coreNav = computed(() => {
   const capabilities = state.context.capabilities || {}
   return [
     { label: 'Overview', icon: '⌂', to: '/', section: 'Workspace', visible: true },
+    { label: 'Schedules', icon: '◷', to: '/schedules', section: 'Operations', visible: capabilities.manage_schedules !== false },
     { label: 'Modules', icon: '▦', to: '/modules', section: 'Administration', visible: true },
     { label: 'Access', icon: '⛨', to: '/access', section: 'Administration', visible: capabilities.list_accounts !== false || capabilities.list_roles !== false },
     { label: 'System Updates', icon: '⇧', to: '/system/updates', section: 'Administration', visible: capabilities.manage_modules === true || state.context.user?.superuser === true },
