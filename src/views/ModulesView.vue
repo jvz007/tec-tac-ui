@@ -45,6 +45,7 @@ const installOrder = ref([])
 const queueWarning = ref('')
 const dragId = ref(null)
 const activeJob = ref(null)
+const jobPollError = ref('')
 const confirmTarget = ref(null)
 const confirmMode = ref('')
 const confirmText = ref('')
@@ -407,16 +408,25 @@ async function setVisibility(item, visible) {
   }
 }
 
-function beginPoll(job) { activeJob.value = job; clearTimeout(pollTimer); pollTimer = setTimeout(poll, 700) }
+function beginPoll(job) {
+  activeJob.value = job
+  jobPollError.value = ''
+  clearTimeout(pollTimer)
+  pollTimer = setTimeout(poll, 100)
+}
 async function poll() {
   if (!activeJob.value?.id) return
   try {
     activeJob.value = await getModuleJob(activeJob.value.id)
+    jobPollError.value = ''
     if (['succeeded', 'failed', 'dispatch_failed'].includes(activeJob.value.status)) {
-      if (activeJob.value.status === 'succeeded') { await refresh(activeJob.value.plugin_id); await loadOnlineCatalog() }
+      await refresh(activeJob.value.plugin_id)
+      await loadOnlineCatalog()
       return
     }
-  } catch {}
+  } catch (e) {
+    jobPollError.value = e?.message || 'Unable to refresh module job status.'
+  }
   pollTimer = setTimeout(poll, 1800)
 }
 function reloadTecTac() { window.location.reload() }
@@ -565,7 +575,7 @@ onBeforeUnmount(() => clearTimeout(pollTimer))
     </div>
   </template>
 
-  <div v-if="activeJob" class="job-panel card mt"><div class="cardhead"><div><span class="eyebrow">MODULE JOB</span><h3>{{ activeJob.action }} / {{ activeJob.plugin_id }}</h3></div><span class="pill" :class="activeJob.status==='succeeded'?'ok':'warn'">{{ activeJob.status }}</span></div><div v-if="activeJob.error" class="auth-error">{{ activeJob.error }}</div><pre v-if="activeJob.log_tail?.length" class="job-log">{{ activeJob.log_tail.join('\n') }}</pre><div v-if="activeJob.status==='succeeded'" class="row"><button class="btn primary" @click="reloadTecTac">Reload Tec-Tac</button></div></div>
+  <div v-if="activeJob" class="job-panel card mt"><div class="cardhead"><div><span class="eyebrow">MODULE JOB</span><h3>{{ activeJob.action }} / {{ activeJob.plugin_id }}</h3></div><span class="pill" :class="{ok:activeJob.status==='succeeded',danger:['failed','dispatch_failed'].includes(activeJob.status),warn:!['succeeded','failed','dispatch_failed'].includes(activeJob.status)}">{{ activeJob.status }}</span></div><div v-if="jobPollError" class="state-inline warning"><b>Job status refresh failed.</b> {{ jobPollError }} Retrying automatically.</div><div v-if="activeJob.error" class="auth-error">{{ activeJob.error }}</div><pre v-if="activeJob.log_tail?.length" class="job-log">{{ activeJob.log_tail.join('\n') }}</pre><div v-if="activeJob.status==='succeeded'" class="row"><button class="btn primary" @click="reloadTecTac">Reload Tec-Tac</button></div></div>
 
   <div v-if="confirmTarget" class="modal-backdrop" @click.self="closeConfirm"><section class="modal-panel"><div class="cardhead"><div><span class="eyebrow">{{ confirmMode.toUpperCase() }} MODULE</span><h3>{{ confirmTarget.id }}</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><p v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="compact-copy">Enabled dependants may block this action. Select cascade to disable dependent modules first.</p><label v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="checkline warning-check"><input v-model="cascade" type="checkbox"> Disable enabled dependants as part of this job</label><label class="field"><span>Type {{ confirmTarget.id }} to confirm</span><input v-model="confirmText" autocomplete="off"></label><div class="modal-actions"><button class="btn" :class="confirmMode==='enable'?'primary':'danger'" :disabled="confirmText!==confirmTarget.id" @click="confirmAction">{{ confirmMode }} module</button><button class="btn" @click="closeConfirm">Cancel</button></div></section></div>
 </section>

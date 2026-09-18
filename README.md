@@ -1,5 +1,6 @@
 # Tec-Tac UI
 
+Version **0.7.1** deploys runtime version metadata and hardens Module Manager job-status polling.
 Version **0.6.2** fixes navigation visibility precedence so an operator Show/Hide override wins over a module package default.
 **Version:** 0.5.0
 

@@ -31,6 +31,11 @@ fi
 rm -rf "${TARGET_ROOT}"
 mkdir -p "${TARGET_ROOT}"
 cp -a "${REPO_ROOT}/dist/." "${TARGET_ROOT}/"
+# Runtime compatibility checks execute against the deployed UI tree. Keep the
+# release metadata with the built assets so Module Manager can resolve the live
+# UI version without depending on the source checkout.
+cp -a "${REPO_ROOT}/VERSION" "${TARGET_ROOT}/VERSION"
+cp -a "${REPO_ROOT}/package.json" "${TARGET_ROOT}/package.json"
 chown -R www-data:www-data "${DEPLOY_BASE}" 2>/dev/null || true
 
 # Sync optional extension UI modules into the persistent Tec-Tac deployment.
