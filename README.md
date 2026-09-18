@@ -1,6 +1,6 @@
 # Tec-Tac UI
 
-**Version:** 0.1.2
+**Version:** 0.1.3
 
 Tec-Tac UI is the standalone Vue frontend for Tec-Tac. It is intentionally kept in a separate repository from the Tec-Tac backend/framework (`tac-net-rep`). The UI is installed below Tactical's existing frontend at `/tec-tac/`.
 
@@ -207,3 +207,7 @@ sudo bash scripts/uninstall.sh
 ```
 
 The current deployment is renamed to a timestamped backup instead of being permanently deleted.
+
+## Access management in 0.1.3
+
+The Access workspace now manages Tactical users and roles using Tactical's native authenticated APIs. Native role permissions stay authoritative in Tactical. Tec-Tac extension permissions are attached to the same Tactical role IDs through the paired backend 1.1.0 access API. See `RELEASE_NOTES_0.1.3.md` for the release scope.

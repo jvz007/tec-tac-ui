@@ -17,22 +17,32 @@ export const state = reactive({
   context: {
     user: tacticalIdentityFromStorage(),
     permissions: [],
+    extensions: [],
+    capabilities: null,
     modules: [],
   },
   moduleLoad: { loaded: [], failed: [] },
 })
 
-function normalizeStaticModules(modules) {
-  return modules.map((module) => ({
-    ...module,
-    allowed: module.allowed !== false,
-    permissions: Array.isArray(module.permissions) ? module.permissions : [],
-    navigation: module.navigation || {
-      label: module.id,
-      section: 'Extensions',
-      icon: '◇',
-    },
-  }))
+function normalizeStaticModules(modules, context = state.context) {
+  return modules.map((module) => {
+    const permissions = Array.isArray(module.permissions) ? module.permissions : []
+    const allowed = module.allowed !== false && (
+      context.user?.superuser ||
+      permissions.length === 0 ||
+      permissions.every((code) => context.permissions.includes(code))
+    )
+    return {
+      ...module,
+      allowed,
+      permissions,
+      navigation: module.navigation || {
+        label: module.id,
+        section: 'Extensions',
+        icon: '◇',
+      },
+    }
+  })
 }
 
 function markUnauthenticated(error = null) {
@@ -45,6 +55,8 @@ function markUnauthenticated(error = null) {
   state.context = {
     user: tacticalIdentityFromStorage(),
     permissions: [],
+    extensions: [],
+    capabilities: null,
     modules: [],
   }
 }
@@ -58,6 +70,8 @@ export async function loadContext() {
   state.context = {
     user: tacticalIdentityFromStorage(),
     permissions: [],
+    extensions: [],
+    capabilities: null,
     modules: [],
   }
 
@@ -86,28 +100,15 @@ export async function loadContext() {
   state.authProof = verification.status === 403 ? 'authenticated-rbac-denied' : 'authenticated'
 
   const browserUser = tacticalIdentityFromStorage()
+  let richContext = null
 
-  // Optional richer Tec-Tac backend contract. The shell first proves that the
-  // Tactical token is valid. Only then may a missing context endpoint fall back
-  // to the local module manifest for compatibility with Tec-Tac backend 1.0.1.
   try {
-    const context = await apiFetch('/api/tfd/ui/context/')
-    state.context = {
-      user: { ...browserUser, ...(context.user || {}) },
-      permissions: Array.isArray(context.permissions) ? context.permissions : [],
-      modules: Array.isArray(context.modules) ? context.modules : [],
-    }
-    state.contextSource = 'backend'
-    state.status = 'ready'
-    return state.context
+    richContext = await apiFetch('/api/tfd/ui/context/')
   } catch (error) {
     if (error.status === 401) {
       markUnauthenticated(error)
       return state.context
     }
-
-    // 404 means the optional Tec-Tac context API is not installed yet.
-    // Any other response is treated as an actual backend/context failure.
     if (error.status !== 404) {
       state.error = error
       state.status = 'failed'
@@ -117,22 +118,27 @@ export async function loadContext() {
   }
 
   try {
-    const modules = normalizeStaticModules(await loadStaticModuleManifest())
-    state.context = {
+    const baseContext = richContext ? {
+      user: { ...browserUser, ...(richContext.user || {}) },
+      permissions: Array.isArray(richContext.permissions) ? richContext.permissions : [],
+      extensions: Array.isArray(richContext.extensions) ? richContext.extensions : [],
+      capabilities: richContext.capabilities && typeof richContext.capabilities === "object" ? richContext.capabilities : null,
+      modules: [],
+    } : {
       user: browserUser,
       permissions: [],
-      modules,
+      extensions: [],
+      capabilities: null,
+      modules: [],
     }
-    state.contextSource = 'local-manifest'
+
+    const modules = normalizeStaticModules(await loadStaticModuleManifest(), baseContext)
+    state.context = { ...baseContext, modules }
+    state.contextSource = richContext ? 'backend' : 'local-manifest'
     state.status = 'ready'
   } catch (error) {
     state.error = error
-    state.context = {
-      user: browserUser,
-      permissions: [],
-      modules: [],
-    }
-    state.contextSource = 'local-manifest'
+    state.contextSource = richContext ? 'backend' : 'local-manifest'
     state.status = 'failed'
   }
 

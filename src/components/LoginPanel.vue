@@ -158,7 +158,7 @@ function openTacticalTotpSetup() {
     <div class="login-foot">
       <span>AUTHORITY</span><b>Tactical RMM</b>
       <span>SESSION</span><b>Knox token</b>
-      <span>UI</span><b>0.1.2</b>
+      <span>UI</span><b>0.1.3</b>
     </div>
   </section>
 </template>

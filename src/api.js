@@ -195,17 +195,41 @@ export async function apiFetch(path, options = {}) {
     ...options,
     headers: buildHeaders(options),
     credentials: 'include',
+    cache: options.cache || 'no-store',
   })
 
+  const payload = response.status === 204 ? null : await parseResponsePayload(response)
   if (!response.ok) {
-    const error = new Error(`API request failed: ${response.status} ${response.statusText}`)
+    const error = new Error(messageFromPayload(payload, `API request failed: ${response.status} ${response.statusText}`))
     error.status = response.status
-    try { error.payload = await response.json() } catch {}
+    error.payload = payload
     throw error
   }
 
-  if (response.status === 204) return null
-  return response.json()
+  // Tactical's notify_error helper can return a JSON error payload in a 2xx
+  // response. Do not allow account/role actions to look successful in that case.
+  if (payload && typeof payload === 'object' && (payload.error || payload.detail)) {
+    const error = new Error(messageFromPayload(payload, 'Tactical rejected the request.'))
+    error.status = response.status
+    error.payload = payload
+    throw error
+  }
+
+  return payload
+}
+
+export async function logoutTacticalSession() {
+  let failure = null
+  try {
+    if (tacticalToken()) await apiFetch('/logout/', { method: 'POST' })
+  } catch (error) {
+    // Always remove the browser token, even if Tactical is temporarily
+    // unreachable. Re-using an uncertain local credential is less safe.
+    failure = error
+  } finally {
+    clearTacticalSession()
+  }
+  if (failure && failure.status !== 401) throw failure
 }
 
 export async function loadStaticModuleManifest() {

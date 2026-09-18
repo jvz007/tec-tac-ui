@@ -10,7 +10,7 @@ const blocked = computed(() => (state.context.modules || []).filter((m) => m.all
     <div class="phead"><div><span class="eyebrow">TEC-TAC BETA</span><h1>Operational overview</h1><p>Independent Vue shell under Tactical's frontend. Tactical authentication is verified before operational pages or dynamic modules are exposed.</p></div></div>
     <div class="grid g4 mb">
       <article class="tile"><div class="lbl">Session</div><div class="big">VERIFIED</div><div class="brk"><span>{{ state.context.user?.username || '—' }}</span></div></article>
-      <article class="tile"><div class="lbl">Role</div><div class="big compact">{{ state.context.user?.role || '—' }}</div><div class="brk"><span>ID {{ state.context.user?.role_id ?? '—' }}</span></div></article>
+      <article class="tile"><div class="lbl">Role</div><div class="big compact">{{ state.context.user?.role || (state.context.user?.superuser ? 'SUPERADMIN' : '—') }}</div><div class="brk"><span>ID {{ state.context.user?.role_id ?? '—' }}</span></div></article>
       <article class="tile"><div class="lbl">Allowed modules</div><div class="big">{{ allowed.length }}</div><div class="brk"><span>{{ state.context.modules?.length || 0 }} discovered</span></div></article>
       <article class="tile"><div class="lbl">Permissions</div><div class="big">{{ state.context.permissions?.length || 0 }}</div><div class="brk"><span>{{ state.context.user?.superuser ? 'superuser' : 'effective grants' }}</span></div></article>
     </div>
