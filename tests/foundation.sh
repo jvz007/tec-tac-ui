@@ -250,3 +250,16 @@ grep -q "permission_classes = \[IsAuthenticated\]" "${ROOT}/docs/module-runtime-
 grep -q "must not access.*access_token" "${ROOT}/docs/module-runtime-api.md" || fail "token ownership boundary missing"
 node "${ROOT}/tests/api-raw.mjs"
 echo "[TEST] PASS authenticated raw/file module API contract"
+
+# 0.10.12 per-user navigation ordering, favorites and context menu
+grep -q 'tec_tac_nav_preferences:' "${ROOT}/src/App.vue" || fail "per-user navigation preference storage missing"
+grep -q "const sectionOrder = \['Favorites'" "${ROOT}/src/App.vue" || fail "Favorites navigation category missing"
+grep -q 'function navDrop' "${ROOT}/src/App.vue" || fail "navigation drag/drop ordering missing"
+grep -q 'source.section !== section' "${ROOT}/src/App.vue" || fail "same-category drag guard missing"
+grep -q 'function toggleFavorite' "${ROOT}/src/App.vue" || fail "navigation favorite toggle missing"
+grep -q 'Open in new tab' "${ROOT}/src/App.vue" || fail "navigation new-tab context action missing"
+grep -q "router.resolve(item.to).href" "${ROOT}/src/App.vue" || fail "new-tab navigation does not use router resolution"
+grep -q 'window.open' "${ROOT}/src/App.vue" || fail "new-tab window action missing"
+grep -q 'nav-context-menu' "${ROOT}/src/styles.css" || fail "navigation context-menu styling missing"
+grep -q 'Per-user navigation preferences' "${ROOT}/README.md" || fail "navigation preference documentation missing"
+echo "[TEST] PASS per-user navigation preferences"

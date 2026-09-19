@@ -100,3 +100,6 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .lifecycle-progress-fill{height:100%;background:var(--accent);transition:width .3s ease}
 .lifecycle-progress.complete .lifecycle-progress-fill{background:var(--ok)}
 .lifecycle-progress.failed .lifecycle-progress-fill{background:var(--danger)}
+
+/* 0.10.12 per-user navigation ordering, favorites and context menu */
+.navitem[draggable="true"]{cursor:grab}.navitem[draggable="true"]:active{cursor:grabbing}.navitem.nav-dragging{opacity:.48;background:rgba(var(--accent-rgb),.1)}.favorite-star{margin-left:auto;color:var(--warn);font-size:11px}.navitem .count+.favorite-star{margin-left:4px}.nav-context-menu{position:fixed;z-index:1000;width:210px;padding:5px;background:var(--raised);border:1px solid var(--line-2);border-radius:3px;box-shadow:0 14px 34px rgba(0,0,0,.34)}.nav-context-menu button{width:100%;border:0;background:transparent;color:var(--ink);display:grid;grid-template-columns:20px 1fr;align-items:center;gap:7px;padding:8px 9px;text-align:left;font-size:12.7px;border-radius:2px;cursor:pointer}.nav-context-menu button:hover{background:rgba(var(--accent-rgb),.13)}.nav-context-menu button span:first-child{text-align:center;color:var(--accent-text)}

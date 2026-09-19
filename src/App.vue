@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import LoginPanel from './components/LoginPanel.vue'
 import UnsavedChangesDialog from './components/UnsavedChangesDialog.vue'
@@ -17,8 +17,29 @@ const railCollapsed = ref(localStorage.getItem('tec_tac_nav_rail_collapsed') ===
 let savedSectionState = {}
 try { savedSectionState = JSON.parse(localStorage.getItem('tec_tac_nav_sections') || '{}') || {} } catch { savedSectionState = {} }
 const collapsedSections = ref(savedSectionState)
+const navPreferences = ref({ order: {}, favorites: [] })
+const draggedNav = ref(null)
+const navContextMenu = ref(null)
 const uiVersion = __TEC_TAC_UI_VERSION__
 const publicRoute = computed(() => route.meta?.public === true || route.path.startsWith('/public/'))
+const navPreferenceUser = computed(() => String(state.context.user?.username || localStorage.getItem('user_name') || 'anonymous').trim() || 'anonymous')
+const navPreferenceKey = computed(() => `tec_tac_nav_preferences:${navPreferenceUser.value}`)
+
+function readNavPreferences() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(navPreferenceKey.value) || '{}') || {}
+    navPreferences.value = {
+      order: parsed.order && typeof parsed.order === 'object' ? parsed.order : {},
+      favorites: Array.isArray(parsed.favorites) ? parsed.favorites.filter((item) => typeof item === 'string') : [],
+    }
+  } catch {
+    navPreferences.value = { order: {}, favorites: [] }
+  }
+}
+
+function saveNavPreferences() {
+  localStorage.setItem(navPreferenceKey.value, JSON.stringify(navPreferences.value))
+}
 
 const coreNav = computed(() => {
   const capabilities = state.context.capabilities || {}
@@ -32,13 +53,27 @@ const coreNav = computed(() => {
   ]
 })
 
-const allNav = computed(() => [...coreNav.value, ...dynamicNav].filter((item) => {
-  if (item.visible === false) return false
+const visibleNav = computed(() => [...coreNav.value, ...dynamicNav].filter((item) => item.visible !== false && item?.to && item?.label))
+const allNav = computed(() => visibleNav.value.filter((item) => {
   if (!query.value.trim()) return true
   return item.label.toLowerCase().includes(query.value.toLowerCase())
 }))
 
-const sectionOrder = ['Workspace', 'Operations', 'Extensions', 'Administration', 'Configuration']
+function orderedItems(section, items) {
+  const saved = Array.isArray(navPreferences.value.order?.[section]) ? navPreferences.value.order[section] : []
+  const position = new Map(saved.map((to, index) => [to, index]))
+  return [...items].sort((a, b) => {
+    const ai = position.has(a.to) ? position.get(a.to) : Number.MAX_SAFE_INTEGER
+    const bi = position.has(b.to) ? position.get(b.to) : Number.MAX_SAFE_INTEGER
+    if (ai !== bi) return ai - bi
+    const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : Number.MAX_SAFE_INTEGER
+    const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : Number.MAX_SAFE_INTEGER
+    if (ao !== bo) return ao - bo
+    return 0
+  })
+}
+
+const sectionOrder = ['Favorites', 'Workspace', 'Operations', 'Extensions', 'Administration', 'Configuration']
 const navGroups = computed(() => {
   const grouped = new Map()
   for (const item of allNav.value) {
@@ -46,8 +81,15 @@ const navGroups = computed(() => {
     if (!grouped.has(section)) grouped.set(section, [])
     grouped.get(section).push(item)
   }
+
+  if (navPreferences.value.favorites.length) {
+    const byRoute = new Map(allNav.value.map((item) => [item.to, item]))
+    const favorites = navPreferences.value.favorites.map((to) => byRoute.get(to)).filter(Boolean)
+    if (favorites.length) grouped.set('Favorites', favorites)
+  }
+
   return [...grouped.entries()]
-    .map(([section, items]) => ({ section, items }))
+    .map(([section, items]) => ({ section, items: orderedItems(section, items) }))
     .sort((a, b) => {
       const ai = sectionOrder.indexOf(a.section)
       const bi = sectionOrder.indexOf(b.section)
@@ -63,7 +105,7 @@ const initials = computed(() => {
   return value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || 'TT'
 })
 
-const currentTitle = computed(() => route.meta.title || allNav.value.find((item) => item.to === route.path)?.label || 'Tec-Tac')
+const currentTitle = computed(() => route.meta.title || visibleNav.value.find((item) => item.to === route.path)?.label || 'Tec-Tac')
 
 const accountStatus = computed(() => {
   if (state.authStatus === 'verifying') return 'VERIFYING'
@@ -80,18 +122,64 @@ function applyTheme(value) {
 watch(theme, applyTheme, { immediate: true })
 watch(railCollapsed, (value) => localStorage.setItem('tec_tac_nav_rail_collapsed', value ? '1' : '0'))
 watch(collapsedSections, (value) => localStorage.setItem('tec_tac_nav_sections', JSON.stringify(value)), { deep: true })
+watch(navPreferenceKey, readNavPreferences, { immediate: true })
 
 function toggleRail() { railCollapsed.value = !railCollapsed.value }
 function sectionCollapsed(section) { return collapsedSections.value?.[section] === true }
 function toggleSection(section) {
   collapsedSections.value = { ...collapsedSections.value, [section]: !sectionCollapsed(section) }
 }
+function isFavorite(item) { return navPreferences.value.favorites.includes(item.to) }
+function toggleFavorite(item) {
+  const favorites = navPreferences.value.favorites.filter((to) => to !== item.to)
+  if (!isFavorite(item)) favorites.push(item.to)
+  navPreferences.value = { ...navPreferences.value, favorites }
+  saveNavPreferences()
+  closeNavContextMenu()
+}
+function navDragStart(section, item) {
+  if (query.value.trim()) return
+  draggedNav.value = { section, to: item.to }
+}
+function navDragEnd() { draggedNav.value = null }
+function navDrop(section, target) {
+  const source = draggedNav.value
+  draggedNav.value = null
+  if (!source || source.section !== section || source.to === target.to || query.value.trim()) return
+  const group = navGroups.value.find((entry) => entry.section === section)
+  if (!group) return
+  const order = group.items.map((item) => item.to)
+  const from = order.indexOf(source.to)
+  const to = order.indexOf(target.to)
+  if (from < 0 || to < 0) return
+  order.splice(from, 1)
+  order.splice(to, 0, source.to)
+  navPreferences.value = { ...navPreferences.value, order: { ...navPreferences.value.order, [section]: order } }
+  saveNavPreferences()
+}
+function openNavContextMenu(event, item, section) {
+  const menuWidth = 210
+  const menuHeight = 92
+  navContextMenu.value = {
+    item,
+    section,
+    x: Math.min(event.clientX, window.innerWidth - menuWidth - 8),
+    y: Math.min(event.clientY, window.innerHeight - menuHeight - 8),
+  }
+}
+function closeNavContextMenu() { navContextMenu.value = null }
+function openInNewTab(item) {
+  const href = router.resolve(item.to).href
+  window.open(href, '_blank', 'noopener,noreferrer')
+  closeNavContextMenu()
+}
+function handleGlobalKey(event) { if (event.key === 'Escape') closeNavContextMenu() }
 
 async function retry() {
   await loadContext()
   if (state.status === 'ready') window.location.reload()
 }
-function navigate(to) { requestLeave(() => router.push(to)) }
+function navigate(to) { closeNavContextMenu(); requestLeave(() => router.push(to)) }
 function backToTactical() { requestLeave(() => { window.location.href = '/' }) }
 async function doSignOut() {
   if (signingOut.value) return
@@ -99,14 +187,17 @@ async function doSignOut() {
   try { await logoutTacticalSession() } finally { window.location.reload() }
 }
 function signOut() { requestLeave(doSignOut) }
+
+onMounted(() => window.addEventListener('keydown', handleGlobalKey))
+onBeforeUnmount(() => window.removeEventListener('keydown', handleGlobalKey))
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'public-shell': publicRoute, 'rail-collapsed': railCollapsed && !publicRoute }">
+  <div class="app-shell" :class="{ 'public-shell': publicRoute, 'rail-collapsed': railCollapsed && !publicRoute }" @click="closeNavContextMenu">
     <header class="brand">
       <div class="mark" aria-hidden="true"></div>
       <div class="brand-copy"><b>TEC-TAC</b><span>TACTICAL EXTENSION CONSOLE</span></div>
-      <button v-if="!publicRoute" class="rail-toggle" type="button" :title="railCollapsed ? 'Expand navigation' : 'Collapse navigation'" :aria-label="railCollapsed ? 'Expand navigation' : 'Collapse navigation'" :aria-expanded="!railCollapsed" @click="toggleRail">{{ railCollapsed ? '»' : '«' }}</button>
+      <button v-if="!publicRoute" class="rail-toggle" type="button" :title="railCollapsed ? 'Expand navigation' : 'Collapse navigation'" :aria-label="railCollapsed ? 'Expand navigation' : 'Collapse navigation'" :aria-expanded="!railCollapsed" @click.stop="toggleRail">{{ railCollapsed ? '»' : '«' }}</button>
     </header>
 
     <header class="topbar">
@@ -126,18 +217,37 @@ function signOut() { requestLeave(doSignOut) }
     <aside v-if="!publicRoute" class="rail">
       <template v-if="state.status === 'ready'">
         <template v-for="group in navGroups" :key="group.section">
-          <button v-if="!railCollapsed" class="grp grp-btn label" type="button" :aria-expanded="!sectionCollapsed(group.section)" :title="`${sectionCollapsed(group.section) ? 'Expand' : 'Collapse'} ${group.section}`" @click="toggleSection(group.section)">
+          <button v-if="!railCollapsed" class="grp grp-btn label" type="button" :aria-expanded="!sectionCollapsed(group.section)" :title="`${sectionCollapsed(group.section) ? 'Expand' : 'Collapse'} ${group.section}`" @click.stop="toggleSection(group.section)">
             <span>{{ group.section }}</span><span class="grp-chevron" aria-hidden="true">{{ sectionCollapsed(group.section) ? '›' : '⌄' }}</span>
           </button>
           <div v-else class="rail-separator" aria-hidden="true"></div>
           <template v-if="railCollapsed || query.trim() || !sectionCollapsed(group.section)">
-            <button v-for="item in group.items" :key="item.to" class="navitem" :class="{ active: route.path === item.to }" :title="railCollapsed ? item.label : undefined" :aria-label="railCollapsed ? item.label : undefined" @click="navigate(item.to)"><span class="ico">{{ item.icon }}</span><span class="nav-label">{{ item.label }}</span><span v-if="item.badge" class="count">{{ item.badge }}</span></button>
+            <button
+              v-for="item in group.items"
+              :key="`${group.section}:${item.to}`"
+              class="navitem"
+              :class="{ active: route.path === item.to, 'nav-dragging': draggedNav?.section === group.section && draggedNav?.to === item.to }"
+              :title="railCollapsed ? item.label : undefined"
+              :aria-label="railCollapsed ? item.label : undefined"
+              :draggable="!query.trim()"
+              @click.stop="navigate(item.to)"
+              @contextmenu.prevent.stop="openNavContextMenu($event, item, group.section)"
+              @dragstart="navDragStart(group.section, item)"
+              @dragend="navDragEnd"
+              @dragover.prevent
+              @drop.prevent="navDrop(group.section, item)"
+            ><span class="ico">{{ item.icon }}</span><span class="nav-label">{{ item.label }}</span><span v-if="item.badge" class="count">{{ item.badge }}</span><span v-if="group.section === 'Favorites'" class="favorite-star" aria-hidden="true">★</span></button>
           </template>
         </template>
       </template>
       <div v-else class="grp label">Session gate</div>
       <div class="foot"><div class="kv"><span>UI</span><b>{{ uiVersion }}</b></div><div class="kv"><span>Context</span><b>{{ state.contextSource }}</b></div><div class="kv"><span>Auth</span><b :class="state.authStatus === 'verified' ? 'oktxt' : (state.authStatus === 'verifying' ? 'warntxt' : 'dangertext')">{{ accountStatus }}</b></div></div>
     </aside>
+
+    <div v-if="navContextMenu" class="nav-context-menu" :style="{ left: `${navContextMenu.x}px`, top: `${navContextMenu.y}px` }" @click.stop>
+      <button type="button" @click="openInNewTab(navContextMenu.item)"><span>↗</span><span>Open in new tab</span></button>
+      <button type="button" @click="toggleFavorite(navContextMenu.item)"><span>{{ isFavorite(navContextMenu.item) ? '☆' : '★' }}</span><span>{{ isFavorite(navContextMenu.item) ? 'Remove from Favorites' : 'Add to Favorites' }}</span></button>
+    </div>
 
     <main class="main">
       <router-view v-if="publicRoute" />

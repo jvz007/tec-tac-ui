@@ -418,3 +418,9 @@ The UI Git checkout lives at `/opt/tec-tac-src/ui`. The compiled UI remains `/va
 Authenticated modules receive a Core-owned `contextActions` registry through `register(context)`. Provider modules register actions for shared resources such as endpoints; consumer modules list and execute those actions without importing provider UI code. Action IDs are provider-scoped and backend authorization remains authoritative.
 
 See `docs/context-actions.md` for the public descriptor, placement, selection and lifecycle contract. The live Public Contracts page lists currently registered browser actions separately from backend capabilities.
+
+## Per-user navigation preferences (0.10.12)
+
+Authenticated users can reorder navigation items inside their existing category by dragging them. Ordering is stored browser-locally under the authenticated Tactical username. Category ownership remains authoritative: dragging does not move a module between Workspace, Operations, Extensions, Administration, or Configuration.
+
+A **Favorites** category can contain shortcuts to any currently visible navigation item while leaving the original entry in place. Favorites can be independently reordered. Right-clicking a navigation item exposes **Open in new tab** plus **Add to Favorites / Remove from Favorites**. Dynamic module routes use the same shell router resolution as core routes.
