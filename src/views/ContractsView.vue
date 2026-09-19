@@ -50,6 +50,15 @@ onMounted(refresh)
     <div class="callout contract-rules"><b>Browser interaction boundary</b><span>Modules may contribute drag/drop behavior through the Core-owned <span class="mono">contextInteractions</span> registry. Providers own drop execution; consumers discover compatible interactions by shared surface, source type and target type without importing provider UI internals.</span></div>
     <div class="tablewrap"><table><thead><tr><th>Interaction</th><th>Provider</th><th>Surface</th><th>Source types</th><th>Target types</th><th>Permission</th><th>Order</th></tr></thead><tbody><tr v-for="item in uiInteractions" :key="item.id"><td><b class="mono">{{item.id}}</b></td><td class="mono">{{item.provider}}</td><td class="mono">{{item.surface}}</td><td class="mono contract-wrap">{{(item.sourceTypes||[]).join(', ')}}</td><td class="mono contract-wrap">{{(item.targetTypes||[]).join(', ')}}</td><td class="mono">{{item.permission||'—'}}</td><td class="mono">{{item.order}}</td></tr><tr v-if="!uiInteractions.length"><td colspan="7" class="muted">No UI context interactions are currently registered or match the current search.</td></tr></tbody></table></div>
 
+    <div class="section-divider">Authenticated module API helpers</div>
+    <div class="callout contract-rules"><b>Browser transport boundary</b><span>Authenticated modules use Core-owned request helpers and must not read Tactical tokens or browser authentication storage directly.</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Helper</th><th>Response</th><th>Use</th></tr></thead><tbody>
+      <tr><td><b class="mono">api(path, options)</b></td><td>parsed payload</td><td>Existing JSON/text API calls.</td></tr>
+      <tr><td><b class="mono">apiRaw(path, options)</b></td><td class="mono">Response</td><td>Authenticated downloads, uploads and custom media types.</td></tr>
+      <tr><td><b class="mono">apiBlob(path, options)</b></td><td class="mono">Blob</td><td>PDF, image, ZIP and other binary responses.</td></tr>
+      <tr><td><b class="mono">apiText(path, options)</b></td><td class="mono">string</td><td>HTML, text and textual exports.</td></tr>
+    </tbody></table></div>
+
     <div class="section-divider">HTTP boundary</div>
     <div class="tablewrap"><table><thead><tr><th>Methods</th><th>Endpoint</th><th>Route name</th><th>Audience</th></tr></thead><tbody><tr v-for="item in http" :key="item.route"><td class="mono">{{(item.methods||[]).join(' / ')}}</td><td class="mono">{{item.route}}</td><td class="mono">{{item.name||'—'}}</td><td>{{item.audience}}</td></tr><tr v-if="!http.length"><td colspan="4" class="muted">No API contracts match the current search.</td></tr></tbody></table></div>
   </template>

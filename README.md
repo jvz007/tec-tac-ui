@@ -1,3 +1,5 @@
+Version **0.10.11** extends the authenticated dynamic-module runtime with Core-owned `apiRaw`, `apiBlob`, and `apiText` helpers for downloads, uploads, binary responses, and other non-JSON operations. Modules must not read Tactical tokens or browser auth storage directly. See `docs/module-runtime-api.md`.
+
 Version **0.10.9** adds lifecycle progress bars and a five-second post-success reload delay.
 
 Version **0.10.7** hardens dynamic module cache coherency and route ownership. The canonical runtime module manifest is `/tec-tac/modules/modules.json` (filesystem: `/var/lib/tec-tac/ui/tec-tac/modules/modules.json`).

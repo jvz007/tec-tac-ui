@@ -1,7 +1,7 @@
 import { reactive } from 'vue'
 import { createApp } from 'vue'
 import App from './App.vue'
-import { apiFetch, loadStaticModuleManifest, publicApiFetch } from './api'
+import { apiBlob, apiFetch, apiRaw, apiText, loadStaticModuleManifest, publicApiFetch } from './api'
 import { router } from './router'
 import { state, loadContext } from './state'
 import { loadPublicUiModules, loadUiModules } from './module-loader'
@@ -64,6 +64,9 @@ async function bootstrap() {
         state,
         addNavigation,
         api: apiFetch,
+        apiRaw,
+        apiBlob,
+        apiText,
         hasPermission,
         contextActions,
         contextInteractions,

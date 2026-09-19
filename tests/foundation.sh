@@ -235,3 +235,18 @@ grep -q "contextInteractions?.snapshot" "${ROOT}/src/views/ContractsView.vue" ||
 [[ -f "${ROOT}/docs/context-interactions.md" ]] || fail "context interaction developer contract missing"
 node --check "${ROOT}/src/context-interactions.js"
 echo "[TEST] PASS UI context interaction contract"
+
+
+# 0.10.11 authenticated raw/file module API contract
+grep -q "export async function apiRaw" "${ROOT}/src/api.js" || fail "apiRaw helper missing"
+grep -q "export async function apiBlob" "${ROOT}/src/api.js" || fail "apiBlob helper missing"
+grep -q "export async function apiText" "${ROOT}/src/api.js" || fail "apiText helper missing"
+grep -q "apiRaw," "${ROOT}/src/main.js" || fail "apiRaw not exposed to authenticated modules"
+grep -q "apiBlob," "${ROOT}/src/main.js" || fail "apiBlob not exposed to authenticated modules"
+grep -q "apiText," "${ROOT}/src/main.js" || fail "apiText not exposed to authenticated modules"
+grep -q "Authenticated module API helpers" "${ROOT}/src/views/ContractsView.vue" || fail "Public Contracts module API helper section missing"
+[[ -f "${ROOT}/docs/module-runtime-api.md" ]] || fail "module runtime API documentation missing"
+grep -q "permission_classes = \[IsAuthenticated\]" "${ROOT}/docs/module-runtime-api.md" || fail "DRF IsAuthenticated guidance missing"
+grep -q "must not access.*access_token" "${ROOT}/docs/module-runtime-api.md" || fail "token ownership boundary missing"
+node "${ROOT}/tests/api-raw.mjs"
+echo "[TEST] PASS authenticated raw/file module API contract"

@@ -53,12 +53,12 @@ export function invalidateTacticalSession(message = 'Your Tactical session is no
   }
 }
 
-function buildHeaders(options = {}) {
+function buildHeaders(options = {}, { accept = 'application/json', jsonContentType = true } = {}) {
   const token = tacticalToken()
   const headers = new Headers(options.headers || {})
-  headers.set('Accept', 'application/json')
+  if (!headers.has('Accept')) headers.set('Accept', accept)
   const isFormData = typeof FormData !== 'undefined' && options.body instanceof FormData
-  if (options.body && !isFormData && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
+  if (jsonContentType && options.body && !isFormData && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
   if (token) headers.set('Authorization', `Token ${token}`)
   return headers
 }
@@ -256,7 +256,7 @@ export async function validateTacticalSession() {
   throw error
 }
 
-export async function apiFetch(path, options = {}) {
+async function authenticatedRawRequest(path, options = {}) {
   const base = apiBase()
   const token = tacticalToken()
   if (!base) throw new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.')
@@ -269,21 +269,45 @@ export async function apiFetch(path, options = {}) {
 
   const response = await fetch(`${base}${path}`, {
     ...options,
-    headers: buildHeaders(options),
+    headers: buildHeaders(options, { accept: '*/*', jsonContentType: false }),
     credentials: 'include',
     cache: options.cache || 'no-store',
   })
 
-  const payload = response.status === 204 ? null : await parseResponsePayload(response)
-  if (response.status === 401) {
-    invalidateTacticalSession(messageFromPayload(payload, 'Your Tactical session is no longer valid. Sign in again.'))
-  }
   if (!response.ok) {
+    const payload = response.status === 204 ? null : await parseResponsePayload(response.clone())
+    if (response.status === 401) {
+      invalidateTacticalSession(messageFromPayload(payload, 'Your Tactical session is no longer valid. Sign in again.'))
+    }
     const error = new Error(messageFromPayload(payload, `API request failed: ${response.status} ${response.statusText}`))
     error.status = response.status
     error.payload = payload
     throw error
   }
+
+  return response
+}
+
+export async function apiRaw(path, options = {}) {
+  return authenticatedRawRequest(path, options)
+}
+
+export async function apiBlob(path, options = {}) {
+  const response = await apiRaw(path, options)
+  return response.blob()
+}
+
+export async function apiText(path, options = {}) {
+  const response = await apiRaw(path, options)
+  return response.text()
+}
+
+export async function apiFetch(path, options = {}) {
+  const response = await authenticatedRawRequest(path, {
+    ...options,
+    headers: buildHeaders(options),
+  })
+  const payload = response.status === 204 ? null : await parseResponsePayload(response)
 
   // Tactical's notify_error helper can return a JSON error payload in a 2xx
   // response. Do not allow account/role actions to look successful in that case.
