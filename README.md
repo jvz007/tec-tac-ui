@@ -423,8 +423,10 @@ Authenticated modules receive a Core-owned `contextActions` registry through `re
 
 See `docs/context-actions.md` for the public descriptor, placement, selection and lifecycle contract. The live Public Contracts page lists currently registered browser actions separately from backend capabilities.
 
-## Per-user navigation preferences (0.10.12)
+## Per-user navigation preferences (0.10.12, server-backed in 0.10.16)
 
-Authenticated users can reorder navigation items inside their existing category by dragging them. Ordering is stored browser-locally under the authenticated Tactical username. Category ownership remains authoritative: dragging does not move a module between Workspace, Operations, Extensions, Administration, or Configuration.
+Authenticated users can reorder navigation items inside their existing category by dragging them. Category ownership remains authoritative: dragging does not move a module between Workspace, Operations, Extensions, Administration, or Configuration.
 
 A **Favorites** category can contain shortcuts to any currently visible navigation item while leaving the original entry in place. Favorites can be independently reordered. Right-clicking a navigation item exposes **Open in new tab** plus **Add to Favorites / Remove from Favorites**. Dynamic module routes use the same shell router resolution as core routes.
+
+From UI 0.10.16 these settings, theme, collapsed categories and rail state are stored in the authenticated user's Core preference profile rather than being browser-only. Existing browser settings are migrated automatically the first time a user signs in after the upgrade. Browser storage remains an early-startup cache only. The top-right **Preferences** control opens `/preferences`. See `docs/user-preferences.md`.

@@ -6,18 +6,33 @@ import UnsavedChangesDialog from './components/UnsavedChangesDialog.vue'
 import { logoutTacticalSession } from './api'
 import { state, loadContext } from './state'
 import { requestLeave } from './unsaved'
+import { preferenceState, updateUserPreferences } from './preferences'
 
 const route = useRoute()
 const router = useRouter()
 const dynamicNav = inject('tecTacNavigation', [])
-const theme = ref(localStorage.getItem('tec_tac_theme') || 'dark')
+const theme = computed({
+  get: () => preferenceState.preferences.appearance.theme,
+  set: (value) => updateUserPreferences((next) => { next.appearance.theme = value; return next }),
+})
 const query = ref('')
 const signingOut = ref(false)
-const railCollapsed = ref(localStorage.getItem('tec_tac_nav_rail_collapsed') === '1')
-let savedSectionState = {}
-try { savedSectionState = JSON.parse(localStorage.getItem('tec_tac_nav_sections') || '{}') || {} } catch { savedSectionState = {} }
-const collapsedSections = ref(savedSectionState)
-const navPreferences = ref({ order: {}, favorites: [] })
+const railCollapsed = computed({
+  get: () => preferenceState.preferences.navigation.rail_collapsed,
+  set: (value) => updateUserPreferences((next) => { next.navigation.rail_collapsed = Boolean(value); return next }),
+})
+const collapsedSections = computed({
+  get: () => preferenceState.preferences.navigation.collapsed_sections,
+  set: (value) => updateUserPreferences((next) => { next.navigation.collapsed_sections = value || {}; return next }),
+})
+const navPreferences = computed({
+  get: () => ({ order: preferenceState.preferences.navigation.order, favorites: preferenceState.preferences.navigation.favorites }),
+  set: (value) => updateUserPreferences((next) => {
+    next.navigation.order = value?.order || {}
+    next.navigation.favorites = Array.isArray(value?.favorites) ? value.favorites : []
+    return next
+  }),
+})
 const draggedNav = ref(null)
 const navContextMenu = ref(null)
 const uiVersion = __TEC_TAC_UI_VERSION__
@@ -28,25 +43,6 @@ if (newWindowLaunch.value) {
   window.history.replaceState(window.history.state, '', `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`)
 }
 const publicRoute = computed(() => route.meta?.public === true || route.path.startsWith('/public/'))
-const navPreferenceUser = computed(() => String(state.context.user?.username || localStorage.getItem('user_name') || 'anonymous').trim() || 'anonymous')
-const navPreferenceKey = computed(() => `tec_tac_nav_preferences:${navPreferenceUser.value}`)
-
-function readNavPreferences() {
-  try {
-    const parsed = JSON.parse(localStorage.getItem(navPreferenceKey.value) || '{}') || {}
-    navPreferences.value = {
-      order: parsed.order && typeof parsed.order === 'object' ? parsed.order : {},
-      favorites: Array.isArray(parsed.favorites) ? parsed.favorites.filter((item) => typeof item === 'string') : [],
-    }
-  } catch {
-    navPreferences.value = { order: {}, favorites: [] }
-  }
-}
-
-function saveNavPreferences() {
-  localStorage.setItem(navPreferenceKey.value, JSON.stringify(navPreferences.value))
-}
-
 const coreNav = computed(() => {
   const capabilities = state.context.capabilities || {}
   return [
@@ -123,12 +119,8 @@ const accountStatus = computed(() => {
 
 function applyTheme(value) {
   document.documentElement.dataset.theme = value
-  localStorage.setItem('tec_tac_theme', value)
 }
 watch(theme, applyTheme, { immediate: true })
-watch(railCollapsed, (value) => localStorage.setItem('tec_tac_nav_rail_collapsed', value ? '1' : '0'))
-watch(collapsedSections, (value) => localStorage.setItem('tec_tac_nav_sections', JSON.stringify(value)), { deep: true })
-watch(navPreferenceKey, readNavPreferences, { immediate: true })
 
 function toggleRail() { railCollapsed.value = !railCollapsed.value }
 function sectionCollapsed(section) { return collapsedSections.value?.[section] === true }
@@ -140,7 +132,6 @@ function toggleFavorite(item) {
   const favorites = navPreferences.value.favorites.filter((to) => to !== item.to)
   if (!isFavorite(item)) favorites.push(item.to)
   navPreferences.value = { ...navPreferences.value, favorites }
-  saveNavPreferences()
   closeNavContextMenu()
 }
 function navDragStart(section, item) {
@@ -161,7 +152,6 @@ function navDrop(section, target) {
   order.splice(from, 1)
   order.splice(to, 0, source.to)
   navPreferences.value = { ...navPreferences.value, order: { ...navPreferences.value.order, [section]: order } }
-  saveNavPreferences()
 }
 function openNavContextMenu(event, item, section) {
   const menuWidth = 210
@@ -219,6 +209,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleGlobalKey))
       <div v-if="!publicRoute" class="who">
         <div class="av">{{ initials }}</div>
         <div class="n"><b>{{ state.context.user?.display_name || state.context.user?.username || 'No session' }}</b><span :class="{ 'status-ok': state.authStatus === 'verified', 'status-warn': state.authStatus === 'verifying', 'status-danger': state.authStatus === 'required' || state.authStatus === 'error' }">{{ accountStatus }}</span></div>
+        <button v-if="state.status === 'ready'" class="iconbtn" title="User preferences" aria-label="User preferences" @click="navigate('/preferences')">⚙</button>
         <button v-if="state.status === 'ready'" class="iconbtn" title="Sign out" aria-label="Sign out" :disabled="signingOut" @click="signOut">⏻</button>
       </div>
     </header>

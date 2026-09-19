@@ -169,8 +169,8 @@ grep -q "Configuration & diagnostics" "${ROOT}/src/views/SchedulesView.vue" || f
 grep -q "Type the schedule name to confirm" "${ROOT}/src/views/SchedulesView.vue" || fail "dangerous Run now confirmation missing"
 
 # 0.10.1 persistent navigation collapse
-grep -q "tec_tac_nav_rail_collapsed" "${ROOT}/src/App.vue" || fail "rail collapse persistence missing"
-grep -q "tec_tac_nav_sections" "${ROOT}/src/App.vue" || fail "category collapse persistence missing"
+grep -q "tec_tac_nav_rail_collapsed" "${ROOT}/src/preferences.js" || fail "rail collapse cache/migration persistence missing"
+grep -q "tec_tac_nav_sections" "${ROOT}/src/preferences.js" || fail "category collapse cache/migration persistence missing"
 grep -q "toggleSection" "${ROOT}/src/App.vue" || fail "category collapse control missing"
 grep -q "rail-collapsed" "${ROOT}/src/styles.css" || fail "collapsed rail styling missing"
 
@@ -252,7 +252,6 @@ node "${ROOT}/tests/api-raw.mjs"
 echo "[TEST] PASS authenticated raw/file module API contract"
 
 # 0.10.12 per-user navigation ordering, favorites and context menu
-grep -q 'tec_tac_nav_preferences:' "${ROOT}/src/App.vue" || fail "per-user navigation preference storage missing"
 grep -q "const sectionOrder = \['Favorites'" "${ROOT}/src/App.vue" || fail "Favorites navigation category missing"
 grep -q 'function navDrop' "${ROOT}/src/App.vue" || fail "navigation drag/drop ordering missing"
 grep -q 'source.section !== section' "${ROOT}/src/App.vue" || fail "same-category drag guard missing"
@@ -285,3 +284,18 @@ grep -q "Opening new window" "${ROOT}/src/App.vue" || fail "new-window startup m
 grep -q "Verifying Tactical session" "${ROOT}/src/App.vue" || fail "normal verification startup message missing"
 grep -q "searchParams.delete('tec_tac_launch')" "${ROOT}/src/App.vue" || fail "temporary new-window marker is not removed"
 echo "[TEST] PASS contextual new-window startup wording"
+
+
+# 0.10.16 server-backed Core user preferences
+[[ -f "${ROOT}/src/preferences.js" ]] || fail "preference state/service missing"
+[[ -f "${ROOT}/src/views/PreferencesView.vue" ]] || fail "Preferences page missing"
+grep -q "'/api/tfd/ui/preferences/'" "${ROOT}/src/preferences.js" || fail "preference API integration missing"
+grep -q 'legacySnapshot' "${ROOT}/src/preferences.js" || fail "legacy local preference migration missing"
+grep -q 'initializeUserPreferences' "${ROOT}/src/main.js" || fail "preference startup hydration missing"
+grep -q "path: '/preferences'" "${ROOT}/src/router.js" || fail "Preferences route missing"
+grep -q 'User preferences' "${ROOT}/src/App.vue" || fail "Preferences user control missing"
+grep -q 'updateUserPreferences' "${ROOT}/src/App.vue" || fail "shell navigation is not wired to Core preferences"
+grep -q 'server-backed in 0.10.16' "${ROOT}/README.md" || fail "server-backed preference documentation missing"
+[[ -f "${ROOT}/docs/user-preferences.md" ]] || fail "user preference developer documentation missing"
+node --check "${ROOT}/src/preferences.js"
+echo "[TEST] PASS server-backed Core user preferences"

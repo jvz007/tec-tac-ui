@@ -22,6 +22,9 @@ export const state = reactive({
     extensions: [],
     capabilities: null,
     modules: [],
+    preferences: null,
+    preferences_initialized: false,
+    preferences_updated_at: null,
   },
   moduleLoad: { loaded: [], failed: [], skipped: [] },
   publicModuleLoad: { loaded: [], failed: [] },
@@ -62,6 +65,9 @@ function markUnauthenticated(error = null) {
     extensions: [],
     capabilities: null,
     modules: [],
+    preferences: null,
+    preferences_initialized: false,
+    preferences_updated_at: null,
   }
 }
 
@@ -87,6 +93,9 @@ export async function loadContext() {
     extensions: [],
     capabilities: null,
     modules: [],
+    preferences: null,
+    preferences_initialized: false,
+    preferences_updated_at: null,
   }
 
   if (!tacticalToken()) {
@@ -147,12 +156,18 @@ export async function loadContext() {
       extensions: Array.isArray(richContext.extensions) ? richContext.extensions : [],
       capabilities: richContext.capabilities && typeof richContext.capabilities === "object" ? richContext.capabilities : null,
       modules: [],
+      preferences: richContext.preferences || null,
+      preferences_initialized: richContext.preferences_initialized === true,
+      preferences_updated_at: richContext.preferences_updated_at || null,
     } : {
       user: browserUser,
       permissions: [],
       extensions: [],
       capabilities: null,
       modules: [],
+      preferences: null,
+      preferences_initialized: false,
+      preferences_updated_at: null,
     }
 
     const modules = normalizeStaticModules(await loadStaticModuleManifest(), baseContext)

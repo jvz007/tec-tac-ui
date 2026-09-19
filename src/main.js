@@ -7,6 +7,7 @@ import { state, loadContext } from './state'
 import { loadPublicUiModules, loadUiModules } from './module-loader'
 import { createContextActionRegistry } from './context-actions'
 import { createContextInteractionRegistry } from './context-interactions'
+import { initializeUserPreferences } from './preferences'
 import './styles.css'
 
 async function bootstrap() {
@@ -57,6 +58,7 @@ async function bootstrap() {
   await loadContext()
 
   if (state.status === 'ready') {
+    await initializeUserPreferences(state.context)
     state.moduleLoad = await loadUiModules(
       {
         app,
