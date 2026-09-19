@@ -266,7 +266,7 @@ echo "[TEST] PASS per-user navigation preferences"
 
 
 # 0.10.13 navigation fresh-tab route restoration
-grep -q "new URL(resolved.href, base).href" "${ROOT}/src/App.vue" || fail "new-tab navigation does not construct an absolute Tec-Tac URL"
+grep -q "const target = new URL(resolved.href, base)" "${ROOT}/src/App.vue" || fail "new-tab navigation does not construct an absolute Tec-Tac URL"
 grep -q "window.location.hash.startsWith('#/')" "${ROOT}/src/main.js" || fail "initial hash target is not preserved"
 grep -q "await router.replace(initialHashTarget)" "${ROOT}/src/main.js" || fail "authenticated initial route is not replayed after module registration"
 grep -q "fresh tab may target a dynamically registered authenticated route" "${ROOT}/src/main.js" || fail "dynamic fresh-tab route restoration documentation missing"
@@ -277,3 +277,11 @@ grep -q "row.current_version || 'not installed'" "${ROOT}/src/views/ModulesView.
 grep -q "row.version || row.extension_version" "${ROOT}/src/views/ModulesView.vue" || fail "module install preview does not show target version"
 grep -q 'current.*target module versions' "${ROOT}/README.md" || fail "module version preview documentation missing"
 echo "[TEST] PASS module current-to-target version preview"
+
+
+# 0.10.15 context-menu new-window startup wording
+grep -q "tec_tac_launch.*new-window" "${ROOT}/src/App.vue" || fail "new-window launch marker missing"
+grep -q "Opening new window" "${ROOT}/src/App.vue" || fail "new-window startup message missing"
+grep -q "Verifying Tactical session" "${ROOT}/src/App.vue" || fail "normal verification startup message missing"
+grep -q "searchParams.delete('tec_tac_launch')" "${ROOT}/src/App.vue" || fail "temporary new-window marker is not removed"
+echo "[TEST] PASS contextual new-window startup wording"

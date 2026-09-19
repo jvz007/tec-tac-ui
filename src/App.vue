@@ -21,6 +21,12 @@ const navPreferences = ref({ order: {}, favorites: [] })
 const draggedNav = ref(null)
 const navContextMenu = ref(null)
 const uiVersion = __TEC_TAC_UI_VERSION__
+const newWindowLaunch = ref(new URLSearchParams(window.location.search).get('tec_tac_launch') === 'new-window')
+if (newWindowLaunch.value) {
+  const cleanUrl = new URL(window.location.href)
+  cleanUrl.searchParams.delete('tec_tac_launch')
+  window.history.replaceState(window.history.state, '', `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`)
+}
 const publicRoute = computed(() => route.meta?.public === true || route.path.startsWith('/public/'))
 const navPreferenceUser = computed(() => String(state.context.user?.username || localStorage.getItem('user_name') || 'anonymous').trim() || 'anonymous')
 const navPreferenceKey = computed(() => `tec_tac_nav_preferences:${navPreferenceUser.value}`)
@@ -171,8 +177,9 @@ function closeNavContextMenu() { navContextMenu.value = null }
 function openInNewTab(item) {
   const resolved = router.resolve(item.to)
   const base = `${window.location.origin}/tec-tac/`
-  const href = new URL(resolved.href, base).href
-  window.open(href, '_blank', 'noopener,noreferrer')
+  const target = new URL(resolved.href, base)
+  target.searchParams.set('tec_tac_launch', 'new-window')
+  window.open(target.href, '_blank', 'noopener,noreferrer')
   closeNavContextMenu()
 }
 function handleGlobalKey(event) { if (event.key === 'Escape') closeNavContextMenu() }
@@ -253,7 +260,14 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleGlobalKey))
 
     <main class="main">
       <router-view v-if="publicRoute" />
-      <div v-else-if="state.status === 'loading'" class="state-panel verify-panel"><span class="eyebrow">SESSION VERIFICATION</span><h2>Verifying Tactical session</h2><p>Tec-Tac is validating the existing Tactical browser token before loading operational modules.</p><div class="verify-line"><span class="spinner" aria-hidden="true"></span><span class="mono">Authorization: Token &lt;browser session&gt;</span></div></div>
+      <div v-else-if="state.status === 'loading'" class="state-panel verify-panel">
+        <template v-if="newWindowLaunch">
+          <span class="eyebrow">WINDOW STARTUP</span><h2>Opening new window…</h2><p>Tec-Tac is securely preparing the requested page and loading its operational modules.</p><div class="verify-line"><span class="spinner" aria-hidden="true"></span><span class="mono">Opening requested Tec-Tac page…</span></div>
+        </template>
+        <template v-else>
+          <span class="eyebrow">SESSION VERIFICATION</span><h2>Verifying Tactical session</h2><p>Tec-Tac is validating the existing Tactical browser token before loading operational modules.</p><div class="verify-line"><span class="spinner" aria-hidden="true"></span><span class="mono">Authorization: Token &lt;browser session&gt;</span></div>
+        </template>
+      </div>
       <LoginPanel v-else-if="state.status === 'unauthenticated'" />
       <div v-else-if="state.status === 'failed'" class="state-panel danger-panel"><span class="eyebrow">SESSION OR BACKEND CHECK FAILED</span><h2>Tec-Tac could not complete startup</h2><p class="mono">{{ state.error?.message }}</p><div class="row"><button class="btn" @click="retry">Retry</button><button class="btn ghost" @click="backToTactical">Open Tactical</button></div></div>
       <router-view v-else-if="state.status === 'ready'" />
