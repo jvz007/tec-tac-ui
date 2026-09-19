@@ -1,10 +1,13 @@
 # Release Notes Archive
 
-The current release note remains at the repository root: [`RELEASE_NOTES_0.10.1.md`](../../RELEASE_NOTES_0.10.1.md).
+The current release note remains at the repository root: [`RELEASE_NOTES_0.10.2.md`](../../RELEASE_NOTES_0.10.2.md).
 
 Historical release notes are kept here to keep the repository root focused on the current release.
 
 ## Historical releases
+
+- [0.10.1](RELEASE_NOTES_0.10.1.md)
+- [0.10.0](RELEASE_NOTES_0.10.0.md)
 
 - [0.9.0](RELEASE_NOTES_0.9.0.md)
 

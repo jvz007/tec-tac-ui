@@ -3,7 +3,19 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.10.1" ]] || fail "VERSION is not 0.10.1"
+VERSION="$(tr -d '\r\n' < "${ROOT}/VERSION")"
+PACKAGE_VERSION="$(python3 - "${ROOT}/package.json" <<'PY_VERSION'
+import json,sys
+print(json.load(open(sys.argv[1],encoding='utf-8'))['version'])
+PY_VERSION
+)"
+MANIFEST_VERSION="$(python3 - "${ROOT}/tec_tac_package.json" <<'PY_MANIFEST'
+import json,sys
+print(json.load(open(sys.argv[1],encoding='utf-8'))['version'])
+PY_MANIFEST
+)"
+[[ "${PACKAGE_VERSION}" == "${VERSION}" ]] || fail "package.json (${PACKAGE_VERSION}) does not match VERSION (${VERSION})"
+[[ "${MANIFEST_VERSION}" == "${VERSION}" ]] || fail "tec_tac_package.json (${MANIFEST_VERSION}) does not match VERSION (${VERSION})"
 for f in \
   src/module-loader.js \
   src/views/PublicPendingView.vue \
@@ -68,10 +80,10 @@ node --check "${ROOT}/src/main.js"
 node --check "${ROOT}/src/module-loader.js"
 node --check "${ROOT}/src/router.js"
 
-python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" <<'PY'
+python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" "${VERSION}" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
-assert package['version']=='0.10.1'
+assert package['version']==sys.argv[3]
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
 assert manifest['id']=='reference'
 assert manifest['entry']=='ui/index.js'
@@ -92,6 +104,9 @@ echo "[TEST] PASS foundation"
 grep -q 'drop-zone' "${ROOT}/src/views/ModulesView.vue" || fail "drag/drop package intake missing"
 grep -q 'discardModuleArtifact' "${ROOT}/src/modules.js" || fail "v2 staged discard API missing"
 grep -q '__TEC_TAC_UI_VERSION__' "${ROOT}/src/App.vue" || fail "dynamic footer UI version missing"
+grep -q 'const uiVersion = __TEC_TAC_UI_VERSION__' "${ROOT}/src/components/LoginPanel.vue" || fail "dynamic login UI version missing"
+grep -q '{{ uiVersion }}' "${ROOT}/src/components/LoginPanel.vue" || fail "login UI version binding missing"
+if grep -q '<span>UI</span><b>0.3.0</b>' "${ROOT}/src/components/LoginPanel.vue"; then fail "stale hardcoded login UI version remains"; fi
 grep -q '__TEC_TAC_UI_VERSION__' "${ROOT}/vite.config.js" || fail "Vite UI version injection missing"
 
 grep -q 'setModuleVisible' "${ROOT}/src/modules.js" || fail "module visibility API helper missing"

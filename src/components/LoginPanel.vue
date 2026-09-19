@@ -8,6 +8,7 @@ import {
   setupTacticalTotp,
 } from '../api'
 
+const uiVersion = __TEC_TAC_UI_VERSION__
 const username = ref('')
 const password = ref('')
 const twofactor = ref('')
@@ -266,7 +267,7 @@ function openTactical() {
     <div class="login-foot">
       <span>AUTHORITY</span><b>Tactical RMM</b>
       <span>SESSION</span><b>Knox token</b>
-      <span>UI</span><b>0.3.0</b>
+      <span>UI</span><b>{{ uiVersion }}</b>
     </div>
   </section>
 </template>
