@@ -15,7 +15,7 @@ fail(){ printf '[TEC-TAC-UI] ERROR: %s\n' "$*" >&2; exit 1; }
 mkdir -p "${MODULES_ROOT}"
 TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT; mkdir -p "${TMP}/modules"
 "${PYTHON_BIN}" - "${EXTENSIONS_ROOT}" "${TMP}/modules" "${STATE_FILE}" <<'PY'
-import json, shutil, sys
+import hashlib, json, shutil, sys
 from pathlib import Path
 extensions_root, out_root, state_file = map(Path, sys.argv[1:])
 out_root.mkdir(parents=True, exist_ok=True)
@@ -69,13 +69,21 @@ if extensions_root.is_dir():
     src=resolve(entry,"UI entry"); pub=resolve(public_entry,"Public UI entry")
     if src and pub and src.parent != pub.parent: raise SystemExit(f"authenticated/public entries must share a bundle directory in {manifest}")
     bundle=(src or pub).parent; dst=out_root/mid; shutil.copytree(bundle,dst)
+    def cache_key(path):
+      if not path: return None
+      digest=hashlib.sha256()
+      with path.open("rb") as handle:
+        for block in iter(lambda: handle.read(1024*1024), b""):
+          digest.update(block)
+      return digest.hexdigest()[:16]
+    src_key=cache_key(src); pub_key=cache_key(pub)
     effective_visible=visible(mid,payload)
     navigation=payload.get("navigation") or {"label":mid,"section":"Extensions","icon":"◇"}
     if not isinstance(navigation,dict): raise SystemExit(f"navigation must be an object in {manifest}")
     navigation=dict(navigation); navigation["visible"]=effective_visible
-    modules.append({"id":mid,"version":str(payload.get("version","0.0.0")),"visible":effective_visible,"entry":f"/tec-tac/modules/{mid}/{src.name}" if src else None,"public":{"entry":f"/tec-tac/modules/{mid}/{pub.name}","base_path":public_base} if pub else None,"navigation":navigation,"permissions":ui_permissions})
+    modules.append({"id":mid,"version":str(payload.get("version","0.0.0")),"visible":effective_visible,"entry":f"/tec-tac/modules/{mid}/{src.name}?v={src_key}" if src else None,"public":{"entry":f"/tec-tac/modules/{mid}/{pub.name}?v={pub_key}","base_path":public_base} if pub else None,"navigation":navigation,"permissions":ui_permissions})
 (out_root/"modules.json").write_text(json.dumps(modules,indent=2)+"\n",encoding="utf-8")
-print(f"discovered={len(modules)}")
+print(f"discovered={len(modules)} manifest={out_root/'modules.json'}")
 PY
 rm -rf "${MODULES_ROOT}"; mkdir -p "${MODULES_ROOT}"; cp -a "${TMP}/modules/." "${MODULES_ROOT}/"
 chown -R www-data:www-data "${MODULES_ROOT}" 2>/dev/null || true

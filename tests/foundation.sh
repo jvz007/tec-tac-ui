@@ -182,3 +182,16 @@ echo "[TEST] PASS layout integration"
 
 grep -q 'npm install --no-package-lock' "${ROOT}/scripts/install.sh" || fail "UI installer may dirty source checkout with package-lock.json"
 echo "[TEST] PASS source checkout clean install"
+
+# 0.10.6 dynamic module manifest/cache/route ownership hardening
+grep -Fq "fetch('/tec-tac/modules/modules.json', { cache: 'no-store' })" "${ROOT}/src/api.js" || fail "canonical runtime module manifest URL changed"
+! grep -Fq "fetch('/tec-tac/modules.json'" "${ROOT}/src/api.js" || fail "legacy root module manifest URL reintroduced"
+grep -q 'hashlib.sha256' "${ROOT}/scripts/sync-modules.sh" || fail "module entry content cache key missing"
+grep -q '?v={src_key}' "${ROOT}/scripts/sync-modules.sh" || fail "authenticated module cache-busted entry missing"
+grep -q '?v={pub_key}' "${ROOT}/scripts/sync-modules.sh" || fail "public module cache-busted entry missing"
+grep -q 'guardedModuleRouter' "${ROOT}/src/module-loader.js" || fail "dynamic route ownership guard missing"
+grep -q 'dynamicModule: descriptor.id' "${ROOT}/src/module-loader.js" || fail "dynamic route ownership metadata missing"
+if grep -Eq "path:[[:space:]]*['\"]/automation|name:[[:space:]]*['\"]extension-automation" "${ROOT}/src/router.js"; then fail "core UI must not own Automation route"; fi
+grep -q '/tec-tac/modules/modules.json' "${ROOT}/README.md" || fail "canonical runtime module manifest documentation missing"
+grep -q '/var/lib/tec-tac/ui/tec-tac/modules/modules.json' "${ROOT}/README.md" || fail "canonical runtime module manifest filesystem path missing"
+echo "[TEST] PASS dynamic module cache and route ownership"

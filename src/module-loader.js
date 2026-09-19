@@ -1,5 +1,40 @@
 import * as Vue from 'vue'
 
+function guardedModuleRouter(router, descriptor, routeOwners) {
+  return new Proxy(router, {
+    get(target, prop, receiver) {
+      if (prop !== 'addRoute') return Reflect.get(target, prop, receiver)
+      return (parentOrRoute, maybeRoute) => {
+        const route = maybeRoute === undefined ? parentOrRoute : maybeRoute
+        if (!route || typeof route !== 'object') throw new Error('router.addRoute requires a route object')
+        const path = String(route.path || '').trim()
+        const name = route.name == null ? '' : String(route.name)
+        if (!path) throw new Error(`module ${descriptor.id} attempted to register a route without a path`)
+
+        const existing = target.getRoutes()
+        const pathMatch = existing.find((item) => item.path === path)
+        const nameMatch = name ? existing.find((item) => String(item.name || '') === name) : null
+        const conflict = pathMatch || nameMatch
+        if (conflict) {
+          const key = pathMatch ? `path ${path}` : `name ${name}`
+          const owner = routeOwners.get(conflict.path) || conflict.meta?.dynamicModule || 'core shell / previously registered route'
+          throw new Error(`module ${descriptor.id} cannot claim ${key}; it is already owned by ${owner}`)
+        }
+
+        const decorated = {
+          ...route,
+          meta: { ...(route.meta || {}), dynamicModule: descriptor.id },
+        }
+        const result = maybeRoute === undefined
+          ? target.addRoute(decorated)
+          : target.addRoute(parentOrRoute, decorated)
+        routeOwners.set(path, descriptor.id)
+        return result
+      }
+    },
+  })
+}
+
 function moduleIsAllowed(descriptor, context) {
   if (descriptor.allowed === false) return false
   if (!descriptor.permissions?.length) return true
@@ -68,6 +103,7 @@ export async function loadUiModules(runtime, modules) {
   const loaded = []
   const failed = []
   const skipped = []
+  const routeOwners = new Map()
 
   for (const descriptor of modules) {
     if (!descriptor.entry) continue
@@ -94,7 +130,8 @@ export async function loadUiModules(runtime, modules) {
         // cannot be hidden again by register().
         runtime.addNavigation({ ...item, visible: true })
       }
-      await plugin.register({ ...runtime, addNavigation, Vue, descriptor })
+      const moduleRouter = guardedModuleRouter(runtime.router, descriptor, routeOwners)
+      await plugin.register({ ...runtime, router: moduleRouter, addNavigation, Vue, descriptor })
       loaded.push(descriptor.id)
     } catch (error) {
       failed.push({ id: descriptor.id, message: error?.message || String(error) })

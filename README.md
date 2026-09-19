@@ -1,3 +1,5 @@
+Version **0.10.6** hardens dynamic module cache coherency and route ownership. The canonical runtime module manifest is `/tec-tac/modules/modules.json` (filesystem: `/var/lib/tec-tac/ui/tec-tac/modules/modules.json`).
+
 Version **0.10.5** keeps UI source installs Git-clean by suppressing npm lockfile generation during deployment.
 
 # Tec-Tac UI
@@ -204,6 +206,23 @@ Extension rules:
 Role, superuser state, and effective Tec-Tac permissions are not guessed by the UI when the richer backend context endpoint is unavailable.
 
 ## Dynamic UI modules
+
+### Canonical runtime manifest
+
+The canonical browser URL for dynamic module discovery is:
+
+```text
+/tec-tac/modules/modules.json
+```
+
+The deployed filesystem path is:
+
+```text
+/var/lib/tec-tac/ui/tec-tac/modules/modules.json
+```
+
+`/tec-tac/modules.json` is not a valid Tec-Tac module-manifest location. `scripts/sync-modules.sh` owns generation of the canonical manifest and the shell loads that exact URL with `cache: no-store`. Module entry URLs in the manifest include a content-derived cache key so replacement module code is fetched as a new ES module.
+
 
 An installed backend extension may optionally contain:
 
