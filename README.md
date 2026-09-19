@@ -430,3 +430,11 @@ Authenticated users can reorder navigation items inside their existing category 
 A **Favorites** category can contain shortcuts to any currently visible navigation item while leaving the original entry in place. Favorites can be independently reordered. Right-clicking a navigation item exposes **Open in new tab** plus **Add to Favorites / Remove from Favorites**. Dynamic module routes use the same shell router resolution as core routes.
 
 From UI 0.10.16 these settings, theme, collapsed categories and rail state are stored in the authenticated user's Core preference profile rather than being browser-only. Existing browser settings are migrated automatically the first time a user signs in after the upgrade. Browser storage remains an early-startup cache only. The top-right **Preferences** control opens `/preferences`. See `docs/user-preferences.md`.
+
+## Shared Monaco editor runtime (0.10.17)
+
+Tec-Tac Core owns a single locally bundled Monaco Editor runtime for authenticated extension modules. Modules receive the stable `codeEditor` contract rather than importing Monaco or Tactical frontend assets directly. Monaco editor code and workers are emitted by Vite beneath the persistent `/tec-tac/` UI deployment; there is no CDN dependency.
+
+The runtime provides Core-owned HTML, Markdown, plain text, CSS, YAML and JSON editing; multiple named models with view-state restoration; selection/edit/undo/redo APIs; completion and hover provider extension points; automatic dark/light/high-contrast theme synchronization; and module-scoped lifecycle cleanup.
+
+See `docs/module-code-editor.md` and `examples/code-editor-reference/`.

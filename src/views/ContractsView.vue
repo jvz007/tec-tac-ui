@@ -4,6 +4,7 @@ import { downloadDeveloperContracts, getDeveloperContracts } from '../contracts'
 
 const contextActions=inject('tecTacContextActions', null)
 const contextInteractions=inject('tecTacContextInteractions', null)
+const codeEditor=inject('tecTacCodeEditor', null)
 const data=ref(null), loading=ref(true), error=ref(''), query=ref(''), exporting=ref('')
 const q=computed(()=>query.value.trim().toLowerCase())
 const match=(...values)=>!q.value||values.some(v=>String(v??'').toLowerCase().includes(q.value))
@@ -14,6 +15,7 @@ const permissions=computed(()=>(data.value?.permissions||[]).filter(x=>match(x.i
 const http=computed(()=>(data.value?.http||[]).filter(x=>match(x.route,x.name,(x.methods||[]).join(' '))))
 const uiActions=computed(()=>(contextActions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.resource,x.label,x.group,x.permission,(x.placements||[]).join(' '))))
 const uiInteractions=computed(()=>(contextInteractions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.surface,x.permission,(x.sourceTypes||[]).join(' '),(x.targetTypes||[]).join(' '))))
+const editorContract=computed(()=>codeEditor?.snapshot?.()||{languages:[],defaults:{},providers:[],theme:'—'})
 async function refresh(){loading.value=true;error.value='';try{data.value=await getDeveloperContracts()}catch(e){error.value=e.message||'Unable to load developer contracts.'}finally{loading.value=false}}
 async function exportFile(format){exporting.value=format;error.value='';try{await downloadDeveloperContracts(format)}catch(e){error.value=e.message||'Unable to export developer contracts.'}finally{exporting.value=''}}
 function stateClass(state){return state==='available'?'ok':state==='unhealthy'||state==='version-incompatible'?'danger':state&&state!=='available'?'warn':''}
@@ -57,6 +59,17 @@ onMounted(refresh)
       <tr><td><b class="mono">apiRaw(path, options)</b></td><td class="mono">Response</td><td>Authenticated downloads, uploads and custom media types.</td></tr>
       <tr><td><b class="mono">apiBlob(path, options)</b></td><td class="mono">Blob</td><td>PDF, image, ZIP and other binary responses.</td></tr>
       <tr><td><b class="mono">apiText(path, options)</b></td><td class="mono">string</td><td>HTML, text and textual exports.</td></tr>
+    </tbody></table></div>
+
+    <div class="section-divider">Shared module code editor</div>
+    <div class="callout contract-rules"><b>Editor infrastructure boundary</b><span>Authenticated modules consume the Core-owned <span class="mono">codeEditor</span> contract. Monaco and its workers are bundled under <span class="mono">/tec-tac/</span>; modules do not import Monaco, Tactical editor assets or CDN runtimes directly.</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Capability</th><th>Contract</th></tr></thead><tbody>
+      <tr><td>Languages</td><td class="mono">{{editorContract.languages.join(', ')}}</td></tr>
+      <tr><td>Editor</td><td class="mono">create · get/set value · selection · insert/replace · language · read-only · undo/redo · layout · events · dispose</td></tr>
+      <tr><td>Models</td><td class="mono">createModel · getModel · setModel · content/undo state · view-state restore</td></tr>
+      <tr><td>Providers</td><td class="mono">registerCompletionProvider · registerHoverProvider · module-scoped disposal</td></tr>
+      <tr><td>Theme</td><td class="mono">{{editorContract.theme}}</td></tr>
+      <tr><td>Active provider registrations</td><td class="mono">{{editorContract.providers.reduce((n,item)=>n+item.count,0)}}</td></tr>
     </tbody></table></div>
 
     <div class="section-divider">HTTP boundary</div>

@@ -79,3 +79,16 @@ Extension endpoints should **not** explicitly override `authentication_classes` 
 ## Boundary rule
 
 Modules must not access `access_token`, browser local storage, or Tec-Tac authentication internals directly. If a transport capability is missing, extend the Core runtime contract rather than reproducing authentication in an extension.
+
+## Shared code editor
+
+Authenticated modules also receive a Core-owned `codeEditor` capability. Monaco is an internal implementation detail; extensions must not import Monaco, Tactical frontend editor assets, or CDN editor runtimes directly.
+
+```js
+const editor = codeEditor.create(element, {
+  language: 'html',
+  value: initialValue,
+})
+```
+
+The contract supports editor commands/events, Core-owned multi-model editing, completion and hover providers, automatic Tec-Tac theme integration, and module-scoped disposal. See [`docs/module-code-editor.md`](module-code-editor.md) for the complete contract.

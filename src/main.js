@@ -7,6 +7,7 @@ import { state, loadContext } from './state'
 import { loadPublicUiModules, loadUiModules } from './module-loader'
 import { createContextActionRegistry } from './context-actions'
 import { createContextInteractionRegistry } from './context-interactions'
+import { createCodeEditorService } from './code-editor'
 import { initializeUserPreferences } from './preferences'
 import './styles.css'
 
@@ -25,11 +26,13 @@ async function bootstrap() {
   )
   const contextActions = createContextActionRegistry({ hasPermission })
   const contextInteractions = createContextInteractionRegistry({ hasPermission })
+  const codeEditor = createCodeEditorService()
 
   app.provide('tecTacState', state)
   app.provide('tecTacNavigation', navigation)
   app.provide('tecTacContextActions', contextActions)
   app.provide('tecTacContextInteractions', contextInteractions)
+  app.provide('tecTacCodeEditor', codeEditor)
   app.use(router)
   const initialHashTarget = window.location.hash.startsWith('#/')
     ? window.location.hash.slice(1)
@@ -72,6 +75,7 @@ async function bootstrap() {
         hasPermission,
         contextActions,
         contextInteractions,
+        codeEditor,
       },
       state.context.modules || staticModules,
     )
