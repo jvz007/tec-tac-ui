@@ -1,5 +1,7 @@
 # Tec-Tac UI
 
+Version **0.10.0** adds Scheduler configuration, diagnostics, self-tests, richer run history and dangerous-action confirmation for Framework 1.11.0.
+
 Version **0.9.3** adds shell-wide Tactical session-expiry handling: authenticated `401` responses immediately clear the stale session and expose the existing login gate without changing the current hash route. `403` remains an RBAC error. Version 0.9.2 fixes Public Contracts Markdown/Text downloads against the Framework 1.10.2 export endpoint.
 
 Version **0.8.0** adds Operations → Schedules for Framework 1.8.0.

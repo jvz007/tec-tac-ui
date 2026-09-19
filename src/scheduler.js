@@ -8,3 +8,8 @@ export function updateSchedule(id,payload){ return apiFetch(`/api/tfd/scheduler/
 export function deleteSchedule(id){ return apiFetch(`/api/tfd/scheduler/schedules/${encodeURIComponent(id)}/`,{method:'DELETE'}) }
 export function runScheduleNow(id){ return apiFetch(`/api/tfd/scheduler/schedules/${encodeURIComponent(id)}/run/`,{method:'POST',body:JSON.stringify({})}) }
 export function listScheduleRuns(scheduleId=null){ const q=scheduleId?`?schedule_id=${encodeURIComponent(scheduleId)}`:''; return apiFetch(`/api/tfd/scheduler/runs/${q}`) }
+
+export function getSchedulerConfig(){ return apiFetch('/api/tfd/scheduler/config/') }
+export function updateSchedulerConfig(payload){ return apiFetch('/api/tfd/scheduler/config/',{method:'PATCH',body:JSON.stringify(payload)}) }
+export function getSchedulerHealth(){ return apiFetch('/api/tfd/scheduler/health/') }
+export function runSchedulerSelfTest(mode){ return apiFetch('/api/tfd/scheduler/self-test/',{method:'POST',body:JSON.stringify({mode})}) }
