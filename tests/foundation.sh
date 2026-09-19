@@ -258,8 +258,16 @@ grep -q 'function navDrop' "${ROOT}/src/App.vue" || fail "navigation drag/drop o
 grep -q 'source.section !== section' "${ROOT}/src/App.vue" || fail "same-category drag guard missing"
 grep -q 'function toggleFavorite' "${ROOT}/src/App.vue" || fail "navigation favorite toggle missing"
 grep -q 'Open in new tab' "${ROOT}/src/App.vue" || fail "navigation new-tab context action missing"
-grep -q "router.resolve(item.to).href" "${ROOT}/src/App.vue" || fail "new-tab navigation does not use router resolution"
+grep -q "router.resolve(item.to)" "${ROOT}/src/App.vue" || fail "new-tab navigation does not use router resolution"
 grep -q 'window.open' "${ROOT}/src/App.vue" || fail "new-tab window action missing"
 grep -q 'nav-context-menu' "${ROOT}/src/styles.css" || fail "navigation context-menu styling missing"
 grep -q 'Per-user navigation preferences' "${ROOT}/README.md" || fail "navigation preference documentation missing"
 echo "[TEST] PASS per-user navigation preferences"
+
+
+# 0.10.13 navigation fresh-tab route restoration
+grep -q "new URL(resolved.href, base).href" "${ROOT}/src/App.vue" || fail "new-tab navigation does not construct an absolute Tec-Tac URL"
+grep -q "window.location.hash.startsWith('#/')" "${ROOT}/src/main.js" || fail "initial hash target is not preserved"
+grep -q "await router.replace(initialHashTarget)" "${ROOT}/src/main.js" || fail "authenticated initial route is not replayed after module registration"
+grep -q "fresh tab may target a dynamically registered authenticated route" "${ROOT}/src/main.js" || fail "dynamic fresh-tab route restoration documentation missing"
+echo "[TEST] PASS navigation fresh-tab route restoration"

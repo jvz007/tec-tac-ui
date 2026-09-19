@@ -169,7 +169,9 @@ function openNavContextMenu(event, item, section) {
 }
 function closeNavContextMenu() { navContextMenu.value = null }
 function openInNewTab(item) {
-  const href = router.resolve(item.to).href
+  const resolved = router.resolve(item.to)
+  const base = `${window.location.origin}/tec-tac/`
+  const href = new URL(resolved.href, base).href
   window.open(href, '_blank', 'noopener,noreferrer')
   closeNavContextMenu()
 }
