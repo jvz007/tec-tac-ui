@@ -438,3 +438,11 @@ Tec-Tac Core owns a single locally bundled Monaco Editor runtime for authenticat
 The runtime provides Core-owned HTML, Markdown, plain text, CSS, YAML and JSON editing; multiple named models with view-state restoration; selection/edit/undo/redo APIs; completion and hover provider extension points; automatic dark/light/high-contrast theme synchronization; and module-scoped lifecycle cleanup.
 
 See `docs/module-code-editor.md` and `examples/code-editor-reference/`.
+
+## Core dashboards (0.11.0)
+
+Tec-Tac Core owns authenticated dashboards and the shared widget-composition surface. Users can create private dashboards visible only to themselves or shared dashboards visible to every authenticated Tec-Tac user. Dashboard owners may switch visibility after creation, choose a default dashboard, restore the last dashboard they used, add permitted widgets, drag widgets to reorder them, and resize widget width/height.
+
+Authenticated modules contribute widgets through the module-scoped `dashboardWidgets` runtime capability; modules do not persist their own dashboard layout. See `docs/module-dashboard-widgets.md`.
+
+The existing navigation search has moved from the top bar into a sticky search field at the top of the left navigation rail.

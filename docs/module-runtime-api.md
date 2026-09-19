@@ -92,3 +92,9 @@ const editor = codeEditor.create(element, {
 ```
 
 The contract supports editor commands/events, Core-owned multi-model editing, completion and hover providers, automatic Tec-Tac theme integration, and module-scoped disposal. See [`docs/module-code-editor.md`](module-code-editor.md) for the complete contract.
+
+## Dashboard widgets
+
+Authenticated modules also receive the Core-owned `dashboardWidgets` capability. Core owns dashboard persistence, private/shared visibility and layout; modules contribute widget components through a stable registry rather than implementing their own dashboard stores.
+
+See `docs/module-dashboard-widgets.md` for registration, permission, sizing and lifecycle rules.

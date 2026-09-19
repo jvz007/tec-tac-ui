@@ -1,16 +1,18 @@
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import {
   preferenceState,
   resetNavigationPreferences,
   resetUserPreferences,
   saveUserPreferences,
 } from '../preferences'
+import { listDashboards } from '../dashboards'
 
 function clone(value) { return JSON.parse(JSON.stringify(value)) }
 const draft = ref(clone(preferenceState.preferences))
 const saved = ref('')
 const error = ref('')
+const dashboards = ref([])
 
 watch(() => preferenceState.preferences, (value) => {
   draft.value = clone(value)
@@ -19,6 +21,15 @@ watch(() => preferenceState.preferences, (value) => {
 const favoriteCount = computed(() => draft.value.navigation?.favorites?.length || 0)
 const orderedSectionCount = computed(() => Object.keys(draft.value.navigation?.order || {}).length)
 const collapsedCount = computed(() => Object.values(draft.value.navigation?.collapsed_sections || {}).filter(Boolean).length)
+
+async function loadDashboards() {
+  try {
+    const response = await listDashboards()
+    dashboards.value = response?.dashboards || []
+  } catch (e) {
+    error.value = e?.message || 'Unable to load dashboards.'
+  }
+}
 
 async function save() {
   error.value = ''
@@ -57,6 +68,8 @@ async function resetAll() {
     error.value = e?.message || 'Unable to reset preferences.'
   }
 }
+
+onMounted(loadDashboards)
 </script>
 
 <template>
@@ -83,13 +96,13 @@ async function resetAll() {
         <div><span>Custom category order</span><b>{{ orderedSectionCount }}</b></div>
         <div><span>Collapsed categories</span><b>{{ collapsedCount }}</b></div>
       </div>
-      <p class="muted smalltext">Menu ordering and Favorites are still changed directly from the navigation rail. They are now stored with your Tec-Tac user preferences.</p>
+      <p class="muted smalltext">Menu ordering and Favorites are changed directly from the navigation rail and stored with your Tec-Tac user preferences.</p>
     </section>
 
     <section class="card preference-card">
-      <div class="cardhead"><div><span class="eyebrow">DASHBOARDS</span><h3>Dashboard defaults</h3></div><span class="pill">READY FOR DASHBOARDS</span></div>
-      <label class="preference-toggle"><input v-model="draft.dashboard.restore_last_dashboard" type="checkbox"><span><b>Return to my last dashboard</b><small>When dashboard composition is enabled, Tec-Tac will reopen the last dashboard you used.</small></span></label>
-      <p class="muted smalltext">Your default dashboard selection will also be stored here once shared/private dashboards are introduced.</p>
+      <div class="cardhead"><div><span class="eyebrow">DASHBOARDS</span><h3>Dashboard defaults</h3></div><span class="pill ok">ACTIVE</span></div>
+      <label class="field"><span>Default dashboard</span><select v-model="draft.dashboard.default_dashboard_id"><option :value="null">Automatic</option><optgroup v-if="dashboards.some(x=>x.mine)" label="My Dashboards"><option v-for="item in dashboards.filter(x=>x.mine)" :key="item.id" :value="item.id">{{ item.name }} · {{ item.visibility }}</option></optgroup><optgroup v-if="dashboards.some(x=>x.visibility==='shared'&&!x.mine)" label="Shared Dashboards"><option v-for="item in dashboards.filter(x=>x.visibility==='shared'&&!x.mine)" :key="item.id" :value="item.id">{{ item.name }} · {{ item.owner.display_name }}</option></optgroup></select></label>
+      <label class="preference-toggle"><input v-model="draft.dashboard.restore_last_dashboard" type="checkbox"><span><b>Return to my last dashboard</b><small>When enabled, the most recently opened visible dashboard takes priority over your default dashboard.</small></span></label>
     </section>
 
     <section class="card preference-card">

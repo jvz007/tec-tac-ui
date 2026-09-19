@@ -11,6 +11,7 @@ export const DEFAULT_USER_PREFERENCES = Object.freeze({
   },
   dashboard: {
     default_dashboard_id: null,
+    last_dashboard_id: null,
     restore_last_dashboard: true,
   },
   extensions: {},
@@ -36,6 +37,7 @@ function normalize(value = {}) {
     },
     dashboard: {
       default_dashboard_id: typeof dashboard.default_dashboard_id === 'string' ? dashboard.default_dashboard_id : null,
+      last_dashboard_id: typeof dashboard.last_dashboard_id === 'string' ? dashboard.last_dashboard_id : null,
       restore_last_dashboard: dashboard.restore_last_dashboard !== false,
     },
     extensions: object(source.extensions),

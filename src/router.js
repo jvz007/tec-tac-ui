@@ -12,7 +12,9 @@ import { requestLeave, unsavedState } from './unsaved'
 export const router = createRouter({
   history: createWebHashHistory('/tec-tac/'),
   routes: [
-    { path: '/', name: 'dashboard', component: DashboardView, meta: { title: 'Overview' } },
+    { path: '/', redirect: '/dashboards' },
+    { path: '/dashboards', name: 'dashboards', component: DashboardView, meta: { title: 'Dashboards' } },
+    { path: '/dashboards/:dashboardId', name: 'dashboard-detail', component: DashboardView, meta: { title: 'Dashboard' } },
     { path: '/modules', name: 'modules', component: ModulesView, meta: { title: 'Modules' } },
     { path: '/schedules', name: 'schedules', component: SchedulesView, meta: { title: 'Schedules' } },
     { path: '/access', name: 'access', component: AccessView, meta: { title: 'Access' } },

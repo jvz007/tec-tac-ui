@@ -5,6 +5,7 @@ import { downloadDeveloperContracts, getDeveloperContracts } from '../contracts'
 const contextActions=inject('tecTacContextActions', null)
 const contextInteractions=inject('tecTacContextInteractions', null)
 const codeEditor=inject('tecTacCodeEditor', null)
+const dashboardWidgets=inject('tecTacDashboardWidgets', null)
 const data=ref(null), loading=ref(true), error=ref(''), query=ref(''), exporting=ref('')
 const q=computed(()=>query.value.trim().toLowerCase())
 const match=(...values)=>!q.value||values.some(v=>String(v??'').toLowerCase().includes(q.value))
@@ -16,6 +17,7 @@ const http=computed(()=>(data.value?.http||[]).filter(x=>match(x.route,x.name,(x
 const uiActions=computed(()=>(contextActions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.resource,x.label,x.group,x.permission,(x.placements||[]).join(' '))))
 const uiInteractions=computed(()=>(contextInteractions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.surface,x.permission,(x.sourceTypes||[]).join(' '),(x.targetTypes||[]).join(' '))))
 const editorContract=computed(()=>codeEditor?.snapshot?.()||{languages:[],defaults:{},providers:[],theme:'—'})
+const uiDashboardWidgets=computed(()=>(dashboardWidgets?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.title,x.category,x.permission,x.description)))
 async function refresh(){loading.value=true;error.value='';try{data.value=await getDeveloperContracts()}catch(e){error.value=e.message||'Unable to load developer contracts.'}finally{loading.value=false}}
 async function exportFile(format){exporting.value=format;error.value='';try{await downloadDeveloperContracts(format)}catch(e){error.value=e.message||'Unable to export developer contracts.'}finally{exporting.value=''}}
 function stateClass(state){return state==='available'?'ok':state==='unhealthy'||state==='version-incompatible'?'danger':state&&state!=='available'?'warn':''}
@@ -60,6 +62,10 @@ onMounted(refresh)
       <tr><td><b class="mono">apiBlob(path, options)</b></td><td class="mono">Blob</td><td>PDF, image, ZIP and other binary responses.</td></tr>
       <tr><td><b class="mono">apiText(path, options)</b></td><td class="mono">string</td><td>HTML, text and textual exports.</td></tr>
     </tbody></table></div>
+
+    <div class="section-divider">Dashboard widget contributions</div>
+    <div class="callout contract-rules"><b>Dashboard composition boundary</b><span>Core owns dashboard persistence, visibility and layout. Authenticated modules contribute permitted widgets through the module-scoped <span class="mono">dashboardWidgets</span> registry.</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Widget</th><th>Provider</th><th>Category</th><th>Default size</th><th>Permission</th></tr></thead><tbody><tr v-for="item in uiDashboardWidgets" :key="item.id"><td><b class="mono">{{item.id}}</b><span class="sub">{{item.title}} · {{item.description||'No description'}}</span></td><td class="mono">{{item.provider}}</td><td>{{item.category}}</td><td class="mono">{{item.defaultSize.w}}×{{item.defaultSize.h}}</td><td class="mono">{{item.permission||'—'}}</td></tr><tr v-if="!uiDashboardWidgets.length"><td colspan="5" class="muted">No dashboard widgets are currently registered or match the current search.</td></tr></tbody></table></div>
 
     <div class="section-divider">Shared module code editor</div>
     <div class="callout contract-rules"><b>Editor infrastructure boundary</b><span>Authenticated modules consume the Core-owned <span class="mono">codeEditor</span> contract. Monaco and its workers are bundled under <span class="mono">/tec-tac/</span>; modules do not import Monaco, Tactical editor assets or CDN runtimes directly.</span></div>

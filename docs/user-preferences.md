@@ -26,3 +26,13 @@ The current UI context also includes `preferences`, `preferences_initialized`, a
 - `extensions` (reserved namespace for future module-specific preferences)
 
 Modules should not write directly to browser storage for durable user settings. Future module-specific preference contracts should use the Core-owned `extensions` namespace/API rather than creating independent persistence mechanisms.
+
+## Dashboard preferences
+
+Dashboard composition uses the server-backed preference profile:
+
+- `dashboard.default_dashboard_id` selects the user's preferred visible dashboard.
+- `dashboard.last_dashboard_id` tracks the most recently opened dashboard.
+- `dashboard.restore_last_dashboard` controls whether the last dashboard takes priority over the default when opening the Dashboard workspace.
+
+If a saved dashboard ID is no longer visible (for example a shared dashboard became private), Core safely falls back to another visible dashboard.

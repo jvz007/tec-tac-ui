@@ -46,7 +46,7 @@ const publicRoute = computed(() => route.meta?.public === true || route.path.sta
 const coreNav = computed(() => {
   const capabilities = state.context.capabilities || {}
   return [
-    { label: 'Overview', icon: '⌂', to: '/', section: 'Workspace', visible: true },
+    { label: 'Dashboards', icon: '⌂', to: '/dashboards', section: 'Workspace', visible: true },
     { label: 'Schedules', icon: '◷', to: '/schedules', section: 'Operations', visible: capabilities.manage_schedules !== false },
     { label: 'Modules', icon: '▦', to: '/modules', section: 'Administration', visible: true },
     { label: 'Access', icon: '⛨', to: '/access', section: 'Administration', visible: capabilities.list_accounts !== false || capabilities.list_roles !== false },
@@ -202,7 +202,6 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleGlobalKey))
     <header class="topbar">
       <div class="crumbs"><span>Tec-Tac</span><span class="sep">/</span><b>{{ publicRoute ? currentTitle : (state.status === 'unauthenticated' ? 'Sign in' : currentTitle) }}</b></div>
       <div class="spacer"></div>
-      <label v-if="state.status === 'ready' && !publicRoute" class="search"><span class="sr-only">Search navigation</span><input v-model="query" placeholder="Search modules…" /></label>
       <select v-model="theme" class="theme-select" aria-label="Theme"><option value="dark">Dark</option><option value="light">Light</option><option value="high-contrast">High contrast</option></select>
       <button v-if="!publicRoute" class="btn ghost sm" @click="backToTactical">↗ Tactical</button>
       <button v-else-if="state.status !== 'ready'" class="btn ghost sm" @click="navigate('/')">Sign in</button>
@@ -216,6 +215,10 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleGlobalKey))
 
     <aside v-if="!publicRoute" class="rail">
       <template v-if="state.status === 'ready'">
+        <div class="rail-search-wrap" :class="{ collapsed: railCollapsed }">
+          <label v-if="!railCollapsed" class="rail-search"><span class="sr-only">Search navigation</span><span aria-hidden="true">⌕</span><input v-model="query" placeholder="Search modules…" /></label>
+          <button v-else class="rail-search-button" type="button" title="Expand navigation to search" aria-label="Expand navigation to search" @click.stop="railCollapsed=false">⌕</button>
+        </div>
         <template v-for="group in navGroups" :key="group.section">
           <button v-if="!railCollapsed" class="grp grp-btn label" type="button" :aria-expanded="!sectionCollapsed(group.section)" :title="`${sectionCollapsed(group.section) ? 'Expand' : 'Collapse'} ${group.section}`" @click.stop="toggleSection(group.section)">
             <span>{{ group.section }}</span><span class="grp-chevron" aria-hidden="true">{{ sectionCollapsed(group.section) ? '›' : '⌄' }}</span>
@@ -226,7 +229,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleGlobalKey))
               v-for="item in group.items"
               :key="`${group.section}:${item.to}`"
               class="navitem"
-              :class="{ active: route.path === item.to, 'nav-dragging': draggedNav?.section === group.section && draggedNav?.to === item.to }"
+              :class="{ active: route.path === item.to || (item.to === '/dashboards' && route.path.startsWith('/dashboards/')), 'nav-dragging': draggedNav?.section === group.section && draggedNav?.to === item.to }"
               :title="railCollapsed ? item.label : undefined"
               :aria-label="railCollapsed ? item.label : undefined"
               :draggable="!query.trim()"
