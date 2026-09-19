@@ -14,6 +14,11 @@ Core currently supports these public language IDs:
 - `css`
 - `yaml`
 - `json`
+- `powershell`
+- `bat`
+- `python`
+- `shell`
+- `typescript`
 
 YAML syntax highlighting is registered by Core. Jinja remains module-owned content layered into HTML, Markdown or plain text; Report Manager may add Jinja completions and commands without importing Monaco.
 
@@ -162,6 +167,58 @@ completion.dispose()
 Supported completion fields include `label`, `kind`, `insertText`, `snippet`, `detail`, `documentation`, `sortText`, `filterText` and an optional plain `range`.
 
 Provider callbacks receive Tec-Tac model wrappers plus plain position/word context, not Monaco objects.
+
+## Diagnostics providers
+
+Modules can register syntax/lint diagnostics without importing Monaco or setting Monaco markers directly.
+
+```js
+const diagnostics = codeEditor.registerDiagnosticsProvider('powershell', {
+  debounceMs: 350,
+  async provideDiagnostics({ model, value, versionId, language }) {
+    const result = await api('/api/scriptmanager/validate/', {
+      method: 'POST',
+      body: JSON.stringify({ shell: language, script: value }),
+    })
+
+    return result.errors.map((item) => ({
+      severity: item.severity || 'error',
+      message: item.message,
+      startLineNumber: item.line,
+      startColumn: item.column,
+      endLineNumber: item.end_line || item.line,
+      endColumn: item.end_column || item.column + 1,
+      source: 'PowerShell',
+      code: item.code,
+    }))
+  },
+})
+
+diagnostics.dispose()
+```
+
+The provider may be a function, or an object exposing `provideDiagnostics()`. It may return either an array or `{ diagnostics: [...] }`.
+
+Supported diagnostic fields:
+
+```text
+severity: error | warning | info | hint
+message
+startLineNumber
+startColumn
+endLineNumber
+endColumn
+source (optional)
+code (optional)
+```
+
+Core clamps marker ranges to the current model and translates the plain objects into Monaco markers internally. Providers are namespaced, so one module/provider cannot overwrite another provider's markers.
+
+Diagnostics run when a matching model is created, when its language changes to the provider language, and after content changes. The default debounce is 300 ms and may be overridden with `debounceMs` (0-10000 ms). Async results are version checked: if the model changes while validation is running, the stale result is discarded rather than displayed.
+
+Provider failures clear only that provider's markers and are logged by Core; they do not break the editor. Disposing a provider removes its listeners and markers. Core also disposes module-scoped providers if module registration fails or its editor scope is cleared.
+
+Syntax validation must not execute script content. Script Manager should use parser/checker operations such as PowerShell's parser, Python `ast.parse()`, or `bash -n` on its backend rather than executing the script.
 
 ## Hover providers
 

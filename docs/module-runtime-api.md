@@ -98,3 +98,7 @@ The contract supports editor commands/events, Core-owned multi-model editing, co
 Authenticated modules also receive the Core-owned `dashboardWidgets` capability. Core owns dashboard persistence, private/shared visibility and layout; modules contribute widget components through a stable registry rather than implementing their own dashboard stores.
 
 See `docs/module-dashboard-widgets.md` for registration, permission, sizing and lifecycle rules.
+## Shared code editor diagnostics
+
+Authenticated modules receive the Core-owned `codeEditor` capability. In addition to editors, models, completion and hover providers, modules may register parser/linter results through `codeEditor.registerDiagnosticsProvider(language, provider)`. Modules must return plain diagnostic objects and must not import Monaco or manipulate Monaco markers directly. See `docs/module-code-editor.md`.
+

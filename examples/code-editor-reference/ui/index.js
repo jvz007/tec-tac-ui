@@ -30,6 +30,23 @@ export default {
               return { suggestions: [{ label: 'client.name', kind: 'variable', insertText: '{{ client.name }}', detail: 'Reference completion' }] }
             },
           }))
+
+
+          providers.push(codeEditor.registerDiagnosticsProvider('html', {
+            debounceMs: 50,
+            provideDiagnostics({ value }) {
+              const line = value.split('\n').findIndex((item) => item.includes('{{ client.name }}')) + 1
+              return line > 0 ? [{
+                severity: 'hint',
+                message: 'Reference diagnostic: Jinja value is resolved at render time.',
+                startLineNumber: line,
+                startColumn: 7,
+                endLineNumber: line,
+                endColumn: 24,
+                source: 'Tec-Tac reference',
+              }] : []
+            },
+          }))
         })
 
         onBeforeUnmount(() => {
@@ -52,7 +69,10 @@ export default {
             button('Replace Selection', () => active()?.replaceSelection('[replacement]')),
             button('Undo', () => active()?.undo()),
             button('Redo', () => active()?.redo()),
-            button('Switch Language', () => active()?.setLanguage(active()?.getModel()?.language === 'markdown' ? 'html' : 'markdown')),
+            button('Switch Language', () => {
+              const language = active()?.getModel()?.language
+              active()?.setLanguage(language === 'html' ? 'python' : (language === 'python' ? 'powershell' : 'html'))
+            }),
           ]),
           h('div', { class: 'grid g2' }, [pane('HTML', htmlHost), pane('CSS', cssHost)]),
           h('div', { class: 'mt' }, [pane('YAML', yamlHost)]),

@@ -446,3 +446,7 @@ Tec-Tac Core owns authenticated dashboards and the shared widget-composition sur
 Authenticated modules contribute widgets through the module-scoped `dashboardWidgets` runtime capability; modules do not persist their own dashboard layout. See `docs/module-dashboard-widgets.md`.
 
 The existing navigation search has moved from the top bar into a sticky search field at the top of the left navigation rail.
+## Script editor diagnostics (0.11.1)
+
+The authenticated Core `codeEditor` runtime supports script language IDs `powershell`, `bat`, `python`, `shell`, and `typescript` in addition to the existing document/data languages. Modules can publish parser/linter results through `registerDiagnosticsProvider()` without importing Monaco or manipulating markers directly. Core owns debounce, stale-result protection, marker namespaces, lifecycle cleanup, and local Monaco worker deployment. See `docs/module-code-editor.md`.
+

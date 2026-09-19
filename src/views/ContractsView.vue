@@ -73,7 +73,7 @@ onMounted(refresh)
       <tr><td>Languages</td><td class="mono">{{editorContract.languages.join(', ')}}</td></tr>
       <tr><td>Editor</td><td class="mono">create · get/set value · selection · insert/replace · language · read-only · undo/redo · layout · events · dispose</td></tr>
       <tr><td>Models</td><td class="mono">createModel · getModel · setModel · content/undo state · view-state restore</td></tr>
-      <tr><td>Providers</td><td class="mono">registerCompletionProvider · registerHoverProvider · module-scoped disposal</td></tr>
+      <tr><td>Providers</td><td class="mono">registerCompletionProvider · registerHoverProvider · registerDiagnosticsProvider · module-scoped disposal</td></tr>
       <tr><td>Theme</td><td class="mono">{{editorContract.theme}}</td></tr>
       <tr><td>Active provider registrations</td><td class="mono">{{editorContract.providers.reduce((n,item)=>n+item.count,0)}}</td></tr>
     </tbody></table></div>

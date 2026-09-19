@@ -3,12 +3,14 @@ import 'monaco-editor/esm/vs/basic-languages/monaco.contribution'
 import 'monaco-editor/esm/vs/language/html/monaco.contribution'
 import 'monaco-editor/esm/vs/language/css/monaco.contribution'
 import 'monaco-editor/esm/vs/language/json/monaco.contribution'
+import 'monaco-editor/esm/vs/language/typescript/monaco.contribution'
 import EditorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker'
 import HtmlWorker from 'monaco-editor/esm/vs/language/html/html.worker?worker'
 import CssWorker from 'monaco-editor/esm/vs/language/css/css.worker?worker'
 import JsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker'
+import TypeScriptWorker from 'monaco-editor/esm/vs/language/typescript/ts.worker?worker'
 
-const SUPPORTED_LANGUAGES = Object.freeze(['html', 'markdown', 'plaintext', 'css', 'yaml', 'json'])
+const SUPPORTED_LANGUAGES = Object.freeze(['html', 'markdown', 'plaintext', 'css', 'yaml', 'json', 'powershell', 'bat', 'python', 'shell', 'typescript'])
 const DEFAULT_OPTIONS = Object.freeze({
   automaticLayout: true,
   minimap: { enabled: false },
@@ -31,6 +33,7 @@ function configureWorkers() {
     ...(self.MonacoEnvironment || {}),
     getWorker(_moduleId, label) {
       if (label === 'json') return new JsonWorker()
+      if (['typescript', 'javascript'].includes(label)) return new TypeScriptWorker()
       if (['css', 'scss', 'less'].includes(label)) return new CssWorker()
       if (['html', 'handlebars', 'razor'].includes(label)) return new HtmlWorker()
       return new EditorWorker()
@@ -157,6 +160,7 @@ function createServiceScope(ownerId, service) {
     createModel(options = {}) { return track(service.createModel(owner, options)) },
     registerCompletionProvider(language, provider) { return track(service.registerCompletionProvider(owner, language, provider)) },
     registerHoverProvider(language, provider) { return track(service.registerHoverProvider(owner, language, provider)) },
+    registerDiagnosticsProvider(language, provider) { return track(service.registerDiagnosticsProvider(owner, language, provider)) },
     clear() {
       for (const resource of [...resources].reverse()) {
         try { resource.dispose() } catch {}
@@ -175,6 +179,7 @@ export function createCodeEditorService() {
   const nativeToWrapper = new WeakMap()
   const scopes = new Map()
   const providerStats = new Map()
+  let diagnosticsProviderCounter = 0
 
   const observer = typeof MutationObserver !== 'undefined' && typeof document !== 'undefined'
     ? new MutationObserver((mutations) => {
@@ -423,11 +428,142 @@ export function createCodeEditorService() {
     })
   }
 
+
+  function markerSeverity(value) {
+    const key = String(value || 'error').trim().toLowerCase()
+    if (key === 'warning' || key === 'warn') return monaco.MarkerSeverity.Warning
+    if (key === 'info' || key === 'information') return monaco.MarkerSeverity.Info
+    if (key === 'hint') return monaco.MarkerSeverity.Hint
+    return monaco.MarkerSeverity.Error
+  }
+
+  function normalizeDiagnostic(model, item) {
+    if (!item || typeof item !== 'object') return null
+    const lineCount = Math.max(1, model.getLineCount())
+    const clampLine = (value, fallback) => Math.min(lineCount, Math.max(1, Number.isFinite(Number(value)) ? Math.trunc(Number(value)) : fallback))
+    const startLineNumber = clampLine(item.startLineNumber, 1)
+    const endLineNumber = Math.max(startLineNumber, clampLine(item.endLineNumber, startLineNumber))
+    const maxStartColumn = model.getLineMaxColumn(startLineNumber)
+    const maxEndColumn = model.getLineMaxColumn(endLineNumber)
+    const clampColumn = (value, max, fallback) => Math.min(max, Math.max(1, Number.isFinite(Number(value)) ? Math.trunc(Number(value)) : fallback))
+    const startColumn = clampColumn(item.startColumn, maxStartColumn, 1)
+    const endColumn = endLineNumber === startLineNumber
+      ? Math.max(startColumn, clampColumn(item.endColumn, maxEndColumn, startColumn + 1))
+      : clampColumn(item.endColumn, maxEndColumn, maxEndColumn)
+    const message = String(item.message || '').trim()
+    if (!message) return null
+    const marker = {
+      severity: markerSeverity(item.severity),
+      message,
+      startLineNumber,
+      startColumn,
+      endLineNumber,
+      endColumn,
+    }
+    if (item.source != null) marker.source = String(item.source)
+    if (item.code != null) marker.code = String(item.code)
+    return marker
+  }
+
+  function registerDiagnosticsProvider(owner, language, provider) {
+    const lang = assertLanguage(language)
+    const callback = typeof provider === 'function' ? provider : provider?.provideDiagnostics || provider?.provide
+    if (typeof callback !== 'function') throw new Error('Diagnostics provider must be a function or expose provideDiagnostics().')
+
+    const debounceMs = Math.max(0, Math.min(10000, Number(provider?.debounceMs ?? 300) || 0))
+    const markerOwner = `tec-tac:${owner}:diagnostics:${++diagnosticsProviderCounter}`
+    const tracked = new Map()
+    let disposed = false
+
+    function clearModel(model) {
+      try { monaco.editor.setModelMarkers(model, markerOwner, []) } catch {}
+    }
+
+    function detach(model) {
+      const state = tracked.get(model)
+      if (!state) return
+      tracked.delete(model)
+      if (state.timer) clearTimeout(state.timer)
+      try { state.content?.dispose?.() } catch {}
+      try { state.dispose?.dispose?.() } catch {}
+      state.sequence += 1
+      clearModel(model)
+    }
+
+    async function run(model, state) {
+      if (disposed || tracked.get(model) !== state || model.isDisposed() || model.getLanguageId() !== lang) return
+      const sequence = ++state.sequence
+      const versionId = model.getVersionId()
+      try {
+        const value = await callback({
+          model: providerModel(owner, model),
+          language: lang,
+          value: model.getValue(),
+          versionId,
+        })
+        if (disposed || tracked.get(model) !== state || model.isDisposed() || model.getLanguageId() !== lang) return
+        if (sequence !== state.sequence || versionId !== model.getVersionId()) return
+        const diagnostics = Array.isArray(value) ? value : (value?.diagnostics || [])
+        const markers = diagnostics.map((item) => normalizeDiagnostic(model, item)).filter(Boolean)
+        monaco.editor.setModelMarkers(model, markerOwner, markers)
+      } catch (error) {
+        if (sequence !== state.sequence || disposed || model.isDisposed()) return
+        clearModel(model)
+        console.error(`[TEC-TAC-UI] Diagnostics provider ${owner}:${lang} failed.`, error)
+      }
+    }
+
+    function schedule(model, state, immediate = false) {
+      if (state.timer) clearTimeout(state.timer)
+      state.sequence += 1
+      const delay = immediate ? 0 : debounceMs
+      state.timer = setTimeout(() => {
+        state.timer = null
+        run(model, state)
+      }, delay)
+    }
+
+    function attach(model, immediate = true) {
+      if (disposed || !model || model.isDisposed()) return
+      if (model.getLanguageId() !== lang) {
+        detach(model)
+        return
+      }
+      if (tracked.has(model)) {
+        if (immediate) schedule(model, tracked.get(model), true)
+        return
+      }
+      const state = { timer: null, sequence: 0, content: null, dispose: null }
+      state.content = model.onDidChangeContent(() => schedule(model, state, false))
+      state.dispose = model.onWillDispose(() => detach(model))
+      tracked.set(model, state)
+      schedule(model, state, immediate)
+    }
+
+    for (const model of monaco.editor.getModels()) attach(model, true)
+    const createHandle = monaco.editor.onDidCreateModel((model) => attach(model, true))
+    const languageHandle = monaco.editor.onDidChangeModelLanguage((event) => {
+      if (event.model.getLanguageId() === lang) attach(event.model, true)
+      else detach(event.model)
+    })
+
+    providerStats.set(owner, (providerStats.get(owner) || 0) + 1)
+    return disposable(() => {
+      if (disposed) return
+      disposed = true
+      createHandle.dispose()
+      languageHandle.dispose()
+      for (const model of [...tracked.keys()]) detach(model)
+      providerStats.set(owner, Math.max(0, (providerStats.get(owner) || 1) - 1))
+    })
+  }
+
   const service = {
     create,
     createModel,
     registerCompletionProvider,
     registerHoverProvider,
+    registerDiagnosticsProvider,
     forModule(moduleId) {
       const key = String(moduleId || '').trim()
       if (!key) throw new Error('codeEditor.forModule() requires a module ID.')
