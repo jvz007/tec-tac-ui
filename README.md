@@ -1,5 +1,7 @@
 # Tec-Tac UI
 
+Version **0.10.4** fixes UI installer source-path handling after the Tec-Tac source/runtime layout separation.
+
 Version **0.10.1** adds persistent whole-rail and per-category navigation collapse controls while preserving dynamic extension navigation.
 
 Version **0.10.0** adds Scheduler configuration, diagnostics, self-tests, richer run history and dangerous-action confirmation for Framework 1.11.0.

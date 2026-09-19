@@ -176,4 +176,6 @@ grep -q "rail-collapsed" "${ROOT}/src/styles.css" || fail "collapsed rail stylin
 
 grep -q 'module state references enabled module(s) whose extension files are missing' "${ROOT}/scripts/sync-modules.sh" || fail "module-loss guard missing"
 grep -q '/opt/tec-tac/etc/tec-tac.conf' "${ROOT}/scripts/tec-tac-config.sh" || fail "central Tec-Tac config path missing"
+grep -q 'UI_SOURCE_ROOT=' "${ROOT}/scripts/install.sh" || fail "UI installer does not preserve its own source root"
+if grep -q 'REPO_ROOT=' "${ROOT}/scripts/install.sh"; then fail "UI installer still uses collision-prone REPO_ROOT"; fi
 echo "[TEST] PASS layout integration"
