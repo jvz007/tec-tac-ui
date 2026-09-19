@@ -51,6 +51,8 @@ const confirmMode = ref('')
 const confirmText = ref('')
 const cascade = ref(false)
 let pollTimer = null
+let reloadTimer = null
+const reloadCountdown = ref(0)
 
 const canManage = computed(() => managerAllowed.value && state.context.capabilities?.manage_modules !== false)
 const filtered = computed(() => modules.value.filter((x) => !query.value.trim() || [x.id, x.status, x.extension_version].some((v) => String(v || '').toLowerCase().includes(query.value.toLowerCase()))))
@@ -64,6 +66,25 @@ const disabledCount = computed(() => modules.value.filter((x) => x.managed && !x
 const hiddenCount = computed(() => modules.value.filter((x) => x.managed && x.enabled && x.visible === false).length)
 const dependencyCount = computed(() => modules.value.reduce((n, x) => n + Object.keys(x.dependencies || {}).length, 0))
 const jobRunning = computed(() => activeJob.value && !['succeeded', 'failed', 'dispatch_failed'].includes(activeJob.value.status))
+const moduleJobProgress = computed(() => {
+  const job = activeJob.value
+  if (!job) return 0
+  if (job.status === 'succeeded' || job.stage === 'complete') return 100
+  if (['failed', 'dispatch_failed'].includes(job.status)) return 100
+  const stage = String(job.stage || job.status || '').toLowerCase()
+  if (stage.includes('rollback')) return 85
+  if (stage.includes('runtime-sync') || stage.includes('ui-sync')) return 82
+  if (stage.includes('lifecycle') || stage.includes('install')) return 55
+  if (stage.includes('dispatch')) return 18
+  if (job.status === 'running') return 35
+  return 8
+})
+const moduleJobProgressLabel = computed(() => {
+  if (!activeJob.value) return ''
+  if (activeJob.value.status === 'succeeded') return reloadCountdown.value > 0 ? `Complete · reloading in ${reloadCountdown.value}s` : 'Complete'
+  if (['failed', 'dispatch_failed'].includes(activeJob.value.status)) return 'Failed'
+  return String(activeJob.value.stage || activeJob.value.status || 'queued').replace(/-/g, ' ')
+})
 const preview = computed(() => staged.value?.preview || staged.value)
 const plan = computed(() => preview.value?.plan || staged.value?.plan || null)
 const artifactKind = computed(() => staged.value?.kind || preview.value?.kind || 'artifact')
@@ -411,8 +432,22 @@ async function setVisibility(item, visible) {
 function beginPoll(job) {
   activeJob.value = job
   jobPollError.value = ''
+  reloadCountdown.value = 0
   clearTimeout(pollTimer)
+  clearInterval(reloadTimer)
   pollTimer = setTimeout(poll, 100)
+}
+function scheduleReload() {
+  if (reloadTimer) return
+  reloadCountdown.value = 5
+  reloadTimer = window.setInterval(() => {
+    reloadCountdown.value -= 1
+    if (reloadCountdown.value <= 0) {
+      clearInterval(reloadTimer)
+      reloadTimer = null
+      window.location.reload()
+    }
+  }, 1000)
 }
 async function poll() {
   if (!activeJob.value?.id) return
@@ -424,7 +459,7 @@ async function poll() {
         // Module lifecycle jobs may replace dynamically imported browser code.
         // sync-modules.sh has already regenerated content-versioned entry URLs;
         // reload the shell so the browser consumes the new manifest and module.
-        window.location.reload()
+        scheduleReload()
         return
       }
       await refresh(activeJob.value.plugin_id)
@@ -438,13 +473,18 @@ async function poll() {
 }
 function reloadTecTac() { window.location.reload() }
 onMounted(async () => { await refresh(); await Promise.all([loadRepositories(), loadOnlineCatalog()]) })
-onBeforeUnmount(() => clearTimeout(pollTimer))
+onBeforeUnmount(() => { clearTimeout(pollTimer); clearInterval(reloadTimer) })
 </script>
 
 <template>
 <section>
   <div class="phead">
     <div><span class="eyebrow">MODULE MANAGEMENT V2</span><h1>Modules</h1><p>Install packages or bundles, control runtime and navigation visibility, and validate dependency/version requirements before Tec-Tac changes anything.</p></div>
+  </div>
+
+  <div v-if="activeJob" class="lifecycle-progress" :class="{ failed: ['failed','dispatch_failed'].includes(activeJob.status), complete: activeJob.status === 'succeeded' }">
+    <div class="lifecycle-progress-head"><span><b>Module lifecycle</b> · {{ moduleJobProgressLabel }}</span><span class="mono">{{ moduleJobProgress }}%</span></div>
+    <div class="lifecycle-progress-track"><div class="lifecycle-progress-fill" :style="{ width: `${moduleJobProgress}%` }"></div></div>
   </div>
 
   <div v-if="error" class="auth-error">{{ error }}</div>

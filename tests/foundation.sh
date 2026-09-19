@@ -200,8 +200,8 @@ echo "[TEST] PASS dynamic module cache and route ownership"
 grep -q 'location = /tec-tac/index.html' scripts/repair-nginx.sh || fail "index.html cache policy missing"
 grep -q 'location = /tec-tac/modules/modules.json' scripts/repair-nginx.sh || fail "module manifest cache policy missing"
 grep -q 'Cache-Control "no-store, no-cache, must-revalidate, max-age=0"' scripts/repair-nginx.sh || fail "no-store cache policy missing"
-grep -A16 "async function poll" src/views/ModulesView.vue | grep -q 'window.location.reload()' || fail "module lifecycle success does not reload shell"
-grep -A20 "async function refreshJob" src/views/SystemUpdatesView.vue | grep -q 'window.location.reload()' || fail "system update success does not reload shell"
+grep -A18 "async function poll" src/views/ModulesView.vue | grep -q 'scheduleReload()' || fail "module lifecycle success does not schedule shell reload"
+grep -A22 "async function refreshJob" src/views/SystemUpdatesView.vue | grep -q 'scheduleReload()' || fail "system update success does not schedule shell reload"
 echo "[TEST] PASS lifecycle cache invalidation"
 
 # 0.10.8 Core-owned UI context actions
@@ -214,3 +214,13 @@ grep -q "contextActions?.snapshot" "${ROOT}/src/views/ContractsView.vue" || fail
 [[ -f "${ROOT}/docs/context-actions.md" ]] || fail "context action developer contract missing"
 node --check "${ROOT}/src/context-actions.js"
 echo "[TEST] PASS UI context action contract"
+
+# 0.10.9 lifecycle progress + delayed refresh
+grep -q 'lifecycle-progress' "${ROOT}/src/views/ModulesView.vue" || fail "module lifecycle progress bar missing"
+grep -q 'lifecycle-progress' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "system update progress bar missing"
+grep -q 'reloadCountdown.value = 5' "${ROOT}/src/views/ModulesView.vue" || fail "module success reload delay missing"
+grep -q 'reloadCountdown.value = 5' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "system update success reload delay missing"
+grep -q 'reloading in' "${ROOT}/src/views/ModulesView.vue" || fail "module reload countdown label missing"
+grep -q 'reloading in' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "system update reload countdown label missing"
+grep -q '.lifecycle-progress-track' "${ROOT}/src/styles.css" || fail "lifecycle progress styling missing"
+echo "[TEST] PASS lifecycle progress and delayed refresh"

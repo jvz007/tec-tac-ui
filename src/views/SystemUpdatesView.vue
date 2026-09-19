@@ -28,6 +28,31 @@ const offlineDropActive = ref(false)
 const allowDowngrade = ref(false)
 const job = ref(null)
 const pollTimer = ref(null)
+const reloadTimer = ref(null)
+const reloadCountdown = ref(0)
+
+const systemJobProgress = computed(() => {
+  const current = job.value
+  if (!current) return 0
+  if (current.status === 'succeeded' || current.stage === 'complete') return 100
+  if (current.status === 'failed') return 100
+  const stage = String(current.stage || current.status || '').toLowerCase()
+  if (stage.includes('rollback')) return 88
+  if (stage.includes('verify')) return 86
+  if (stage.includes('install')) return 62
+  if (stage.includes('source') || stage.includes('deploy')) return 46
+  if (stage.includes('backup')) return 32
+  if (stage.includes('preflight')) return 22
+  if (stage.includes('dispatch')) return 12
+  if (current.status === 'running') return 38
+  return 6
+})
+const systemJobProgressLabel = computed(() => {
+  if (!job.value) return ''
+  if (job.value.status === 'succeeded') return reloadCountdown.value > 0 ? `Complete · reloading in ${reloadCountdown.value}s` : 'Complete'
+  if (job.value.status === 'failed') return 'Failed'
+  return String(job.value.stage || job.value.status || 'queued').replace(/-/g, ' ')
+})
 
 const components = computed(() => [
   {
@@ -191,8 +216,24 @@ async function installStage() {
 
 function startPolling() {
   stopPolling()
+  if (reloadTimer.value) window.clearInterval(reloadTimer.value)
+  reloadTimer.value = null
+  reloadCountdown.value = 0
   pollTimer.value = window.setInterval(refreshJob, 1500)
   refreshJob()
+}
+
+function scheduleReload() {
+  if (reloadTimer.value) return
+  reloadCountdown.value = 5
+  reloadTimer.value = window.setInterval(() => {
+    reloadCountdown.value -= 1
+    if (reloadCountdown.value <= 0) {
+      window.clearInterval(reloadTimer.value)
+      reloadTimer.value = null
+      window.location.reload()
+    }
+  }, 1000)
 }
 
 function stopPolling() {
@@ -209,7 +250,7 @@ async function refreshJob() {
       if (job.value.status === 'succeeded') {
         // Framework/UI updates can change runtime contracts or shell assets.
         // The nginx cache policy makes index.html/manifest revalidation explicit.
-        window.location.reload()
+        scheduleReload()
         return
       }
       await loadStatus()
@@ -227,7 +268,7 @@ function reloadUi() {
 }
 
 onMounted(loadStatus)
-onBeforeUnmount(stopPolling)
+onBeforeUnmount(() => { stopPolling(); if (reloadTimer.value) window.clearInterval(reloadTimer.value) })
 </script>
 
 <template>
@@ -239,6 +280,11 @@ onBeforeUnmount(stopPolling)
         <p>Update the Tec-Tac framework or UI from a stable repository release, an explicitly unlocked branch, or an offline ZIP/TAR.GZ package.</p>
       </div>
     </header>
+
+    <div v-if="job" class="lifecycle-progress" :class="{ failed: job.status === 'failed', complete: job.status === 'succeeded' }">
+      <div class="lifecycle-progress-head"><span><b>System update</b> · {{ systemJobProgressLabel }}</span><span class="mono">{{ systemJobProgress }}%</span></div>
+      <div class="lifecycle-progress-track"><div class="lifecycle-progress-fill" :style="{ width: `${systemJobProgress}%` }"></div></div>
+    </div>
 
     <div v-if="error" class="auth-error" role="alert">{{ error }}</div>
     <div v-if="loading" class="state-inline">Loading installed versions…</div>

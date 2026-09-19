@@ -90,3 +90,13 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .contract-meta{margin-top:5px}.contract-meta summary{cursor:pointer;color:var(--accent);font-size:10.5px}.contract-meta pre{max-width:620px;max-height:220px;overflow:auto;margin:6px 0 0;padding:8px;border:1px solid var(--line);background:var(--bg-2);color:var(--ink-2);font:10.5px/1.45 var(--mono);white-space:pre-wrap;overflow-wrap:anywhere}
 
 .scheduler-tabs{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:12px}.scheduler-config-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}.scheduler-config-card{padding:14px}.scheduler-config-card .cardhead{margin-bottom:10px}.scheduler-self-tests{grid-column:1/-1}.self-test-list{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}.schedule-result{max-width:520px}.scheduler-config-card .field input{width:100%;border:1px solid var(--line);background:var(--input-bg);color:var(--ink);padding:7px 9px;border-radius:2px;outline:none}@media(max-width:900px){.scheduler-config-grid{grid-template-columns:1fr}.scheduler-self-tests{grid-column:auto}}
+
+
+/* 0.10.9 lifecycle progress + delayed refresh */
+.lifecycle-progress{position:sticky;top:0;z-index:20;margin:-2px 0 14px;padding:8px 10px;border:1px solid var(--line);background:var(--surface);box-shadow:0 4px 12px rgba(0,0,0,.08)}
+.lifecycle-progress-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:6px;color:var(--dim);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.lifecycle-progress-head b{color:var(--ink)}
+.lifecycle-progress-track{height:5px;overflow:hidden;background:var(--bg-2);border:1px solid var(--line)}
+.lifecycle-progress-fill{height:100%;background:var(--accent);transition:width .3s ease}
+.lifecycle-progress.complete .lifecycle-progress-fill{background:var(--ok)}
+.lifecycle-progress.failed .lifecycle-progress-fill{background:var(--danger)}

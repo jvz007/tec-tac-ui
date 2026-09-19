@@ -1,3 +1,5 @@
+Version **0.10.9** adds lifecycle progress bars and a five-second post-success reload delay.
+
 Version **0.10.7** hardens dynamic module cache coherency and route ownership. The canonical runtime module manifest is `/tec-tac/modules/modules.json` (filesystem: `/var/lib/tec-tac/ui/tec-tac/modules/modules.json`).
 
 Version **0.10.5** keeps UI source installs Git-clean by suppressing npm lockfile generation during deployment.
