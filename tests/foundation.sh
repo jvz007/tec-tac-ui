@@ -271,3 +271,9 @@ grep -q "window.location.hash.startsWith('#/')" "${ROOT}/src/main.js" || fail "i
 grep -q "await router.replace(initialHashTarget)" "${ROOT}/src/main.js" || fail "authenticated initial route is not replayed after module registration"
 grep -q "fresh tab may target a dynamically registered authenticated route" "${ROOT}/src/main.js" || fail "dynamic fresh-tab route restoration documentation missing"
 echo "[TEST] PASS navigation fresh-tab route restoration"
+
+# 0.10.14 module install current -> target version preview
+grep -q "row.current_version || 'not installed'" "${ROOT}/src/views/ModulesView.vue" || fail "module install preview does not show installed version"
+grep -q "row.version || row.extension_version" "${ROOT}/src/views/ModulesView.vue" || fail "module install preview does not show target version"
+grep -q 'current.*target module versions' "${ROOT}/README.md" || fail "module version preview documentation missing"
+echo "[TEST] PASS module current-to-target version preview"

@@ -555,7 +555,7 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearInterval(reloadTimer) })
       >
         <span class="queue-grip" title="Drag to reorder independent packages">⋮⋮</span>
         <span class="queue-index mono">{{ index+1 }}</span>
-        <div class="queue-main"><b>{{ row.id }}</b><span class="mono">v{{ row.version || row.extension_version || '—' }}</span></div>
+        <div class="queue-main"><b>{{ row.id }}</b><span class="mono">{{ row.current_version || 'not installed' }} → {{ row.version || row.extension_version || '—' }}</span></div>
         <div class="queue-deps"><span class="label">REQUIRES</span><span class="mono">{{ Object.keys(row.dependencies||{}).length ? Object.entries(row.dependencies||{}).map(([id,v])=>`${id} ${v}`).join(' · ') : 'none' }}</span></div>
         <span class="pill" :class="row.action==='replace'?'warn':'ok'">{{ row.action || 'install' }}</span>
         <div class="queue-actions"><button class="iconbtn" :disabled="index===0" title="Move up" @click="moveInspected(row.id,-1)">↑</button><button class="iconbtn" :disabled="index===orderedRows.length-1" title="Move down" @click="moveInspected(row.id,1)">↓</button></div>
