@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.10.0" ]] || fail "VERSION is not 0.10.0"
+[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.10.1" ]] || fail "VERSION is not 0.10.1"
 for f in \
   src/module-loader.js \
   src/views/PublicPendingView.vue \
@@ -71,7 +71,7 @@ node --check "${ROOT}/src/router.js"
 python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
-assert package['version']=='0.10.0'
+assert package['version']=='0.10.1'
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
 assert manifest['id']=='reference'
 assert manifest['entry']=='ui/index.js'
@@ -138,7 +138,7 @@ grep -Fq "Accept:'*/*'" "${ROOT}/src/contracts.js" || fail "contract export must
 grep -q 'export_format=' "${ROOT}/src/contracts.js" || fail "contract export must use export_format selector"
 
 
-# 0.10.0 Tactical session-expiry contract
+# 0.10.1 Tactical session-expiry contract
 grep -q "TACTICAL_SESSION_INVALID_EVENT" "${ROOT}/src/api.js" || fail "session invalidation event missing"
 grep -q "invalidateTacticalSession" "${ROOT}/src/api.js" || fail "session invalidation helper missing"
 grep -q "response.status === 401" "${ROOT}/src/api.js" || fail "authenticated 401 invalidation missing"
@@ -147,8 +147,14 @@ grep -q "invalidateTacticalSession" "${ROOT}/src/contracts.js" || fail "authenti
 if grep -A22 "export async function publicApiFetch" "${ROOT}/src/api.js" | grep -q "invalidateTacticalSession"; then fail "public API must not invalidate Tactical session"; fi
 node "${ROOT}/tests/session-expiry.mjs"
 
-# 0.10.0 scheduler hardening UI
+# 0.10.1 scheduler hardening UI
 grep -q "getSchedulerConfig" "${ROOT}/src/scheduler.js" || fail "scheduler config API missing"
 grep -q "runSchedulerSelfTest" "${ROOT}/src/scheduler.js" || fail "scheduler self-test API missing"
 grep -q "Configuration & diagnostics" "${ROOT}/src/views/SchedulesView.vue" || fail "scheduler configuration surface missing"
 grep -q "Type the schedule name to confirm" "${ROOT}/src/views/SchedulesView.vue" || fail "dangerous Run now confirmation missing"
+
+# 0.10.1 persistent navigation collapse
+grep -q "tec_tac_nav_rail_collapsed" "${ROOT}/src/App.vue" || fail "rail collapse persistence missing"
+grep -q "tec_tac_nav_sections" "${ROOT}/src/App.vue" || fail "category collapse persistence missing"
+grep -q "toggleSection" "${ROOT}/src/App.vue" || fail "category collapse control missing"
+grep -q "rail-collapsed" "${ROOT}/src/styles.css" || fail "collapsed rail styling missing"

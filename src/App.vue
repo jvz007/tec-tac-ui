@@ -13,6 +13,10 @@ const dynamicNav = inject('tecTacNavigation', [])
 const theme = ref(localStorage.getItem('tec_tac_theme') || 'dark')
 const query = ref('')
 const signingOut = ref(false)
+const railCollapsed = ref(localStorage.getItem('tec_tac_nav_rail_collapsed') === '1')
+let savedSectionState = {}
+try { savedSectionState = JSON.parse(localStorage.getItem('tec_tac_nav_sections') || '{}') || {} } catch { savedSectionState = {} }
+const collapsedSections = ref(savedSectionState)
 const uiVersion = __TEC_TAC_UI_VERSION__
 const publicRoute = computed(() => route.meta?.public === true || route.path.startsWith('/public/'))
 
@@ -74,6 +78,14 @@ function applyTheme(value) {
   localStorage.setItem('tec_tac_theme', value)
 }
 watch(theme, applyTheme, { immediate: true })
+watch(railCollapsed, (value) => localStorage.setItem('tec_tac_nav_rail_collapsed', value ? '1' : '0'))
+watch(collapsedSections, (value) => localStorage.setItem('tec_tac_nav_sections', JSON.stringify(value)), { deep: true })
+
+function toggleRail() { railCollapsed.value = !railCollapsed.value }
+function sectionCollapsed(section) { return collapsedSections.value?.[section] === true }
+function toggleSection(section) {
+  collapsedSections.value = { ...collapsedSections.value, [section]: !sectionCollapsed(section) }
+}
 
 async function retry() {
   await loadContext()
@@ -90,10 +102,11 @@ function signOut() { requestLeave(doSignOut) }
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'public-shell': publicRoute }">
+  <div class="app-shell" :class="{ 'public-shell': publicRoute, 'rail-collapsed': railCollapsed && !publicRoute }">
     <header class="brand">
       <div class="mark" aria-hidden="true"></div>
       <div class="brand-copy"><b>TEC-TAC</b><span>TACTICAL EXTENSION CONSOLE</span></div>
+      <button v-if="!publicRoute" class="rail-toggle" type="button" :title="railCollapsed ? 'Expand navigation' : 'Collapse navigation'" :aria-label="railCollapsed ? 'Expand navigation' : 'Collapse navigation'" :aria-expanded="!railCollapsed" @click="toggleRail">{{ railCollapsed ? '»' : '«' }}</button>
     </header>
 
     <header class="topbar">
@@ -113,8 +126,13 @@ function signOut() { requestLeave(doSignOut) }
     <aside v-if="!publicRoute" class="rail">
       <template v-if="state.status === 'ready'">
         <template v-for="group in navGroups" :key="group.section">
-          <div class="grp label">{{ group.section }}</div>
-          <button v-for="item in group.items" :key="item.to" class="navitem" :class="{ active: route.path === item.to }" @click="navigate(item.to)"><span class="ico">{{ item.icon }}</span><span>{{ item.label }}</span><span v-if="item.badge" class="count">{{ item.badge }}</span></button>
+          <button v-if="!railCollapsed" class="grp grp-btn label" type="button" :aria-expanded="!sectionCollapsed(group.section)" :title="`${sectionCollapsed(group.section) ? 'Expand' : 'Collapse'} ${group.section}`" @click="toggleSection(group.section)">
+            <span>{{ group.section }}</span><span class="grp-chevron" aria-hidden="true">{{ sectionCollapsed(group.section) ? '›' : '⌄' }}</span>
+          </button>
+          <div v-else class="rail-separator" aria-hidden="true"></div>
+          <template v-if="railCollapsed || query.trim() || !sectionCollapsed(group.section)">
+            <button v-for="item in group.items" :key="item.to" class="navitem" :class="{ active: route.path === item.to }" :title="railCollapsed ? item.label : undefined" :aria-label="railCollapsed ? item.label : undefined" @click="navigate(item.to)"><span class="ico">{{ item.icon }}</span><span class="nav-label">{{ item.label }}</span><span v-if="item.badge" class="count">{{ item.badge }}</span></button>
+          </template>
         </template>
       </template>
       <div v-else class="grp label">Session gate</div>
