@@ -203,3 +203,14 @@ grep -q 'Cache-Control "no-store, no-cache, must-revalidate, max-age=0"' scripts
 grep -A16 "async function poll" src/views/ModulesView.vue | grep -q 'window.location.reload()' || fail "module lifecycle success does not reload shell"
 grep -A20 "async function refreshJob" src/views/SystemUpdatesView.vue | grep -q 'window.location.reload()' || fail "system update success does not reload shell"
 echo "[TEST] PASS lifecycle cache invalidation"
+
+# 0.10.8 Core-owned UI context actions
+grep -q "createContextActionRegistry" "${ROOT}/src/context-actions.js" || fail "context action registry missing"
+grep -q "app.provide('tecTacContextActions'" "${ROOT}/src/main.js" || fail "context action registry not provided by shell"
+grep -q "contextActions" "${ROOT}/src/module-loader.js" || fail "context actions not passed to authenticated modules"
+grep -q "moduleContextActions?.clear" "${ROOT}/src/module-loader.js" || fail "partial context actions are not cleaned on module registration failure"
+grep -q "UI runtime context actions" "${ROOT}/src/views/ContractsView.vue" || fail "Public Contracts UI context-action section missing"
+grep -q "contextActions?.snapshot" "${ROOT}/src/views/ContractsView.vue" || fail "Public Contracts does not enumerate live UI actions"
+[[ -f "${ROOT}/docs/context-actions.md" ]] || fail "context action developer contract missing"
+node --check "${ROOT}/src/context-actions.js"
+echo "[TEST] PASS UI context action contract"

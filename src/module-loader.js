@@ -116,6 +116,7 @@ export async function loadUiModules(runtime, modules) {
       continue
     }
 
+    let moduleContextActions = null
     try {
       const imported = await import(/* @vite-ignore */ descriptor.entry)
       const plugin = imported.default || imported
@@ -131,9 +132,18 @@ export async function loadUiModules(runtime, modules) {
         runtime.addNavigation({ ...item, visible: true })
       }
       const moduleRouter = guardedModuleRouter(runtime.router, descriptor, routeOwners)
-      await plugin.register({ ...runtime, router: moduleRouter, addNavigation, Vue, descriptor })
+      moduleContextActions = runtime.contextActions?.forModule(descriptor.id) || null
+      await plugin.register({
+        ...runtime,
+        router: moduleRouter,
+        addNavigation,
+        Vue,
+        descriptor,
+        contextActions: moduleContextActions,
+      })
       loaded.push(descriptor.id)
     } catch (error) {
+      try { moduleContextActions?.clear?.() } catch {}
       failed.push({ id: descriptor.id, message: error?.message || String(error) })
     }
   }

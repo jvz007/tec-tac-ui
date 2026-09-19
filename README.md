@@ -398,3 +398,10 @@ The Modules workspace now separates Installed, Online catalog, and Repositories.
 ## Installation layout (0.10.3+)
 
 The UI Git checkout lives at `/opt/tec-tac-src/ui`. The compiled UI remains `/var/lib/tec-tac/ui/tec-tac`. Shared paths are read from `/opt/tec-tac/etc/tec-tac.conf`.
+
+
+## UI context actions (0.10.8)
+
+Authenticated modules receive a Core-owned `contextActions` registry through `register(context)`. Provider modules register actions for shared resources such as endpoints; consumer modules list and execute those actions without importing provider UI code. Action IDs are provider-scoped and backend authorization remains authoritative.
+
+See `docs/context-actions.md` for the public descriptor, placement, selection and lifecycle contract. The live Public Contracts page lists currently registered browser actions separately from backend capabilities.

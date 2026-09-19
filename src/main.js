@@ -5,6 +5,7 @@ import { apiFetch, loadStaticModuleManifest, publicApiFetch } from './api'
 import { router } from './router'
 import { state, loadContext } from './state'
 import { loadPublicUiModules, loadUiModules } from './module-loader'
+import { createContextActionRegistry } from './context-actions'
 import './styles.css'
 
 async function bootstrap() {
@@ -17,8 +18,14 @@ async function bootstrap() {
     navigation.push(item)
   }
 
+  const hasPermission = (code) => (
+    state.context.user?.superuser || state.context.permissions.includes(code)
+  )
+  const contextActions = createContextActionRegistry({ hasPermission })
+
   app.provide('tecTacState', state)
   app.provide('tecTacNavigation', navigation)
+  app.provide('tecTacContextActions', contextActions)
   app.use(router)
   const initialHashTarget = window.location.hash.startsWith('#/public/')
     ? window.location.hash.slice(1)
@@ -54,9 +61,8 @@ async function bootstrap() {
         state,
         addNavigation,
         api: apiFetch,
-        hasPermission: (code) => (
-          state.context.user?.superuser || state.context.permissions.includes(code)
-        ),
+        hasPermission,
+        contextActions,
       },
       state.context.modules || staticModules,
     )

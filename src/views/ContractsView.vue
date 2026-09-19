@@ -1,7 +1,8 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, ref } from 'vue'
 import { downloadDeveloperContracts, getDeveloperContracts } from '../contracts'
 
+const contextActions=inject('tecTacContextActions', null)
 const data=ref(null), loading=ref(true), error=ref(''), query=ref(''), exporting=ref('')
 const q=computed(()=>query.value.trim().toLowerCase())
 const match=(...values)=>!q.value||values.some(v=>String(v??'').toLowerCase().includes(q.value))
@@ -10,6 +11,7 @@ const caps=computed(()=>(data.value?.capabilities||[]).filter(x=>match(x.id,x.mo
 const actions=computed(()=>(data.value?.scheduler_actions||[]).filter(x=>match(x.id,x.module_id,x.label,x.description,x.permission,(x.target_types||[]).join(' '))))
 const permissions=computed(()=>(data.value?.permissions||[]).filter(x=>match(x.id,x.version,(x.permissions||[]).join(' '))))
 const http=computed(()=>(data.value?.http||[]).filter(x=>match(x.route,x.name,(x.methods||[]).join(' '))))
+const uiActions=computed(()=>(contextActions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.resource,x.label,x.group,x.permission,(x.placements||[]).join(' '))))
 async function refresh(){loading.value=true;error.value='';try{data.value=await getDeveloperContracts()}catch(e){error.value=e.message||'Unable to load developer contracts.'}finally{loading.value=false}}
 async function exportFile(format){exporting.value=format;error.value='';try{await downloadDeveloperContracts(format)}catch(e){error.value=e.message||'Unable to export developer contracts.'}finally{exporting.value=''}}
 function stateClass(state){return state==='available'?'ok':state==='unhealthy'||state==='version-incompatible'?'danger':state&&state!=='available'?'warn':''}
@@ -37,6 +39,10 @@ onMounted(refresh)
 
     <div class="section-divider">Extension permissions</div>
     <div class="tablewrap"><table><thead><tr><th>Module</th><th>Package</th><th>Permission groups</th><th>Permissions</th></tr></thead><tbody><tr v-for="item in permissions" :key="item.id"><td><b class="mono">{{item.id}}</b></td><td class="mono">{{item.version}}</td><td>{{(item.groups||[]).map(g=>g.name).join(', ')||'—'}}</td><td class="mono contract-wrap">{{(item.permissions||[]).join(', ')||'—'}}</td></tr><tr v-if="!permissions.length"><td colspan="4" class="muted">No permission contracts match the current search.</td></tr></tbody></table></div>
+
+    <div class="section-divider">UI runtime context actions</div>
+    <div class="callout contract-rules"><b>Browser contribution boundary</b><span>Modules may contribute actions to shared resources through the Core-owned <span class="mono">contextActions</span> registry. Providers own execution; consumers list and invoke registered actions without importing provider UI internals.</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Action</th><th>Provider</th><th>Resource</th><th>Placements</th><th>Permission</th><th>Selection</th><th>Risk</th></tr></thead><tbody><tr v-for="item in uiActions" :key="item.id"><td><b class="mono">{{item.id}}</b><span class="sub">{{item.label}}</span></td><td class="mono">{{item.provider}}</td><td class="mono">{{item.resource}}</td><td class="mono contract-wrap">{{(item.placements||[]).join(', ')}}</td><td class="mono">{{item.permission||'—'}}</td><td class="mono">{{item.selection?.min ?? 1}}..{{item.selection?.max ?? '∞'}}</td><td><span class="pill" :class="item.dangerous?'danger':''">{{item.dangerous?'dangerous':'normal'}}</span></td></tr><tr v-if="!uiActions.length"><td colspan="7" class="muted">No UI context actions are currently registered or match the current search.</td></tr></tbody></table></div>
 
     <div class="section-divider">HTTP boundary</div>
     <div class="tablewrap"><table><thead><tr><th>Methods</th><th>Endpoint</th><th>Route name</th><th>Audience</th></tr></thead><tbody><tr v-for="item in http" :key="item.route"><td class="mono">{{(item.methods||[]).join(' / ')}}</td><td class="mono">{{item.route}}</td><td class="mono">{{item.name||'—'}}</td><td>{{item.audience}}</td></tr><tr v-if="!http.length"><td colspan="4" class="muted">No API contracts match the current search.</td></tr></tbody></table></div>
