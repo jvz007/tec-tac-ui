@@ -64,8 +64,8 @@ grep -q "'/system/updates'" "${ROOT}/src/router.js" || fail "system update route
 grep -q 'Unlock branch sources' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "advanced branch unlock UI missing"
 grep -q 'Upload offline package' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "offline package update UI missing"
 grep -q "section: 'Administration'" "${ROOT}/src/App.vue" || fail "grouped administration navigation missing"
-grep -q 'TEC_TAC_UI_DEPLOY_BASE:-/var/lib/tec-tac/ui' "${ROOT}/scripts/install.sh" || fail "persistent UI deployment path missing"
-grep -q '/var/lib/tec-tac/ui/tec-tac' "${ROOT}/scripts/sync-modules.sh" || fail "module sync still targets Tactical dist"
+grep -q 'tec-tac-config.sh' "${ROOT}/scripts/install.sh" || fail "shared Tec-Tac config loader missing"
+grep -q 'TEC_TAC_UI_DEPLOY_ROOT' "${ROOT}/scripts/sync-modules.sh" || fail "module sync does not use configured UI deployment root"
 grep -q 'module-state.json' "${ROOT}/scripts/sync-modules.sh" || fail "module enabled-state sync missing"
 grep -q 'sites-available/frontend.conf' "${ROOT}/scripts/repair-nginx.sh" || fail "frontend nginx repair target missing"
 grep -q 'nginx -t' "${ROOT}/scripts/repair-nginx.sh" || fail "nginx validation missing"
@@ -173,3 +173,7 @@ grep -q "tec_tac_nav_rail_collapsed" "${ROOT}/src/App.vue" || fail "rail collaps
 grep -q "tec_tac_nav_sections" "${ROOT}/src/App.vue" || fail "category collapse persistence missing"
 grep -q "toggleSection" "${ROOT}/src/App.vue" || fail "category collapse control missing"
 grep -q "rail-collapsed" "${ROOT}/src/styles.css" || fail "collapsed rail styling missing"
+
+grep -q 'module state references enabled module(s) whose extension files are missing' "${ROOT}/scripts/sync-modules.sh" || fail "module-loss guard missing"
+grep -q '/opt/tec-tac/etc/tec-tac.conf' "${ROOT}/scripts/tec-tac-config.sh" || fail "central Tec-Tac config path missing"
+echo "[TEST] PASS layout integration"

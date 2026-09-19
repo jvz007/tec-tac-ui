@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-DEPLOY_BASE="${TEC_TAC_UI_DEPLOY_BASE:-/var/lib/tec-tac/ui}"
-UI_ROOT="${TEC_TAC_UI_ROOT:-${DEPLOY_BASE}/tec-tac}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${HERE}/tec-tac-config.sh"
+DEPLOY_BASE="${TEC_TAC_UI_DEPLOY_BASE}"
+UI_ROOT="${TEC_TAC_UI_ROOT:-${TEC_TAC_UI_DEPLOY_ROOT}}"
 FRONTEND_CONF="${TACTICAL_FRONTEND_NGINX_CONF:-/etc/nginx/sites-available/frontend.conf}"
 SNIPPET_DIR="${TEC_TAC_NGINX_SNIPPET_DIR:-/etc/nginx/snippets}"
 SNIPPET_FILE="${SNIPPET_DIR}/tec-tac.conf"

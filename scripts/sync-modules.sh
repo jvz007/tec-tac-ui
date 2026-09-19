@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
-EXTENSIONS_ROOT="${TEC_TAC_EXTENSIONS_ROOT:-/opt/tec-tac/extensions}"
-UI_ROOT="${TEC_TAC_UI_ROOT:-/var/lib/tec-tac/ui/tec-tac}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null
+source "${HERE}/tec-tac-config.sh"
+EXTENSIONS_ROOT="${TEC_TAC_EXTENSIONS_ROOT}"
+UI_ROOT="${TEC_TAC_UI_ROOT:-${TEC_TAC_UI_DEPLOY_ROOT}}"
 MODULES_ROOT="${UI_ROOT}/modules"
 STATE_FILE="${TEC_TAC_MODULE_STATE:-/var/lib/tec-tac/module-manager/module-state.json}"
 PYTHON_BIN="${PYTHON_BIN:-python3}"
@@ -30,6 +33,13 @@ def visible(mid,payload):
     record=module_record(mid)
     return bool(record["visible"]) if "visible" in record else package_default_visible(payload)
 modules=[]
+state_modules=state.get("modules",{}) or {}
+missing_state=[]
+for mid, record in sorted(state_modules.items()):
+    if bool((record or {}).get("enabled", True)) and not (extensions_root/mid/"tec_tac.json").is_file():
+        missing_state.append(mid)
+if missing_state:
+    raise SystemExit("module state references enabled module(s) whose extension files are missing: " + ", ".join(missing_state))
 if extensions_root.is_dir():
   for extension in sorted(p for p in extensions_root.iterdir() if p.is_dir()):
     manifest=extension/"tec_tac_ui.json"

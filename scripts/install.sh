@@ -2,8 +2,10 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-DEPLOY_BASE="${TEC_TAC_UI_DEPLOY_BASE:-/var/lib/tec-tac/ui}"
-TARGET_ROOT="${TEC_TAC_UI_ROOT:-${DEPLOY_BASE}/tec-tac}"
+# shellcheck source=/dev/null
+source "${REPO_ROOT}/scripts/tec-tac-config.sh"
+DEPLOY_BASE="${TEC_TAC_UI_DEPLOY_BASE}"
+TARGET_ROOT="${TEC_TAC_UI_ROOT:-${TEC_TAC_UI_DEPLOY_ROOT}}"
 TACTICAL_FRONTEND_ROOT="${TACTICAL_FRONTEND_ROOT:-/var/www/rmm/dist}"
 
 log() { printf '[TEC-TAC-UI] %s\n' "$*"; }

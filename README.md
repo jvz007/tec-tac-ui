@@ -371,3 +371,7 @@ The Modules workspace surfaces browser-side module UI load diagnostics (loaded, 
 ## Module repositories (0.7.0)
 
 The Modules workspace now separates Installed, Online catalog, and Repositories. Repository downloads always enter the existing package inspection/install plan before execution; installed source provenance is shown and source changes are never implicit.
+
+## Installation layout (0.10.3+)
+
+The UI Git checkout lives at `/opt/tec-tac-src/ui`. The compiled UI remains `/var/lib/tec-tac/ui/tec-tac`. Shared paths are read from `/opt/tec-tac/etc/tec-tac.conf`.
