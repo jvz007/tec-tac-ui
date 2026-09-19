@@ -1,4 +1,4 @@
-Version **0.10.6** hardens dynamic module cache coherency and route ownership. The canonical runtime module manifest is `/tec-tac/modules/modules.json` (filesystem: `/var/lib/tec-tac/ui/tec-tac/modules/modules.json`).
+Version **0.10.7** hardens dynamic module cache coherency and route ownership. The canonical runtime module manifest is `/tec-tac/modules/modules.json` (filesystem: `/var/lib/tec-tac/ui/tec-tac/modules/modules.json`).
 
 Version **0.10.5** keeps UI source installs Git-clean by suppressing npm lockfile generation during deployment.
 

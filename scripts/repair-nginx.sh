@@ -33,6 +33,20 @@ location = /tec-tac {
     return 301 /tec-tac/;
 }
 
+location = /tec-tac/index.html {
+    root ${DEPLOY_BASE};
+    add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+}
+
+location = /tec-tac/modules/modules.json {
+    root ${DEPLOY_BASE};
+    add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0" always;
+    add_header Pragma "no-cache" always;
+    add_header Expires "0" always;
+}
+
 location ^~ /tec-tac/ {
     root ${DEPLOY_BASE};
     try_files \$uri \$uri/ /tec-tac/index.html;

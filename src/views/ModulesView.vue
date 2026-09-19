@@ -420,6 +420,13 @@ async function poll() {
     activeJob.value = await getModuleJob(activeJob.value.id)
     jobPollError.value = ''
     if (['succeeded', 'failed', 'dispatch_failed'].includes(activeJob.value.status)) {
+      if (activeJob.value.status === 'succeeded') {
+        // Module lifecycle jobs may replace dynamically imported browser code.
+        // sync-modules.sh has already regenerated content-versioned entry URLs;
+        // reload the shell so the browser consumes the new manifest and module.
+        window.location.reload()
+        return
+      }
       await refresh(activeJob.value.plugin_id)
       await loadOnlineCatalog()
       return

@@ -206,6 +206,12 @@ async function refreshJob() {
     job.value = await getSystemUpdateJob(job.value.id)
     if (['succeeded', 'failed'].includes(job.value.status)) {
       stopPolling()
+      if (job.value.status === 'succeeded') {
+        // Framework/UI updates can change runtime contracts or shell assets.
+        // The nginx cache policy makes index.html/manifest revalidation explicit.
+        window.location.reload()
+        return
+      }
       await loadStatus()
     }
   } catch (err) {

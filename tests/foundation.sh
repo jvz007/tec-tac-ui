@@ -195,3 +195,11 @@ if grep -Eq "path:[[:space:]]*['\"]/automation|name:[[:space:]]*['\"]extension-a
 grep -q '/tec-tac/modules/modules.json' "${ROOT}/README.md" || fail "canonical runtime module manifest documentation missing"
 grep -q '/var/lib/tec-tac/ui/tec-tac/modules/modules.json' "${ROOT}/README.md" || fail "canonical runtime module manifest filesystem path missing"
 echo "[TEST] PASS dynamic module cache and route ownership"
+
+# 0.10.7 lifecycle cache invalidation
+grep -q 'location = /tec-tac/index.html' scripts/repair-nginx.sh || fail "index.html cache policy missing"
+grep -q 'location = /tec-tac/modules/modules.json' scripts/repair-nginx.sh || fail "module manifest cache policy missing"
+grep -q 'Cache-Control "no-store, no-cache, must-revalidate, max-age=0"' scripts/repair-nginx.sh || fail "no-store cache policy missing"
+grep -A16 "async function poll" src/views/ModulesView.vue | grep -q 'window.location.reload()' || fail "module lifecycle success does not reload shell"
+grep -A20 "async function refreshJob" src/views/SystemUpdatesView.vue | grep -q 'window.location.reload()' || fail "system update success does not reload shell"
+echo "[TEST] PASS lifecycle cache invalidation"
