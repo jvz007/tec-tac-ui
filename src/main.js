@@ -6,6 +6,7 @@ import { router } from './router'
 import { state, loadContext } from './state'
 import { loadPublicUiModules, loadUiModules } from './module-loader'
 import { createContextActionRegistry } from './context-actions'
+import { createContextInteractionRegistry } from './context-interactions'
 import './styles.css'
 
 async function bootstrap() {
@@ -22,10 +23,12 @@ async function bootstrap() {
     state.context.user?.superuser || state.context.permissions.includes(code)
   )
   const contextActions = createContextActionRegistry({ hasPermission })
+  const contextInteractions = createContextInteractionRegistry({ hasPermission })
 
   app.provide('tecTacState', state)
   app.provide('tecTacNavigation', navigation)
   app.provide('tecTacContextActions', contextActions)
+  app.provide('tecTacContextInteractions', contextInteractions)
   app.use(router)
   const initialHashTarget = window.location.hash.startsWith('#/public/')
     ? window.location.hash.slice(1)
@@ -63,6 +66,7 @@ async function bootstrap() {
         api: apiFetch,
         hasPermission,
         contextActions,
+        contextInteractions,
       },
       state.context.modules || staticModules,
     )

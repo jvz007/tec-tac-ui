@@ -224,3 +224,14 @@ grep -q 'reloading in' "${ROOT}/src/views/ModulesView.vue" || fail "module reloa
 grep -q 'reloading in' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "system update reload countdown label missing"
 grep -q '.lifecycle-progress-track' "${ROOT}/src/styles.css" || fail "lifecycle progress styling missing"
 echo "[TEST] PASS lifecycle progress and delayed refresh"
+
+# 0.10.10 Core-owned UI context interactions
+grep -q "createContextInteractionRegistry" "${ROOT}/src/context-interactions.js" || fail "context interaction registry missing"
+grep -q "app.provide('tecTacContextInteractions'" "${ROOT}/src/main.js" || fail "context interaction registry not provided by shell"
+grep -q "contextInteractions" "${ROOT}/src/module-loader.js" || fail "context interactions not passed to authenticated modules"
+grep -q "moduleContextInteractions?.clear" "${ROOT}/src/module-loader.js" || fail "partial context interactions are not cleaned on module registration failure"
+grep -q "UI runtime context interactions" "${ROOT}/src/views/ContractsView.vue" || fail "Public Contracts UI context-interaction section missing"
+grep -q "contextInteractions?.snapshot" "${ROOT}/src/views/ContractsView.vue" || fail "Public Contracts does not enumerate live UI interactions"
+[[ -f "${ROOT}/docs/context-interactions.md" ]] || fail "context interaction developer contract missing"
+node --check "${ROOT}/src/context-interactions.js"
+echo "[TEST] PASS UI context interaction contract"

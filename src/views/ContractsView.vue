@@ -3,6 +3,7 @@ import { computed, inject, onMounted, ref } from 'vue'
 import { downloadDeveloperContracts, getDeveloperContracts } from '../contracts'
 
 const contextActions=inject('tecTacContextActions', null)
+const contextInteractions=inject('tecTacContextInteractions', null)
 const data=ref(null), loading=ref(true), error=ref(''), query=ref(''), exporting=ref('')
 const q=computed(()=>query.value.trim().toLowerCase())
 const match=(...values)=>!q.value||values.some(v=>String(v??'').toLowerCase().includes(q.value))
@@ -12,6 +13,7 @@ const actions=computed(()=>(data.value?.scheduler_actions||[]).filter(x=>match(x
 const permissions=computed(()=>(data.value?.permissions||[]).filter(x=>match(x.id,x.version,(x.permissions||[]).join(' '))))
 const http=computed(()=>(data.value?.http||[]).filter(x=>match(x.route,x.name,(x.methods||[]).join(' '))))
 const uiActions=computed(()=>(contextActions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.resource,x.label,x.group,x.permission,(x.placements||[]).join(' '))))
+const uiInteractions=computed(()=>(contextInteractions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.surface,x.permission,(x.sourceTypes||[]).join(' '),(x.targetTypes||[]).join(' '))))
 async function refresh(){loading.value=true;error.value='';try{data.value=await getDeveloperContracts()}catch(e){error.value=e.message||'Unable to load developer contracts.'}finally{loading.value=false}}
 async function exportFile(format){exporting.value=format;error.value='';try{await downloadDeveloperContracts(format)}catch(e){error.value=e.message||'Unable to export developer contracts.'}finally{exporting.value=''}}
 function stateClass(state){return state==='available'?'ok':state==='unhealthy'||state==='version-incompatible'?'danger':state&&state!=='available'?'warn':''}
@@ -43,6 +45,10 @@ onMounted(refresh)
     <div class="section-divider">UI runtime context actions</div>
     <div class="callout contract-rules"><b>Browser contribution boundary</b><span>Modules may contribute actions to shared resources through the Core-owned <span class="mono">contextActions</span> registry. Providers own execution; consumers list and invoke registered actions without importing provider UI internals.</span></div>
     <div class="tablewrap"><table><thead><tr><th>Action</th><th>Provider</th><th>Resource</th><th>Placements</th><th>Permission</th><th>Selection</th><th>Risk</th></tr></thead><tbody><tr v-for="item in uiActions" :key="item.id"><td><b class="mono">{{item.id}}</b><span class="sub">{{item.label}}</span></td><td class="mono">{{item.provider}}</td><td class="mono">{{item.resource}}</td><td class="mono contract-wrap">{{(item.placements||[]).join(', ')}}</td><td class="mono">{{item.permission||'—'}}</td><td class="mono">{{item.selection?.min ?? 1}}..{{item.selection?.max ?? '∞'}}</td><td><span class="pill" :class="item.dangerous?'danger':''">{{item.dangerous?'dangerous':'normal'}}</span></td></tr><tr v-if="!uiActions.length"><td colspan="7" class="muted">No UI context actions are currently registered or match the current search.</td></tr></tbody></table></div>
+
+    <div class="section-divider">UI runtime context interactions</div>
+    <div class="callout contract-rules"><b>Browser interaction boundary</b><span>Modules may contribute drag/drop behavior through the Core-owned <span class="mono">contextInteractions</span> registry. Providers own drop execution; consumers discover compatible interactions by shared surface, source type and target type without importing provider UI internals.</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Interaction</th><th>Provider</th><th>Surface</th><th>Source types</th><th>Target types</th><th>Permission</th><th>Order</th></tr></thead><tbody><tr v-for="item in uiInteractions" :key="item.id"><td><b class="mono">{{item.id}}</b></td><td class="mono">{{item.provider}}</td><td class="mono">{{item.surface}}</td><td class="mono contract-wrap">{{(item.sourceTypes||[]).join(', ')}}</td><td class="mono contract-wrap">{{(item.targetTypes||[]).join(', ')}}</td><td class="mono">{{item.permission||'—'}}</td><td class="mono">{{item.order}}</td></tr><tr v-if="!uiInteractions.length"><td colspan="7" class="muted">No UI context interactions are currently registered or match the current search.</td></tr></tbody></table></div>
 
     <div class="section-divider">HTTP boundary</div>
     <div class="tablewrap"><table><thead><tr><th>Methods</th><th>Endpoint</th><th>Route name</th><th>Audience</th></tr></thead><tbody><tr v-for="item in http" :key="item.route"><td class="mono">{{(item.methods||[]).join(' / ')}}</td><td class="mono">{{item.route}}</td><td class="mono">{{item.name||'—'}}</td><td>{{item.audience}}</td></tr><tr v-if="!http.length"><td colspan="4" class="muted">No API contracts match the current search.</td></tr></tbody></table></div>

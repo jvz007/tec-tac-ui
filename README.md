@@ -207,6 +207,15 @@ Extension rules:
 
 Role, superuser state, and effective Tec-Tac permissions are not guessed by the UI when the richer backend context endpoint is unavailable.
 
+## Cross-module UI contribution contracts
+
+Tec-Tac Core owns two browser-runtime contribution registries for authenticated modules:
+
+- `contextActions` for commands contributed to shared resource surfaces such as context menus.
+- `contextInteractions` for drag/drop relationships between shared resource types and surfaces.
+
+Modules receive module-scoped registry objects through `register(context)`. Provider IDs must be namespaced to the module, Core enforces declared permissions, and consumers query/execute contributions without importing another module's UI internals. See `docs/context-actions.md` and `docs/context-interactions.md`.
+
 ## Dynamic UI modules
 
 ### Canonical runtime manifest
