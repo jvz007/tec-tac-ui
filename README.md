@@ -1,3 +1,5 @@
+Version **0.10.5** keeps UI source installs Git-clean by suppressing npm lockfile generation during deployment.
+
 # Tec-Tac UI
 
 Version **0.10.4** fixes UI installer source-path handling after the Tec-Tac source/runtime layout separation.

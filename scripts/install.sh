@@ -17,7 +17,7 @@ command -v npm >/dev/null 2>&1 || fail "npm is required to build tec-tac-ui."
 
 log "Building tec-tac-ui $(cat "${UI_SOURCE_ROOT}/VERSION")."
 cd "${UI_SOURCE_ROOT}"
-npm install
+npm install --no-package-lock
 npm run build
 
 [[ -f "${UI_SOURCE_ROOT}/dist/index.html" ]] || fail "Vite build did not create dist/index.html."
