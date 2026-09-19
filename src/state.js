@@ -3,6 +3,7 @@ import {
   apiFetch,
   clearTacticalSession,
   loadStaticModuleManifest,
+  TACTICAL_SESSION_INVALID_EVENT,
   tacticalAuthStage,
   tacticalIdentityFromStorage,
   tacticalToken,
@@ -62,6 +63,16 @@ function markUnauthenticated(error = null) {
     capabilities: null,
     modules: [],
   }
+}
+
+if (typeof window !== 'undefined' && !window.__tecTacSessionInvalidListener) {
+  window.__tecTacSessionInvalidListener = true
+  window.addEventListener(TACTICAL_SESSION_INVALID_EVENT, (event) => {
+    const detail = event?.detail || {}
+    const error = new Error(detail.message || 'Your Tactical session is no longer valid. Sign in again.')
+    error.status = 401
+    markUnauthenticated(error)
+  })
 }
 
 export async function loadContext() {

@@ -3,7 +3,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.9.0" ]] || fail "VERSION is not 0.9.0"
+[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.9.3" ]] || fail "VERSION is not 0.9.3"
 for f in \
   src/module-loader.js \
   src/views/PublicPendingView.vue \
@@ -71,7 +71,7 @@ node --check "${ROOT}/src/router.js"
 python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
-assert package['version']=='0.9.0'
+assert package['version']=='0.9.3'
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
 assert manifest['id']=='reference'
 assert manifest['entry']=='ui/index.js'
@@ -122,11 +122,27 @@ grep -q "FRAMEWORK SCHEDULER" "${ROOT}/src/views/SchedulesView.vue" || fail "sch
 grep -q "Run now" "${ROOT}/src/views/SchedulesView.vue" || fail "scheduler run-now UI missing"
 node --check "${ROOT}/src/scheduler.js"
 
-# 0.9.0 developer contract catalog
+# 0.9.x developer contract catalog
 grep -q "'/api/tfd/contracts/'" "${ROOT}/src/contracts.js" || fail "developer contract catalog API missing"
 grep -q "contracts/export/" "${ROOT}/src/contracts.js" || fail "developer contract export API missing"
+grep -q "export_format=" "${ROOT}/src/contracts.js" || fail "developer contract export must use non-reserved export_format query parameter"
+! grep -q "contracts/export/?format=" "${ROOT}/src/contracts.js" || fail "developer contract export still uses DRF-reserved format query parameter"
 grep -q "'/contracts'" "${ROOT}/src/router.js" || fail "developer contract route missing"
 grep -q "Public Contracts" "${ROOT}/src/views/ContractsView.vue" || fail "developer contracts workspace missing"
 grep -q "Export Markdown" "${ROOT}/src/views/ContractsView.vue" || fail "markdown export control missing"
 grep -q "Export Text" "${ROOT}/src/views/ContractsView.vue" || fail "text export control missing"
 node --check "${ROOT}/src/contracts.js"
+
+# 0.9.2 contract export Accept-header regression
+grep -Fq "Accept:'*/*'" "${ROOT}/src/contracts.js" || fail "contract export must use neutral Accept header"
+grep -q 'export_format=' "${ROOT}/src/contracts.js" || fail "contract export must use export_format selector"
+
+
+# 0.9.3 Tactical session-expiry contract
+grep -q "TACTICAL_SESSION_INVALID_EVENT" "${ROOT}/src/api.js" || fail "session invalidation event missing"
+grep -q "invalidateTacticalSession" "${ROOT}/src/api.js" || fail "session invalidation helper missing"
+grep -q "response.status === 401" "${ROOT}/src/api.js" || fail "authenticated 401 invalidation missing"
+grep -q "TACTICAL_SESSION_INVALID_EVENT" "${ROOT}/src/state.js" || fail "state invalidation listener missing"
+grep -q "invalidateTacticalSession" "${ROOT}/src/contracts.js" || fail "authenticated contract export 401 handling missing"
+if grep -A22 "export async function publicApiFetch" "${ROOT}/src/api.js" | grep -q "invalidateTacticalSession"; then fail "public API must not invalidate Tactical session"; fi
+node "${ROOT}/tests/session-expiry.mjs"

@@ -1,6 +1,6 @@
 # Tec-Tac UI
 
-Version **0.9.0** adds Administration → Public Contracts with live Markdown/Text exports for module developers and coding agents.
+Version **0.9.3** adds shell-wide Tactical session-expiry handling: authenticated `401` responses immediately clear the stale session and expose the existing login gate without changing the current hash route. `403` remains an RBAC error. Version 0.9.2 fixes Public Contracts Markdown/Text downloads against the Framework 1.10.2 export endpoint.
 
 Version **0.8.0** adds Operations → Schedules for Framework 1.8.0.
 
@@ -174,6 +174,19 @@ On startup Tec-Tac first validates any existing Tactical token. The shell does n
 - verification failure other than an authentication failure -> fail closed and show a startup error
 
 After verification the optional `GET /api/tfd/ui/context/` contract is attempted. If that endpoint is not installed and returns `404`, the shell uses the locally generated module manifest for compatibility with the unmodified Tec-Tac backend 1.0.1.
+
+## Session expiry contract
+
+Tec-Tac owns Tactical browser-session invalidation centrally. Authenticated shell and extension requests should use the shell-provided `api()` / `apiFetch()` path. If Tactical returns HTTP `401`, the API layer clears `access_token`, `tec_tac_auth_stage`, `user_name`, and `name`, then emits the shell-wide invalid-session event. The state layer switches to the existing login gate without navigating away from the current hash route. After successful sign-in, the normal reload returns the operator to that route.
+
+HTTP `403` means the authenticated identity lacks permission for the requested operation. It must remain a normal RBAC error and must never clear the Tactical session.
+
+Extension rules:
+
+- do not implement module-specific expiry redirects;
+- do not clear Tactical authentication storage from an extension;
+- use the authenticated runtime `api` helper for private APIs so `401` participates in the shell contract;
+- use `publicApi()` only for deliberately anonymous public routes; it does not attach Tactical authentication and does not participate in Tactical session invalidation.
 
 ## Backend context compatibility
 

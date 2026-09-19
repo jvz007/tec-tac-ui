@@ -42,6 +42,17 @@ export function clearTacticalSession() {
   localStorage.removeItem('name')
 }
 
+export const TACTICAL_SESSION_INVALID_EVENT = 'tec-tac:tactical-session-invalid'
+
+export function invalidateTacticalSession(message = 'Your Tactical session is no longer valid. Sign in again.') {
+  clearTacticalSession()
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent(TACTICAL_SESSION_INVALID_EVENT, {
+      detail: { status: 401, message },
+    }))
+  }
+}
+
 function buildHeaders(options = {}) {
   const token = tacticalToken()
   const headers = new Headers(options.headers || {})
@@ -189,6 +200,9 @@ export async function fetchTacticalTotpQr() {
 
   if (!response.ok) {
     const payload = await parseResponsePayload(response)
+    if (response.status === 401) {
+      invalidateTacticalSession(messageFromPayload(payload, 'Your Tactical session is no longer valid. Sign in again.'))
+    }
     const error = new Error(messageFromPayload(payload, `TOTP QR request failed: ${response.status} ${response.statusText}`))
     error.status = response.status
     error.payload = payload
@@ -249,6 +263,7 @@ export async function apiFetch(path, options = {}) {
   if (!token) {
     const error = new Error('No Tactical access token is present in this browser session.')
     error.status = 401
+    invalidateTacticalSession(error.message)
     throw error
   }
 
@@ -260,6 +275,9 @@ export async function apiFetch(path, options = {}) {
   })
 
   const payload = response.status === 204 ? null : await parseResponsePayload(response)
+  if (response.status === 401) {
+    invalidateTacticalSession(messageFromPayload(payload, 'Your Tactical session is no longer valid. Sign in again.'))
+  }
   if (!response.ok) {
     const error = new Error(messageFromPayload(payload, `API request failed: ${response.status} ${response.statusText}`))
     error.status = response.status
