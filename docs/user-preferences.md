@@ -1,38 +1,30 @@
 # User preferences
 
-Tec-Tac UI 0.10.16 and Framework 1.13.9 introduce a Core-owned per-user preference profile.
+Framework 1.13.9 adds a Core-owned per-user preference profile backed by Tactical's authenticated user model.
 
-## Ownership
+## HTTP contract
 
-Preferences belong to the authenticated Tactical user. The backend record is authoritative after sign-in. Browser storage is retained only as an early-startup cache and as a one-time migration source for settings created by older UI releases.
+`GET /api/tfd/ui/preferences/` returns the current user's normalized preferences.
 
-The authenticated endpoint is:
+`PUT /api/tfd/ui/preferences/` replaces the current user's preference document after validation.
 
-- `GET /api/tfd/ui/preferences/` — return the current user's normalized preferences.
-- `PUT /api/tfd/ui/preferences/` — replace the current user's preferences.
-- `DELETE /api/tfd/ui/preferences/` — reset the current user's preferences to Core defaults.
+`DELETE /api/tfd/ui/preferences/` deletes the stored profile and returns Core defaults.
 
-The current UI context also includes `preferences`, `preferences_initialized`, and `preferences_updated_at` so startup does not require an additional read request.
+All methods use `permission_classes = [IsAuthenticated]` and operate only on `request.user`.
 
-## Current preference sections
+`GET /api/tfd/ui/context/` also includes `preferences`, `preferences_initialized`, and `preferences_updated_at` so the UI can hydrate preferences during its existing startup context request.
 
-- `appearance.theme`
-- `navigation.order`
-- `navigation.favorites`
-- `navigation.collapsed_sections`
-- `navigation.rail_collapsed`
-- `dashboard.default_dashboard_id` (reserved for the Dashboard framework)
-- `dashboard.restore_last_dashboard`
-- `extensions` (reserved namespace for future module-specific preferences)
+## Schema
 
-Modules should not write directly to browser storage for durable user settings. Future module-specific preference contracts should use the Core-owned `extensions` namespace/API rather than creating independent persistence mechanisms.
+The Core schema currently reserves these sections:
 
-## Dashboard preferences
+- `appearance`
+- `navigation`
+- `dashboard`
+- `extensions`
 
-Dashboard composition uses the server-backed preference profile:
+The `extensions` object is reserved for future module-specific user settings. Modules should not create separate browser-token or localStorage-based durable preference stores when Core preference storage is available.
 
-- `dashboard.default_dashboard_id` selects the user's preferred visible dashboard.
-- `dashboard.last_dashboard_id` tracks the most recently opened dashboard.
-- `dashboard.restore_last_dashboard` controls whether the last dashboard takes priority over the default when opening the Dashboard workspace.
+Preference payloads are normalized and limited to 128 KiB per user.
 
-If a saved dashboard ID is no longer visible (for example a shared dashboard became private), Core safely falls back to another visible dashboard.
+Dashboard preferences include `default_dashboard_id`, `last_dashboard_id`, and `restore_last_dashboard`. Dashboard visibility itself is enforced by the dashboard API and is not a preference-layer authorization decision.
