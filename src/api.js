@@ -414,3 +414,22 @@ export async function installSystemUpdatePackage(uploadId, allowDowngrade = fals
 export async function getSystemUpdateJob(jobId) {
   return apiFetch(`/api/tfd/system/updates/jobs/${jobId}/`)
 }
+
+// Tec-Tac Core storage housekeeping APIs
+export async function getStorageHousekeeping() {
+  return apiFetch('/api/tfd/system/storage/')
+}
+
+export async function saveStorageHousekeeping(policies) {
+  return apiFetch('/api/tfd/system/storage/', {
+    method: 'PUT',
+    body: JSON.stringify({ policies }),
+  })
+}
+
+export async function runStorageHousekeeping({ dryRun = true, categories = null } = {}) {
+  return apiFetch('/api/tfd/system/storage/purge/', {
+    method: 'POST',
+    body: JSON.stringify({ dry_run: Boolean(dryRun), categories }),
+  })
+}
