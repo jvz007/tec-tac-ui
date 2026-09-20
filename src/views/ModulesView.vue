@@ -6,6 +6,7 @@ import {
   deleteModuleRepository,
   discardModuleArtifact,
   getModuleJob,
+  listModuleJobs,
   inspectModulePackages,
   installModuleArtifact,
   listModuleRepositories,
@@ -27,6 +28,9 @@ const error = ref('')
 const query = ref('')
 const activeTab = ref('installed')
 const repositories = ref([])
+const jobHistory = ref([])
+const historyLoading = ref(false)
+const historySelectedId = ref(null)
 const onlineCatalog = ref([])
 const onlineQuery = ref('')
 const repositoryBusy = ref(false)
@@ -61,6 +65,7 @@ const updatesAvailable = computed(() => onlineCatalog.value.filter((x) => x.upda
 const repositoryErrors = computed(() => repositories.value.filter((x) => x.sync?.status === 'error').length)
 const selectedRepository = computed(() => repositories.value.find((x) => x.id === selectedRepositoryId.value) || null)
 const selected = computed(() => modules.value.find((x) => x.id === selectedId.value) || null)
+const selectedHistory = computed(() => jobHistory.value.find((x) => x.id === historySelectedId.value) || null)
 const enabledCount = computed(() => modules.value.filter((x) => x.managed && x.enabled).length)
 const disabledCount = computed(() => modules.value.filter((x) => x.managed && !x.enabled).length)
 const hiddenCount = computed(() => modules.value.filter((x) => x.managed && x.enabled && x.visible === false).length)
@@ -429,6 +434,13 @@ async function setVisibility(item, visible) {
   }
 }
 
+async function loadJobHistory(){
+  if(!canManage.value) return
+  historyLoading.value=true
+  try{const data=await listModuleJobs(250);jobHistory.value=data.jobs||[];if(historySelectedId.value&&!jobHistory.value.some(x=>x.id===historySelectedId.value))historySelectedId.value=null}catch(e){error.value=e?.message||'Unable to load module history.'}finally{historyLoading.value=false}
+}
+function historyTime(value){return value?new Date(value).toLocaleString():'—'}
+function historyModules(job){return (job.module_ids?.length?job.module_ids:[job.plugin_id]).filter(Boolean).join(', ')||'—'}
 function beginPoll(job) {
   activeJob.value = job
   jobPollError.value = ''
@@ -455,6 +467,7 @@ async function poll() {
     activeJob.value = await getModuleJob(activeJob.value.id)
     jobPollError.value = ''
     if (['succeeded', 'failed', 'dispatch_failed'].includes(activeJob.value.status)) {
+      await loadJobHistory()
       if (activeJob.value.status === 'succeeded') {
         // Module lifecycle jobs may replace dynamically imported browser code.
         // sync-modules.sh has already regenerated content-versioned entry URLs;
@@ -472,7 +485,7 @@ async function poll() {
   pollTimer = setTimeout(poll, 1800)
 }
 function reloadTecTac() { window.location.reload() }
-onMounted(async () => { await refresh(); await Promise.all([loadRepositories(), loadOnlineCatalog()]) })
+onMounted(async () => { await refresh(); await Promise.all([loadRepositories(), loadOnlineCatalog(), loadJobHistory()]) })
 onBeforeUnmount(() => { clearTimeout(pollTimer); clearInterval(reloadTimer) })
 </script>
 
@@ -498,6 +511,7 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearInterval(reloadTimer) })
     <button :class="{active:activeTab==='installed'}" role="tab" @click="activeTab='installed'"><b>Installed</b><span>{{ modules.filter(x=>x.managed).length }} managed · {{ failedModuleLoads.length }} UI failures</span></button>
     <button :class="{active:activeTab==='online'}" role="tab" @click="activeTab='online'"><b>Online catalog</b><span>{{ onlineCatalog.length }} modules · {{ updatesAvailable }} updates</span></button>
     <button :class="{active:activeTab==='repositories'}" role="tab" @click="activeTab='repositories'"><b>Repositories</b><span>{{ repositories.length }} configured · {{ repositoryErrors }} errors</span></button>
+    <button v-if="canManage" :class="{active:activeTab==='history'}" role="tab" @click="activeTab='history';loadJobHistory()"><b>History</b><span>{{ jobHistory.length }} lifecycle records</span></button>
   </div>
 
   <template v-if="activeTab==='installed'">
@@ -599,7 +613,7 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearInterval(reloadTimer) })
     </tbody></table></div>
   </template>
 
-  <template v-else>
+  <template v-else-if="activeTab==='repositories'">
     <div class="repository-layout">
       <section>
         <div class="toolbar"><span class="muted mono">{{ repositories.length }} repositories</span><span class="spacer"></span><button class="btn" :disabled="!canManage || repositoryBusy" @click="syncAllRepositories">Sync all</button><button class="btn primary" :disabled="!canManage || repositoryBusy" @click="newRepository">Add repository</button></div>
@@ -619,6 +633,18 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearInterval(reloadTimer) })
         <div v-if="selectedRepository?.sync?.error" class="state-inline denied mt"><b>Last sync failed.</b> {{ selectedRepository.sync.error }}</div>
         <div class="editor-actions"><button class="btn primary" :disabled="!canManage || repositoryBusy || !repositoryDraft.name || !repositoryDraft.url" @click="saveRepository">Save</button><button class="btn" @click="cancelRepositoryEdit">Cancel</button><button v-if="selectedRepository" class="btn danger" :disabled="!canManage || repositoryBusy" @click="removeRepository(selectedRepository)">Remove</button></div>
       </aside>
+    </div>
+  </template>
+
+  <template v-else-if="activeTab==='history'">
+    <div class="toolbar"><span class="muted mono">{{ jobHistory.length }} lifecycle records</span><span class="spacer"></span><button class="btn sm" :disabled="historyLoading" @click="loadJobHistory">{{historyLoading?'Loading…':'Refresh history'}}</button></div>
+    <div v-if="historyLoading&&!jobHistory.length" class="state-inline">Loading module lifecycle history…</div>
+    <div v-else-if="!jobHistory.length" class="state-inline"><b>No module lifecycle history yet.</b></div>
+    <div v-else class="module-history-layout">
+      <div class="tablewrap"><table><thead><tr><th>Time</th><th>Action</th><th>Module(s)</th><th>Requested by</th><th>Status</th><th>Stage</th></tr></thead><tbody>
+        <tr v-for="job in jobHistory" :key="job.id" class="clickrow" :class="{selected:historySelectedId===job.id}" @click="historySelectedId=job.id"><td class="mono">{{historyTime(job.created_at)}}</td><td><b>{{job.action}}</b><span v-if="job.replace" class="sub">replacement / upgrade</span></td><td class="mono">{{historyModules(job)}}</td><td>{{job.requested_by||'unknown / legacy'}}</td><td><span class="pill" :class="{ok:job.status==='succeeded',danger:['failed','dispatch_failed'].includes(job.status),warn:!['succeeded','failed','dispatch_failed'].includes(job.status)}">{{job.status}}</span></td><td class="mono">{{job.stage||'—'}}</td></tr>
+      </tbody></table></div>
+      <aside v-if="selectedHistory" class="card module-history-detail"><div class="cardhead"><div><span class="eyebrow">LIFECYCLE RECORD</span><h3>{{selectedHistory.action}} · {{historyModules(selectedHistory)}}</h3></div><span class="pill" :class="{ok:selectedHistory.status==='succeeded',danger:['failed','dispatch_failed'].includes(selectedHistory.status),warn:!['succeeded','failed','dispatch_failed'].includes(selectedHistory.status)}">{{selectedHistory.status}}</span></div><dl class="kvlist"><dt>Created</dt><dd class="mono">{{historyTime(selectedHistory.created_at)}}</dd><dt>Started</dt><dd class="mono">{{historyTime(selectedHistory.started_at)}}</dd><dt>Finished</dt><dd class="mono">{{historyTime(selectedHistory.finished_at)}}</dd><dt>Requested by</dt><dd>{{selectedHistory.requested_by||'unknown / legacy'}}</dd><dt>Job ID</dt><dd class="mono">{{selectedHistory.id}}</dd><dt>Package</dt><dd class="mono">{{selectedHistory.package_filename||'—'}}</dd></dl><div v-if="selectedHistory.error" class="auth-error">{{selectedHistory.error}}</div><div v-if="selectedHistory.log_tail?.length" class="section-divider">Log tail</div><pre v-if="selectedHistory.log_tail?.length" class="job-log">{{selectedHistory.log_tail.join('\n')}}</pre></aside>
     </div>
   </template>
 

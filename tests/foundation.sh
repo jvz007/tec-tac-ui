@@ -372,3 +372,14 @@ grep -q "registerDiagnosticsProvider" "${ROOT}/src/views/ContractsView.vue" || f
 node --check "${ROOT}/src/code-editor.js"
 node --check "${ROOT}/examples/code-editor-reference/ui/index.js"
 echo "[TEST] PASS script editor languages and diagnostics provider contract"
+
+# 0.11.2 structured scheduler payload editor + module lifecycle history
+[[ -f "${ROOT}/src/components/StructuredObjectEditor.vue" ]] || fail "structured scheduler object editor missing"
+grep -q "StructuredObjectEditor" "${ROOT}/src/views/SchedulesView.vue" || fail "Scheduler does not use structured object editor"
+! grep -q "Targets (JSON)" "${ROOT}/src/views/SchedulesView.vue" || fail "raw Targets JSON textarea remains"
+! grep -q "Parameters (JSON)" "${ROOT}/src/views/SchedulesView.vue" || fail "raw Parameters JSON textarea remains"
+grep -q "Advanced JSON" "${ROOT}/src/components/StructuredObjectEditor.vue" || fail "advanced JSON fallback missing"
+grep -q "listModuleJobs" "${ROOT}/src/modules.js" || fail "module history API helper missing"
+grep -q "activeTab==='history'" "${ROOT}/src/views/ModulesView.vue" || fail "module history tab missing"
+grep -q "Requested by" "${ROOT}/src/views/ModulesView.vue" || fail "module history requester column missing"
+echo "[TEST] PASS structured scheduler payload editor and module lifecycle history"
