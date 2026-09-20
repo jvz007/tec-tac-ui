@@ -2,7 +2,7 @@ import { reactive } from 'vue'
 import { apiFetch } from './api'
 
 export const DEFAULT_USER_PREFERENCES = Object.freeze({
-  appearance: { theme: 'dark' },
+  appearance: { theme: 'dark', font_scale: 1 },
   navigation: {
     order: {},
     favorites: [],
@@ -28,6 +28,7 @@ function normalize(value = {}) {
   return {
     appearance: {
       theme: ['dark', 'light', 'high-contrast'].includes(appearance.theme) ? appearance.theme : 'dark',
+      font_scale: [0.9, 1, 1.1, 1.2].includes(Number(appearance.font_scale)) ? Number(appearance.font_scale) : 1,
     },
     navigation: {
       order: object(navigation.order),
@@ -50,7 +51,7 @@ function legacySnapshot(username) {
   try { collapsed = JSON.parse(localStorage.getItem('tec_tac_nav_sections') || '{}') || {} } catch { collapsed = {} }
   try { nav = JSON.parse(localStorage.getItem(`tec_tac_nav_preferences:${username}`) || '{}') || {} } catch { nav = {} }
   return normalize({
-    appearance: { theme: localStorage.getItem('tec_tac_theme') || 'dark' },
+    appearance: { theme: localStorage.getItem('tec_tac_theme') || 'dark', font_scale: Number(localStorage.getItem('tec_tac_font_scale') || '1') },
     navigation: {
       order: object(nav.order),
       favorites: Array.isArray(nav.favorites) ? nav.favorites : [],
@@ -63,6 +64,7 @@ function legacySnapshot(username) {
 function hasLegacyCustomizations(username) {
   return Boolean(
     localStorage.getItem('tec_tac_theme') ||
+    localStorage.getItem('tec_tac_font_scale') ||
     localStorage.getItem('tec_tac_nav_rail_collapsed') ||
     localStorage.getItem('tec_tac_nav_sections') ||
     localStorage.getItem(`tec_tac_nav_preferences:${username}`)
@@ -71,6 +73,7 @@ function hasLegacyCustomizations(username) {
 
 function writeLegacyCache(preferences, username) {
   localStorage.setItem('tec_tac_theme', preferences.appearance.theme)
+  localStorage.setItem('tec_tac_font_scale', String(preferences.appearance.font_scale || 1))
   localStorage.setItem('tec_tac_nav_rail_collapsed', preferences.navigation.rail_collapsed ? '1' : '0')
   localStorage.setItem('tec_tac_nav_sections', JSON.stringify(preferences.navigation.collapsed_sections))
   if (username) {
@@ -82,6 +85,7 @@ function writeLegacyCache(preferences, username) {
 }
 
 const cachedTheme = localStorage.getItem('tec_tac_theme') || 'dark'
+const cachedFontScale = Number(localStorage.getItem('tec_tac_font_scale') || '1')
 export const preferenceState = reactive({
   initialized: false,
   loading: false,
@@ -89,7 +93,7 @@ export const preferenceState = reactive({
   error: '',
   username: '',
   updatedAt: null,
-  preferences: normalize({ appearance: { theme: cachedTheme } }),
+  preferences: normalize({ appearance: { theme: cachedTheme, font_scale: cachedFontScale } }),
 })
 
 let saveTimer = null

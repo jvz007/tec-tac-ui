@@ -86,6 +86,7 @@ onMounted(loadDashboards)
       <div class="cardhead"><div><span class="eyebrow">APPEARANCE</span><h3>Theme</h3></div></div>
       <p class="muted">Choose the Tec-Tac interface theme used after you sign in.</p>
       <label class="field"><span>Theme</span><select v-model="draft.appearance.theme"><option value="dark">Dark</option><option value="light">Light</option><option value="high-contrast">High contrast</option></select></label>
+      <label class="field"><span>Text size</span><select v-model.number="draft.appearance.font_scale"><option :value="0.9">Small</option><option :value="1">Default</option><option :value="1.1">Large</option><option :value="1.2">Extra large</option></select></label>
     </section>
 
     <section class="card preference-card">

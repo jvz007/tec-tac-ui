@@ -11,9 +11,20 @@ import { preferenceState, updateUserPreferences } from './preferences'
 const route = useRoute()
 const router = useRouter()
 const dynamicNav = inject('tecTacNavigation', [])
+const FONT_SIZES = [
+  { value: 0.9, label: 'A−', title: 'Small text' },
+  { value: 1, label: 'A', title: 'Default text size' },
+  { value: 1.1, label: 'A+', title: 'Large text' },
+  { value: 1.2, label: 'A++', title: 'Extra large text' },
+]
+
 const theme = computed({
   get: () => preferenceState.preferences.appearance.theme,
   set: (value) => updateUserPreferences((next) => { next.appearance.theme = value; return next }),
+})
+const fontScale = computed({
+  get: () => Number(preferenceState.preferences.appearance.font_scale || 1),
+  set: (value) => updateUserPreferences((next) => { next.appearance.font_scale = Number(value); return next }),
 })
 const query = ref('')
 const signingOut = ref(false)
@@ -122,6 +133,8 @@ function applyTheme(value) {
   document.documentElement.dataset.theme = value
 }
 watch(theme, applyTheme, { immediate: true })
+function applyFontScale(value) { document.documentElement.style.setProperty('--font-scale', String(value || 1)) }
+watch(fontScale, applyFontScale, { immediate: true })
 
 function toggleRail() { railCollapsed.value = !railCollapsed.value }
 function sectionCollapsed(section) { return collapsedSections.value?.[section] === true }
@@ -203,7 +216,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', handleGlobalKey))
     <header class="topbar">
       <div class="crumbs"><span>Tec-Tac</span><span class="sep">/</span><b>{{ publicRoute ? currentTitle : (state.status === 'unauthenticated' ? 'Sign in' : currentTitle) }}</b></div>
       <div class="spacer"></div>
-      <select v-model="theme" class="theme-select" aria-label="Theme"><option value="dark">Dark</option><option value="light">Light</option><option value="high-contrast">High contrast</option></select>
+      <div class="appearance-controls">
+        <select v-model="theme" class="theme-select" aria-label="Theme"><option value="dark">Dark</option><option value="light">Light</option><option value="high-contrast">High contrast</option></select>
+        <div class="font-size-controls" role="group" aria-label="Text size">
+          <button v-for="size in FONT_SIZES" :key="size.value" type="button" class="font-size-button" :class="{ active: fontScale === size.value }" :title="size.title" :aria-label="size.title" :aria-pressed="fontScale === size.value" @click="fontScale=size.value">{{ size.label }}</button>
+        </div>
+      </div>
       <button v-if="!publicRoute" class="btn ghost sm" @click="backToTactical">↗ Tactical</button>
       <button v-else-if="state.status !== 'ready'" class="btn ghost sm" @click="navigate('/')">Sign in</button>
       <div v-if="!publicRoute" class="who">
