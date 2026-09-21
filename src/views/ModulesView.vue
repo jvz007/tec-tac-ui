@@ -128,12 +128,49 @@ const selectedLoad = computed(() => moduleLoadDiagnostic(selected.value))
 const stagedRows = computed(() => {
   if (!staged.value) return []
   let rows = []
-  if (artifactKind.value === 'batch') rows = (staged.value.packages || []).map((item) => item.preview || item)
-  else if (artifactKind.value === 'bundle') rows = preview.value?.packages || []
-  else rows = preview.value ? [preview.value] : []
+  if (artifactKind.value === 'batch') {
+    const artifacts = new Map((staged.value.artifacts || []).map((item) => [item.upload_id, item]))
+    rows = (staged.value.packages || []).map((item) => {
+      const previewRow = item.preview || item
+      const artifact = artifacts.get(item.source_upload_id) || {}
+      const sourceKind = item.source_kind || artifact.kind || 'package'
+      return {
+        ...previewRow,
+        intake_filename: item.source_filename || artifact.filename || previewRow.id || 'package',
+        intake_source: sourceKind === 'bundle'
+          ? `bundle · ${item.source_bundle_id || item.source_filename || 'package'}`
+          : (artifact.source?.repository_name || artifact.source?.type || 'offline'),
+        intake_sha256: item.sha256 || artifact.sha256 || artifact.source?.package_sha256 || '',
+      }
+    })
+  } else if (artifactKind.value === 'bundle') {
+    rows = (preview.value?.packages || []).map((item) => ({
+      ...item,
+      intake_filename: staged.value.filename || preview.value?.id || 'bundle',
+      intake_source: `bundle · ${preview.value?.id || staged.value.filename || 'package'}`,
+      intake_sha256: staged.value.sha256 || '',
+    }))
+  } else {
+    rows = preview.value ? [{
+      ...preview.value,
+      intake_filename: staged.value.filename || preview.value.id || 'package',
+      intake_source: stagedSourceLabel.value,
+      intake_sha256: stagedHash.value === '—' ? '' : stagedHash.value,
+    }] : []
+  }
   const actions = new Map((plan.value?.actions || []).map((item) => [item.id, item]))
   return rows.map((item) => ({ ...item, ...(actions.get(item.id) || {}) }))
 })
+
+function moduleTargetVersion(row) { return row?.version || row?.extension_version || '—' }
+function moduleRequirements(row) {
+  const entries = Object.entries(row?.dependencies || {})
+  return entries.length ? entries.map(([id, constraint]) => `${id} ${constraint}`).join(' · ') : 'none'
+}
+function compactHash(value) {
+  const hash = String(value || '').trim()
+  return hash ? `${hash.slice(0, 12)}…` : '—'
+}
 
 const orderedRows = computed(() => {
   const byId = new Map(stagedRows.value.map((row) => [row.id, row]))
@@ -563,15 +600,23 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearInterval(reloadTimer) })
 
     <div v-if="staged" class="install-plan-workspace">
       <div class="card update-preview module-package-preview">
-        <div class="cardhead">
-          <div><span class="eyebrow">PACKAGE INSPECTION</span><h3>{{ artifactKind === 'bundle' ? 'Tec-Tac module bundle' : (artifactKind === 'batch' ? 'Tec-Tac module batch' : 'Tec-Tac module package') }}</h3></div>
+        <div class="cardhead module-inspection-head">
+          <div><span class="eyebrow">PACKAGE INSPECTION</span><h3>{{ orderedRows.length }} module{{ orderedRows.length===1?'':'s' }} ready for review</h3><p>{{ stagedArtifactLabel }} · {{ stagedSourceLabel }}</p></div>
           <span class="pill" :class="plan?.valid ? 'ok' : 'warn'">{{ plan?.valid ? 'INSTALLABLE' : 'BLOCKED' }}</span>
         </div>
-        <div class="package-summary system-package-summary">
-          <div><span>Artifact</span><b class="mono">{{ stagedArtifactLabel }}</b></div>
-          <div><span>Packages</span><b class="mono">{{ orderedRows.length }}</b></div>
-          <div><span>Source</span><b>{{ stagedSourceLabel }}</b></div>
-          <div><span>SHA256</span><b class="mono hash-short">{{ stagedHash }}</b></div>
+        <div class="module-inspection-grid">
+          <div class="module-inspection-grid-head" aria-hidden="true">
+            <span>Module</span><span>Installed</span><span>Package</span><span>Action</span><span>Source</span><span>SHA256</span><span>Requires</span>
+          </div>
+          <div v-for="row in orderedRows" :key="`inspect-${row.id}`" class="module-inspection-grid-row">
+            <div class="module-inspection-name"><b>{{ row.id }}</b><span class="mono">{{ row.intake_filename }}</span></div>
+            <div data-label="Installed" class="mono">{{ row.current_version || 'not installed' }}</div>
+            <div data-label="Package" class="mono module-target-version">{{ moduleTargetVersion(row) }}</div>
+            <div data-label="Action"><span class="pill" :class="row.action==='replace'?'warn':'ok'">{{ row.action || 'install' }}</span></div>
+            <div data-label="Source" class="module-inspection-source">{{ row.intake_source || stagedSourceLabel }}</div>
+            <div data-label="SHA256" class="mono module-inspection-hash" :title="row.intake_sha256 || ''">{{ compactHash(row.intake_sha256) }}</div>
+            <div data-label="Requires" class="mono module-inspection-requires" :title="moduleRequirements(row)">{{ moduleRequirements(row) }}</div>
+          </div>
         </div>
       </div>
       <div class="state-inline mt" :class="plan?.valid ? '' : 'warning'"><b>{{ plan?.valid ? 'Dependency plan resolved.' : 'Installation blocked.' }}</b> {{ plan?.valid ? 'Required dependency sequence is enforced. Independent packages may be reordered.' : 'Resolve the dependency/version problems before installation.' }}</div><div v-if="staged.source" class="state-inline mt"><b>Online source:</b> {{ staged.source.repository_name }} <span class="mono">· {{ staged.source.repository_trust }} · {{ staged.source.package_sha256.slice(0,12) }}…</span></div>

@@ -419,3 +419,10 @@ grep -q 'stagedHash' "${ROOT}/src/views/ModulesView.vue" || fail "module package
 grep -q 'stagedSourceLabel' "${ROOT}/src/views/ModulesView.vue" || fail "module package source summary missing"
 grep -q 'systemJobFailureTail' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "terminal system-update failure tail missing"
 echo "[TEST] PASS lifecycle hardening and package inspection parity"
+
+# 0.11.12 compact multi-module package inspection grid
+grep -q 'module-inspection-grid' "${ROOT}/src/views/ModulesView.vue" || fail "compact module inspection grid missing"
+grep -q 'Installed</span><span>Package</span><span>Action</span><span>Source</span><span>SHA256</span><span>Requires' "${ROOT}/src/views/ModulesView.vue" || fail "module inspection columns missing"
+grep -q 'intake_sha256' "${ROOT}/src/views/ModulesView.vue" || fail "module package provenance hash mapping missing"
+grep -q 'moduleRequirements(row)' "${ROOT}/src/views/ModulesView.vue" || fail "module inspection dependency summary missing"
+echo "[TEST] PASS compact multi-module package inspection grid"
