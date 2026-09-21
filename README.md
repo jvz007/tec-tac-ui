@@ -1,4 +1,4 @@
-Version **0.11.7** adds Core-owned interactive session activity heartbeats and global Core session-security failure handling.
+Version **0.11.8** fixes lifecycle job polling so terminal failed jobs remain readable and are shown as failed rather than being misreported as status-refresh failures.
 Version **0.10.15** gives context-menu-launched tabs a dedicated **Opening new window…** startup message while preserving the normal Tactical session verification flow and security checks.
 
 Version **0.10.14** shows current → target module versions in package and bundle install plans before installation.

@@ -402,3 +402,10 @@ grep -q "session_invalid_state" "${ROOT}/src/api.js" || fail "invalid session st
 grep -q "startSessionActivityTracking" "${ROOT}/src/App.vue" || fail "Core shell does not start activity tracker"
 node --check "${ROOT}/src/session-security.js"
 echo "[TEST] PASS Core interactive session-security rollout"
+
+# 0.11.8 failed lifecycle job polling
+grep -Fq "rejectErrorPayload !== false" "${ROOT}/src/api.js" || fail "2xx error-payload compatibility switch missing"
+grep -Fq "getModuleJob(jobId){ return apiFetch" "${ROOT}/src/modules.js" || fail "module job API helper missing"
+grep -Fq "rejectErrorPayload:false" "${ROOT}/src/modules.js" || fail "failed module jobs must remain readable by poller"
+grep -Fq "rejectErrorPayload: false" "${ROOT}/src/api.js" || fail "failed system update jobs must remain readable by poller"
+echo "[TEST] PASS terminal lifecycle job polling"

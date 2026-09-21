@@ -342,7 +342,7 @@ export async function apiFetch(path, options = {}) {
 
   // Tactical's notify_error helper can return a JSON error payload in a 2xx
   // response. Do not allow account/role actions to look successful in that case.
-  if (payload && typeof payload === 'object' && (payload.error || payload.detail)) {
+  if (options.rejectErrorPayload !== false && payload && typeof payload === 'object' && (payload.error || payload.detail)) {
     const error = new Error(messageFromPayload(payload, 'Tactical rejected the request.'))
     error.status = response.status
     error.payload = payload
@@ -443,7 +443,7 @@ export async function installSystemUpdatePackage(uploadId, allowDowngrade = fals
 }
 
 export async function getSystemUpdateJob(jobId) {
-  return apiFetch(`/api/tfd/system/updates/jobs/${jobId}/`)
+  return apiFetch(`/api/tfd/system/updates/jobs/${jobId}/`, { rejectErrorPayload: false })
 }
 
 // Tec-Tac Core storage housekeeping APIs
