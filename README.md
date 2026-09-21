@@ -1,3 +1,5 @@
+Version **0.11.11** keeps release validation focused on package/version/release-note correctness while retaining Node.js 24, npm tests, and the production Vite build in GitHub Actions.
+
 Version **0.11.10** corrects release-integrity validation for current+previous root release notes and updates the release workflow to Node.js 24 without changing release behaviour.
 
 Version **0.11.9** hardens UI lifecycle preflight, tolerates orphaned module-state records, surfaces final failed update output, and gives module packages/bundles the same inspection-summary pattern as System Updates.
