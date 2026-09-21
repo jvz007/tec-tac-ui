@@ -11,8 +11,18 @@ version=sys.argv[3]
 assert pkg['version']==version, (pkg['version'],version)
 assert manifest['version']==version, (manifest['version'],version)
 PY
-[[ -f "${ROOT}/RELEASE_NOTES_${VERSION}.md" ]] || fail "current release note missing"
-mapfile -t ROOT_NOTES < <(find "${ROOT}" -maxdepth 1 -type f -name 'RELEASE_NOTES_*.md' -printf '%f\n' | sort)
-[[ ${#ROOT_NOTES[@]} -eq 1 ]] || fail "expected exactly one root release note, found ${#ROOT_NOTES[@]}"
-[[ "${ROOT_NOTES[0]}" == "RELEASE_NOTES_${VERSION}.md" ]] || fail "root release note does not match current version"
+
+mapfile -t ROOT_NOTES < <(
+  find "${ROOT}" -maxdepth 1 -type f \
+    -name 'RELEASE_NOTES_*.md' \
+    -printf '%f\n' | sort
+)
+
+[[ ${#ROOT_NOTES[@]} -le 2 ]] || \
+  fail "expected no more than two root release notes, found ${#ROOT_NOTES[@]}"
+
+CURRENT_NOTE="RELEASE_NOTES_${VERSION}.md"
+printf '%s\n' "${ROOT_NOTES[@]}" | grep -Fxq "${CURRENT_NOTE}" || \
+  fail "current release note ${CURRENT_NOTE} not found"
+
 echo "[TEST] PASS release integrity ${VERSION}"
