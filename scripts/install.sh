@@ -22,6 +22,18 @@ npm run build
 
 [[ -f "${UI_SOURCE_ROOT}/dist/index.html" ]] || fail "Vite build did not create dist/index.html."
 
+# Assemble and validate the complete UI tree before touching the live deployment.
+# This catches malformed extension UI manifests/entries without turning an
+# otherwise healthy Tec-Tac UI update into a failed live replacement/rollback.
+STAGE_ROOT="$(mktemp -d /tmp/tec-tac-ui-stage.XXXXXX)"
+cleanup_stage() { rm -rf "${STAGE_ROOT}"; }
+trap cleanup_stage EXIT
+cp -a "${UI_SOURCE_ROOT}/dist/." "${STAGE_ROOT}/"
+cp -a "${UI_SOURCE_ROOT}/VERSION" "${STAGE_ROOT}/VERSION"
+cp -a "${UI_SOURCE_ROOT}/package.json" "${STAGE_ROOT}/package.json"
+log "Preflighting extension UI modules against staged deployment."
+TEC_TAC_UI_ROOT="${STAGE_ROOT}" bash "${UI_SOURCE_ROOT}/scripts/sync-modules.sh"
+
 mkdir -p "${DEPLOY_BASE}"
 BACKUP=""
 if [[ -d "${TARGET_ROOT}" ]]; then
@@ -32,16 +44,10 @@ fi
 
 rm -rf "${TARGET_ROOT}"
 mkdir -p "${TARGET_ROOT}"
-cp -a "${UI_SOURCE_ROOT}/dist/." "${TARGET_ROOT}/"
-# Runtime compatibility checks execute against the deployed UI tree. Keep the
-# release metadata with the built assets so Module Manager can resolve the live
-# UI version without depending on the source checkout.
-cp -a "${UI_SOURCE_ROOT}/VERSION" "${TARGET_ROOT}/VERSION"
-cp -a "${UI_SOURCE_ROOT}/package.json" "${TARGET_ROOT}/package.json"
+cp -a "${STAGE_ROOT}/." "${TARGET_ROOT}/"
 chown -R www-data:www-data "${DEPLOY_BASE}" 2>/dev/null || true
-
-# Sync optional extension UI modules into the persistent Tec-Tac deployment.
-TEC_TAC_UI_ROOT="${TARGET_ROOT}" bash "${UI_SOURCE_ROOT}/scripts/sync-modules.sh"
+cleanup_stage
+trap - EXIT
 
 # Install/repair only the small nginx integration. The built UI itself is now
 # outside Tactical's /var/www/rmm/dist tree and therefore survives upgrades.

@@ -1,3 +1,5 @@
+Version **0.11.9** hardens UI lifecycle preflight, tolerates orphaned module-state records, surfaces final failed update output, and gives module packages/bundles the same inspection-summary pattern as System Updates.
+
 Version **0.11.8** fixes lifecycle job polling so terminal failed jobs remain readable and are shown as failed rather than being misreported as status-refresh failures.
 Version **0.10.15** gives context-menu-launched tabs a dedicated **Opening new window…** startup message while preserving the normal Tactical session verification flow and security checks.
 

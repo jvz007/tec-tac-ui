@@ -53,6 +53,10 @@ const systemJobProgressLabel = computed(() => {
   if (job.value.status === 'failed') return 'Failed'
   return String(job.value.stage || job.value.status || 'queued').replace(/-/g, ' ')
 })
+const systemJobFailureTail = computed(() => {
+  if (job.value?.status !== 'failed') return []
+  return (job.value?.log_tail || []).filter((line) => String(line || '').trim()).slice(-8)
+})
 
 const components = computed(() => [
   {
@@ -432,7 +436,8 @@ onBeforeUnmount(() => { stopPolling(); if (reloadTimer.value) window.clearInterv
       <div class="module-meta"><span>Stage</span><b class="mono">{{ job.stage }}</b></div>
       <div class="module-meta"><span>Version</span><b class="mono">{{ job.installed_version }} → {{ job.version }}</b></div>
       <div v-if="job.rollback?.performed" class="state-inline" :class="job.rollback.status === 'succeeded' ? 'warning' : 'denied'">Rollback {{ job.rollback.status }}<span v-if="job.rollback.version"> · restored {{ job.rollback.version }}</span></div>
-      <div v-if="job.error" class="state-inline denied mt">{{ job.error_type }}: {{ job.error }}</div>
+      <div v-if="job.error" class="state-inline denied mt"><b>{{ job.error_type }}:</b> {{ job.error }}</div>
+      <div v-if="systemJobFailureTail.length" class="state-inline denied mt"><b>Final lifecycle output</b><pre class="job-log">{{ systemJobFailureTail.join('\n') }}</pre></div>
       <pre class="job-log">{{ (job.log_tail || []).join('\n') || 'Waiting for lifecycle output…' }}</pre>
       <div v-if="job.status === 'succeeded' && job.component === 'ui'" class="module-actions"><button class="btn primary" @click="reloadUi">Reload Tec-Tac UI</button></div>
     </article>

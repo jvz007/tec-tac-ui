@@ -93,6 +93,14 @@ const moduleJobProgressLabel = computed(() => {
 const preview = computed(() => staged.value?.preview || staged.value)
 const plan = computed(() => preview.value?.plan || staged.value?.plan || null)
 const artifactKind = computed(() => staged.value?.kind || preview.value?.kind || 'artifact')
+const stagedSourceLabel = computed(() => staged.value?.source?.repository_name || staged.value?.source?.type || 'offline')
+const stagedHash = computed(() => staged.value?.sha256 || staged.value?.source?.package_sha256 || '—')
+const stagedArtifactLabel = computed(() => {
+  if (staged.value?.filename) return staged.value.filename
+  if (artifactKind.value === 'batch') return 'Multiple packages'
+  if (artifactKind.value === 'bundle') return preview.value?.id || 'Bundle'
+  return preview.value?.id || 'Module package'
+})
 const failedModuleLoads = computed(() => state.moduleLoad?.failed || [])
 const skippedModuleLoads = computed(() => state.moduleLoad?.skipped || [])
 const loadedModuleIds = computed(() => new Set(state.moduleLoad?.loaded || []))
@@ -554,7 +562,19 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearInterval(reloadTimer) })
     </div>
 
     <div v-if="staged" class="install-plan-workspace">
-      <div class="state-inline" :class="plan?.valid ? '' : 'warning'"><b>{{ plan?.valid ? 'Dependency plan resolved.' : 'Installation blocked.' }}</b> {{ plan?.valid ? 'Required dependency sequence is enforced. Independent packages may be reordered.' : 'Resolve the dependency/version problems before installation.' }}</div><div v-if="staged.source" class="state-inline mt"><b>Online source:</b> {{ staged.source.repository_name }} <span class="mono">· {{ staged.source.repository_trust }} · {{ staged.source.package_sha256.slice(0,12) }}…</span></div>
+      <div class="card update-preview module-package-preview">
+        <div class="cardhead">
+          <div><span class="eyebrow">PACKAGE INSPECTION</span><h3>{{ artifactKind === 'bundle' ? 'Tec-Tac module bundle' : (artifactKind === 'batch' ? 'Tec-Tac module batch' : 'Tec-Tac module package') }}</h3></div>
+          <span class="pill" :class="plan?.valid ? 'ok' : 'warn'">{{ plan?.valid ? 'INSTALLABLE' : 'BLOCKED' }}</span>
+        </div>
+        <div class="package-summary system-package-summary">
+          <div><span>Artifact</span><b class="mono">{{ stagedArtifactLabel }}</b></div>
+          <div><span>Packages</span><b class="mono">{{ orderedRows.length }}</b></div>
+          <div><span>Source</span><b>{{ stagedSourceLabel }}</b></div>
+          <div><span>SHA256</span><b class="mono hash-short">{{ stagedHash }}</b></div>
+        </div>
+      </div>
+      <div class="state-inline mt" :class="plan?.valid ? '' : 'warning'"><b>{{ plan?.valid ? 'Dependency plan resolved.' : 'Installation blocked.' }}</b> {{ plan?.valid ? 'Required dependency sequence is enforced. Independent packages may be reordered.' : 'Resolve the dependency/version problems before installation.' }}</div><div v-if="staged.source" class="state-inline mt"><b>Online source:</b> {{ staged.source.repository_name }} <span class="mono">· {{ staged.source.repository_trust }} · {{ staged.source.package_sha256.slice(0,12) }}…</span></div>
       <div v-if="queueWarning" class="state-inline warning mt"><b>Order not changed.</b> {{ queueWarning }}</div>
 
       <div class="queue-head mt"><span class="eyebrow">INSTALL SEQUENCE</span><span class="mono muted">{{ orderedRows.length }} package{{ orderedRows.length===1?'':'s' }}</span></div>

@@ -39,7 +39,10 @@ for mid, record in sorted(state_modules.items()):
     if bool((record or {}).get("enabled", True)) and not (extensions_root/mid/"tec_tac.json").is_file():
         missing_state.append(mid)
 if missing_state:
-    raise SystemExit("module state references enabled module(s) whose extension files are missing: " + ", ".join(missing_state))
+    print(
+        "WARNING: ignoring stale enabled module state for missing extension(s): " + ", ".join(missing_state),
+        file=sys.stderr,
+    )
 if extensions_root.is_dir():
   for extension in sorted(p for p in extensions_root.iterdir() if p.is_dir()):
     manifest=extension/"tec_tac_ui.json"

@@ -176,7 +176,7 @@ grep -q "tec_tac_nav_sections" "${ROOT}/src/preferences.js" || fail "category co
 grep -q "toggleSection" "${ROOT}/src/App.vue" || fail "category collapse control missing"
 grep -q "rail-collapsed" "${ROOT}/src/styles.css" || fail "collapsed rail styling missing"
 
-grep -q 'module state references enabled module(s) whose extension files are missing' "${ROOT}/scripts/sync-modules.sh" || fail "module-loss guard missing"
+grep -q 'ignoring stale enabled module state for missing extension' "${ROOT}/scripts/sync-modules.sh" || fail "stale module-state warning missing"
 grep -q '/opt/tec-tac/etc/tec-tac.conf' "${ROOT}/scripts/tec-tac-config.sh" || fail "central Tec-Tac config path missing"
 grep -q 'UI_SOURCE_ROOT=' "${ROOT}/scripts/install.sh" || fail "UI installer does not preserve its own source root"
 if grep -q 'REPO_ROOT=' "${ROOT}/scripts/install.sh"; then fail "UI installer still uses collision-prone REPO_ROOT"; fi
@@ -409,3 +409,13 @@ grep -Fq "getModuleJob(jobId){ return apiFetch" "${ROOT}/src/modules.js" || fail
 grep -Fq "rejectErrorPayload:false" "${ROOT}/src/modules.js" || fail "failed module jobs must remain readable by poller"
 grep -Fq "rejectErrorPayload: false" "${ROOT}/src/api.js" || fail "failed system update jobs must remain readable by poller"
 echo "[TEST] PASS terminal lifecycle job polling"
+
+# 0.11.9 lifecycle hardening + package inspection parity
+grep -q 'ignoring stale enabled module state for missing extension' "${ROOT}/scripts/sync-modules.sh" || fail "stale module-state degradation missing"
+grep -q 'Preflighting extension UI modules against staged deployment' "${ROOT}/scripts/install.sh" || fail "UI module preflight does not happen before live replacement"
+grep -q 'STAGE_ROOT=.*tec-tac-ui-stage' "${ROOT}/scripts/install.sh" || fail "staged UI deployment root missing"
+grep -q 'PACKAGE INSPECTION' "${ROOT}/src/views/ModulesView.vue" || fail "module package inspection summary missing"
+grep -q 'stagedHash' "${ROOT}/src/views/ModulesView.vue" || fail "module package SHA summary missing"
+grep -q 'stagedSourceLabel' "${ROOT}/src/views/ModulesView.vue" || fail "module package source summary missing"
+grep -q 'systemJobFailureTail' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "terminal system-update failure tail missing"
+echo "[TEST] PASS lifecycle hardening and package inspection parity"
