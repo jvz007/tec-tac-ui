@@ -121,6 +121,7 @@ export async function loadUiModules(runtime, modules) {
     let moduleCodeEditor = null
     let moduleDashboardWidgets = null
     let moduleQuickActions = null
+    let moduleNotifications = null
     try {
       const imported = await import(/* @vite-ignore */ descriptor.entry)
       const plugin = imported.default || imported
@@ -141,6 +142,7 @@ export async function loadUiModules(runtime, modules) {
       moduleCodeEditor = runtime.codeEditor?.forModule(descriptor.id) || null
       moduleDashboardWidgets = runtime.dashboardWidgets?.forModule(descriptor.id) || null
       moduleQuickActions = runtime.quickActions?.forModule(descriptor.id) || null
+      moduleNotifications = runtime.notifications?.forModule(descriptor.id) || null
       await plugin.register({
         ...runtime,
         router: moduleRouter,
@@ -152,6 +154,7 @@ export async function loadUiModules(runtime, modules) {
         codeEditor: moduleCodeEditor,
         dashboardWidgets: moduleDashboardWidgets,
         quickActions: moduleQuickActions,
+        notifications: moduleNotifications,
       })
       loaded.push(descriptor.id)
     } catch (error) {
@@ -160,6 +163,7 @@ export async function loadUiModules(runtime, modules) {
       try { moduleCodeEditor?.clear?.() } catch {}
       try { moduleDashboardWidgets?.clear?.() } catch {}
       try { moduleQuickActions?.clear?.() } catch {}
+      try { moduleNotifications?.clear?.() } catch {}
       failed.push({ id: descriptor.id, message: error?.message || String(error) })
     }
   }

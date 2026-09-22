@@ -1,3 +1,5 @@
+Version **0.11.17** adds a Core-owned, module-scoped notification/toast service for consistent authenticated in-app notices, deduplication and optional module actions. See `docs/module-notifications.md`.
+
 Version **0.11.16** shows the cached last-known stable Framework/UI releases immediately and automatically refreshes Core's 24-hour release cache without requiring an operator click.
 
 Version **0.11.15** adds the Module Manager Hotfixes workspace for the Framework 1.15.25 managed-hotfix lifecycle.
@@ -245,6 +247,10 @@ Tec-Tac Core owns two browser-runtime contribution registries for authenticated 
 - `contextInteractions` for drag/drop relationships between shared resource types and surfaces.
 
 Modules receive module-scoped registry objects through `register(context)`. Provider IDs must be namespaced to the module, Core enforces declared permissions, and consumers query/execute contributions without importing another module's UI internals. See `docs/context-actions.md` and `docs/context-interactions.md`.
+
+## Module notifications
+
+Authenticated modules receive a Core-owned `notifications` runtime service for transient in-app notices such as report completion, alerts, warnings and background job failures. Modules must not ship independent toast systems. See `docs/module-notifications.md`.
 
 ## Dynamic UI modules
 

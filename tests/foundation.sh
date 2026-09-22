@@ -470,3 +470,17 @@ grep -q "refreshStableReleases" "${ROOT}/src/views/SystemUpdatesView.vue" || fai
 grep -q "60 \* 60 \* 1000" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "hourly cache-age recheck timer missing"
 grep -q "Refresh stable release" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "forced manual stable release refresh missing"
 echo "[TEST] PASS System Updates 24-hour release cache"
+
+# 0.11.17 Core-owned module notifications / toast contract
+[[ -f "${ROOT}/src/notifications.js" ]] || fail "Core notification service missing"
+[[ -f "${ROOT}/docs/module-notifications.md" ]] || fail "module notification documentation missing"
+grep -q "createNotificationService" "${ROOT}/src/main.js" || fail "notification service not created by shell"
+grep -q "app.provide('tecTacNotifications'" "${ROOT}/src/main.js" || fail "notification service not provided by shell"
+grep -q "notifications: moduleNotifications" "${ROOT}/src/module-loader.js" || fail "module-scoped notification contract not passed to modules"
+grep -q "moduleNotifications?.clear" "${ROOT}/src/module-loader.js" || fail "failed module registration does not clean notifications"
+grep -q "toast-stack" "${ROOT}/src/App.vue" || fail "Core toast surface missing"
+grep -q "dedupeKey" "${ROOT}/src/notifications.js" || fail "notification deduplication missing"
+grep -q "MAX_VISIBLE = 5" "${ROOT}/src/notifications.js" || fail "notification flood cap missing"
+grep -q "Module notifications / toasts" "${ROOT}/src/views/ContractsView.vue" || fail "Public Contracts notification documentation missing"
+node --check "${ROOT}/src/notifications.js"
+echo "[TEST] PASS Core-owned module notifications"

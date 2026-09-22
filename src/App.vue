@@ -14,6 +14,7 @@ const route = useRoute()
 const router = useRouter()
 const dynamicNav = inject('tecTacNavigation', [])
 const quickActions = inject('tecTacQuickActions', null)
+const notifications = inject('tecTacNotifications', null)
 const FONT_SIZES = [
   { value: 0.9, label: 'A−', title: 'Small text' },
   { value: 1, label: 'A', title: 'Default text size' },
@@ -316,6 +317,17 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
       <div v-else-if="state.status === 'failed'" class="state-panel danger-panel"><span class="eyebrow">SESSION OR BACKEND CHECK FAILED</span><h2>Tec-Tac could not complete startup</h2><p class="mono">{{ state.error?.message }}</p><div class="row"><button class="btn" @click="retry">Retry</button><button class="btn ghost" @click="backToTactical">Open Tactical</button></div></div>
       <router-view v-else-if="state.status === 'ready'" />
     </main>
+    <div v-if="notifications?.toasts?.length" class="toast-stack" role="region" aria-label="Notifications" aria-live="polite">
+      <article v-for="toast in notifications.toasts" :key="toast.id" class="toast-card" :class="`toast-${toast.level}`" role="status">
+        <div class="toast-marker" aria-hidden="true">{{ toast.level === 'success' ? '✓' : (toast.level === 'warning' ? '!' : (toast.level === 'error' ? '×' : 'i')) }}</div>
+        <div class="toast-body">
+          <div v-if="toast.title" class="toast-title">{{ toast.title }}</div>
+          <div class="toast-message">{{ toast.message }}</div>
+          <button v-if="toast.action" type="button" class="toast-action" :disabled="toast.busy" @click="notifications.invoke(toast.id)">{{ toast.busy ? 'Working…' : toast.action.label }}</button>
+        </div>
+        <button type="button" class="toast-dismiss" title="Dismiss notification" aria-label="Dismiss notification" @click="notifications.dismiss(toast.id)">×</button>
+      </article>
+    </div>
     <QuickActionsDialog v-model="quickActionsOpen" />
     <UnsavedChangesDialog />
   </div>

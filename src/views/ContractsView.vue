@@ -60,6 +60,17 @@ onMounted(refresh)
     <div class="callout contract-rules"><b>Personal shortcut boundary</b><span>Authenticated modules may register safe browser actions through the module-scoped <span class="mono">quickActions</span> registry. Core owns persistence, ordering, permission checks and the top-bar surface; providers own execution.</span></div>
     <div class="tablewrap"><table><thead><tr><th>Action</th><th>Provider</th><th>Group</th><th>Permission</th><th>Direct pin</th><th>Risk</th></tr></thead><tbody><tr v-for="item in uiQuickActions" :key="item.id"><td><b class="mono">{{item.id}}</b><span class="sub">{{item.label}} · {{item.description||'No description'}}</span></td><td class="mono">{{item.provider}}</td><td>{{item.group}}</td><td class="mono">{{item.permission||'—'}}</td><td><span class="pill">{{item.directPin?'yes':'module only'}}</span></td><td><span class="pill" :class="item.dangerous?'danger':''">{{item.dangerous?'dangerous':'normal'}}</span></td></tr><tr v-if="!uiQuickActions.length"><td colspan="6" class="muted">No module Quick Actions are currently registered or match the current search.</td></tr></tbody></table></div>
 
+    <div class="section-divider">Module notifications / toasts</div>
+    <div class="callout contract-rules"><b>Operator notification boundary</b><span>Authenticated modules receive the Core-owned, module-scoped <span class="mono">notifications</span> service. Use it for transient in-app notices such as report completion, warnings and action failures; durable alert state remains module/backend owned.</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Method</th><th>Use</th></tr></thead><tbody>
+      <tr><td class="mono">notifications.info(message, options)</td><td>Normal informational notice.</td></tr>
+      <tr><td class="mono">notifications.success(message, options)</td><td>Successful completion such as a report or scan finishing.</td></tr>
+      <tr><td class="mono">notifications.warning(message, options)</td><td>Actionable warning that does not require a modal.</td></tr>
+      <tr><td class="mono">notifications.error(message, options)</td><td>Operation failure or important error.</td></tr>
+      <tr><td class="mono">notifications.show({...})</td><td>Explicit level/title/duration/dedupe/action configuration.</td></tr>
+      <tr><td class="mono">notifications.dismiss(id) · notifications.clear()</td><td>Dismiss one toast or clear the calling module's visible toasts.</td></tr>
+    </tbody></table></div>
+
     <div class="section-divider">Authenticated module API helpers</div>
     <div class="callout contract-rules"><b>Browser transport boundary</b><span>Authenticated modules use Core-owned request helpers and must not read Tactical tokens or browser authentication storage directly.</span></div>
     <div class="tablewrap"><table><thead><tr><th>Helper</th><th>Response</th><th>Use</th></tr></thead><tbody>
