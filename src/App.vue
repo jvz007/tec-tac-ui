@@ -3,6 +3,7 @@ import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import LoginPanel from './components/LoginPanel.vue'
 import UnsavedChangesDialog from './components/UnsavedChangesDialog.vue'
+import QuickActionsDialog from './components/QuickActionsDialog.vue'
 import { logoutTacticalSession } from './api'
 import { state, loadContext } from './state'
 import { requestLeave } from './unsaved'
@@ -12,6 +13,7 @@ import { startSessionActivityTracking, stopSessionActivityTracking } from './ses
 const route = useRoute()
 const router = useRouter()
 const dynamicNav = inject('tecTacNavigation', [])
+const quickActions = inject('tecTacQuickActions', null)
 const FONT_SIZES = [
   { value: 0.9, label: 'A−', title: 'Small text' },
   { value: 1, label: 'A', title: 'Default text size' },
@@ -29,6 +31,9 @@ const fontScale = computed({
 })
 const query = ref('')
 const signingOut = ref(false)
+const quickActionsOpen = ref(false)
+const quickActionBusyId = ref(null)
+const quickActionError = ref('')
 const railCollapsed = computed({
   get: () => preferenceState.preferences.navigation.rail_collapsed,
   set: (value) => updateUserPreferences((next) => { next.navigation.rail_collapsed = Boolean(value); return next }),
@@ -121,6 +126,9 @@ const initials = computed(() => {
 })
 
 const currentTitle = computed(() => route.meta.title || visibleNav.value.find((item) => item.to === route.path)?.label || 'Tec-Tac')
+const quickPins = computed(() => quickActions?.listPins?.() || [])
+const topQuickPins = computed(() => quickPins.value.slice(0, 6))
+const quickOverflowCount = computed(() => Math.max(0, quickPins.value.length - topQuickPins.value.length))
 
 const accountStatus = computed(() => {
   if (state.authStatus === 'verifying') return 'VERIFYING'
@@ -174,7 +182,7 @@ function navDrop(section, target) {
 }
 function openNavContextMenu(event, item, section) {
   const menuWidth = 210
-  const menuHeight = 92
+  const menuHeight = 132
   navContextMenu.value = {
     item,
     section,
@@ -183,6 +191,28 @@ function openNavContextMenu(event, item, section) {
   }
 }
 function closeNavContextMenu() { navContextMenu.value = null }
+function isQuickRoute(item) { return !!quickActions?.isRoutePinned?.(item?.to) }
+function toggleQuickRoute(item) {
+  quickActionError.value = ''
+  try {
+    if (isQuickRoute(item)) quickActions.removeRoute(item.to)
+    else quickActions.pinRoute({ to: item.to, label: item.label, icon: item.icon || '↗' })
+  } catch (error) { quickActionError.value = error?.message || String(error) }
+  closeNavContextMenu()
+}
+async function runQuickAction(pin) {
+  if (!pin || pin.state?.enabled === false || quickActionBusyId.value) return
+  if (pin.dangerous && !window.confirm(`Run quick action ${pin.label}?`)) return
+  quickActionBusyId.value = pin.id
+  quickActionError.value = ''
+  try {
+    const outcome = await quickActions.executePin(pin.id)
+    if (outcome?.type === 'route' && outcome.to) navigate(outcome.to)
+  } catch (error) {
+    quickActionError.value = error?.message || 'Quick action failed.'
+  } finally { quickActionBusyId.value = null }
+}
+function openQuickActions() { quickActionError.value = ''; quickActionsOpen.value = true; closeNavContextMenu() }
 function openInNewTab(item) {
   const resolved = router.resolve(item.to)
   const base = `${window.location.origin}/tec-tac/`
@@ -191,7 +221,7 @@ function openInNewTab(item) {
   window.open(target.href, '_blank', 'noopener,noreferrer')
   closeNavContextMenu()
 }
-function handleGlobalKey(event) { if (event.key === 'Escape') closeNavContextMenu() }
+function handleGlobalKey(event) { if (event.key === 'Escape') { closeNavContextMenu(); quickActionsOpen.value = false } }
 
 async function retry() {
   await loadContext()
@@ -220,6 +250,12 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
 
     <header class="topbar">
       <div class="crumbs"><span>Tec-Tac</span><span class="sep">/</span><b>{{ publicRoute ? currentTitle : (state.status === 'unauthenticated' ? 'Sign in' : currentTitle) }}</b></div>
+      <div v-if="!publicRoute && state.status === 'ready'" class="quick-actions-topbar" @click.stop>
+        <button v-for="pin in topQuickPins" :key="pin.id" type="button" class="quick-action-button" :class="{ busy: quickActionBusyId === pin.id }" :disabled="pin.state?.enabled === false || !!quickActionBusyId" :title="pin.state?.reason || pin.description || pin.label" @click="runQuickAction(pin)"><span aria-hidden="true">{{ pin.icon || '⚡' }}</span><b>{{ pin.label }}</b></button>
+        <button v-if="quickOverflowCount" type="button" class="quick-action-button overflow" :title="`${quickOverflowCount} more Quick Actions`" @click="openQuickActions">+{{ quickOverflowCount }}</button>
+        <button type="button" class="quick-action-manage" title="Manage Quick Actions" aria-label="Manage Quick Actions" @click="openQuickActions">＋</button>
+        <span v-if="quickActionError" class="quick-actions-error" :title="quickActionError">!</span>
+      </div>
       <div class="spacer"></div>
       <div class="appearance-controls">
         <select v-model="theme" class="theme-select" aria-label="Theme"><option value="dark">Dark</option><option value="light">Light</option><option value="high-contrast">High contrast</option></select>
@@ -274,6 +310,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
     <div v-if="navContextMenu" class="nav-context-menu" :style="{ left: `${navContextMenu.x}px`, top: `${navContextMenu.y}px` }" @click.stop>
       <button type="button" @click="openInNewTab(navContextMenu.item)"><span>↗</span><span>Open in new tab</span></button>
       <button type="button" @click="toggleFavorite(navContextMenu.item)"><span>{{ isFavorite(navContextMenu.item) ? '☆' : '★' }}</span><span>{{ isFavorite(navContextMenu.item) ? 'Remove from Favorites' : 'Add to Favorites' }}</span></button>
+      <button type="button" @click="toggleQuickRoute(navContextMenu.item)"><span>{{ isQuickRoute(navContextMenu.item) ? '−' : '＋' }}</span><span>{{ isQuickRoute(navContextMenu.item) ? 'Remove from Quick Actions' : 'Add to Quick Actions' }}</span></button>
     </div>
 
     <main class="main">
@@ -290,6 +327,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
       <div v-else-if="state.status === 'failed'" class="state-panel danger-panel"><span class="eyebrow">SESSION OR BACKEND CHECK FAILED</span><h2>Tec-Tac could not complete startup</h2><p class="mono">{{ state.error?.message }}</p><div class="row"><button class="btn" @click="retry">Retry</button><button class="btn ghost" @click="backToTactical">Open Tactical</button></div></div>
       <router-view v-else-if="state.status === 'ready'" />
     </main>
+    <QuickActionsDialog v-model="quickActionsOpen" :navigation="visibleNav" />
     <UnsavedChangesDialog />
   </div>
 </template>

@@ -6,6 +6,7 @@ const contextActions=inject('tecTacContextActions', null)
 const contextInteractions=inject('tecTacContextInteractions', null)
 const codeEditor=inject('tecTacCodeEditor', null)
 const dashboardWidgets=inject('tecTacDashboardWidgets', null)
+const quickActions=inject('tecTacQuickActions', null)
 const data=ref(null), loading=ref(true), error=ref(''), query=ref(''), exporting=ref('')
 const q=computed(()=>query.value.trim().toLowerCase())
 const match=(...values)=>!q.value||values.some(v=>String(v??'').toLowerCase().includes(q.value))
@@ -18,6 +19,7 @@ const uiActions=computed(()=>(contextActions?.snapshot?.()||[]).filter(x=>match(
 const uiInteractions=computed(()=>(contextInteractions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.surface,x.permission,(x.sourceTypes||[]).join(' '),(x.targetTypes||[]).join(' '))))
 const editorContract=computed(()=>codeEditor?.snapshot?.()||{languages:[],defaults:{},providers:[],theme:'—'})
 const uiDashboardWidgets=computed(()=>(dashboardWidgets?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.title,x.category,x.permission,x.description)))
+const uiQuickActions=computed(()=>(quickActions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.label,x.group,x.permission,x.description)))
 async function refresh(){loading.value=true;error.value='';try{data.value=await getDeveloperContracts()}catch(e){error.value=e.message||'Unable to load developer contracts.'}finally{loading.value=false}}
 async function exportFile(format){exporting.value=format;error.value='';try{await downloadDeveloperContracts(format)}catch(e){error.value=e.message||'Unable to export developer contracts.'}finally{exporting.value=''}}
 function stateClass(state){return state==='available'?'ok':state==='unhealthy'||state==='version-incompatible'?'danger':state&&state!=='available'?'warn':''}
@@ -53,6 +55,10 @@ onMounted(refresh)
     <div class="section-divider">UI runtime context interactions</div>
     <div class="callout contract-rules"><b>Browser interaction boundary</b><span>Modules may contribute drag/drop behavior through the Core-owned <span class="mono">contextInteractions</span> registry. Providers own drop execution; consumers discover compatible interactions by shared surface, source type and target type without importing provider UI internals.</span></div>
     <div class="tablewrap"><table><thead><tr><th>Interaction</th><th>Provider</th><th>Surface</th><th>Source types</th><th>Target types</th><th>Permission</th><th>Order</th></tr></thead><tbody><tr v-for="item in uiInteractions" :key="item.id"><td><b class="mono">{{item.id}}</b></td><td class="mono">{{item.provider}}</td><td class="mono">{{item.surface}}</td><td class="mono contract-wrap">{{(item.sourceTypes||[]).join(', ')}}</td><td class="mono contract-wrap">{{(item.targetTypes||[]).join(', ')}}</td><td class="mono">{{item.permission||'—'}}</td><td class="mono">{{item.order}}</td></tr><tr v-if="!uiInteractions.length"><td colspan="7" class="muted">No UI context interactions are currently registered or match the current search.</td></tr></tbody></table></div>
+
+    <div class="section-divider">Quick Action contributions</div>
+    <div class="callout contract-rules"><b>Personal shortcut boundary</b><span>Authenticated modules may register safe browser actions through the module-scoped <span class="mono">quickActions</span> registry. Core owns persistence, ordering, permission checks and the top-bar surface; providers own execution.</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Action</th><th>Provider</th><th>Group</th><th>Permission</th><th>Direct pin</th><th>Risk</th></tr></thead><tbody><tr v-for="item in uiQuickActions" :key="item.id"><td><b class="mono">{{item.id}}</b><span class="sub">{{item.label}} · {{item.description||'No description'}}</span></td><td class="mono">{{item.provider}}</td><td>{{item.group}}</td><td class="mono">{{item.permission||'—'}}</td><td><span class="pill">{{item.directPin?'yes':'module only'}}</span></td><td><span class="pill" :class="item.dangerous?'danger':''">{{item.dangerous?'dangerous':'normal'}}</span></td></tr><tr v-if="!uiQuickActions.length"><td colspan="6" class="muted">No module Quick Actions are currently registered or match the current search.</td></tr></tbody></table></div>
 
     <div class="section-divider">Authenticated module API helpers</div>
     <div class="callout contract-rules"><b>Browser transport boundary</b><span>Authenticated modules use Core-owned request helpers and must not read Tactical tokens or browser authentication storage directly.</span></div>

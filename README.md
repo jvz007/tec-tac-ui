@@ -1,5 +1,10 @@
 Version **0.11.11** keeps release validation focused on package/version/release-note correctness while retaining Node.js 24, npm tests, and the production Vite build in GitHub Actions.
 
+## 0.11.13 Quick Actions
+
+Tec-Tac now provides a per-user Quick Actions bar in the authenticated top bar. Operators can pin visible navigation destinations and modules can register named, permission-aware browser actions, including module-configured parameterized shortcuts. Pins use the existing server-backed preference profile. See `docs/module-quick-actions.md`.
+
+
 ## 0.11.12
 
 Module package inspection now uses a compact per-module grid showing installed and target versions, action, source, SHA256 and dependencies while retaining the separate dependency-aware install sequence below.
