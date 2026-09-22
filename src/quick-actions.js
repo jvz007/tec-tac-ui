@@ -15,22 +15,25 @@ function safeParams(value) {
   return clone(params)
 }
 
-function pinId(prefix = 'quick') {
-  if (globalThis.crypto?.randomUUID) return `${prefix}:${globalThis.crypto.randomUUID()}`
-  return `${prefix}:${Date.now().toString(36)}:${Math.random().toString(36).slice(2)}`
+function pinId() {
+  if (globalThis.crypto?.randomUUID) return `action:${globalThis.crypto.randomUUID()}`
+  return `action:${Date.now().toString(36)}:${Math.random().toString(36).slice(2)}`
 }
 
 function readPins() {
   const rows = preferenceState.preferences?.extensions?.core?.quick_actions
   if (!Array.isArray(rows)) return []
   return rows
-    .filter((row) => row && typeof row === 'object' && typeof row.id === 'string')
+    .filter((row) => row && typeof row === 'object' && row.type === 'action' && typeof row.id === 'string' && typeof row.action_id === 'string')
     .slice(0, MAX_QUICK_ACTIONS)
     .map((row) => ({ ...clone(row), params: safeParams(row.params) }))
 }
 
 function writePins(rows) {
-  const normalized = rows.slice(0, MAX_QUICK_ACTIONS).map((row) => ({ ...clone(row), params: safeParams(row.params) }))
+  const normalized = rows
+    .filter((row) => row?.type === 'action' && typeof row.action_id === 'string')
+    .slice(0, MAX_QUICK_ACTIONS)
+    .map((row) => ({ ...clone(row), type: 'action', params: safeParams(row.params) }))
   updateUserPreferences((next) => {
     next.extensions ||= {}
     next.extensions.core ||= {}
@@ -107,7 +110,6 @@ export function createQuickActionRegistry({ hasPermission } = {}) {
 
   function listPins() {
     return readPins().map((pin) => {
-      if (pin.type === 'route') return { ...pin, state: { visible: true, enabled: true, reason: null } }
       const action = findAction(pin.action_id)
       if (!action) return { ...pin, missing: true, state: { visible: true, enabled: false, reason: 'Provider action is not registered.' } }
       const context = { params: safeParams(pin.params), pin, source: 'quick-action-bar' }
@@ -121,17 +123,6 @@ export function createQuickActionRegistry({ hasPermission } = {}) {
     })
   }
 
-  function pinRoute({ to, label, icon = '↗' }) {
-    const route = String(to || '').trim()
-    const name = String(label || '').trim()
-    if (!route.startsWith('/') || !name) throw new Error('Route quick actions require a Tec-Tac route and label.')
-    const pins = readPins()
-    if (pins.some((pin) => pin.type === 'route' && pin.to === route)) return pins
-    if (pins.length >= MAX_QUICK_ACTIONS) throw new Error(`Quick Actions supports up to ${MAX_QUICK_ACTIONS} shortcuts.`)
-    pins.push({ id: pinId('route'), type: 'route', to: route, label: name, icon: String(icon || '↗'), params: {} })
-    return writePins(pins)
-  }
-
   function pinAction(actionId, options = {}) {
     const action = findAction(actionId)
     if (!action) throw new Error(`Quick action ${actionId} is not registered.`)
@@ -140,7 +131,7 @@ export function createQuickActionRegistry({ hasPermission } = {}) {
     const pins = readPins()
     if (pins.length >= MAX_QUICK_ACTIONS) throw new Error(`Quick Actions supports up to ${MAX_QUICK_ACTIONS} shortcuts.`)
     pins.push({
-      id: pinId('action'),
+      id: pinId(),
       type: 'action',
       action_id: action.id,
       label: String(options.label || action.label),
@@ -162,20 +153,17 @@ export function createQuickActionRegistry({ hasPermission } = {}) {
     return writePins(pins)
   }
 
-  function isRoutePinned(to) { return readPins().some((pin) => pin.type === 'route' && pin.to === String(to || '')) }
-  function removeRoute(to) { return writePins(readPins().filter((pin) => !(pin.type === 'route' && pin.to === String(to || '')))) }
-  function isActionPinned(id) { return readPins().some((pin) => pin.type === 'action' && pin.action_id === String(id || '')) }
+  function isActionPinned(id) { return readPins().some((pin) => pin.action_id === String(id || '')) }
 
   async function executePin(pinIdValue) {
     const pin = readPins().find((item) => item.id === String(pinIdValue || ''))
     if (!pin) throw new Error('Quick action shortcut was not found.')
-    if (pin.type === 'route') return { type: 'route', to: pin.to }
     const action = findAction(pin.action_id)
     if (!action) throw new Error(`Quick action ${pin.action_id} is not currently registered.`)
     const context = { params: safeParams(pin.params), pin: clone(pin), source: 'quick-action-bar' }
     const state = evaluate(action, context)
     if (!state.visible || !state.enabled) throw new Error(state.reason || `Quick action ${pin.action_id} is unavailable.`)
-    return { type: 'action', result: await action.execute(context) }
+    return await action.execute(context)
   }
 
   function forModule(moduleId) {
@@ -201,7 +189,7 @@ export function createQuickActionRegistry({ hasPermission } = {}) {
         const action = actions.get(String(id || ''))
         if (!action || action.provider !== moduleId) return false
         const before = readPins().length
-        writePins(readPins().filter((pin) => !(pin.type === 'action' && pin.action_id === action.id)))
+        writePins(readPins().filter((pin) => pin.action_id !== action.id))
         return readPins().length !== before
       },
       clear() {
@@ -215,12 +203,9 @@ export function createQuickActionRegistry({ hasPermission } = {}) {
     forModule,
     listCatalog,
     listPins,
-    pinRoute,
     pinAction,
     removePin,
     movePin,
-    isRoutePinned,
-    removeRoute,
     isActionPinned,
     executePin,
     snapshot: () => [...actions.values()].map(({ execute, visible, enabled, ...row }) => ({ ...row })),

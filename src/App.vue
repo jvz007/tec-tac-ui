@@ -191,23 +191,13 @@ function openNavContextMenu(event, item, section) {
   }
 }
 function closeNavContextMenu() { navContextMenu.value = null }
-function isQuickRoute(item) { return !!quickActions?.isRoutePinned?.(item?.to) }
-function toggleQuickRoute(item) {
-  quickActionError.value = ''
-  try {
-    if (isQuickRoute(item)) quickActions.removeRoute(item.to)
-    else quickActions.pinRoute({ to: item.to, label: item.label, icon: item.icon || '↗' })
-  } catch (error) { quickActionError.value = error?.message || String(error) }
-  closeNavContextMenu()
-}
 async function runQuickAction(pin) {
   if (!pin || pin.state?.enabled === false || quickActionBusyId.value) return
   if (pin.dangerous && !window.confirm(`Run quick action ${pin.label}?`)) return
   quickActionBusyId.value = pin.id
   quickActionError.value = ''
   try {
-    const outcome = await quickActions.executePin(pin.id)
-    if (outcome?.type === 'route' && outcome.to) navigate(outcome.to)
+    await quickActions.executePin(pin.id)
   } catch (error) {
     quickActionError.value = error?.message || 'Quick action failed.'
   } finally { quickActionBusyId.value = null }
@@ -310,7 +300,6 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
     <div v-if="navContextMenu" class="nav-context-menu" :style="{ left: `${navContextMenu.x}px`, top: `${navContextMenu.y}px` }" @click.stop>
       <button type="button" @click="openInNewTab(navContextMenu.item)"><span>↗</span><span>Open in new tab</span></button>
       <button type="button" @click="toggleFavorite(navContextMenu.item)"><span>{{ isFavorite(navContextMenu.item) ? '☆' : '★' }}</span><span>{{ isFavorite(navContextMenu.item) ? 'Remove from Favorites' : 'Add to Favorites' }}</span></button>
-      <button type="button" @click="toggleQuickRoute(navContextMenu.item)"><span>{{ isQuickRoute(navContextMenu.item) ? '−' : '＋' }}</span><span>{{ isQuickRoute(navContextMenu.item) ? 'Remove from Quick Actions' : 'Add to Quick Actions' }}</span></button>
     </div>
 
     <main class="main">
@@ -327,7 +316,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
       <div v-else-if="state.status === 'failed'" class="state-panel danger-panel"><span class="eyebrow">SESSION OR BACKEND CHECK FAILED</span><h2>Tec-Tac could not complete startup</h2><p class="mono">{{ state.error?.message }}</p><div class="row"><button class="btn" @click="retry">Retry</button><button class="btn ghost" @click="backToTactical">Open Tactical</button></div></div>
       <router-view v-else-if="state.status === 'ready'" />
     </main>
-    <QuickActionsDialog v-model="quickActionsOpen" :navigation="visibleNav" />
+    <QuickActionsDialog v-model="quickActionsOpen" />
     <UnsavedChangesDialog />
   </div>
 </template>

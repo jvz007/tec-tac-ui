@@ -28,6 +28,10 @@ Version **0.10.5** keeps UI source installs Git-clean by suppressing npm lockfil
 
 # Tec-Tac UI
 
+## 0.11.14 Quick Actions ownership correction
+
+Quick Actions are now exclusively executable actions registered by the module that owns the function. Core owns the top-bar surface, persistence, ordering, permission/availability checks and invocation shell; navigation shortcuts remain in Favorites and are no longer offered as Quick Actions. Existing 0.11.13 route pins are ignored after upgrade.
+
 Version **0.10.4** fixes UI installer source-path handling after the Tec-Tac source/runtime layout separation.
 
 Version **0.10.1** adds persistent whole-rail and per-category navigation collapse controls while preserving dynamic extension navigation.

@@ -2,7 +2,7 @@
 
 Tec-Tac UI 0.11.13 adds a Core-owned, per-user Quick Actions bar in the authenticated top bar.
 
-Quick Actions are shortcuts, not an authorization boundary. Core stores the user's pins and evaluates the provider's current permission/availability state every time an action is shown or executed. Backend authorization remains authoritative.
+Quick Actions are executable module-owned actions, not navigation shortcuts and not an authorization boundary. Core stores the user's pins and evaluates the provider's current permission/availability state every time an action is shown or executed. Backend authorization remains authoritative.
 
 ## Module runtime contract
 
@@ -54,9 +54,9 @@ quickActions.pin('probe.scan-now', {
 
 This stores only the action ID, display metadata and bounded JSON parameters in the user's Core preference profile. It does not store executable code, URLs to arbitrary endpoints, shell commands, tokens or credentials.
 
-## Navigation shortcuts
+## Ownership boundary
 
-Core navigation entries can be added or removed from Quick Actions from the navigation context menu or the Quick Actions manager. Route shortcuts are limited to navigation routes already visible to the authenticated user.
+Core does not convert navigation routes into Quick Actions. Navigation favorites remain the page-shortcut mechanism. Quick Actions exist only for registered module functions. A provider may open its own modal/workflow, navigate as part of that workflow, or call its normal authenticated API from the registered execution handler.
 
 ## Persistence
 
