@@ -30,6 +30,7 @@ const job = ref(null)
 const pollTimer = ref(null)
 const reloadTimer = ref(null)
 const reloadCountdown = ref(0)
+const releaseRefreshTimer = ref(null)
 
 const systemJobProgress = computed(() => {
   const current = job.value
@@ -82,6 +83,10 @@ async function loadStatus() {
   error.value = ''
   try {
     status.value = await getSystemUpdateStatus()
+    for (const component of ['framework', 'ui']) {
+      const cached = status.value?.release_cache?.[component]
+      if (cached?.latest_release) online.value[component] = cached
+    }
   } catch (err) {
     error.value = err?.message || 'Unable to load system update status.'
   } finally {
@@ -89,16 +94,26 @@ async function loadStatus() {
   }
 }
 
-async function checkOnline(component) {
-  onlineBusy.value[component] = true
-  error.value = ''
+async function checkOnline(component, { force = false, background = false } = {}) {
+  onlineBusy.value[component] = !background
+  if (!background) error.value = ''
   try {
-    online.value[component] = await checkOnlineSystemUpdate(component)
+    online.value[component] = await checkOnlineSystemUpdate(component, { force })
   } catch (err) {
-    error.value = err?.message || 'Unable to check repository release.'
+    if (!background) error.value = err?.message || 'Unable to check repository release.'
   } finally {
     onlineBusy.value[component] = false
   }
+}
+
+async function refreshStableReleases() {
+  await Promise.allSettled(['framework', 'ui'].map((component) => checkOnline(component, { background: true })))
+}
+
+function formatCheckedAt(value) {
+  if (!value) return 'Never'
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString()
 }
 
 async function unlockAdvanced() {
@@ -271,8 +286,18 @@ function reloadUi() {
   window.location.reload()
 }
 
-onMounted(loadStatus)
-onBeforeUnmount(() => { stopPolling(); if (reloadTimer.value) window.clearInterval(reloadTimer.value) })
+onMounted(async () => {
+  await loadStatus()
+  await refreshStableReleases()
+  // The backend cache makes this cheap: GitHub is contacted only when the
+  // persisted release lookup is at least 24 hours old.
+  releaseRefreshTimer.value = window.setInterval(refreshStableReleases, 60 * 60 * 1000)
+})
+onBeforeUnmount(() => {
+  stopPolling()
+  if (reloadTimer.value) window.clearInterval(reloadTimer.value)
+  if (releaseRefreshTimer.value) window.clearInterval(releaseRefreshTimer.value)
+})
 </script>
 
 <template>
@@ -349,15 +374,16 @@ onBeforeUnmount(() => { stopPolling(); if (reloadTimer.value) window.clearInterv
           <dt>Stable release</dt>
           <dd>
             <span v-if="online[component.id]?.latest_release" class="mono">{{ online[component.id].latest_release.tag }}</span>
-            <span v-else class="muted">Not checked</span>
+            <span v-else class="muted">No cached release yet</span>
           </dd>
+          <dt>Last checked</dt><dd class="smalltext">{{ formatCheckedAt(online[component.id]?.checked_at) }}<span v-if="online[component.id]?.cache?.stale" class="pill warn ml">STALE</span></dd>
         </dl>
 
         <div v-if="online[component.id]?.release_error" class="state-inline warning mt">{{ online[component.id].release_error }}</div>
 
         <div class="system-update-actions">
-          <button class="btn" :disabled="onlineBusy[component.id] || stageBusy" @click="checkOnline(component.id)">
-            {{ onlineBusy[component.id] ? 'Checking…' : 'Check stable release' }}
+          <button class="btn" :disabled="onlineBusy[component.id] || stageBusy" @click="checkOnline(component.id, { force: true })">
+            {{ onlineBusy[component.id] ? 'Checking…' : 'Refresh stable release' }}
           </button>
           <button
             v-if="online[component.id]?.latest_release"

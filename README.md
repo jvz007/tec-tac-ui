@@ -1,3 +1,5 @@
+Version **0.11.16** shows the cached last-known stable Framework/UI releases immediately and automatically refreshes Core's 24-hour release cache without requiring an operator click.
+
 Version **0.11.15** adds the Module Manager Hotfixes workspace for the Framework 1.15.25 managed-hotfix lifecycle.
 
 Version **0.11.11** keeps release validation focused on package/version/release-note correctness while retaining Node.js 24, npm tests, and the production Vite build in GitHub Actions.

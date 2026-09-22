@@ -462,3 +462,11 @@ grep -q 'Apply hotfix' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotf
 grep -q 'Rollback' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix rollback action missing"
 grep -q 'sha256_before' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix before-hash inspection missing"
 echo "[TEST] PASS managed module hotfix UI"
+
+# 0.11.16 24-hour System Updates release cache integration
+grep -q "checkOnlineSystemUpdate(component, { force = false } = {})" "${ROOT}/src/api.js" || fail "system update API force-cache contract missing"
+grep -q "status.value?.release_cache?.\[component\]" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "System Updates does not hydrate cached release versions"
+grep -q "refreshStableReleases" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "automatic stable release refresh missing"
+grep -q "60 \* 60 \* 1000" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "hourly cache-age recheck timer missing"
+grep -q "Refresh stable release" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "forced manual stable release refresh missing"
+echo "[TEST] PASS System Updates 24-hour release cache"

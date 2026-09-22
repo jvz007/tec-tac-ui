@@ -408,8 +408,9 @@ export async function getSystemUpdateStatus() {
   return apiFetch('/api/tfd/system/updates/')
 }
 
-export async function checkOnlineSystemUpdate(component) {
+export async function checkOnlineSystemUpdate(component, { force = false } = {}) {
   const query = new URLSearchParams({ component })
+  if (force) query.set('force', '1')
   return apiFetch(`/api/tfd/system/updates/online/?${query.toString()}`)
 }
 
