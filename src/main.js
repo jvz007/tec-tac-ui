@@ -7,6 +7,7 @@ import { state, loadContext } from './state'
 import { loadPublicUiModules, loadUiModules } from './module-loader'
 import { createContextActionRegistry } from './context-actions'
 import { createContextInteractionRegistry } from './context-interactions'
+import { createResourceViewRegistry } from './resource-views'
 import { createCodeEditorService } from './code-editor'
 import { createDashboardWidgetRegistry } from './dashboard-widgets'
 import { createQuickActionRegistry } from './quick-actions'
@@ -31,6 +32,7 @@ async function bootstrap() {
   )
   const contextActions = createContextActionRegistry({ hasPermission })
   const contextInteractions = createContextInteractionRegistry({ hasPermission })
+  const resourceViews = createResourceViewRegistry({ hasPermission })
   const codeEditor = createCodeEditorService()
   const dashboardWidgets = createDashboardWidgetRegistry({ hasPermission })
   const quickActions = createQuickActionRegistry({ hasPermission })
@@ -41,6 +43,7 @@ async function bootstrap() {
   app.provide('tecTacNavigation', navigation)
   app.provide('tecTacContextActions', contextActions)
   app.provide('tecTacContextInteractions', contextInteractions)
+  app.provide('tecTacResourceViews', resourceViews)
   app.provide('tecTacCodeEditor', codeEditor)
   app.provide('tecTacDashboardWidgets', dashboardWidgets)
   app.provide('tecTacQuickActions', quickActions)
@@ -89,6 +92,7 @@ async function bootstrap() {
         hasPermission,
         contextActions,
         contextInteractions,
+        resourceViews,
         codeEditor,
         dashboardWidgets,
         quickActions,

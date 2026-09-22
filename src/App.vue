@@ -267,7 +267,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
     <aside v-if="!publicRoute" class="rail">
       <template v-if="state.status === 'ready'">
         <div class="rail-search-wrap" :class="{ collapsed: railCollapsed }">
-          <label v-if="!railCollapsed" class="rail-search"><span class="sr-only">Search navigation</span><span aria-hidden="true">⌕</span><input v-model="query" placeholder="Search modules…" /></label>
+          <label v-if="!railCollapsed" class="rail-search"><span class="sr-only">Search navigation</span><span aria-hidden="true">⌕</span><input v-model="query" placeholder="Search modules…" @keydown.esc.stop.prevent="query=''" /><button v-if="query" type="button" class="rail-search-clear" title="Clear search" aria-label="Clear navigation search" @click.prevent.stop="query=''">×</button></label>
           <button v-else class="rail-search-button" type="button" title="Expand navigation to search" aria-label="Expand navigation to search" @click.stop="railCollapsed=false">⌕</button>
         </div>
         <template v-for="group in navGroups" :key="group.section">

@@ -1,3 +1,5 @@
+Version **0.12.0** adds Core-owned cross-module `resourceViews` contributions and a one-click/Escape navigation search clear control. See `docs/module-resource-views.md`.
+
 Version **0.11.18** adds the read-only `modules` runtime service for cheap optional-integration discovery without repeated API/Public Contracts checks. See `docs/module-status.md`.
 
 Version **0.11.17** adds a Core-owned, module-scoped notification/toast service for consistent authenticated in-app notices, deduplication and optional module actions. See `docs/module-notifications.md`.

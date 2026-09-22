@@ -497,3 +497,16 @@ grep -q "satisfies(moduleId, constraint)" "${ROOT}/src/module-status.js" || fail
 grep -q "Module availability runtime" "${ROOT}/src/views/ContractsView.vue" || fail "Public Contracts module runtime section missing"
 node --check "${ROOT}/src/module-status.js"
 echo "[TEST] PASS Core module availability runtime"
+
+# 0.12.0 cross-module resource views + navigation search clear
+[[ -f "${ROOT}/src/resource-views.js" ]] || fail "Core resource view registry missing"
+[[ -f "${ROOT}/docs/module-resource-views.md" ]] || fail "resource view developer documentation missing"
+grep -q "createResourceViewRegistry" "${ROOT}/src/main.js" || fail "resource view registry not created by shell"
+grep -q "app.provide('tecTacResourceViews'" "${ROOT}/src/main.js" || fail "resource view registry not provided by shell"
+grep -q "resourceViews: moduleResourceViews" "${ROOT}/src/module-loader.js" || fail "module-scoped resource view registry not passed to modules"
+grep -q "moduleResourceViews?.clear" "${ROOT}/src/module-loader.js" || fail "failed module registration does not clean resource views"
+grep -q "Resource view contributions" "${ROOT}/src/views/ContractsView.vue" || fail "Public Contracts resource view section missing"
+grep -q 'class="rail-search-clear"' "${ROOT}/src/App.vue" || fail "navigation search clear button missing"
+grep -q "@keydown.esc.stop.prevent=\"query=''\"" "${ROOT}/src/App.vue" || fail "Escape-to-clear navigation search missing"
+node --check "${ROOT}/src/resource-views.js"
+echo "[TEST] PASS resource view contributions and navigation search clear"

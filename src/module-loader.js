@@ -118,6 +118,7 @@ export async function loadUiModules(runtime, modules) {
 
     let moduleContextActions = null
     let moduleContextInteractions = null
+    let moduleResourceViews = null
     let moduleCodeEditor = null
     let moduleDashboardWidgets = null
     let moduleQuickActions = null
@@ -139,6 +140,7 @@ export async function loadUiModules(runtime, modules) {
       const moduleRouter = guardedModuleRouter(runtime.router, descriptor, routeOwners)
       moduleContextActions = runtime.contextActions?.forModule(descriptor.id) || null
       moduleContextInteractions = runtime.contextInteractions?.forModule(descriptor.id) || null
+      moduleResourceViews = runtime.resourceViews?.forModule(descriptor.id) || null
       moduleCodeEditor = runtime.codeEditor?.forModule(descriptor.id) || null
       moduleDashboardWidgets = runtime.dashboardWidgets?.forModule(descriptor.id) || null
       moduleQuickActions = runtime.quickActions?.forModule(descriptor.id) || null
@@ -151,6 +153,7 @@ export async function loadUiModules(runtime, modules) {
         descriptor,
         contextActions: moduleContextActions,
         contextInteractions: moduleContextInteractions,
+        resourceViews: moduleResourceViews,
         codeEditor: moduleCodeEditor,
         dashboardWidgets: moduleDashboardWidgets,
         quickActions: moduleQuickActions,
@@ -160,6 +163,7 @@ export async function loadUiModules(runtime, modules) {
     } catch (error) {
       try { moduleContextActions?.clear?.() } catch {}
       try { moduleContextInteractions?.clear?.() } catch {}
+      try { moduleResourceViews?.clear?.() } catch {}
       try { moduleCodeEditor?.clear?.() } catch {}
       try { moduleDashboardWidgets?.clear?.() } catch {}
       try { moduleQuickActions?.clear?.() } catch {}

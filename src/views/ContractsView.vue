@@ -4,6 +4,7 @@ import { downloadDeveloperContracts, getDeveloperContracts } from '../contracts'
 
 const contextActions=inject('tecTacContextActions', null)
 const contextInteractions=inject('tecTacContextInteractions', null)
+const resourceViews=inject('tecTacResourceViews', null)
 const codeEditor=inject('tecTacCodeEditor', null)
 const dashboardWidgets=inject('tecTacDashboardWidgets', null)
 const quickActions=inject('tecTacQuickActions', null)
@@ -19,6 +20,7 @@ const permissions=computed(()=>(data.value?.permissions||[]).filter(x=>match(x.i
 const http=computed(()=>(data.value?.http||[]).filter(x=>match(x.route,x.name,(x.methods||[]).join(' '))))
 const uiActions=computed(()=>(contextActions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.resource,x.label,x.group,x.permission,(x.placements||[]).join(' '))))
 const uiInteractions=computed(()=>(contextInteractions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.surface,x.permission,(x.sourceTypes||[]).join(' '),(x.targetTypes||[]).join(' '))))
+const uiResourceViews=computed(()=>(resourceViews?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.resource,x.placement,x.label,x.permission)))
 const editorContract=computed(()=>codeEditor?.snapshot?.()||{languages:[],defaults:{},providers:[],theme:'—'})
 const uiDashboardWidgets=computed(()=>(dashboardWidgets?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.title,x.category,x.permission,x.description)))
 const uiQuickActions=computed(()=>(quickActions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.label,x.group,x.permission,x.description)))
@@ -57,6 +59,10 @@ onMounted(refresh)
     <div class="section-divider">UI runtime context interactions</div>
     <div class="callout contract-rules"><b>Browser interaction boundary</b><span>Modules may contribute drag/drop behavior through the Core-owned <span class="mono">contextInteractions</span> registry. Providers own drop execution; consumers discover compatible interactions by shared surface, source type and target type without importing provider UI internals.</span></div>
     <div class="tablewrap"><table><thead><tr><th>Interaction</th><th>Provider</th><th>Surface</th><th>Source types</th><th>Target types</th><th>Permission</th><th>Order</th></tr></thead><tbody><tr v-for="item in uiInteractions" :key="item.id"><td><b class="mono">{{item.id}}</b></td><td class="mono">{{item.provider}}</td><td class="mono">{{item.surface}}</td><td class="mono contract-wrap">{{(item.sourceTypes||[]).join(', ')}}</td><td class="mono contract-wrap">{{(item.targetTypes||[]).join(', ')}}</td><td class="mono">{{item.permission||'—'}}</td><td class="mono">{{item.order}}</td></tr><tr v-if="!uiInteractions.length"><td colspan="7" class="muted">No UI context interactions are currently registered or match the current search.</td></tr></tbody></table></div>
+
+    <div class="section-divider">Resource view contributions</div>
+    <div class="callout contract-rules"><b>Cross-module view boundary</b><span>Provider modules register visual contributions through the Core-owned <span class="mono">resourceViews</span> registry. Consumer modules expose named resource/placement surfaces and render matching contributions without importing provider UI code.</span></div>
+    <div class="tablewrap"><table><thead><tr><th>View</th><th>Provider</th><th>Resource</th><th>Placement</th><th>Permission</th><th>Order</th></tr></thead><tbody><tr v-for="item in uiResourceViews" :key="item.id"><td><b class="mono">{{item.id}}</b><span class="sub">{{item.label}}</span></td><td class="mono">{{item.provider}}</td><td class="mono">{{item.resource}}</td><td class="mono">{{item.placement}}</td><td class="mono">{{item.permission||'—'}}</td><td class="mono">{{item.order}}</td></tr><tr v-if="!uiResourceViews.length"><td colspan="6" class="muted">No resource view contributions are currently registered or match the current search.</td></tr></tbody></table></div>
 
     <div class="section-divider">Quick Action contributions</div>
     <div class="callout contract-rules"><b>Personal shortcut boundary</b><span>Authenticated modules may register safe browser actions through the module-scoped <span class="mono">quickActions</span> registry. Core owns persistence, ordering, permission checks and the top-bar surface; providers own execution.</span></div>
