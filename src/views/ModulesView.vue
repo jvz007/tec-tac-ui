@@ -8,6 +8,12 @@ import {
   getModuleJob,
   listModuleJobs,
   inspectModulePackages,
+  inspectModuleHotfix,
+  discardModuleHotfix,
+  applyModuleHotfix,
+  getModuleHotfixJob,
+  listModuleHotfixes,
+  rollbackModuleHotfix,
   installModuleArtifact,
   listModuleRepositories,
   listOnlineModuleCatalog,
@@ -31,6 +37,16 @@ const repositories = ref([])
 const jobHistory = ref([])
 const historyLoading = ref(false)
 const historySelectedId = ref(null)
+const hotfixFileInput = ref(null)
+const hotfixFile = ref(null)
+const hotfixInspecting = ref(false)
+const hotfixStaged = ref(null)
+const hotfixJob = ref(null)
+const hotfixJobError = ref('')
+const hotfixSelectedModuleId = ref(null)
+const hotfixRows = ref([])
+const hotfixLoading = ref(false)
+let hotfixPollTimer = null
 const onlineCatalog = ref([])
 const onlineQuery = ref('')
 const repositoryBusy = ref(false)
@@ -66,6 +82,9 @@ const repositoryErrors = computed(() => repositories.value.filter((x) => x.sync?
 const selectedRepository = computed(() => repositories.value.find((x) => x.id === selectedRepositoryId.value) || null)
 const selected = computed(() => modules.value.find((x) => x.id === selectedId.value) || null)
 const selectedHistory = computed(() => jobHistory.value.find((x) => x.id === historySelectedId.value) || null)
+const hotfixedModules = computed(() => modules.value.filter((x) => Number(x.hotfixes?.count || 0) > 0))
+const hotfixPreview = computed(() => hotfixStaged.value?.preview || null)
+const hotfixJobRunning = computed(() => hotfixJob.value && !['succeeded','failed','dispatch_failed'].includes(hotfixJob.value.status))
 const enabledCount = computed(() => modules.value.filter((x) => x.managed && x.enabled).length)
 const disabledCount = computed(() => modules.value.filter((x) => x.managed && !x.enabled).length)
 const hiddenCount = computed(() => modules.value.filter((x) => x.managed && x.enabled && x.visible === false).length)
@@ -486,6 +505,58 @@ async function loadJobHistory(){
 }
 function historyTime(value){return value?new Date(value).toLocaleString():'—'}
 function historyModules(job){return (job.module_ids?.length?job.module_ids:[job.plugin_id]).filter(Boolean).join(', ')||'—'}
+
+function chooseHotfixFile(){ hotfixFileInput.value?.click() }
+function hotfixFileChanged(event){ hotfixFile.value=event?.target?.files?.[0]||null; hotfixStaged.value=null; hotfixJobError.value='' }
+async function inspectHotfix(){
+  if(!hotfixFile.value||!canManage.value||hotfixInspecting.value) return
+  hotfixInspecting.value=true; hotfixJobError.value=''
+  try{ hotfixStaged.value=await inspectModuleHotfix(hotfixFile.value); hotfixSelectedModuleId.value=hotfixPreview.value?.module_id||null; if(hotfixSelectedModuleId.value) await loadHotfixRows(hotfixSelectedModuleId.value) }
+  catch(e){ hotfixJobError.value=e?.message||'Unable to inspect hotfix.' }
+  finally{ hotfixInspecting.value=false }
+}
+async function discardHotfixStage(){
+  const id=hotfixStaged.value?.upload_id
+  try{ if(id) await discardModuleHotfix(id) }catch{}
+  hotfixStaged.value=null; hotfixFile.value=null; if(hotfixFileInput.value) hotfixFileInput.value.value=''
+}
+async function loadHotfixRows(moduleId=hotfixSelectedModuleId.value){
+  if(!moduleId||!canManage.value){hotfixRows.value=[];return}
+  hotfixSelectedModuleId.value=moduleId; hotfixLoading.value=true; hotfixJobError.value=''
+  try{ const data=await listModuleHotfixes(moduleId); hotfixRows.value=data.hotfixes||[] }
+  catch(e){ hotfixRows.value=[]; hotfixJobError.value=e?.message||'Unable to load applied hotfixes.' }
+  finally{ hotfixLoading.value=false }
+}
+async function applyHotfix(){
+  const id=hotfixStaged.value?.upload_id
+  if(!id||hotfixJobRunning.value) return
+  hotfixJobError.value=''
+  try{ hotfixJob.value=await applyModuleHotfix(id); beginHotfixPoll() }
+  catch(e){ hotfixJobError.value=e?.message||'Unable to apply hotfix.' }
+}
+async function rollbackHotfix(row){
+  const moduleId=hotfixSelectedModuleId.value
+  if(!moduleId||!row?.id||hotfixJobRunning.value) return
+  if(!window.confirm(`Roll back hotfix ${row.id} from ${moduleId}? Hotfixes must be rolled back newest first.`)) return
+  hotfixJobError.value=''
+  try{ hotfixJob.value=await rollbackModuleHotfix(moduleId,row.id); beginHotfixPoll() }
+  catch(e){ hotfixJobError.value=e?.message||'Unable to roll back hotfix.' }
+}
+function beginHotfixPoll(){ clearTimeout(hotfixPollTimer); hotfixPollTimer=setTimeout(pollHotfixJob,100) }
+async function pollHotfixJob(){
+  if(!hotfixJob.value?.id) return
+  try{
+    hotfixJob.value=await getModuleHotfixJob(hotfixJob.value.id); hotfixJobError.value=''
+    if(['succeeded','failed','dispatch_failed'].includes(hotfixJob.value.status)){
+      if(hotfixJob.value.status==='succeeded'){
+        const moduleId=hotfixJob.value.module_id||hotfixSelectedModuleId.value
+        await refresh(moduleId); await loadHotfixRows(moduleId); hotfixStaged.value=null; hotfixFile.value=null; if(hotfixFileInput.value) hotfixFileInput.value.value=''
+      }
+      return
+    }
+  }catch(e){ hotfixJobError.value=e?.message||'Unable to refresh hotfix job status.' }
+  hotfixPollTimer=setTimeout(pollHotfixJob,1500)
+}
 function beginPoll(job) {
   activeJob.value = job
   jobPollError.value = ''
@@ -531,7 +602,7 @@ async function poll() {
 }
 function reloadTecTac() { window.location.reload() }
 onMounted(async () => { await refresh(); await Promise.all([loadRepositories(), loadOnlineCatalog(), loadJobHistory()]) })
-onBeforeUnmount(() => { clearTimeout(pollTimer); clearInterval(reloadTimer) })
+onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); clearInterval(reloadTimer) })
 </script>
 
 <template>
@@ -556,6 +627,7 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearInterval(reloadTimer) })
     <button :class="{active:activeTab==='installed'}" role="tab" @click="activeTab='installed'"><b>Installed</b><span>{{ modules.filter(x=>x.managed).length }} managed · {{ failedModuleLoads.length }} UI failures</span></button>
     <button :class="{active:activeTab==='online'}" role="tab" @click="activeTab='online'"><b>Online catalog</b><span>{{ onlineCatalog.length }} modules · {{ updatesAvailable }} updates</span></button>
     <button :class="{active:activeTab==='repositories'}" role="tab" @click="activeTab='repositories'"><b>Repositories</b><span>{{ repositories.length }} configured · {{ repositoryErrors }} errors</span></button>
+    <button v-if="canManage" :class="{active:activeTab==='hotfixes'}" role="tab" @click="activeTab='hotfixes'"><b>Hotfixes</b><span>{{ hotfixedModules.length }} hotfixed modules</span></button>
     <button v-if="canManage" :class="{active:activeTab==='history'}" role="tab" @click="activeTab='history';loadJobHistory()"><b>History</b><span>{{ jobHistory.length }} lifecycle records</span></button>
   </div>
 
@@ -698,6 +770,34 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearInterval(reloadTimer) })
         <div v-if="selectedRepository?.sync?.error" class="state-inline denied mt"><b>Last sync failed.</b> {{ selectedRepository.sync.error }}</div>
         <div class="editor-actions"><button class="btn primary" :disabled="!canManage || repositoryBusy || !repositoryDraft.name || !repositoryDraft.url" @click="saveRepository">Save</button><button class="btn" @click="cancelRepositoryEdit">Cancel</button><button v-if="selectedRepository" class="btn danger" :disabled="!canManage || repositoryBusy" @click="removeRepository(selectedRepository)">Remove</button></div>
       </aside>
+    </div>
+  </template>
+
+  <template v-else-if="activeTab==='hotfixes'">
+    <div class="grid g2 mb">
+      <section class="card">
+        <div class="cardhead"><div><span class="eyebrow">MANAGED HOTFIX</span><h3>Inspect & apply</h3><p>Hotfixes are exact-version, SHA-256-bound module file replacements managed by Core.</p></div><span v-if="hotfixStaged" class="pill ok">INSPECTED</span></div>
+        <input ref="hotfixFileInput" class="sr-only" type="file" accept=".zip,application/zip" @change="hotfixFileChanged">
+        <div v-if="!hotfixStaged" class="drop-zone" :class="{disabled:!canManage||hotfixInspecting||hotfixJobRunning}" role="button" tabindex="0" @click="chooseHotfixFile" @keydown.enter.prevent="chooseHotfixFile">
+          <b>{{ hotfixFile?.name || 'Choose managed hotfix ZIP' }}</b><span>{{ hotfixFile ? 'Ready to inspect' : 'tec_tac_hotfix.json + payload/' }}</span>
+        </div>
+        <div v-if="hotfixFile&&!hotfixStaged" class="row mt"><button class="btn primary" :disabled="hotfixInspecting||hotfixJobRunning" @click="inspectHotfix">{{hotfixInspecting?'Inspecting…':'Inspect hotfix'}}</button><button class="btn" @click="discardHotfixStage">Clear</button></div>
+        <div v-if="hotfixStaged" class="hotfix-preview">
+          <dl class="kvlist"><dt>Module</dt><dd class="mono">{{hotfixPreview?.module_id}}</dd><dt>Hotfix</dt><dd class="mono">{{hotfixPreview?.id}}</dd><dt>Base version</dt><dd class="mono">{{hotfixPreview?.base_version}}</dd><dt>Files</dt><dd>{{hotfixPreview?.targets?.length||0}}</dd><dt>Reload</dt><dd class="mono">{{hotfixPreview?.reload||'none'}}</dd><dt>UI sync</dt><dd>{{hotfixPreview?.ui_sync?'yes':'no'}}</dd></dl>
+          <p class="compact-copy">{{hotfixPreview?.description||'No description supplied.'}}</p>
+          <div class="tablewrap"><table><thead><tr><th>Component</th><th>Path</th><th>Before SHA256</th><th>After SHA256</th></tr></thead><tbody><tr v-for="target in hotfixPreview?.targets||[]" :key="`${target.component}:${target.path}`"><td>{{target.component}}</td><td class="mono">{{target.path}}</td><td class="mono">{{compactHash(target.sha256_before)}}</td><td class="mono">{{compactHash(target.sha256_after)}}</td></tr></tbody></table></div>
+          <div class="row mt"><button class="btn primary" :disabled="hotfixJobRunning" @click="applyHotfix">Apply hotfix</button><button class="btn" :disabled="hotfixJobRunning" @click="discardHotfixStage">Discard</button></div>
+        </div>
+        <div v-if="hotfixJobError" class="auth-error mt">{{hotfixJobError}}</div>
+        <div v-if="hotfixJob" class="state-inline mt" :class="{warning:hotfixJobRunning,denied:['failed','dispatch_failed'].includes(hotfixJob.status)}"><b>{{hotfixJob.action}} {{hotfixJob.hotfix_id}}</b> · {{hotfixJob.status}} · <span class="mono">{{hotfixJob.stage}}</span><pre v-if="hotfixJob.log_tail?.length" class="job-log">{{hotfixJob.log_tail.join('\n')}}</pre></div>
+      </section>
+      <section class="card">
+        <div class="cardhead"><div><span class="eyebrow">APPLIED STATE</span><h3>Module hotfixes</h3><p>Rollback is newest-first and fails closed if files changed after application.</p></div></div>
+        <label class="field"><span>Module</span><select v-model="hotfixSelectedModuleId" @change="loadHotfixRows(hotfixSelectedModuleId)"><option :value="null">Select module</option><option v-for="item in modules.filter(x=>x.managed)" :key="item.id" :value="item.id">{{item.id}} · {{item.extension_version}} · {{item.hotfixes?.count||0}} hotfixes</option></select></label>
+        <div v-if="hotfixLoading" class="state-inline">Loading applied hotfixes…</div>
+        <div v-else-if="hotfixSelectedModuleId&&!hotfixRows.length" class="state-inline"><b>No active hotfixes.</b> This module is running its normal installed package state.</div>
+        <div v-else-if="hotfixRows.length" class="tablewrap"><table><thead><tr><th>Hotfix</th><th>Base</th><th>Applied</th><th>Files</th><th></th></tr></thead><tbody><tr v-for="(row,index) in hotfixRows" :key="row.id"><td><b>{{row.id}}</b><span class="sub">{{row.description||'—'}}</span></td><td class="mono">{{row.base_version}}</td><td>{{historyTime(row.applied_at)}}<span class="sub">{{row.applied_by||'unknown'}}</span></td><td>{{row.targets?.length||0}}</td><td><button class="btn sm danger" :disabled="hotfixJobRunning||index!==hotfixRows.length-1" :title="index!==hotfixRows.length-1?'Roll back newer hotfixes first':'Roll back this hotfix'" @click="rollbackHotfix(row)">Rollback</button></td></tr></tbody></table></div>
+      </section>
     </div>
   </template>
 

@@ -18,3 +18,10 @@ export function syncModuleRepository(repositoryId){ return apiFetch(`/api/tfd/mo
 export function syncAllModuleRepositories(){ return apiFetch('/api/tfd/modules/repositories/sync/',{method:'POST',body:JSON.stringify({})}) }
 export function listOnlineModuleCatalog(){ return apiFetch('/api/tfd/modules/catalog/online/') }
 export function stageOnlineModulePackage(repositoryId,moduleId,version=null){ return apiFetch('/api/tfd/modules/catalog/online/stage/',{method:'POST',body:JSON.stringify({repository_id:repositoryId,module_id:moduleId,version})}) }
+
+export function inspectModuleHotfix(file){ const body=new FormData(); body.append('hotfix',file); return apiFetch('/api/tfd/modules/hotfixes/inspect/',{method:'POST',body}) }
+export function discardModuleHotfix(uploadId){ return apiFetch(`/api/tfd/modules/hotfixes/${encodeURIComponent(uploadId)}/`,{method:'DELETE'}) }
+export function applyModuleHotfix(uploadId){ return apiFetch(`/api/tfd/modules/hotfixes/${encodeURIComponent(uploadId)}/apply/`,{method:'POST',body:JSON.stringify({})}) }
+export function getModuleHotfixJob(jobId){ return apiFetch(`/api/tfd/modules/hotfixes/jobs/${encodeURIComponent(jobId)}/`,{rejectErrorPayload:false}) }
+export function listModuleHotfixes(moduleId){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/hotfixes/`) }
+export function rollbackModuleHotfix(moduleId,hotfixId){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/hotfixes/${encodeURIComponent(hotfixId)}/rollback/`,{method:'POST',body:JSON.stringify({})}) }

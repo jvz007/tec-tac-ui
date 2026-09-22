@@ -452,3 +452,13 @@ grep -q "row.type === 'action'" "${ROOT}/src/quick-actions.js" || fail "legacy n
 grep -q "await quickActions.executePin(pin.id)" "${ROOT}/src/App.vue" || fail "top-bar action invocation missing"
 grep -q "Quick Actions exist only for registered module functions" "${ROOT}/docs/module-quick-actions.md" || fail "module ownership boundary documentation missing"
 echo "[TEST] PASS module-owned executable Quick Actions"
+
+# 0.11.15 managed module hotfix UI
+for token in inspectModuleHotfix applyModuleHotfix getModuleHotfixJob listModuleHotfixes rollbackModuleHotfix; do
+  grep -q "$token" "${ROOT}/src/modules.js" || fail "managed hotfix API helper missing: $token"
+done
+grep -q "activeTab==='hotfixes'" "${ROOT}/src/views/ModulesView.vue" || fail "Module Manager Hotfixes tab missing"
+grep -q 'Apply hotfix' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix apply action missing"
+grep -q 'Rollback' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix rollback action missing"
+grep -q 'sha256_before' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix before-hash inspection missing"
+echo "[TEST] PASS managed module hotfix UI"
