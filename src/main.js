@@ -11,6 +11,7 @@ import { createCodeEditorService } from './code-editor'
 import { createDashboardWidgetRegistry } from './dashboard-widgets'
 import { createQuickActionRegistry } from './quick-actions'
 import { createNotificationService } from './notifications'
+import { createModuleStatusService } from './module-status'
 import { registerCoreDashboardWidgets } from './dashboard-core-widgets'
 import { initializeUserPreferences } from './preferences'
 import './styles.css'
@@ -73,6 +74,8 @@ async function bootstrap() {
 
   if (state.status === 'ready') {
     await initializeUserPreferences(state.context)
+    const modules = createModuleStatusService(state.context.module_status, state.context.modules || staticModules)
+    app.provide('tecTacModules', modules)
     state.moduleLoad = await loadUiModules(
       {
         app,
@@ -90,6 +93,7 @@ async function bootstrap() {
         dashboardWidgets,
         quickActions,
         notifications,
+        modules,
       },
       state.context.modules || staticModules,
     )

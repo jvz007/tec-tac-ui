@@ -7,7 +7,9 @@ const contextInteractions=inject('tecTacContextInteractions', null)
 const codeEditor=inject('tecTacCodeEditor', null)
 const dashboardWidgets=inject('tecTacDashboardWidgets', null)
 const quickActions=inject('tecTacQuickActions', null)
+const modules=inject('tecTacModules', null)
 const data=ref(null), loading=ref(true), error=ref(''), query=ref(''), exporting=ref('')
+const moduleStatusRows=computed(()=>modules?.list?.() || [])
 const q=computed(()=>query.value.trim().toLowerCase())
 const match=(...values)=>!q.value||values.some(v=>String(v??'').toLowerCase().includes(q.value))
 const core=computed(()=>(data.value?.core||[]).filter(x=>match(x.area,x.import_path,x.name,x.purpose,x.audience)))
@@ -98,5 +100,9 @@ onMounted(refresh)
     <div class="section-divider">HTTP boundary</div>
     <div class="tablewrap"><table><thead><tr><th>Methods</th><th>Endpoint</th><th>Route name</th><th>Audience</th></tr></thead><tbody><tr v-for="item in http" :key="item.route"><td class="mono">{{(item.methods||[]).join(' / ')}}</td><td class="mono">{{item.route}}</td><td class="mono">{{item.name||'—'}}</td><td>{{item.audience}}</td></tr><tr v-if="!http.length"><td colspan="4" class="muted">No API contracts match the current search.</td></tr></tbody></table></div>
   </template>
+  <article class="card mt">
+    <div class="cardhead"><div><span class="eyebrow">BROWSER RUNTIME</span><h3>Module availability runtime</h3></div><span class="pill">{{ moduleStatusRows.length }}</span></div>
+    <p class="muted">Authenticated modules receive <code>modules</code> for zero-request installed/enabled checks. Backend capability checks remain authoritative at execution time.</p>
+  </article>
 </section>
 </template>

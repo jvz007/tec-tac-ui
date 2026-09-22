@@ -484,3 +484,16 @@ grep -q "MAX_VISIBLE = 5" "${ROOT}/src/notifications.js" || fail "notification f
 grep -q "Module notifications / toasts" "${ROOT}/src/views/ContractsView.vue" || fail "Public Contracts notification documentation missing"
 node --check "${ROOT}/src/notifications.js"
 echo "[TEST] PASS Core-owned module notifications"
+
+# 0.11.18 Core module availability runtime
+[[ -f "${ROOT}/src/module-status.js" ]] || fail "module availability runtime missing"
+[[ -f "${ROOT}/docs/module-status.md" ]] || fail "module availability documentation missing"
+grep -q "createModuleStatusService" "${ROOT}/src/main.js" || fail "module availability service not created by shell"
+grep -q "app.provide('tecTacModules'" "${ROOT}/src/main.js" || fail "module availability service not provided by shell"
+grep -q "modules," "${ROOT}/src/main.js" || fail "module availability service not passed to module loader runtime"
+grep -q "isActive(moduleId)" "${ROOT}/src/module-status.js" || fail "modules.isActive missing"
+grep -q "isInstalled(moduleId)" "${ROOT}/src/module-status.js" || fail "modules.isInstalled missing"
+grep -q "satisfies(moduleId, constraint)" "${ROOT}/src/module-status.js" || fail "module version constraint helper missing"
+grep -q "Module availability runtime" "${ROOT}/src/views/ContractsView.vue" || fail "Public Contracts module runtime section missing"
+node --check "${ROOT}/src/module-status.js"
+echo "[TEST] PASS Core module availability runtime"
