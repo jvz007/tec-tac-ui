@@ -663,3 +663,11 @@ grep -q "stagedTrustLabel === 'VERIFIED' ? 'SIGNED'" "${ROOT}/src/views/ModulesV
 grep -q '.module-trust-badge:hover .module-trust-popover' "${ROOT}/src/styles.css" || fail "trust hover popover styling missing"
 grep -q '.module-trust-badge:focus .module-trust-popover' "${ROOT}/src/styles.css" || fail "keyboard trust popover styling missing"
 printf '[TEST] PASS compact package trust badge and details popover\n'
+
+# 0.12.12 signed System Updates trust visibility
+grep -q "systemTrustLabel" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "System Updates trust label helper missing"
+grep -q "system-trust-popover" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "System Updates trust details popover missing"
+grep -q "UNSIGNED / LEGACY" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "legacy unsigned update label missing"
+grep -q "item.source.commit.slice" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "history commit provenance missing"
+grep -q '.system-trust-badge:hover .system-trust-popover' "${ROOT}/src/styles.css" || fail "System Updates trust hover styling missing"
+printf '[TEST] PASS signed System Updates trust visibility\n'

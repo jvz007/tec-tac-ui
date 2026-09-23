@@ -78,6 +78,20 @@ function humanOperation(value) {
   return String(value || '').toUpperCase() || 'UNKNOWN'
 }
 
+function systemTrustLabel(trust) {
+  if (!trust) return 'NOT REPORTED'
+  if (trust.verified && trust.trusted) return 'VERIFIED'
+  if (trust.legacy) return 'UNSIGNED / LEGACY'
+  if (trust.state === 'unsigned' || trust.signed === false) return 'UNSIGNED'
+  return String(trust.state || 'UNTRUSTED').toUpperCase()
+}
+
+function systemTrustClass(trust) {
+  if (trust?.verified && trust?.trusted) return 'ok'
+  if (trust?.state === 'unsigned' || trust?.signed === false) return 'warn'
+  return 'danger'
+}
+
 async function loadStatus() {
   loading.value = true
   error.value = ''
@@ -424,6 +438,7 @@ onBeforeUnmount(() => {
         <div><span>Installed</span><b class="mono">{{ stage.preview.installed_version || 'none' }}</b></div>
         <div><span>Package</span><b class="mono">{{ stage.preview.version }}</b></div>
         <div><span>Source</span><b>{{ stage.preview.source?.type || 'offline' }}</b></div>
+        <div><span>Trust</span><span class="system-trust-badge" tabindex="0"><span class="pill" :class="systemTrustClass(stage.preview.release_trust)">{{ systemTrustLabel(stage.preview.release_trust) }}</span><span class="system-trust-popover"><b>{{ stage.preview.release_trust?.publisher_display_name || (stage.preview.release_trust?.legacy ? 'Legacy unsigned release' : 'Unsigned source') }}</b><span v-if="stage.preview.release_trust?.publisher_id">Publisher ID: <span class="mono">{{ stage.preview.release_trust.publisher_id }}</span></span><span v-if="stage.preview.release_trust?.key_id">Key ID: <span class="mono">{{ stage.preview.release_trust.key_id }}</span></span><span v-if="stage.preview.release_trust?.algorithm">Algorithm: {{ stage.preview.release_trust.algorithm }}</span><span v-if="stage.preview.release_trust?.file_count">Verified files: {{ stage.preview.release_trust.file_count }}</span><span v-if="stage.preview.release_trust?.details">{{ stage.preview.release_trust.details }}</span></span></span></div>
         <div><span>SHA256</span><b class="mono hash-short">{{ stage.sha256 }}</b></div>
       </div>
       <div v-if="!stage.preview.installable" class="state-inline denied">{{ stage.preview.install_block_reason }}</div>
@@ -440,12 +455,13 @@ onBeforeUnmount(() => {
     <article v-if="status?.history?.length" class="tablewrap mt">
       <div class="cardhead system-history-head"><div><span class="eyebrow">RECENT ACTIVITY</span><h3>Update history</h3></div></div>
       <table>
-        <thead><tr><th>Component</th><th>Version</th><th>Source</th><th>Operator</th><th>Result</th><th>Finished</th></tr></thead>
+        <thead><tr><th>Component</th><th>Version</th><th>Source</th><th>Trust</th><th>Operator</th><th>Result</th><th>Finished</th></tr></thead>
         <tbody>
           <tr v-for="item in status.history" :key="item.id">
             <td>{{ item.component }}</td>
             <td class="mono">{{ item.installed_version }} → {{ item.version }}</td>
-            <td><span class="mono">{{ item.source?.type || 'offline' }}</span><span v-if="item.source?.ref" class="sub">{{ item.source.ref }}</span></td>
+            <td><span class="mono">{{ item.source?.type || 'offline' }}</span><span v-if="item.source?.ref" class="sub">{{ item.source.ref }}</span><span v-if="item.source?.commit" class="sub mono">{{ item.source.commit.slice(0,12) }}</span></td>
+            <td><span class="pill" :class="systemTrustClass(item.release_trust)">{{ systemTrustLabel(item.release_trust) }}</span><span v-if="item.release_trust?.publisher_id" class="sub">{{ item.release_trust.publisher_id }} · {{ item.release_trust.key_id }}</span></td>
             <td>{{ item.requested_by || 'unknown' }}</td>
             <td><span class="pill" :class="item.status === 'succeeded' ? 'ok' : 'warn'">{{ item.status }}</span></td>
             <td class="mono smalltext">{{ item.finished_at || '—' }}</td>

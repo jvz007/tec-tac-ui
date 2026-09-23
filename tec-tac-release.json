@@ -1,0 +1,845 @@
+{
+  "schema": 2,
+  "component": "framework",
+  "version": "0.12.12",
+  "publisher_id": "tech_flow_dynamics-dev",
+  "key_id": "tech-key-dev-1025",
+  "algorithm": "Ed25519",
+  "files": [
+    {
+      "path": ".github/workflows/release.yml",
+      "size": 2908,
+      "sha256": "6e271bef96cf989b2a43adce9ce5ee79c8536aea0d34bfffe0404b4ce0875e5b"
+    },
+    {
+      "path": ".gitignore",
+      "size": 41,
+      "sha256": "ddb330d23c7a93957b039e36d68bd60363755bccb41fa32278bdb883670581a1"
+    },
+    {
+      "path": "LICENSE",
+      "size": 1083,
+      "sha256": "e4ea128ef691aa4c08c4c930fb2fdd8faf2b15f6a4800750dccc382d90a585f7"
+    },
+    {
+      "path": "README.md",
+      "size": 30155,
+      "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
+    },
+    {
+      "path": "RELEASE_NOTES_0.12.11.md",
+      "size": 688,
+      "sha256": "50b5df3dd6876ea1a106324465459bcaff193021e612862868d13a0c7b4ecad8"
+    },
+    {
+      "path": "RELEASE_NOTES_0.12.12.md",
+      "size": 272,
+      "sha256": "db06828ad3f2e9ae7657d9fcdf247d46bcdf3b05ab53de0483397ad562fa45a9"
+    },
+    {
+      "path": "VERSION",
+      "size": 8,
+      "sha256": "89eb65bb411807c01286946559415b0f8c38a264815704a4a4c683235348d3e2"
+    },
+    {
+      "path": "docs/context-actions.md",
+      "size": 4052,
+      "sha256": "cfeb1bba80515bcfcd6c360e383548d06708766038889e2af920afd76e2f05f3"
+    },
+    {
+      "path": "docs/context-interactions.md",
+      "size": 2296,
+      "sha256": "bf58e4a02d58e86ece183ab5fc1e9c195c09a8bec4b7ee856315e538737e70c1"
+    },
+    {
+      "path": "docs/module-audit.md",
+      "size": 1790,
+      "sha256": "747e35e33293b2d8062a5ba5bc45880196e07b8c9b15f96b89bfd3d78f0207df"
+    },
+    {
+      "path": "docs/module-code-editor.md",
+      "size": 9082,
+      "sha256": "7ac693c97c477e04531cc5d4859f10f7a101cb0761f8ff2e6ad90262a9118170"
+    },
+    {
+      "path": "docs/module-dashboard-widgets.md",
+      "size": 2889,
+      "sha256": "9fd9a0762f2422bcde75815b4a9e55773d24f088126370d4a4a009fff978cfe8"
+    },
+    {
+      "path": "docs/module-help.md",
+      "size": 5488,
+      "sha256": "e7ecb1c0e0e559112a607b83fdb059d0921bb67e16d03b8ef2132aa661a9ff2d"
+    },
+    {
+      "path": "docs/module-notifications.md",
+      "size": 5655,
+      "sha256": "9ff8cc831bc35cd3b9ac887b88049cd8de3b19c0d58bdce716bc05ba0a34b74b"
+    },
+    {
+      "path": "docs/module-quick-actions.md",
+      "size": 3469,
+      "sha256": "2d4aac9727a94eccc7411ff3efa2b8a959c86a77c245c014f1ef5edef8c0a7d9"
+    },
+    {
+      "path": "docs/module-resource-views.md",
+      "size": 4133,
+      "sha256": "f66d1aa2ba357e552f1c5adc9a8536f442ad2f65a1a6d374e7fe5873d2f08861"
+    },
+    {
+      "path": "docs/module-runtime-api.md",
+      "size": 4484,
+      "sha256": "59aa33e352b1a6a71086004869b2e9134a9414c9bd8f9073fec14a1ce47d99a2"
+    },
+    {
+      "path": "docs/module-status.md",
+      "size": 1383,
+      "sha256": "dc7852ac2da6b099c6fe02de4610fa17e1120872db936059b2ab83011a64a89f"
+    },
+    {
+      "path": "docs/releases/README.md",
+      "size": 1250,
+      "sha256": "10ee5170eb6c6f8244b4370bda490d87c7f1edc1a336109894d7fc29e54c1b48"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.1.2.md",
+      "size": 1596,
+      "sha256": "a1b8b13b7d2c5f4e09f8ab2d41b5ed295ae8596a642e7392773629835765a9ea"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.1.3.md",
+      "size": 1501,
+      "sha256": "75e17c9599325300845ec23166946614745aef7c12c8aa261dc4569adee152d4"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.1.4.md",
+      "size": 1233,
+      "sha256": "56b84478b97f968fee0d026225618dbac3b0913550a65d81e095d231c7bb38af"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.0.md",
+      "size": 555,
+      "sha256": "30d20bdc50f01023a47aaec1ddf0ccbc7cf81a5df14e440a7a82a4a6b605028d"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.1.md",
+      "size": 527,
+      "sha256": "c5e5262982b16b93ee1a52db002688c35cebb027eba95113e1c7551947ff6e11"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.10.md",
+      "size": 699,
+      "sha256": "178ee6b8123aa832e4321572fda1e05b56945892e0877715cd82c10063918f29"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.11.md",
+      "size": 661,
+      "sha256": "896deb4c45791924d60ca7a9f861571d556d17aa734c584ed79b19a2621ce2b8"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.12.md",
+      "size": 963,
+      "sha256": "e1688283285257aa004e665b07b8a85afcc222813b6992210a92f82731b8e136"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.13.md",
+      "size": 519,
+      "sha256": "9ccf6995a7f47121172f818ddd2d21777fd6e840c0752d1e661760bac2d297de"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.14.md",
+      "size": 510,
+      "sha256": "32e57e8305b4b4fa02b9614872d8a3b45595fee5f67daabf718e615daf0c410a"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.15.md",
+      "size": 415,
+      "sha256": "fa15098e5389054dfee8770b34840b33c5c9b86b13bb9010a0a622c7abd56957"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.16.md",
+      "size": 768,
+      "sha256": "6a7772b7f4c5f205879b5c7f140f2a8130d16e5b416af6406b992dcb1a27ab09"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.17.md",
+      "size": 1210,
+      "sha256": "201987eb54992618040c902949aa87643db86893ef1f3db395096f737c75fe48"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.2.md",
+      "size": 952,
+      "sha256": "2ad037a6da309e672db4a0df442858045378b3c9f7a9386e680a5d3f39120e5e"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.4.md",
+      "size": 488,
+      "sha256": "c643a33cd529f3cecbd3dc6bde28a706fdeb88883ee305993f3520ec396299f3"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.5.md",
+      "size": 393,
+      "sha256": "c33828385429fdf7406c24de9c3b18b75d79939337ad33ff47c5696fa0797b43"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.6.md",
+      "size": 891,
+      "sha256": "150f0dd0db30e8b1d000e67da93399211134f75cf8e1214e4b9b0e2f19d59a2e"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.10.9.md",
+      "size": 423,
+      "sha256": "0a7ef726958ca53e669ba3bdb4fc62cd00019a31d4531861d55930dfeb62ae23"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.11.0.md",
+      "size": 1216,
+      "sha256": "335258d7a31179fd60f4f6f136fbb9f347acd575116f6a037b16a2219cd8d73c"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.11.10.md",
+      "size": 716,
+      "sha256": "1e7e1f24c5459281383527d4467ac97a47e1d503b359524fed73170e19c15a0f"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.11.11.md",
+      "size": 411,
+      "sha256": "52659eac10485c3297ba93a9bf055a91addaed255f44c782237dabbb03605605"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.11.12.md",
+      "size": 584,
+      "sha256": "197a2f17aef3936c4196c30943b4bd527b60b91834f816cf01e82ad306cab065"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.11.13.md",
+      "size": 989,
+      "sha256": "8f410a6e8a55dfe770f472401f1fc9e1e67f7b22544e66237cfd1901404cf522"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.11.14.md",
+      "size": 1191,
+      "sha256": "8779e99eaa4f80bd84ef03d68370403bcc2ba962996ae34c16420efc2553679b"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.11.15.md",
+      "size": 805,
+      "sha256": "c7f95524fc386c4d811b7ff87874008738685305c796aeceaeab8c52c7e1171a"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.11.16.md",
+      "size": 575,
+      "sha256": "9ba5e070a66973e117a245fb8c322833fc73faa0c8e39a530bf22a0529645dc5"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.11.17.md",
+      "size": 672,
+      "sha256": "e92c4203552ad3a00ed02b65456371fca8716f33d0fe2cf23059d201a9e0e1a1"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.11.18.md",
+      "size": 582,
+      "sha256": "7f4e88f27b4baf1c69eeed2908a646e6c388cee49b5b859accb62cc904dc192f"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.11.8.md",
+      "size": 426,
+      "sha256": "67050c60dd56c8e3561307029c1017f7abc8d100d7a4013c87b17a89b570234b"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.11.9.md",
+      "size": 848,
+      "sha256": "7ea3e8b8a2f5788aca7be219371fc2b3e5c949803d318b39259d4f0fc9fb3742"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.0.md",
+      "size": 737,
+      "sha256": "47b67bfd3c280cae6dc93b09dbc7d1cc5868582adcc1f646fd548ca231e7695b"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.1.md",
+      "size": 1440,
+      "sha256": "28cd6a4c0cf439627d7bc1e40e1a4d673db56737e0491972fee296b6b2a80e3d"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.10.md",
+      "size": 1088,
+      "sha256": "e6a42a78164d1563fb20deaade582b6a896ce61d22fb1541528b7c9f6c492a53"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.2.md",
+      "size": 511,
+      "sha256": "f9eab0faf59e5b323a5fc4a9eb30510d3d55c3568af3de8604eb952a99a3e2fe"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.3.md",
+      "size": 1021,
+      "sha256": "70e5fa8c02489739b377a6b900b0ec5f6918b2cfbc7f387c8eed624e9c5a6614"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.4.md",
+      "size": 1363,
+      "sha256": "565212cb0172a00de43b3b824cc9a007b133ece23127c71298f94b06a0c3fc6d"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.5.md",
+      "size": 825,
+      "sha256": "a5f5ad4430cd5e337625e1902ce7843f48b7d4a102ec97c8f70a03e106fa088a"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.6.md",
+      "size": 784,
+      "sha256": "28d39a76eeec9bacfd5a0e24f63cecaff46d0da776e84ef31a4def39ab8aecac"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.7.md",
+      "size": 578,
+      "sha256": "cea6a69c99e8f715e8841a9787c7e486fe2d560b8fd9f39c4fbf0d42f9320093"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.8.md",
+      "size": 779,
+      "sha256": "45c5203e14c1dc705e1d758993a0f2c0474af39619af66c787af4b72d1445860"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.9.md",
+      "size": 430,
+      "sha256": "925771aff54cdee9e8ef7829d02c2c00aa206a3dede972b6697862e43668ae0c"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.2.0.md",
+      "size": 1284,
+      "sha256": "be54aadd04066e8034717e9733cafc4a56a734393cc300cd4ec0537615718c2d"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.2.1.md",
+      "size": 1132,
+      "sha256": "ff947dafbf2a1ee9b0f163a2f2ac42bb5257249c02ce184b7acde3c63786345b"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.2.2.md",
+      "size": 1481,
+      "sha256": "ae86b46342aaa1d40ff4003391778914fb53ba26440f3226afb95924a2d92af3"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.2.3.md",
+      "size": 1344,
+      "sha256": "586542b178873f12333d86d9593e9910ff962b3ccecb0c41dfad85fce960dde8"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.2.4.md",
+      "size": 540,
+      "sha256": "48b9255e386d397a1d75228719a6d85f9314c7018ae8f24c22636a1b3be7f56a"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.2.5.md",
+      "size": 614,
+      "sha256": "f0e267a369a3f063f4618617e2f11b1fec7ab5b1437e71954a9eb9faa81ea697"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.3.0.md",
+      "size": 1572,
+      "sha256": "bc67aee3c72f058e1c762686b4e046456f2964d38f13796c7e1df45ceea8de80"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.4.0.md",
+      "size": 1408,
+      "sha256": "9a6bdfb7654ac7ab7502596a3cf5ff86b07fb6c5a04dc5fe83241106538a7650"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.5.0.md",
+      "size": 880,
+      "sha256": "9bd520d0b4ce2462a95e4623186baad6dee83561a9f87f0bab8dd4435011ef29"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.6.0.md",
+      "size": 427,
+      "sha256": "2c232e1a4e6298f30189e7d3946ea28587f3d5e66e2352712a6c53df6af79530"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.6.1.md",
+      "size": 356,
+      "sha256": "52240350f5caa6e5baf489c6159c3e946bbc41ae3d179a86a83a3344ab0ca3ed"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.6.2.md",
+      "size": 576,
+      "sha256": "f84847761a2189f311a6c2b3dbede6dfe284573407d44663f7cff9f004eb02d2"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.6.3.md",
+      "size": 787,
+      "sha256": "fec30c3da081c2cb800d5f5a676fcb65563435db8316f6944ca79beba43c9a76"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.6.4.md",
+      "size": 695,
+      "sha256": "329949d2703de16cfe507e22fbaea63d35875f0bc971c6e92be7d0ba4d77e8de"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.7.0.md",
+      "size": 609,
+      "sha256": "0ebdcd1926e8a4dbf9b456320583ea8e0756ac2b8cab66f03e1e03ff8435b90a"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.7.1.md",
+      "size": 495,
+      "sha256": "7af4fe65e9722bc40d7a09f1ad76cda86ea19ddfddf60bf2bb0d5554ea054443"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.8.0.md",
+      "size": 423,
+      "sha256": "8f15660e4ba6d09bb1a2919f2feb953cb948133d2d54461b6d29b9c2cc37be81"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.9.0.md",
+      "size": 573,
+      "sha256": "5fb0c463be27c7589f6017951ffce93e6fb38b207e4ab88ffd0575c9fc8a8770"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.9.1.md",
+      "size": 363,
+      "sha256": "db4c2c4c1711ac29916ad83a18ef577a2ef1b248df670d18621265cdebe33cca"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.9.2.md",
+      "size": 265,
+      "sha256": "871ea8d2bed2f9eff806f8cf13650d17080c756d2393f0d088a30bf3152fc27d"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.9.3.md",
+      "size": 1002,
+      "sha256": "bfb1586d8691f737f04cc90ccdc84e225ef4548a920008ecd5e056bd30e9bd93"
+    },
+    {
+      "path": "docs/ui-design-standards.md",
+      "size": 13627,
+      "sha256": "86b24cf4c1ba11a439d92e689e7cd763c877a9f0f9e7827a838fe2176932029b"
+    },
+    {
+      "path": "docs/user-preferences.md",
+      "size": 2702,
+      "sha256": "89dc24cd16da00a514a8b213eb065bac6eb3223b70784c90b6212521d6887afb"
+    },
+    {
+      "path": "examples/code-editor-reference/tec_tac_ui.json",
+      "size": 217,
+      "sha256": "52c59c9245018d3d32ace87a352302d32160f569a546f8021ed12eb50b2c933c"
+    },
+    {
+      "path": "examples/code-editor-reference/ui/index.js",
+      "size": 3906,
+      "sha256": "ec4a461e678027e69bfae852a49bd1db4a89e42db300deceb7e17fd132d51be6"
+    },
+    {
+      "path": "examples/reference-module/tec_tac_ui.json",
+      "size": 302,
+      "sha256": "1864aa7f2430911ec69c83c5b45f7eb499f9c408e2cb1d0e918d296a816f118b"
+    },
+    {
+      "path": "examples/reference-module/ui/index.js",
+      "size": 2354,
+      "sha256": "58cb24a02151144a234e78614ff501f040f31e435f85bc0450681ec39a4a94ec"
+    },
+    {
+      "path": "examples/reference-module/ui/public.js",
+      "size": 310,
+      "sha256": "2e40fc234d14ea7c98a4bbc2dbfe58d8461993ce69b661e338180975de0e36c8"
+    },
+    {
+      "path": "index.html",
+      "size": 385,
+      "sha256": "d3874f5e651993e863e6313ba03efedc86e838557cd41df8e3c7e75433dcdbd9"
+    },
+    {
+      "path": "package.json",
+      "size": 442,
+      "sha256": "440e3b3ac148c97e57c7e8a6ca22ec6f15a7da28d3008ce2cab6fe6aa31b2b8a"
+    },
+    {
+      "path": "public/modules/modules.json",
+      "size": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "path": "scripts/install.sh",
+      "size": 2491,
+      "sha256": "da809172423e4d623bc346cb46b4c204e084c1a1d5040e9e50fea2c3eafd1d84"
+    },
+    {
+      "path": "scripts/repair-nginx.sh",
+      "size": 3970,
+      "sha256": "bd26b68ca43809aa5a70403196aaffaf9c188769aceee1fd8b08d4c06889c5bf"
+    },
+    {
+      "path": "scripts/sync-modules.sh",
+      "size": 5702,
+      "sha256": "9ad2001f10326ba79083d53400a67a612bef74a114293afd94081801ed269ed7"
+    },
+    {
+      "path": "scripts/tec-tac-config.sh",
+      "size": 503,
+      "sha256": "03545026c0594b4ed998fe1c1a8b79502fd926c0f2696efd921cff17396b67e3"
+    },
+    {
+      "path": "scripts/uninstall.sh",
+      "size": 1260,
+      "sha256": "424c521b3f7546326e3caa516ee61be90c4916d87b5dcd9d7006aea224f9bc89"
+    },
+    {
+      "path": "src/App.vue",
+      "size": 20413,
+      "sha256": "c2cde1b12008827cb8a01736363422a60c2276d603af2c59ced6c840c857296b"
+    },
+    {
+      "path": "src/access.js",
+      "size": 3799,
+      "sha256": "93d3c422c01aa96c6106e31901e20baf4af48e2bdcd3928ad9975e3401413712"
+    },
+    {
+      "path": "src/api.js",
+      "size": 16930,
+      "sha256": "a5012a8f510931af34e62654cb8b5bf493834ae2b59a504269accf5a00e8e483"
+    },
+    {
+      "path": "src/audit.js",
+      "size": 1761,
+      "sha256": "07a5f14b18d16bd39acd4853571f2f57f7a18489e478d2e97c022f80a5db33ee"
+    },
+    {
+      "path": "src/code-editor.js",
+      "size": 23997,
+      "sha256": "19dee7c0415f0d80ba5bbb048ef0341814b013c5f4deb6fb502f3a49f7c4a3cc"
+    },
+    {
+      "path": "src/components/HelpDrawer.vue",
+      "size": 3764,
+      "sha256": "c51d13ae8c7059444552865462e29733d55273fafd905afac100e7ae38adb97e"
+    },
+    {
+      "path": "src/components/LoginPanel.vue",
+      "size": 9496,
+      "sha256": "0008f2eda8d449deff2b120d8a93d7d7ec90a68f0515f057c61fdcd99a658849"
+    },
+    {
+      "path": "src/components/MarkdownContent.vue",
+      "size": 326,
+      "sha256": "d00640aacfd2b2011d56d4089dde7e4e74a12c81bfc3aa3676b87d551f72bd21"
+    },
+    {
+      "path": "src/components/QuickActionsDialog.vue",
+      "size": 4188,
+      "sha256": "177f4b78106f70daac78d016642a0b11bb43a44c1cb044c2ef86543d35952aa0"
+    },
+    {
+      "path": "src/components/StructuredObjectEditor.vue",
+      "size": 5552,
+      "sha256": "b1316d2a9c5e38be362e494f54357b7a385735a49ff4f85729a66fa756e1874e"
+    },
+    {
+      "path": "src/components/UnsavedChangesDialog.vue",
+      "size": 1182,
+      "sha256": "a0f7250f5a51a9d723d9520895673cd378cb0ecedeceabb5466d28ddebf17bc7"
+    },
+    {
+      "path": "src/components/access/RolesPanel.vue",
+      "size": 21995,
+      "sha256": "2a23b3baa92c379663f42ccf17c411627d0a263d325c0809e9351b07aa38227e"
+    },
+    {
+      "path": "src/components/access/SessionPanel.vue",
+      "size": 2274,
+      "sha256": "e81d7a3455a8de0f448c4d694ec60a1df78cd1dea2952eab1663c6248845f4a8"
+    },
+    {
+      "path": "src/components/access/UsersPanel.vue",
+      "size": 9701,
+      "sha256": "d2585126aa0a905f5496032da4fc82b16c9b324e17589f51e865cb3c313d9dc3"
+    },
+    {
+      "path": "src/context-actions.js",
+      "size": 6303,
+      "sha256": "40ea8b5b8dd0dcc121abce0f9d00069631343498e9b4de936b1eb9c1c9fa39fd"
+    },
+    {
+      "path": "src/context-interactions.js",
+      "size": 5956,
+      "sha256": "a3a4707d1f4663e434d4c6faf83e794898cf002325f71d62f2cdac053ec9fc46"
+    },
+    {
+      "path": "src/contracts.js",
+      "size": 732,
+      "sha256": "a80f47393ec3fcf4775e937b2c3d5f5a2c544800587dea987773158a76408789"
+    },
+    {
+      "path": "src/core-navigation.js",
+      "size": 1753,
+      "sha256": "19e1ecfcef3fbb7fcd941a261cfe1db31e4d7d5ef8de82a63b9e78bb5ee54c6b"
+    },
+    {
+      "path": "src/dashboard-core-widgets.js",
+      "size": 2184,
+      "sha256": "1492fce2f05ddd3e0106bc7d5cb75fb49df66715dd2f220161747495b64e4da9"
+    },
+    {
+      "path": "src/dashboard-widgets.js",
+      "size": 4046,
+      "sha256": "6d35f8423fe0cd8747a6f7fced761521cd4915a4a13ffea06a47d7bde8af8b31"
+    },
+    {
+      "path": "src/dashboards.js",
+      "size": 679,
+      "sha256": "28cccebe287f3cb77d89f3e623a536d4b792738472d3c51c68f69f2693edb81f"
+    },
+    {
+      "path": "src/help.js",
+      "size": 8255,
+      "sha256": "f0a971b0d75b2be8719432bd3e65e124ac0f4c807faef1bf7c479dc31b6ea938"
+    },
+    {
+      "path": "src/help/articles/access.md",
+      "size": 635,
+      "sha256": "cfb9a2157a9b3d5c91bf2ef39af848e16c49aea713a0e774db34acff915631fc"
+    },
+    {
+      "path": "src/help/articles/core-ui.md",
+      "size": 956,
+      "sha256": "617c0e19a142ad38d9de18b19c3dd4007a1973f15641a9f84ea180d855fb7fa9"
+    },
+    {
+      "path": "src/help/articles/dashboards.md",
+      "size": 677,
+      "sha256": "984ed53cf5dec27d2a0e036d71004f8617fee211e6559784e1fe8a94e71b1102"
+    },
+    {
+      "path": "src/help/articles/getting-started.md",
+      "size": 1059,
+      "sha256": "ada3826d40de41665a691666c309d888460e03e349b4350dcae65381e6d22865"
+    },
+    {
+      "path": "src/help/articles/help.md",
+      "size": 694,
+      "sha256": "e2ce7fb2673b3d7568c997e062b59432f9784ce5d9c56297effafbe2ed6168eb"
+    },
+    {
+      "path": "src/help/articles/modules.md",
+      "size": 975,
+      "sha256": "a2aeaae6125e37167eedc7ac0fc1a697e3bd69e62af898877f9b100a3ac387db"
+    },
+    {
+      "path": "src/help/articles/preferences.md",
+      "size": 543,
+      "sha256": "1f448c5953aa48537ec2706e50e1f555997cb4047eb218226322371b12562404"
+    },
+    {
+      "path": "src/help/articles/public-contracts.md",
+      "size": 744,
+      "sha256": "9ad059eea2e495287e54d16b3b0cb2b2cd8c1e0fbbe3760d294a9a4a99c93298"
+    },
+    {
+      "path": "src/help/articles/scheduler-configuration.md",
+      "size": 704,
+      "sha256": "bf33dde52dfd21812698395411952634bcd6f172150a2bc440b6d1c79f878678"
+    },
+    {
+      "path": "src/help/articles/schedules.md",
+      "size": 925,
+      "sha256": "9c9a275b5b9b6b3a84c7a058babf59a3820565aeecb7d6f7cc724d3e45aa585b"
+    },
+    {
+      "path": "src/help/articles/storage.md",
+      "size": 357,
+      "sha256": "923bc259e4e0400e96f755699347895d8987e35fceff6d24a70837b5c29441be"
+    },
+    {
+      "path": "src/help/articles/system-updates.md",
+      "size": 668,
+      "sha256": "4c09c8357fd6d0a9aace5526721c09ed6273be6e7ae6cf6024f09f244d0c4092"
+    },
+    {
+      "path": "src/help/articles/troubleshooting-diagnostics.md",
+      "size": 914,
+      "sha256": "e859ee67c0ddb02f8315df4903c52401d1869108a4c1d3522175f1f37362dd7b"
+    },
+    {
+      "path": "src/help/articles/troubleshooting-migrations.md",
+      "size": 856,
+      "sha256": "f99cec3f7584bed3e88c46c13cb1a3bba8a922dda459f3bddc4c8125a087d73b"
+    },
+    {
+      "path": "src/help/core-articles.js",
+      "size": 5075,
+      "sha256": "236e369190ac76cd12a858939065eb9556b30833c26d60e180a985aa330729eb"
+    },
+    {
+      "path": "src/help/markdown.js",
+      "size": 3622,
+      "sha256": "9c9aeb69fb85c1e3ebc39d0647ab051f51e5eabf532b38ffbdb08015489563dc"
+    },
+    {
+      "path": "src/main.js",
+      "size": 5061,
+      "sha256": "d58c1a9f004a5ff719c35ef449ba5f2e611bfb552096eb81c0da3da26f343745"
+    },
+    {
+      "path": "src/module-loader.js",
+      "size": 7319,
+      "sha256": "6c7ef16e2e257c730c4d06882035b3dca6bce4985455b01c8ad001fa27cdc854"
+    },
+    {
+      "path": "src/module-status.js",
+      "size": 3043,
+      "sha256": "2167c56fc69d014c13a6524f5ffaf367ffac227bab8f90f1371bb546f395fd08"
+    },
+    {
+      "path": "src/modules.js",
+      "size": 4219,
+      "sha256": "c2735113f1f135f65f428bbaa754a73e8f55fcd98ce7cc5ef48a7fafb8fdd204"
+    },
+    {
+      "path": "src/notifications.js",
+      "size": 5331,
+      "sha256": "a0cbb9712c25440a7519072c5f0e7edb44f3d980fb78eb152a29c32dc2c815a8"
+    },
+    {
+      "path": "src/preferences.js",
+      "size": 7766,
+      "sha256": "28aa1c877995338a9270dc2bf257a0f3313eee0b2ce9354a58ee62a14e3a9891"
+    },
+    {
+      "path": "src/quick-actions.js",
+      "size": 9081,
+      "sha256": "3986831e3801337b25c26f7f7188a1cce54ae50cab18ea7e3ba5bf1ddb366518"
+    },
+    {
+      "path": "src/resource-views.js",
+      "size": 4367,
+      "sha256": "f983782e3c8b26aa72238acdc7f499d1260966c0a22ee02198bc39511577a8c4"
+    },
+    {
+      "path": "src/router.js",
+      "size": 2917,
+      "sha256": "b8331147f9b5b1e23dd947083dfa1b897469302f073a1951e9dd64df13bd4bd5"
+    },
+    {
+      "path": "src/scheduler.js",
+      "size": 1536,
+      "sha256": "ac8a45039c77bd47e1a06d5f24bbbc31b550aef64d8af7b1fd58beb7a6325edb"
+    },
+    {
+      "path": "src/session-security.js",
+      "size": 3325,
+      "sha256": "216061dc95ae5ae1c49310cc1d5f1dfff36721dad8b73b4949081e5e9124b889"
+    },
+    {
+      "path": "src/state.js",
+      "size": 5458,
+      "sha256": "bd84e29aa175ba68609721c19c3b209b7b1d9abb09a7694c2bf3930b77046ef9"
+    },
+    {
+      "path": "src/styles.css",
+      "size": 80378,
+      "sha256": "3a3409969f39d2680ef536f7f71ad569d44604a2ce7022a48cb3391b52a7ffe6"
+    },
+    {
+      "path": "src/unsaved.js",
+      "size": 2092,
+      "sha256": "2b0ac41a187d04862bd4b4248557428cb26008ff4c833fd3f11bbb8becfec746"
+    },
+    {
+      "path": "src/views/AccessView.vue",
+      "size": 1386,
+      "sha256": "4882c1ff894af405df9b03f5945acd32b5f765c070ddd1dcfbc0a35bffd0e446"
+    },
+    {
+      "path": "src/views/ContractsView.vue",
+      "size": 20998,
+      "sha256": "2f24640c69f194ec9a495d95c0bc7036f9305061ffef4ceadc518e3cdb972ff4"
+    },
+    {
+      "path": "src/views/DashboardView.vue",
+      "size": 16688,
+      "sha256": "a428f562560d59ce950925608a5dab88034702b3db5dfe4c06298800d243a268"
+    },
+    {
+      "path": "src/views/DiagnosticsView.vue",
+      "size": 8279,
+      "sha256": "9c609745c9588828f59387d452d41ceef00b8f43097adcb7013725e6e7015047"
+    },
+    {
+      "path": "src/views/HelpView.vue",
+      "size": 4635,
+      "sha256": "de413d8dd91378c05abb76663bd54376dda7720495a009c395b7be8d6a2e2aed"
+    },
+    {
+      "path": "src/views/MenuLayoutView.vue",
+      "size": 7894,
+      "sha256": "0bcb219aa4fdf92bbfba8141acfd28249bb33208e65a0da622dfe82574a7e191"
+    },
+    {
+      "path": "src/views/ModulesView.vue",
+      "size": 65445,
+      "sha256": "78c0d681cbec3722e3bf902314810f02083e35ac336901e43f49282ccc1d00e1"
+    },
+    {
+      "path": "src/views/PreferencesView.vue",
+      "size": 6771,
+      "sha256": "6986664b8284080fe409c2f9219847d91e4e78d919586f6ff3e5673b719e800a"
+    },
+    {
+      "path": "src/views/PublicPendingView.vue",
+      "size": 251,
+      "sha256": "0313ffbe66dc89021d5a3b8dee18d96038d164d573bf1d6f32df377f4c9c313c"
+    },
+    {
+      "path": "src/views/SchedulerSettingsView.vue",
+      "size": 6302,
+      "sha256": "11ca7c52207e343e41f9c7c153d4782f8f0e714e5f350c5dfba346b8872cae6d"
+    },
+    {
+      "path": "src/views/SchedulesView.vue",
+      "size": 16494,
+      "sha256": "a563c58fbcc374cf4a2ce96c7a863355435de5b33a2b5c70367a9f05f516b69f"
+    },
+    {
+      "path": "src/views/StorageView.vue",
+      "size": 6701,
+      "sha256": "1f093801d525fde4334d1b0fbbbb457137a84ae8461964cb07ea066519544ebf"
+    },
+    {
+      "path": "src/views/SystemUpdatesView.vue",
+      "size": 21577,
+      "sha256": "fd4431f3709a8d0739d8ffd139d14bd0434879335a2549b631c9b0482e12ce6a"
+    },
+    {
+      "path": "tec_tac_package.json",
+      "size": 138,
+      "sha256": "e8370eaed9aeefb24ecf38029c3fce3cdb6d08c422fee08a3e5c152a246ffd7a"
+    },
+    {
+      "path": "tests/api-raw.mjs",
+      "size": 1982,
+      "sha256": "fac1d9920a11c8834f9c706c0d11817f4eb726c811dafb3f45b551dcfe10be26"
+    },
+    {
+      "path": "tests/foundation.sh",
+      "size": 58393,
+      "sha256": "f862fae5c6fe42daf879cac8471970d91bd721daaa95db7463aaa99b4a7f5333"
+    },
+    {
+      "path": "tests/release-integrity.sh",
+      "size": 1014,
+      "sha256": "b1d3a276fea75096c5622e1bdcccb2bf6177702ec2968fc4a875bfd137e22251"
+    },
+    {
+      "path": "tests/session-expiry.mjs",
+      "size": 2842,
+      "sha256": "8e89ab53e90c1bffc507643ebb8b604f6e7a7b9370f45525f288cab3929982ae"
+    },
+    {
+      "path": "vite.config.js",
+      "size": 402,
+      "sha256": "1663d2746671ff6640c5dff219820ccb96ed25ada5eec8f634838daacfbb08d4"
+    }
+  ]
+}
