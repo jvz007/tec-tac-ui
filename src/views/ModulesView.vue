@@ -73,6 +73,7 @@ const confirmTarget = ref(null)
 const confirmMode = ref('')
 const confirmText = ref('')
 const cascade = ref(false)
+const reinstallTarget = ref(null)
 let pollTimer = null
 let reloadTimer = null
 const reloadCountdown = ref(0)
@@ -314,6 +315,32 @@ async function removeRepository(item) {
   } finally {
     repositoryBusy.value = false
   }
+}
+
+function sameOnlineVersion(item) {
+  return Boolean(
+    item?.installed
+    && item?.installed_version
+    && item?.latest_version
+    && String(item.installed_version) === String(item.latest_version)
+  )
+}
+
+function requestStageOnline(item) {
+  if (sameOnlineVersion(item)) {
+    reinstallTarget.value = item
+    return
+  }
+  stageOnline(item)
+}
+
+function closeReinstallConfirm() { reinstallTarget.value = null }
+
+async function confirmReinstall() {
+  const item = reinstallTarget.value
+  if (!item) return
+  reinstallTarget.value = null
+  await stageOnline(item)
 }
 
 async function stageOnline(item) {
@@ -751,7 +778,7 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
         <td><span>{{ item.selected_repository_name || 'local only' }}</span><span v-if="item.selected_repository_trust" class="sub mono">{{ item.selected_repository_trust }}</span></td>
         <td><span v-if="item.compatible===true" class="pill ok">compatible</span><span v-else-if="item.compatible===false" class="pill danger">blocked</span><span v-else class="pill">unknown</span></td>
         <td><span v-if="item.source_conflict" class="pill danger">source unavailable</span><span v-else-if="item.update_available" class="pill warn">update available</span><span v-else-if="item.installed" class="pill ok">up to date</span><span v-else class="pill">available</span></td>
-        <td class="catalog-action"><button class="btn sm" :class="item.update_available?'primary':''" :disabled="!canManage || !item.latest_version || item.compatible===false || item.source_conflict || inspecting" @click="stageOnline(item)">{{ item.installed ? (item.update_available ? 'Download update' : 'Inspect') : 'Download & inspect' }}</button></td>
+        <td class="catalog-action"><button class="btn sm" :class="item.update_available?'primary':''" :disabled="!canManage || !item.latest_version || item.compatible===false || item.source_conflict || inspecting" @click="requestStageOnline(item)">{{ item.installed ? (item.update_available ? 'Download update' : 'Reinstall') : 'Download & inspect' }}</button></td>
       </tr>
     </tbody></table></div>
   </template>
@@ -820,6 +847,8 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
   </template>
 
   <div v-if="activeJob" class="job-panel card mt"><div class="cardhead"><div><span class="eyebrow">MODULE JOB</span><h3>{{ activeJob.action }} / {{ activeJob.plugin_id }}</h3></div><span class="pill" :class="{ok:activeJob.status==='succeeded',danger:['failed','dispatch_failed'].includes(activeJob.status),warn:!['succeeded','failed','dispatch_failed'].includes(activeJob.status)}">{{ activeJob.status }}</span></div><div v-if="jobPollError" class="state-inline warning"><b>Job status refresh failed.</b> {{ jobPollError }} Retrying automatically.</div><div v-if="activeJob.error" class="auth-error">{{ activeJob.error }}</div><pre v-if="activeJob.log_tail?.length" class="job-log">{{ activeJob.log_tail.join('\n') }}</pre><div v-if="activeJob.status==='succeeded'" class="row"><button class="btn primary" @click="reloadTecTac">Reload Tec-Tac</button></div></div>
+
+  <div v-if="reinstallTarget" class="modal-backdrop" @click.self="closeReinstallConfirm"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="module-reinstall-title"><div class="cardhead"><div><span class="eyebrow">REINSTALL MODULE</span><h3 id="module-reinstall-title">{{ reinstallTarget.name || reinstallTarget.id }}</h3></div><span class="pill warn">SAME VERSION</span></div><p class="compact-copy">Installed version and repository version are both <span class="mono">{{ reinstallTarget.latest_version }}</span>. Continuing will download and inspect the same version for reinstall. The replacement still requires confirmation from the package inspection step.</p><div class="state-inline warning mt"><b>Existing module files will be replaced when the install job runs.</b> Configuration and data remain subject to the module's normal upgrade/reinstall lifecycle.</div><div class="modal-actions"><button class="btn primary" :disabled="inspecting || jobRunning" @click="confirmReinstall">Continue to reinstall</button><button class="btn" @click="closeReinstallConfirm">Cancel</button></div></section></div>
 
   <div v-if="confirmTarget" class="modal-backdrop" @click.self="closeConfirm"><section class="modal-panel"><div class="cardhead"><div><span class="eyebrow">{{ confirmMode.toUpperCase() }} MODULE</span><h3>{{ confirmTarget.id }}</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><p v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="compact-copy">Enabled dependants may block this action. Select cascade to disable dependent modules first.</p><label v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="checkline warning-check"><input v-model="cascade" type="checkbox"> Disable enabled dependants as part of this job</label><label class="field"><span>Type {{ confirmTarget.id }} to confirm</span><input v-model="confirmText" autocomplete="off"></label><div class="modal-actions"><button class="btn" :class="confirmMode==='enable'?'primary':'danger'" :disabled="confirmText!==confirmTarget.id" @click="confirmAction">{{ confirmMode }} module</button><button class="btn" @click="closeConfirm">Cancel</button></div></section></div>
 </section>

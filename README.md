@@ -1,3 +1,7 @@
+## 0.12.9
+
+The Online Module Catalog now confirms deliberate same-version module reinstalls before staging the package.
+
 Version **0.12.5** improves the role permission editor with module-grouped extension permissions, independent collapsible columns, bulk expand/collapse controls, compact permission labels, and more readable sticky save-state text.
 
 Version **0.12.3** adds a server-backed per-user Menu Layout page for category/item ordering and a direct **Open** action on enabled Module Manager details. Requires Framework 1.15.28 for persisted section ordering.

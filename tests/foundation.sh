@@ -631,3 +631,13 @@ grep -q "core.troubleshooting-diagnostics" "${ROOT}/src/help/core-articles.js" |
 grep -q "core.troubleshooting-migrations" "${ROOT}/src/help/core-articles.js" || fail "migration troubleshooting help registration missing"
 grep -q "diagnostic-section-head" "${ROOT}/src/styles.css" || fail "diagnostics shared styling missing"
 printf '[TEST] PASS diagnostics UI foundation\n'
+
+# 0.12.9 same-version module reinstall confirmation
+grep -q "function sameOnlineVersion" "${ROOT}/src/views/ModulesView.vue" || fail "same-version module detection missing"
+grep -q "function requestStageOnline" "${ROOT}/src/views/ModulesView.vue" || fail "same-version staging guard missing"
+grep -q 'v-if="reinstallTarget"' "${ROOT}/src/views/ModulesView.vue" || fail "module reinstall confirmation dialog missing"
+grep -q 'SAME VERSION' "${ROOT}/src/views/ModulesView.vue" || fail "same-version reinstall warning missing"
+grep -q 'Continue to reinstall' "${ROOT}/src/views/ModulesView.vue" || fail "module reinstall confirmation action missing"
+grep -q '@click="requestStageOnline(item)"' "${ROOT}/src/views/ModulesView.vue" || fail "online catalog does not use reinstall confirmation guard"
+grep -q "item.update_available ? 'Download update' : 'Reinstall'" "${ROOT}/src/views/ModulesView.vue" || fail "up-to-date module action is not labelled Reinstall"
+printf '[TEST] PASS same-version module reinstall confirmation\n'
