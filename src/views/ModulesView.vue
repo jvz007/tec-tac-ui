@@ -762,34 +762,51 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
         </div>
         <div class="module-inspection-grid">
           <div class="module-inspection-grid-head" aria-hidden="true">
-            <span>Module</span><span>Installed</span><span>Package</span><span>Action</span><span>Source</span><span>SHA256</span><span>Requires</span>
+            <span>Module</span><span>Installed</span><span>Package</span><span>Trust</span><span>Action</span><span>Source</span><span>SHA256</span><span>Requires</span>
           </div>
           <div v-for="row in orderedRows" :key="`inspect-${row.id}`" class="module-inspection-grid-row">
             <div class="module-inspection-name"><b>{{ row.id }}</b><span class="mono">{{ row.intake_filename }}</span></div>
             <div data-label="Installed" class="mono">{{ row.current_version || 'not installed' }}</div>
             <div data-label="Package" class="mono module-target-version">{{ moduleTargetVersion(row) }}</div>
+            <div data-label="Trust" class="module-trust-cell">
+              <span
+                v-if="stagedTrust"
+                class="pill module-trust-badge"
+                :class="stagedTrustClass"
+                tabindex="0"
+                :aria-label="`Package trust: ${stagedTrustLabel}`"
+              >
+                {{ stagedTrustLabel === 'VERIFIED' ? 'SIGNED' : stagedTrustLabel }}
+                <span class="module-trust-popover" role="tooltip">
+                  <b>{{ stagedTrustLabel === 'VERIFIED' ? 'Signed package' : (stagedTrustLabel === 'UNSIGNED' ? 'Unsigned package' : stagedTrustLabel) }}</b>
+                  <template v-if="stagedTrust.verified && stagedTrust.trusted">
+                    <span><strong>Publisher</strong>{{ stagedTrust.publisher_display_name || stagedTrust.publisher_id || '—' }}</span>
+                    <span><strong>Publisher ID</strong><code>{{ stagedTrust.publisher_id || '—' }}</code></span>
+                    <span><strong>Key ID</strong><code>{{ stagedTrust.key_id || '—' }}</code></span>
+                    <span><strong>Algorithm</strong><code>{{ stagedTrust.algorithm || 'Ed25519' }}</code></span>
+                    <span><strong>Environment</strong><code>{{ stagedTrust.publisher_environment || stagedTrust.server_environment || '—' }}</code></span>
+                    <span><strong>SHA256</strong><code>{{ stagedTrust.package_sha256 || row.intake_sha256 || '—' }}</code></span>
+                    <span><strong>Required</strong><code>{{ stagedTrust.required_permissions?.length ? stagedTrust.required_permissions.join(', ') : 'none' }}</code></span>
+                    <span><strong>Approved</strong><code>{{ stagedTrust.approved_permissions?.length ? stagedTrust.approved_permissions.join(', ') : 'none' }}</code></span>
+                  </template>
+                  <template v-else-if="stagedTrust.state==='unsigned' || stagedTrust.signed===false">
+                    <span class="module-trust-note">No package signature was supplied.</span>
+                    <span class="module-trust-note">Signing is optional for normal modules at this stage.</span>
+                    <span class="module-trust-note">Privileged publisher permissions still require a trusted signature.</span>
+                  </template>
+                  <template v-else>
+                    <span class="module-trust-note">{{ stagedTrust.reason || stagedTrust.error || 'Core did not accept the package trust material.' }}</span>
+                  </template>
+                </span>
+              </span>
+              <span v-else class="pill module-trust-badge" tabindex="0">NOT REPORTED</span>
+            </div>
             <div data-label="Action"><span class="pill" :class="row.action==='replace'?'warn':'ok'">{{ row.action || 'install' }}</span></div>
             <div data-label="Source" class="module-inspection-source">{{ row.intake_source || stagedSourceLabel }}</div>
             <div data-label="SHA256" class="mono module-inspection-hash" :title="row.intake_sha256 || ''">{{ compactHash(row.intake_sha256) }}</div>
             <div data-label="Requires" class="mono module-inspection-requires" :title="moduleRequirements(row)">{{ moduleRequirements(row) }}</div>
           </div>
         </div>
-      </div>
-      <div v-if="stagedTrust" class="card mt module-signature-card">
-        <div class="cardhead"><div><span class="eyebrow">PACKAGE TRUST</span><h3>Signature verification</h3></div><span class="pill" :class="stagedTrustClass">{{ stagedTrustLabel }}</span></div>
-        <div v-if="stagedTrust.verified && stagedTrust.trusted" class="state-inline"><b>Signature accepted by Core.</b> The detached Ed25519 signature verified against the locally trusted publisher policy.</div>
-        <div v-else-if="stagedTrust.state==='unsigned' || stagedTrust.signed===false" class="state-inline"><b>Unsigned package accepted for inspection.</b> Module signing is optional for normal modules at this stage. Privileged publisher permissions still require a trusted signature.</div>
-        <dl class="kvlist module-kv mt">
-          <dt>Status</dt><dd>{{ stagedTrustLabel }}</dd>
-          <dt>Publisher</dt><dd>{{ stagedTrust.publisher_display_name || '—' }}</dd>
-          <dt>Publisher ID</dt><dd class="mono">{{ stagedTrust.publisher_id || '—' }}</dd>
-          <dt>Key ID</dt><dd class="mono">{{ stagedTrust.key_id || '—' }}</dd>
-          <dt>Algorithm</dt><dd class="mono">{{ stagedTrust.algorithm || (stagedTrust.signed ? 'Ed25519' : '—') }}</dd>
-          <dt>Environment</dt><dd class="mono">{{ stagedTrust.publisher_environment || stagedTrust.server_environment || '—' }}</dd>
-          <dt>Package SHA256</dt><dd class="mono module-source" :title="stagedTrust.package_sha256 || ''">{{ stagedTrust.package_sha256 || '—' }}</dd>
-          <dt>Required publisher permissions</dt><dd class="mono">{{ stagedTrust.required_permissions?.length ? stagedTrust.required_permissions.join(', ') : 'none' }}</dd>
-          <dt>Approved publisher permissions</dt><dd class="mono">{{ stagedTrust.approved_permissions?.length ? stagedTrust.approved_permissions.join(', ') : 'none / not applicable' }}</dd>
-        </dl>
       </div>
       <div class="state-inline mt" :class="plan?.valid ? '' : 'warning'"><b>{{ plan?.valid ? 'Dependency plan resolved.' : 'Installation blocked.' }}</b> {{ plan?.valid ? 'Required dependency sequence is enforced. Independent packages may be reordered.' : 'Resolve the dependency/version problems before installation.' }}</div><div v-if="staged.source" class="state-inline mt"><b>Online source:</b> {{ staged.source.repository_name }} <span class="mono">· {{ staged.source.repository_trust }} · {{ staged.source.package_sha256.slice(0,12) }}…</span></div>
       <div v-if="queueWarning" class="state-inline warning mt"><b>Order not changed.</b> {{ queueWarning }}</div>

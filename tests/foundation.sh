@@ -423,7 +423,7 @@ echo "[TEST] PASS lifecycle hardening and package inspection parity"
 
 # 0.11.12 compact multi-module package inspection grid
 grep -q 'module-inspection-grid' "${ROOT}/src/views/ModulesView.vue" || fail "compact module inspection grid missing"
-grep -q 'Installed</span><span>Package</span><span>Action</span><span>Source</span><span>SHA256</span><span>Requires' "${ROOT}/src/views/ModulesView.vue" || fail "module inspection columns missing"
+grep -q 'Installed</span><span>Package</span><span>Trust</span><span>Action</span><span>Source</span><span>SHA256</span><span>Requires' "${ROOT}/src/views/ModulesView.vue" || fail "module inspection columns missing"
 grep -q 'intake_sha256' "${ROOT}/src/views/ModulesView.vue" || fail "module package provenance hash mapping missing"
 grep -q 'moduleRequirements(row)' "${ROOT}/src/views/ModulesView.vue" || fail "module inspection dependency summary missing"
 echo "[TEST] PASS compact multi-module package inspection grid"
@@ -647,10 +647,19 @@ grep -q "body.append('signature',signature)" "${ROOT}/src/modules.js" || fail "m
 grep -q "body.append('metadata',metadata)" "${ROOT}/src/modules.js" || fail "module release metadata sidecar is not sent to Core"
 grep -q "function intakeFileType" "${ROOT}/src/views/ModulesView.vue" || fail "module package sidecar classifier missing"
 grep -q "stagedTrust = computed" "${ROOT}/src/views/ModulesView.vue" || fail "staged package trust result missing"
-grep -q "PACKAGE TRUST" "${ROOT}/src/views/ModulesView.vue" || fail "package trust inspection surface missing"
-grep -q "Module signing is optional for normal modules at this stage" "${ROOT}/src/views/ModulesView.vue" || fail "unsigned transitional policy is not explicit in Module Manager"
+grep -q 'data-label="Trust"' "${ROOT}/src/views/ModulesView.vue" || fail "package trust review column missing"
+grep -q "Signing is optional for normal modules at this stage" "${ROOT}/src/views/ModulesView.vue" || fail "unsigned transitional policy is not explicit in trust popover"
 grep -q "Privileged publisher permissions still require a trusted signature" "${ROOT}/src/views/ModulesView.vue" || fail "privileged unsigned-package boundary is not visible"
 grep -q "publisher_display_name" "${ROOT}/src/views/ModulesView.vue" || fail "publisher identity is not shown after verification"
 grep -q "key_id" "${ROOT}/src/views/ModulesView.vue" || fail "publisher key identity is not shown after verification"
 node --check "${ROOT}/src/modules.js"
 printf '[TEST] PASS module package signature intake and trust visibility\n'
+
+# 0.12.11 compact package trust badge and hover/focus details
+grep -q 'module-trust-badge' "${ROOT}/src/views/ModulesView.vue" || fail "compact package trust badge missing"
+grep -q 'module-trust-popover' "${ROOT}/src/views/ModulesView.vue" || fail "package trust hover/focus details missing"
+grep -q "stagedTrustLabel === 'VERIFIED' ? 'SIGNED'" "${ROOT}/src/views/ModulesView.vue" || fail "verified package is not labelled SIGNED in review row"
+! grep -q 'class="card mt module-signature-card"' "${ROOT}/src/views/ModulesView.vue" || fail "large package trust card still present"
+grep -q '.module-trust-badge:hover .module-trust-popover' "${ROOT}/src/styles.css" || fail "trust hover popover styling missing"
+grep -q '.module-trust-badge:focus .module-trust-popover' "${ROOT}/src/styles.css" || fail "keyboard trust popover styling missing"
+printf '[TEST] PASS compact package trust badge and details popover\n'
