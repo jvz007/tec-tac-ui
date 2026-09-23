@@ -123,6 +123,7 @@ export async function loadUiModules(runtime, modules) {
     let moduleDashboardWidgets = null
     let moduleQuickActions = null
     let moduleNotifications = null
+    let moduleAudit = null
     let moduleHelp = null
     try {
       const imported = await import(/* @vite-ignore */ descriptor.entry)
@@ -150,6 +151,7 @@ export async function loadUiModules(runtime, modules) {
       moduleDashboardWidgets = runtime.dashboardWidgets?.forModule(descriptor.id) || null
       moduleQuickActions = runtime.quickActions?.forModule(descriptor.id) || null
       moduleNotifications = runtime.notifications?.forModule(descriptor.id) || null
+      moduleAudit = runtime.audit?.forModule(descriptor.id) || null
       moduleHelp = runtime.help?.forModule(descriptor.id, descriptor) || null
       await plugin.register({
         ...runtime,
@@ -164,6 +166,7 @@ export async function loadUiModules(runtime, modules) {
         dashboardWidgets: moduleDashboardWidgets,
         quickActions: moduleQuickActions,
         notifications: moduleNotifications,
+        audit: moduleAudit,
         help: moduleHelp,
       })
       loaded.push(descriptor.id)

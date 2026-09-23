@@ -606,3 +606,17 @@ for token in surface line accent ok warn danger; do
   grep -Eq -- "--${token}:" "${TOAST_CSS}" || fail "theme token --${token} is not defined"
 done
 echo "[TEST] PASS solid Core notification toast surface"
+
+# 0.12.7 Core-owned audit write runtime
+[[ -f "${ROOT}/src/audit.js" ]] || fail "Core audit browser runtime missing"
+[[ -f "${ROOT}/docs/module-audit.md" ]] || fail "module audit developer documentation missing"
+grep -q "createAuditService" "${ROOT}/src/main.js" || fail "Core audit service not created by shell"
+grep -q "app.provide('tecTacAudit'" "${ROOT}/src/main.js" || fail "Core audit service not provided by shell"
+grep -q "^[[:space:]]*audit,$" "${ROOT}/src/main.js" || fail "Core audit service not passed to authenticated module loader"
+grep -q "audit: moduleAudit" "${ROOT}/src/module-loader.js" || fail "module-scoped audit runtime not passed to modules"
+grep -q "/api/tfd/audit/record/" "${ROOT}/src/audit.js" || fail "Core audit endpoint integration missing"
+grep -q "FORBIDDEN_EVENT_FIELDS" "${ROOT}/src/audit.js" || fail "browser actor/provenance spoof guard missing"
+grep -q "audit_service_unavailable" "${ROOT}/src/audit.js" || fail "non-fatal audit failure behavior missing"
+grep -q "Core audit write contract" "${ROOT}/src/views/ContractsView.vue" || fail "Public Contracts audit section missing"
+node --check "${ROOT}/src/audit.js"
+echo "[TEST] PASS Core-owned audit write runtime"

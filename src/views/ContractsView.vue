@@ -70,6 +70,14 @@ onMounted(refresh)
     <div class="callout contract-rules"><b>Personal shortcut boundary</b><span>Authenticated modules may register safe browser actions through the module-scoped <span class="mono">quickActions</span> registry. Core owns persistence, ordering, permission checks and the top-bar surface; providers own execution.</span></div>
     <div class="tablewrap"><table><thead><tr><th>Action</th><th>Provider</th><th>Group</th><th>Permission</th><th>Direct pin</th><th>Risk</th></tr></thead><tbody><tr v-for="item in uiQuickActions" :key="item.id"><td><b class="mono">{{item.id}}</b><span class="sub">{{item.label}} · {{item.description||'No description'}}</span></td><td class="mono">{{item.provider}}</td><td>{{item.group}}</td><td class="mono">{{item.permission||'—'}}</td><td><span class="pill">{{item.directPin?'yes':'module only'}}</span></td><td><span class="pill" :class="item.dangerous?'danger':''">{{item.dangerous?'dangerous':'normal'}}</span></td></tr><tr v-if="!uiQuickActions.length"><td colspan="6" class="muted">No module Quick Actions are currently registered or match the current search.</td></tr></tbody></table></div>
 
+    <div class="section-divider">Core audit write contract</div>
+    <div class="callout contract-rules"><b>Audit boundary</b><span>Authenticated modules receive a Core-owned, module-scoped <span class="mono">audit</span> service. Use <span class="mono">audit.record(event)</span>; modules must never write Tactical <span class="mono">AuditLog</span> directly.</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Runtime</th><th>Purpose</th></tr></thead><tbody>
+      <tr><td class="mono">audit.record({ action, object_type, ... })</td><td>Record a module event through Core into Tactical's unified audit trail.</td></tr>
+      <tr><td class="mono">source = tec-tac</td><td>Core-owned provenance includes actor, module ID/version and correlation ID when available.</td></tr>
+      <tr><td class="mono">add · modify · delete · run · approve · ...</td><td>Use the standard action vocabulary; controlled fallback is <span class="mono">custom:&lt;slug&gt;</span>.</td></tr>
+    </tbody></table></div>
+
     <div class="section-divider">Module notifications / toasts</div>
     <div class="callout contract-rules"><b>Operator notification boundary</b><span>Authenticated modules receive the Core-owned, module-scoped <span class="mono">notifications</span> service. Use it for transient in-app notices such as report completion, warnings and action failures; durable alert state remains module/backend owned.</span></div>
     <div class="tablewrap"><table><thead><tr><th>Method</th><th>Use</th></tr></thead><tbody>
