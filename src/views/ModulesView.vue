@@ -118,6 +118,20 @@ const plan = computed(() => preview.value?.plan || staged.value?.plan || null)
 const artifactKind = computed(() => staged.value?.kind || preview.value?.kind || 'artifact')
 const stagedSourceLabel = computed(() => staged.value?.source?.repository_name || staged.value?.source?.type || 'offline')
 const stagedHash = computed(() => staged.value?.sha256 || staged.value?.source?.package_sha256 || '—')
+const stagedTrust = computed(() => staged.value?.publisher_trust || preview.value?.publisher_trust || null)
+const stagedTrustLabel = computed(() => {
+  const trust = stagedTrust.value
+  if (!trust) return 'NOT REPORTED'
+  if (trust.verified && trust.trusted) return 'VERIFIED'
+  if (trust.state === 'unsigned' || !trust.signed) return 'UNSIGNED'
+  return String(trust.state || 'UNTRUSTED').toUpperCase()
+})
+const stagedTrustClass = computed(() => {
+  const trust = stagedTrust.value
+  if (trust?.verified && trust?.trusted) return 'ok'
+  if (trust?.state === 'unsigned' || trust?.signed === false) return ''
+  return 'danger'
+})
 const stagedArtifactLabel = computed(() => {
   if (staged.value?.filename) return staged.value.filename
   if (artifactKind.value === 'batch') return 'Multiple packages'
@@ -197,6 +211,35 @@ function compactHash(value) {
   const hash = String(value || '').trim()
   return hash ? `${hash.slice(0, 12)}…` : '—'
 }
+
+function intakeFileType(file) {
+  const name = String(file?.name || '')
+  if (/\.(zip|tgz|tar\.gz)$/i.test(name)) return 'package'
+  if (/\.sig$/i.test(name)) return 'signature'
+  if (/\.release(?:\(\d+\))?\.json$/i.test(name)) return 'metadata'
+  return 'unsupported'
+}
+function intakeFileLabel(file) {
+  const type = intakeFileType(file)
+  if (type === 'signature') return 'SIGNATURE'
+  if (type === 'metadata') return 'RELEASE JSON'
+  return 'PACKAGE'
+}
+const pendingIntake = computed(() => ({
+  packages: pendingFiles.value.filter((file) => intakeFileType(file) === 'package'),
+  signatures: pendingFiles.value.filter((file) => intakeFileType(file) === 'signature'),
+  metadata: pendingFiles.value.filter((file) => intakeFileType(file) === 'metadata'),
+}))
+const pendingIntakeProblem = computed(() => {
+  const intake = pendingIntake.value
+  if (!intake.packages.length) return 'Add at least one Tec-Tac package or bundle.'
+  if (intake.signatures.length > 1) return 'Only one detached signature can accompany an uploaded package.'
+  if (intake.metadata.length > 1) return 'Only one release metadata file can accompany an uploaded package.'
+  const hasSidecar = intake.signatures.length || intake.metadata.length
+  if (hasSidecar && intake.packages.length !== 1) return 'Signature and release metadata companions can only be used with one package or bundle at a time.'
+  if (hasSidecar && (!intake.signatures.length || !intake.metadata.length)) return 'A signed package needs both the .sig file and the .release.json file. Remove the sidecar to inspect the package as unsigned, or add its matching companion.'
+  return ''
+})
 
 const orderedRows = computed(() => {
   const byId = new Map(stagedRows.value.map((row) => [row.id, row]))
@@ -382,16 +425,16 @@ function fileKey(file) { return `${file.name}:${file.size}:${file.lastModified}`
 
 function addFiles(files) {
   if (!canManage.value || jobRunning.value || inspecting.value || staged.value) return
-  const allowed = [...files].filter((file) => /\.(zip|tgz|tar\.gz)$/i.test(file.name))
+  const allowed = [...files].filter((file) => intakeFileType(file) !== 'unsupported')
   if (!allowed.length) {
-    queueWarning.value = 'No supported Tec-Tac package files were added. Use .zip, .tgz or .tar.gz.'
+    queueWarning.value = 'No supported Tec-Tac files were added. Use a package (.zip, .tgz, .tar.gz) and, optionally, its matching .sig and .release.json files.'
     return
   }
   const seen = new Set(pendingFiles.value.map(fileKey))
   for (const file of allowed) {
     if (!seen.has(fileKey(file))) pendingFiles.value.push(file)
   }
-  queueWarning.value = allowed.length === files.length ? '' : 'Unsupported files were ignored.'
+  queueWarning.value = allowed.length === files.length ? '' : 'Unsupported files were ignored. Module signatures remain optional for non-privileged packages.'
 }
 
 function filesChosen(event) {
@@ -416,6 +459,10 @@ function movePending(index, offset) {
 
 async function inspectPending() {
   if (!pendingFiles.value.length || inspecting.value) return
+  if (pendingIntakeProblem.value) {
+    queueWarning.value = pendingIntakeProblem.value
+    return
+  }
   inspecting.value = true
   error.value = ''
   queueWarning.value = ''
@@ -671,7 +718,7 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
       <span v-if="staged" class="pill" :class="plan?.valid ? 'ok' : 'warn'">{{ plan?.valid ? 'INSPECTED' : 'BLOCKED' }}</span>
     </div>
 
-    <input ref="fileInput" class="sr-only" type="file" multiple accept=".zip,.tgz,.tar.gz,application/zip,application/gzip" @change="filesChosen">
+    <input ref="fileInput" class="sr-only" type="file" multiple accept=".zip,.tgz,.tar.gz,.sig,.json,application/zip,application/gzip,application/json" @change="filesChosen">
 
     <div
       v-if="!staged"
@@ -688,7 +735,7 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
       @drop.prevent="onDrop"
     >
       <div class="drop-icon">⇩</div>
-      <div><b>{{ dropActive ? 'Drop packages here' : 'Drag & drop Tec-Tac packages here' }}</b><span>Multiple .zip, .tgz and .tar.gz packages are supported. A bundle can be dropped as a single file.</span></div>
+      <div><b>{{ dropActive ? 'Drop package files here' : 'Drag & drop Tec-Tac packages here' }}</b><span>Signatures are optional for normal modules. For a signed package, add the package, matching .sig and matching .release.json together.</span></div>
       <button class="btn sm" type="button" :disabled="!canManage || jobRunning || inspecting" @click.stop="pick">Browse files</button>
     </div>
 
@@ -698,9 +745,13 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
         <span class="queue-grip" aria-hidden="true">⋮⋮</span>
         <span class="queue-index mono">{{ index+1 }}</span>
         <div class="queue-main"><b>{{ file.name }}</b><span>{{ (file.size/1024).toFixed(1) }} KB</span></div>
+        <span class="pill" :class="intakeFileType(file)==='package'?'':(intakeFileType(file)==='signature'?'ok':'')">{{ intakeFileLabel(file) }}</span>
         <div class="queue-actions"><button class="iconbtn" :disabled="index===0" title="Move up" @click="movePending(index,-1)">↑</button><button class="iconbtn" :disabled="index===pendingFiles.length-1" title="Move down" @click="movePending(index,1)">↓</button><button class="iconbtn" title="Remove" @click="removePending(index)">×</button></div>
       </div>
-      <div class="queue-footer"><button class="btn" @click="pendingFiles=[]">Clear</button><span class="spacer"></span><button class="btn primary" :disabled="inspecting" @click="inspectPending">{{ inspecting ? 'Inspecting…' : `Inspect ${pendingFiles.length} file${pendingFiles.length===1?'':'s'}` }}</button></div>
+      <div v-if="pendingIntakeProblem" class="state-inline warning mt"><b>Package intake needs attention.</b> {{ pendingIntakeProblem }}</div>
+      <div v-else-if="pendingIntake.packages.length===1 && !pendingIntake.signatures.length" class="state-inline mt"><b>Unsigned package.</b> Signing is optional for normal modules at this stage; Core will still inspect and can install it unless the module requests privileged publisher permissions.</div>
+      <div v-else-if="pendingIntake.signatures.length && pendingIntake.metadata.length" class="state-inline mt"><b>Signed package companions detected.</b> Core will verify the package hash, publisher policy and detached Ed25519 signature during inspection.</div>
+      <div class="queue-footer"><button class="btn" @click="pendingFiles=[]">Clear</button><span class="spacer"></span><button class="btn primary" :disabled="inspecting || !!pendingIntakeProblem" @click="inspectPending">{{ inspecting ? 'Inspecting…' : 'Inspect package intake' }}</button></div>
     </div>
 
     <div v-if="staged" class="install-plan-workspace">
@@ -723,6 +774,22 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
             <div data-label="Requires" class="mono module-inspection-requires" :title="moduleRequirements(row)">{{ moduleRequirements(row) }}</div>
           </div>
         </div>
+      </div>
+      <div v-if="stagedTrust" class="card mt module-signature-card">
+        <div class="cardhead"><div><span class="eyebrow">PACKAGE TRUST</span><h3>Signature verification</h3></div><span class="pill" :class="stagedTrustClass">{{ stagedTrustLabel }}</span></div>
+        <div v-if="stagedTrust.verified && stagedTrust.trusted" class="state-inline"><b>Signature accepted by Core.</b> The detached Ed25519 signature verified against the locally trusted publisher policy.</div>
+        <div v-else-if="stagedTrust.state==='unsigned' || stagedTrust.signed===false" class="state-inline"><b>Unsigned package accepted for inspection.</b> Module signing is optional for normal modules at this stage. Privileged publisher permissions still require a trusted signature.</div>
+        <dl class="kvlist module-kv mt">
+          <dt>Status</dt><dd>{{ stagedTrustLabel }}</dd>
+          <dt>Publisher</dt><dd>{{ stagedTrust.publisher_display_name || '—' }}</dd>
+          <dt>Publisher ID</dt><dd class="mono">{{ stagedTrust.publisher_id || '—' }}</dd>
+          <dt>Key ID</dt><dd class="mono">{{ stagedTrust.key_id || '—' }}</dd>
+          <dt>Algorithm</dt><dd class="mono">{{ stagedTrust.algorithm || (stagedTrust.signed ? 'Ed25519' : '—') }}</dd>
+          <dt>Environment</dt><dd class="mono">{{ stagedTrust.publisher_environment || stagedTrust.server_environment || '—' }}</dd>
+          <dt>Package SHA256</dt><dd class="mono module-source" :title="stagedTrust.package_sha256 || ''">{{ stagedTrust.package_sha256 || '—' }}</dd>
+          <dt>Required publisher permissions</dt><dd class="mono">{{ stagedTrust.required_permissions?.length ? stagedTrust.required_permissions.join(', ') : 'none' }}</dd>
+          <dt>Approved publisher permissions</dt><dd class="mono">{{ stagedTrust.approved_permissions?.length ? stagedTrust.approved_permissions.join(', ') : 'none / not applicable' }}</dd>
+        </dl>
       </div>
       <div class="state-inline mt" :class="plan?.valid ? '' : 'warning'"><b>{{ plan?.valid ? 'Dependency plan resolved.' : 'Installation blocked.' }}</b> {{ plan?.valid ? 'Required dependency sequence is enforced. Independent packages may be reordered.' : 'Resolve the dependency/version problems before installation.' }}</div><div v-if="staged.source" class="state-inline mt"><b>Online source:</b> {{ staged.source.repository_name }} <span class="mono">· {{ staged.source.repository_trust }} · {{ staged.source.package_sha256.slice(0,12) }}…</span></div>
       <div v-if="queueWarning" class="state-inline warning mt"><b>Order not changed.</b> {{ queueWarning }}</div>
@@ -758,7 +825,7 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
 
   <div v-if="loading" class="callout mono">Loading Module Management v2 catalog…</div>
   <div v-else class="module-layout"><div><div class="toolbar"><label class="compact-input"><input v-model="query" placeholder="Search modules…"></label><span class="muted mono">{{ filtered.length }} shown</span><span class="spacer"></span><button class="btn sm" @click="refresh(selectedId)">Refresh</button></div><div class="tablewrap"><table><thead><tr><th>Module</th><th>Version</th><th>Runtime</th><th>Visibility</th><th>Dependencies</th><th>Dependants</th><th>UI Load</th><th>Status</th></tr></thead><tbody><tr v-for="item in filtered" :key="item.id" class="clickrow" :class="{selected:selectedId===item.id}" @click="selectedId=item.id"><td><b>{{ item.id }}</b><span v-if="item.protected" class="sub">protected</span></td><td class="mono">{{ item.extension_version||'—' }}</td><td><span class="pill" :class="item.enabled?'ok':'warn'">{{ item.enabled?'enabled':'disabled' }}</span></td><td><span class="pill" :class="item.visible!==false?'ok':''">{{ item.visible!==false?'visible':'hidden' }}</span></td><td class="mono">{{ Object.keys(item.dependencies||{}).length }}</td><td class="mono">{{ item.dependants?.length||0 }}</td><td><span class="pill" :class="{ok:moduleLoadDiagnostic(item).state==='loaded',warn:['skipped','unknown'].includes(moduleLoadDiagnostic(item).state),danger:moduleLoadDiagnostic(item).state==='failed'}">{{ moduleLoadDiagnostic(item).label }}</span></td><td><span class="pill" :class="item.status==='enabled'?'ok':'warn'">{{ item.status }}</span></td></tr></tbody></table></div></div>
-    <aside v-if="selected" class="module-detail card"><div class="cardhead"><div><span class="eyebrow">MODULE DETAIL</span><h3>{{ selected.id }}</h3></div><div class="module-detail-head-actions"><span class="pill" :class="selected.enabled?'ok':'warn'">{{ selected.enabled?'ENABLED':'DISABLED' }}</span><button v-if="canOpenSelected" class="btn primary sm module-open-btn" type="button" @click="openSelectedModule">Open</button></div></div><dl class="kvlist module-kv"><dt>Extension</dt><dd class="mono">v{{ selected.extension_version }}</dd><dt>ReportSet</dt><dd class="mono">v{{ selected.reportset_version }}</dd><dt>Managed</dt><dd>{{ selected.managed?'yes':'no' }}</dd><dt>Navigation</dt><dd>{{ selected.visible!==false?'visible':'hidden' }}</dd><dt>UI load</dt><dd><span class="pill" :class="{ok:selectedLoad.state==='loaded',warn:['skipped','unknown'].includes(selectedLoad.state),danger:selectedLoad.state==='failed'}">{{ selectedLoad.label }}</span></dd><dt>Source</dt><dd class="module-source">{{ selected.source?.repository_name || selected.source?.repository_id || 'local / offline' }}</dd><dt>SHA256</dt><dd class="mono module-source">{{ selected.source?.package_sha256 ? selected.source.package_sha256.slice(0,16)+'…' : '—' }}</dd><dt>Permissions</dt><dd>{{ selected.permission_count||0 }}</dd></dl><div v-if="selectedLoad.state==='failed'" class="state-inline denied module-load-error"><b>Authenticated UI failed to load.</b><code>{{ selectedLoad.detail }}</code><span>Runtime and visibility state are unchanged; fix the module UI package and reload Tec-Tac.</span></div><div v-else-if="selectedLoad.state==='skipped' || selectedLoad.state==='unknown'" class="state-inline warning module-load-error"><b>Authenticated UI {{ selectedLoad.label }}.</b><code>{{ selectedLoad.detail }}</code></div><div class="section-divider">Hard dependencies</div><div v-if="!Object.keys(selected.dependencies||{}).length" class="muted smalltext">None</div><div v-for="(constraint,id) in selected.dependencies" :key="id" class="module-meta"><b>{{ id }}</b><span class="mono">{{ constraint }}</span></div><div class="section-divider">Required by</div><div v-if="!selected.dependants?.length" class="muted smalltext">No installed dependants</div><div v-for="d in selected.dependants" :key="d.id" class="module-meta"><b>{{ d.id }}</b><span class="mono">{{ d.constraint }}</span></div><div v-if="selected.runtime_requirements?.length" class="section-divider">Runtime requirements</div><div v-for="r in selected.runtime_requirements" :key="r.component" class="module-meta"><b>{{ r.component }}</b><span class="mono">{{ r.current||'unknown' }} / {{ r.constraint }} {{ r.satisfied?'✓':'✕' }}</span></div><div v-if="selected.managed" class="module-actions"><button v-if="selected.visible!==false" class="btn" :disabled="!canManage||jobRunning" title="Keep the module active but remove its top-level navigation entry" @click="setVisibility(selected,false)">Hide</button><button v-else class="btn" :disabled="!canManage||jobRunning" title="Restore the module's top-level navigation entry" @click="setVisibility(selected,true)">Show</button><button v-if="selected.enabled" class="btn warnbtn" :disabled="!canManage||jobRunning" @click="ask(selected,'disable')">Disable</button><button v-else class="btn primary" :disabled="!canManage||jobRunning" @click="ask(selected,'enable')">Enable</button><button class="btn danger" :disabled="!canManage||jobRunning" @click="ask(selected,'remove')">Remove</button></div></aside>
+    <aside v-if="selected" class="module-detail card"><div class="cardhead"><div><span class="eyebrow">MODULE DETAIL</span><h3>{{ selected.id }}</h3></div><div class="module-detail-head-actions"><span class="pill" :class="selected.enabled?'ok':'warn'">{{ selected.enabled?'ENABLED':'DISABLED' }}</span><button v-if="canOpenSelected" class="btn primary sm module-open-btn" type="button" @click="openSelectedModule">Open</button></div></div><dl class="kvlist module-kv"><dt>Extension</dt><dd class="mono">v{{ selected.extension_version }}</dd><dt>ReportSet</dt><dd class="mono">v{{ selected.reportset_version }}</dd><dt>Managed</dt><dd>{{ selected.managed?'yes':'no' }}</dd><dt>Navigation</dt><dd>{{ selected.visible!==false?'visible':'hidden' }}</dd><dt>UI load</dt><dd><span class="pill" :class="{ok:selectedLoad.state==='loaded',warn:['skipped','unknown'].includes(selectedLoad.state),danger:selectedLoad.state==='failed'}">{{ selectedLoad.label }}</span></dd><dt>Source</dt><dd class="module-source">{{ selected.source?.repository_name || selected.source?.repository_id || 'local / offline' }}</dd><dt>SHA256</dt><dd class="mono module-source">{{ selected.source?.package_sha256 ? selected.source.package_sha256.slice(0,16)+'…' : '—' }}</dd><dt>Permissions</dt><dd>{{ selected.permission_count||0 }}</dd><template v-if="selected.publisher_trust"><dt>Package trust</dt><dd><span class="pill" :class="selected.publisher_trust.verified&&selected.publisher_trust.trusted?'ok':(selected.publisher_trust.state==='unsigned'?'':'danger')">{{ selected.publisher_trust.verified&&selected.publisher_trust.trusted?'verified':(selected.publisher_trust.state||'unknown') }}</span></dd><dt>Signed by</dt><dd>{{ selected.publisher_trust.publisher_display_name || selected.publisher_trust.publisher_id || '—' }}</dd><dt>Signing key</dt><dd class="mono">{{ selected.publisher_trust.key_id || '—' }}</dd></template></dl><div v-if="selectedLoad.state==='failed'" class="state-inline denied module-load-error"><b>Authenticated UI failed to load.</b><code>{{ selectedLoad.detail }}</code><span>Runtime and visibility state are unchanged; fix the module UI package and reload Tec-Tac.</span></div><div v-else-if="selectedLoad.state==='skipped' || selectedLoad.state==='unknown'" class="state-inline warning module-load-error"><b>Authenticated UI {{ selectedLoad.label }}.</b><code>{{ selectedLoad.detail }}</code></div><div class="section-divider">Hard dependencies</div><div v-if="!Object.keys(selected.dependencies||{}).length" class="muted smalltext">None</div><div v-for="(constraint,id) in selected.dependencies" :key="id" class="module-meta"><b>{{ id }}</b><span class="mono">{{ constraint }}</span></div><div class="section-divider">Required by</div><div v-if="!selected.dependants?.length" class="muted smalltext">No installed dependants</div><div v-for="d in selected.dependants" :key="d.id" class="module-meta"><b>{{ d.id }}</b><span class="mono">{{ d.constraint }}</span></div><div v-if="selected.runtime_requirements?.length" class="section-divider">Runtime requirements</div><div v-for="r in selected.runtime_requirements" :key="r.component" class="module-meta"><b>{{ r.component }}</b><span class="mono">{{ r.current||'unknown' }} / {{ r.constraint }} {{ r.satisfied?'✓':'✕' }}</span></div><div v-if="selected.managed" class="module-actions"><button v-if="selected.visible!==false" class="btn" :disabled="!canManage||jobRunning" title="Keep the module active but remove its top-level navigation entry" @click="setVisibility(selected,false)">Hide</button><button v-else class="btn" :disabled="!canManage||jobRunning" title="Restore the module's top-level navigation entry" @click="setVisibility(selected,true)">Show</button><button v-if="selected.enabled" class="btn warnbtn" :disabled="!canManage||jobRunning" @click="ask(selected,'disable')">Disable</button><button v-else class="btn primary" :disabled="!canManage||jobRunning" @click="ask(selected,'enable')">Enable</button><button class="btn danger" :disabled="!canManage||jobRunning" @click="ask(selected,'remove')">Remove</button></div></aside>
   </div>
 
   </template>
@@ -842,7 +909,7 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
       <div class="tablewrap"><table><thead><tr><th>Time</th><th>Action</th><th>Module(s)</th><th>Requested by</th><th>Status</th><th>Stage</th></tr></thead><tbody>
         <tr v-for="job in jobHistory" :key="job.id" class="clickrow" :class="{selected:historySelectedId===job.id}" @click="historySelectedId=job.id"><td class="mono">{{historyTime(job.created_at)}}</td><td><b>{{job.action}}</b><span v-if="job.replace" class="sub">replacement / upgrade</span></td><td class="mono">{{historyModules(job)}}</td><td>{{job.requested_by||'unknown / legacy'}}</td><td><span class="pill" :class="{ok:job.status==='succeeded',danger:['failed','dispatch_failed'].includes(job.status),warn:!['succeeded','failed','dispatch_failed'].includes(job.status)}">{{job.status}}</span></td><td class="mono">{{job.stage||'—'}}</td></tr>
       </tbody></table></div>
-      <aside v-if="selectedHistory" class="card module-history-detail"><div class="cardhead"><div><span class="eyebrow">LIFECYCLE RECORD</span><h3>{{selectedHistory.action}} · {{historyModules(selectedHistory)}}</h3></div><span class="pill" :class="{ok:selectedHistory.status==='succeeded',danger:['failed','dispatch_failed'].includes(selectedHistory.status),warn:!['succeeded','failed','dispatch_failed'].includes(selectedHistory.status)}">{{selectedHistory.status}}</span></div><dl class="kvlist"><dt>Created</dt><dd class="mono">{{historyTime(selectedHistory.created_at)}}</dd><dt>Started</dt><dd class="mono">{{historyTime(selectedHistory.started_at)}}</dd><dt>Finished</dt><dd class="mono">{{historyTime(selectedHistory.finished_at)}}</dd><dt>Requested by</dt><dd>{{selectedHistory.requested_by||'unknown / legacy'}}</dd><dt>Job ID</dt><dd class="mono">{{selectedHistory.id}}</dd><dt>Package</dt><dd class="mono">{{selectedHistory.package_filename||'—'}}</dd></dl><div v-if="selectedHistory.error" class="auth-error">{{selectedHistory.error}}</div><div v-if="selectedHistory.log_tail?.length" class="section-divider">Log tail</div><pre v-if="selectedHistory.log_tail?.length" class="job-log">{{selectedHistory.log_tail.join('\n')}}</pre></aside>
+      <aside v-if="selectedHistory" class="card module-history-detail"><div class="cardhead"><div><span class="eyebrow">LIFECYCLE RECORD</span><h3>{{selectedHistory.action}} · {{historyModules(selectedHistory)}}</h3></div><span class="pill" :class="{ok:selectedHistory.status==='succeeded',danger:['failed','dispatch_failed'].includes(selectedHistory.status),warn:!['succeeded','failed','dispatch_failed'].includes(selectedHistory.status)}">{{selectedHistory.status}}</span></div><dl class="kvlist"><dt>Created</dt><dd class="mono">{{historyTime(selectedHistory.created_at)}}</dd><dt>Started</dt><dd class="mono">{{historyTime(selectedHistory.started_at)}}</dd><dt>Finished</dt><dd class="mono">{{historyTime(selectedHistory.finished_at)}}</dd><dt>Requested by</dt><dd>{{selectedHistory.requested_by||'unknown / legacy'}}</dd><dt>Job ID</dt><dd class="mono">{{selectedHistory.id}}</dd><dt>Package</dt><dd class="mono">{{selectedHistory.package_filename||'—'}}</dd><template v-if="selectedHistory.publisher_trust"><dt>Package trust</dt><dd><span class="pill" :class="selectedHistory.publisher_trust.verified&&selectedHistory.publisher_trust.trusted?'ok':(selectedHistory.publisher_trust.state==='unsigned'?'':'danger')">{{ selectedHistory.publisher_trust.verified&&selectedHistory.publisher_trust.trusted?'verified':(selectedHistory.publisher_trust.state||'unknown') }}</span></dd><dt>Publisher</dt><dd>{{ selectedHistory.publisher_trust.publisher_display_name || selectedHistory.publisher_trust.publisher_id || '—' }}</dd><dt>Key ID</dt><dd class="mono">{{ selectedHistory.publisher_trust.key_id || '—' }}</dd></template></dl><div v-if="selectedHistory.error" class="auth-error">{{selectedHistory.error}}</div><div v-if="selectedHistory.log_tail?.length" class="section-divider">Log tail</div><pre v-if="selectedHistory.log_tail?.length" class="job-log">{{selectedHistory.log_tail.join('\n')}}</pre></aside>
     </div>
   </template>
 

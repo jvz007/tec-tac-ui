@@ -641,3 +641,16 @@ grep -q 'Continue to reinstall' "${ROOT}/src/views/ModulesView.vue" || fail "mod
 grep -q '@click="requestStageOnline(item)"' "${ROOT}/src/views/ModulesView.vue" || fail "online catalog does not use reinstall confirmation guard"
 grep -q "item.update_available ? 'Download update' : 'Reinstall'" "${ROOT}/src/views/ModulesView.vue" || fail "up-to-date module action is not labelled Reinstall"
 printf '[TEST] PASS same-version module reinstall confirmation\n'
+
+# 0.12.10 module package signature intake and trust visibility
+grep -q "body.append('signature',signature)" "${ROOT}/src/modules.js" || fail "module signature sidecar is not sent to Core"
+grep -q "body.append('metadata',metadata)" "${ROOT}/src/modules.js" || fail "module release metadata sidecar is not sent to Core"
+grep -q "function intakeFileType" "${ROOT}/src/views/ModulesView.vue" || fail "module package sidecar classifier missing"
+grep -q "stagedTrust = computed" "${ROOT}/src/views/ModulesView.vue" || fail "staged package trust result missing"
+grep -q "PACKAGE TRUST" "${ROOT}/src/views/ModulesView.vue" || fail "package trust inspection surface missing"
+grep -q "Module signing is optional for normal modules at this stage" "${ROOT}/src/views/ModulesView.vue" || fail "unsigned transitional policy is not explicit in Module Manager"
+grep -q "Privileged publisher permissions still require a trusted signature" "${ROOT}/src/views/ModulesView.vue" || fail "privileged unsigned-package boundary is not visible"
+grep -q "publisher_display_name" "${ROOT}/src/views/ModulesView.vue" || fail "publisher identity is not shown after verification"
+grep -q "key_id" "${ROOT}/src/views/ModulesView.vue" || fail "publisher key identity is not shown after verification"
+node --check "${ROOT}/src/modules.js"
+printf '[TEST] PASS module package signature intake and trust visibility\n'

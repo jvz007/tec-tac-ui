@@ -1,4 +1,4 @@
-## 0.12.9
+## 0.12.10
 
 The Online Module Catalog now confirms deliberate same-version module reinstalls before staging the package.
 

@@ -1,6 +1,19 @@
 import { apiFetch } from './api'
 export function listModules(){ return apiFetch('/api/tfd/modules/v2/') }
-export function inspectModulePackages(files){ const body=new FormData(); for(const file of files) body.append('packages',file); return apiFetch('/api/tfd/modules/v2/packages/inspect/',{method:'POST',body}) }
+export function inspectModulePackages(files){
+  const body=new FormData()
+  let signature=null
+  let metadata=null
+  for(const file of files){
+    const name=String(file?.name||'')
+    if(/\.sig$/i.test(name)){ signature=file; continue }
+    if(/\.release(?:\(\d+\))?\.json$/i.test(name)){ metadata=file; continue }
+    body.append('packages',file)
+  }
+  if(signature) body.append('signature',signature)
+  if(metadata) body.append('metadata',metadata)
+  return apiFetch('/api/tfd/modules/v2/packages/inspect/',{method:'POST',body})
+}
 export function installModuleArtifact(uploadId,kind='artifact',order=[]){ return apiFetch(`/api/tfd/modules/v2/packages/${encodeURIComponent(uploadId)}/install/`,{method:'POST',body:JSON.stringify({kind,order})}) }
 export function discardModuleArtifact(uploadId){ return apiFetch(`/api/tfd/modules/v2/packages/${encodeURIComponent(uploadId)}/`,{method:'DELETE'}) }
 export function setModuleEnabled(moduleId,enabled,cascade=false){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/state/`,{method:'POST',body:JSON.stringify({enabled:!!enabled,cascade:!!cascade})}) }
