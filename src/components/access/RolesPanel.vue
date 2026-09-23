@@ -29,7 +29,11 @@ const selectedSummary = computed(() => roles.value.find((r) => r.id === selected
 const permissionCount = computed(() => TACTICAL_PERMISSION_GROUPS.reduce((n,g) => n + g.keys.filter((k) => selected.value?.[k]).length, 0))
 const tacticalPermissionTotal = computed(() => TACTICAL_PERMISSION_GROUPS.reduce((n,g) => n + g.keys.filter((k) => selected.value && k in selected.value).length, 0))
 const extensionPermissionCount = computed(() => Object.values(extensionPermissions.value).filter(Boolean).length)
-const extensionPermissionTotal = computed(() => extensionCatalog.value.reduce((n, ext) => n + (ext.groups || []).reduce((g, group) => g + (group.permissions || []).length, 0), 0))
+const extensionPermissionTotal = computed(() => {
+  const unique = new Set()
+  for (const ext of extensionCatalog.value) for (const group of ext.groups || []) for (const code of group.permissions || []) unique.add(code)
+  return unique.size
+})
 const totalGrantCount = computed(() => permissionCount.value + extensionPermissionCount.value)
 
 const editorTabs = computed(() => [
@@ -57,30 +61,59 @@ const tacticalGroups = computed(() => {
   }).filter((group) => !needle && !enabledOnly.value ? group.total > 0 : group.keys.length > 0)
 })
 
-const extensionGroups = computed(() => {
+const extensionModules = computed(() => {
   const needle = permissionQuery.value.trim().toLowerCase()
   const result = []
   for (const ext of extensionCatalog.value) {
+    const permissionsByCode = new Map()
     for (const group of ext.groups || []) {
-      const allPermissions = group.permissions || []
-      const permissions = allPermissions.filter((code) => {
-        if (enabledOnly.value && !extensionPermissions.value[code]) return false
-        if (!needle) return true
-        return ext.id.toLowerCase().includes(needle) || group.name.toLowerCase().includes(needle) || code.toLowerCase().includes(needle)
-      })
-      if ((!needle && !enabledOnly.value) || permissions.length) {
-        result.push({
-          ext,
-          group,
-          permissions,
-          enabled: allPermissions.filter((code) => extensionPermissions.value[code]).length,
-          total: allPermissions.length,
-        })
+      for (const code of group.permissions || []) {
+        if (!permissionsByCode.has(code)) permissionsByCode.set(code, { code, groups: [] })
+        permissionsByCode.get(code).groups.push(group.name)
       }
+    }
+    const allPermissions = [...permissionsByCode.values()]
+    const permissions = allPermissions.filter((entry) => {
+      if (enabledOnly.value && !extensionPermissions.value[entry.code]) return false
+      if (!needle) return true
+      const label = extensionPermissionLabel(entry.code, ext.id, entry.groups)
+      return ext.id.toLowerCase().includes(needle)
+        || String(ext.version || '').toLowerCase().includes(needle)
+        || entry.groups.some((name) => String(name).toLowerCase().includes(needle))
+        || entry.code.toLowerCase().includes(needle)
+        || label.toLowerCase().includes(needle)
+    })
+    if ((!needle && !enabledOnly.value) || permissions.length) {
+      result.push({
+        ext,
+        permissions,
+        allPermissions,
+        enabled: allPermissions.filter((entry) => extensionPermissions.value[entry.code]).length,
+        total: allPermissions.length,
+      })
     }
   }
   return result
 })
+
+const tacticalColumns = computed(() => splitColumns(tacticalGroups.value))
+const extensionColumns = computed(() => splitColumns(extensionModules.value))
+
+function splitColumns(items) {
+  const midpoint = Math.ceil(items.length / 2)
+  return [items.slice(0, midpoint), items.slice(midpoint)]
+}
+
+function extensionPermissionLabel(code, moduleId, groups = []) {
+  let tail = String(code || '')
+  const prefix = `${moduleId}.`
+  if (tail.startsWith(prefix)) tail = tail.slice(prefix.length)
+  const bits = tail.split('.').filter(Boolean).map((part) => part.replace(/[-_]/g, ' '))
+  let action = bits.join(' ') || String(groups[0] || 'permission').replace(/[-_]/g, ' ')
+  if (bits.length === 1 && ['view', 'read', 'list'].includes(bits[0])) action = 'read'
+  if (bits.length === 1 && bits[0] === 'manage') action = 'manage'
+  return `${action} — ${moduleId}`
+}
 
 function snapshot() {
   if (!selected.value) return ''
@@ -212,8 +245,18 @@ async function removeRole() {
 }
 
 function setGroup(group, value) { for (const key of group.keys) if (key in selected.value) selected.value[key] = value }
-function setExtensionGroup(group, value) { for (const code of group.permissions || []) extensionPermissions.value[code] = value }
+function setExtensionModule(entry, value) { for (const item of entry.allPermissions || []) extensionPermissions.value[item.code] = value }
 function toggleGroup(name) { collapsedGroups.value = { ...collapsedGroups.value, [name]: !collapsedGroups.value[name] } }
+function groupKeysForCurrentTab() {
+  if (editorTab.value === 'tactical') return tacticalGroups.value.map((group) => `tactical:${group.name}`)
+  if (editorTab.value === 'extensions') return extensionModules.value.map((entry) => `extension:${entry.ext.id}`)
+  return []
+}
+function setAllGroupsCollapsed(value) {
+  const next = { ...collapsedGroups.value }
+  for (const key of groupKeysForCurrentTab()) next[key] = value
+  collapsedGroups.value = next
+}
 function setEditorTab(id) { editorTab.value = id; permissionQuery.value = ''; enabledOnly.value = false }
 function beforeUnload(event) { if (!dirty.value) return; event.preventDefault(); event.returnValue = '' }
 
@@ -288,38 +331,43 @@ onBeforeUnmount(() => { window.removeEventListener('beforeunload', beforeUnload)
           <div class="permission-toolbar card">
             <label class="permission-search"><span class="sr-only">Search permissions</span><input v-model="permissionQuery" placeholder="Search permissions…" /></label>
             <label class="permission-filter"><input v-model="enabledOnly" type="checkbox" /> Enabled only</label>
+            <div class="permission-fold-actions"><button class="textbtn" type="button" @click="setAllGroupsCollapsed(false)">Expand all</button><button class="textbtn" type="button" @click="setAllGroupsCollapsed(true)">Collapse all</button></div>
             <span class="spacer"></span>
             <span class="permission-summary mono" v-if="editorTab === 'tactical'">{{ permissionCount }}/{{ tacticalPermissionTotal }} enabled</span>
             <span class="permission-summary mono" v-else>{{ extensionPermissionCount }}/{{ extensionPermissionTotal }} enabled</span>
           </div>
 
-          <div v-if="editorTab === 'tactical'" class="permission-stack">
-            <article v-for="group in tacticalGroups" :key="group.name" class="card permission-section">
-              <button class="permission-section-head" @click="toggleGroup(`tactical:${group.name}`)">
-                <span class="permission-section-title"><span class="chevron" :class="{ collapsed: collapsedGroups[`tactical:${group.name}`] }">⌄</span><b>{{ group.name }}</b></span>
-                <span class="permission-section-meta"><span class="mono">{{ group.enabled }} / {{ group.total }}</span><span class="permission-meter"><i :style="{ width: `${group.total ? (group.enabled / group.total) * 100 : 0}%` }"></i></span></span>
-              </button>
-              <div v-if="!collapsedGroups[`tactical:${group.name}`]" class="permission-section-body">
-                <div class="permission-section-actions"><button class="textbtn" :disabled="capabilityResolved && !canManage" @click="setGroup(group,true)">Select all</button><button class="textbtn" :disabled="capabilityResolved && !canManage" @click="setGroup(group,false)">Clear</button></div>
-                <label v-for="key in group.keys" :key="key" class="permission-row"><input v-model="selected[key]" type="checkbox" :disabled="capabilityResolved && !canManage" /><span class="permission-copy"><b>{{ permissionLabel(key) }}</b><code>{{ key }}</code></span></label>
-              </div>
-            </article>
-            <div v-if="!tacticalGroups.length" class="card empty">No Tactical permissions match this filter.</div>
+          <div v-if="editorTab === 'tactical'" class="permission-columns">
+            <div v-for="(column, columnIndex) in tacticalColumns" :key="`tactical-column:${columnIndex}`" class="permission-column">
+              <article v-for="group in column" :key="group.name" class="card permission-section">
+                <button class="permission-section-head" @click="toggleGroup(`tactical:${group.name}`)">
+                  <span class="permission-section-title"><span class="chevron" :class="{ collapsed: collapsedGroups[`tactical:${group.name}`] }">⌄</span><b>{{ group.name }}</b></span>
+                  <span class="permission-section-meta"><span class="mono">{{ group.enabled }} / {{ group.total }}</span><span class="permission-meter"><i :style="{ width: `${group.total ? (group.enabled / group.total) * 100 : 0}%` }"></i></span></span>
+                </button>
+                <div v-if="!collapsedGroups[`tactical:${group.name}`]" class="permission-section-body">
+                  <div class="permission-section-actions"><button class="textbtn" :disabled="capabilityResolved && !canManage" @click="setGroup(group,true)">Select all</button><button class="textbtn" :disabled="capabilityResolved && !canManage" @click="setGroup(group,false)">Clear</button></div>
+                  <label v-for="key in group.keys" :key="key" class="permission-row"><input v-model="selected[key]" type="checkbox" :disabled="capabilityResolved && !canManage" /><span class="permission-copy"><b>{{ permissionLabel(key) }}</b><code>{{ key }}</code></span></label>
+                </div>
+              </article>
+            </div>
+            <div v-if="!tacticalGroups.length" class="card empty permission-empty-span">No Tactical permissions match this filter.</div>
           </div>
 
-          <div v-else class="permission-stack">
-            <div v-if="!extensionCatalog.length" class="card empty">No first-class Tec-Tac extension permission groups are registered yet.</div>
-            <article v-for="entry in extensionGroups" :key="`${entry.ext.id}:${entry.group.name}`" class="card permission-section extension-permission-section">
-              <button class="permission-section-head" @click="toggleGroup(`extension:${entry.ext.id}:${entry.group.name}`)">
-                <span class="permission-section-title"><span class="chevron" :class="{ collapsed: collapsedGroups[`extension:${entry.ext.id}:${entry.group.name}`] }">⌄</span><span><b>{{ entry.group.name }}</b><small>{{ entry.ext.id }} · v{{ entry.ext.version }}</small></span></span>
-                <span class="permission-section-meta"><span class="mono">{{ entry.enabled }} / {{ entry.total }}</span><span class="permission-meter"><i :style="{ width: `${entry.total ? (entry.enabled / entry.total) * 100 : 0}%` }"></i></span></span>
-              </button>
-              <div v-if="!collapsedGroups[`extension:${entry.ext.id}:${entry.group.name}`]" class="permission-section-body">
-                <div class="permission-section-actions"><button class="textbtn" :disabled="selected.is_superuser || (capabilityResolved && !canManage)" @click="setExtensionGroup(entry.group,true)">Select all</button><button class="textbtn" :disabled="selected.is_superuser || (capabilityResolved && !canManage)" @click="setExtensionGroup(entry.group,false)">Clear</button></div>
-                <label v-for="code in entry.permissions" :key="code" class="permission-row"><input v-model="extensionPermissions[code]" type="checkbox" :disabled="selected.is_superuser || (capabilityResolved && !canManage)" /><span class="permission-copy"><b>{{ code.split('.').slice(-1)[0].replace(/[-_]/g,' ') }}</b><code>{{ code }}</code></span></label>
-              </div>
-            </article>
-            <div v-if="extensionCatalog.length && !extensionGroups.length" class="card empty">No extension permissions match this filter.</div>
+          <div v-else class="permission-columns">
+            <div v-if="!extensionCatalog.length" class="card empty permission-empty-span">No first-class Tec-Tac extension permission groups are registered yet.</div>
+            <div v-for="(column, columnIndex) in extensionColumns" :key="`extension-column:${columnIndex}`" class="permission-column">
+              <article v-for="entry in column" :key="entry.ext.id" class="card permission-section extension-permission-section">
+                <button class="permission-section-head" @click="toggleGroup(`extension:${entry.ext.id}`)">
+                  <span class="permission-section-title"><span class="chevron" :class="{ collapsed: collapsedGroups[`extension:${entry.ext.id}`] }">⌄</span><span><b>{{ entry.ext.id }}</b><small>v{{ entry.ext.version }}</small></span></span>
+                  <span class="permission-section-meta"><span class="mono">{{ entry.enabled }} / {{ entry.total }}</span><span class="permission-meter"><i :style="{ width: `${entry.total ? (entry.enabled / entry.total) * 100 : 0}%` }"></i></span></span>
+                </button>
+                <div v-if="!collapsedGroups[`extension:${entry.ext.id}`]" class="permission-section-body">
+                  <div class="permission-section-actions"><button class="textbtn" :disabled="selected.is_superuser || (capabilityResolved && !canManage)" @click="setExtensionModule(entry,true)">Select all</button><button class="textbtn" :disabled="selected.is_superuser || (capabilityResolved && !canManage)" @click="setExtensionModule(entry,false)">Clear</button></div>
+                  <label v-for="item in entry.permissions" :key="item.code" class="permission-row compact-permission-row" :title="item.code"><input v-model="extensionPermissions[item.code]" type="checkbox" :disabled="selected.is_superuser || (capabilityResolved && !canManage)" /><span class="permission-copy permission-copy-inline"><b>{{ extensionPermissionLabel(item.code, entry.ext.id, item.groups) }}</b></span></label>
+                </div>
+              </article>
+            </div>
+            <div v-if="extensionCatalog.length && !extensionModules.length" class="card empty permission-empty-span">No extension permissions match this filter.</div>
           </div>
         </template>
 

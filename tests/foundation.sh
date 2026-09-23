@@ -581,3 +581,15 @@ node --check "${ROOT}/src/help.js"
 node --check "${ROOT}/src/help/markdown.js"
 node --check "${ROOT}/src/help/core-articles.js"
 echo "[TEST] PASS Core Help and Knowledge Base contract"
+
+
+# 0.12.5 RBAC permission editor workflow
+grep -q "const extensionModules = computed" "${ROOT}/src/components/access/RolesPanel.vue" || fail "extension permissions are not grouped by module"
+grep -q "extensionPermissionLabel" "${ROOT}/src/components/access/RolesPanel.vue" || fail "compact extension permission labels missing"
+grep -q "Expand all" "${ROOT}/src/components/access/RolesPanel.vue" || fail "RBAC Expand all control missing"
+grep -q "Collapse all" "${ROOT}/src/components/access/RolesPanel.vue" || fail "RBAC Collapse all control missing"
+grep -q "class=\"permission-columns\"" "${ROOT}/src/components/access/RolesPanel.vue" || fail "independent permission columns missing"
+grep -q "permission-column" "${ROOT}/src/styles.css" || fail "independent permission column styling missing"
+grep -q "permission-copy-inline" "${ROOT}/src/styles.css" || fail "compact extension permission row styling missing"
+grep -q 'role-action-state span{color:var(--dim);font-size:calc(12.1px' "${ROOT}/src/styles.css" || fail "role action-bar text size was not increased"
+echo "[TEST] PASS RBAC permission editor workflow"

@@ -1,3 +1,5 @@
+Version **0.12.5** improves the role permission editor with module-grouped extension permissions, independent collapsible columns, bulk expand/collapse controls, compact permission labels, and more readable sticky save-state text.
+
 Version **0.12.3** adds a server-backed per-user Menu Layout page for category/item ordering and a direct **Open** action on enabled Module Manager details. Requires Framework 1.15.28 for persisted section ordering.
 
 Version **0.12.2** fixes the Scheduler workspace so schedule and run-history tables use the full available page width when the editor is closed.
