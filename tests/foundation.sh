@@ -593,3 +593,16 @@ grep -q "permission-column" "${ROOT}/src/styles.css" || fail "independent permis
 grep -q "permission-copy-inline" "${ROOT}/src/styles.css" || fail "compact extension permission row styling missing"
 grep -q 'role-action-state span{color:var(--dim);font-size:calc(12.1px' "${ROOT}/src/styles.css" || fail "role action-bar text size was not increased"
 echo "[TEST] PASS RBAC permission editor workflow"
+
+# 0.12.6 solid Core notification toast surface
+TOAST_CSS="${ROOT}/src/styles.css"
+grep -Fq '.toast-card{pointer-events:auto;display:grid;grid-template-columns:30px minmax(0,1fr) 28px;gap:10px;align-items:start;padding:12px;border:1px solid var(--line);border-left-width:4px;border-radius:10px;background:var(--surface);' "${TOAST_CSS}" || fail "toast card does not use the opaque Core surface token"
+grep -Fq '.toast-info{border-left-color:var(--accent)}' "${TOAST_CSS}" || fail "info toast semantic edge missing"
+grep -Fq '.toast-success{border-left-color:var(--ok)}' "${TOAST_CSS}" || fail "success toast semantic edge missing"
+grep -Fq '.toast-warning{border-left-color:var(--warn)}' "${TOAST_CSS}" || fail "warning toast semantic edge missing"
+grep -Fq '.toast-error{border-left-color:var(--danger)}' "${TOAST_CSS}" || fail "error toast semantic edge missing"
+if grep -Fq 'var(--panel)' "${TOAST_CSS}"; then fail "undefined --panel token remains in Core toast styling"; fi
+for token in surface line accent ok warn danger; do
+  grep -Eq -- "--${token}:" "${TOAST_CSS}" || fail "theme token --${token} is not defined"
+done
+echo "[TEST] PASS solid Core notification toast surface"
