@@ -7,7 +7,7 @@ Tec-Tac is the operational console layered over Tactical RMM. Use the left navig
 - **Workspace** contains operator workspaces such as Dashboards.
 - **Operations** contains day-to-day operational tools such as Schedules.
 - **Extensions** contains installed module pages.
-- **Administration** contains Modules, Access, Scheduler Configuration, System Updates, Storage & Housekeeping and Public Contracts.
+- **Administration** contains Modules, Access, Scheduler Configuration, System Updates, Storage & Housekeeping, Troubleshooting & Diagnostics and Public Contracts.
 
 Use the navigation search to quickly find a page. Press **Escape** while the search field is focused to clear it.
 

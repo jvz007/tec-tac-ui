@@ -17,6 +17,7 @@ export function coreNavigation(context = {}) {
     { label: 'Scheduler Configuration', icon: '◷', to: '/system/scheduler', section: 'Administration', visible: capabilities.manage_schedules === true || superuser, owner: 'core' },
     { label: 'System Updates', icon: '⇧', to: '/system/updates', section: 'Administration', visible: capabilities.manage_modules === true || superuser, owner: 'core' },
     { label: 'Storage & Housekeeping', icon: '⌫', to: '/system/storage', section: 'Administration', visible: capabilities.manage_modules === true || superuser, owner: 'core' },
+    { label: 'Troubleshooting & Diagnostics', icon: '◇', to: '/system/diagnostics', section: 'Administration', visible: capabilities.manage_modules === true || superuser, owner: 'core' },
     { label: 'Public Contracts', icon: '⌘', to: '/contracts', section: 'Administration', visible: capabilities.manage_modules === true || superuser, owner: 'core' },
   ]
 }

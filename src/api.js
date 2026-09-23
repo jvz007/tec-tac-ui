@@ -465,3 +465,9 @@ export async function runStorageHousekeeping({ dryRun = true, categories = null 
     body: JSON.stringify({ dry_run: Boolean(dryRun), categories }),
   })
 }
+
+// Tec-Tac Core troubleshooting diagnostics
+export async function getSystemDiagnostics({ liveCapabilities = false } = {}) {
+  const query = liveCapabilities ? '?live_capabilities=1' : ''
+  return apiFetch(`/api/tfd/system/diagnostics/${query}`)
+}

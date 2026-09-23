@@ -620,3 +620,14 @@ grep -q "audit_service_unavailable" "${ROOT}/src/audit.js" || fail "non-fatal au
 grep -q "Core audit write contract" "${ROOT}/src/views/ContractsView.vue" || fail "Public Contracts audit section missing"
 node --check "${ROOT}/src/audit.js"
 echo "[TEST] PASS Core-owned audit write runtime"
+
+# 0.12.8 Core Troubleshooting & Diagnostics
+[[ -f "${ROOT}/src/views/DiagnosticsView.vue" ]] || fail "diagnostics view missing"
+grep -q "'/system/diagnostics'" "${ROOT}/src/router.js" || fail "diagnostics route missing"
+grep -q "Troubleshooting & Diagnostics" "${ROOT}/src/core-navigation.js" || fail "diagnostics navigation missing"
+grep -q "getSystemDiagnostics" "${ROOT}/src/api.js" || fail "diagnostics API helper missing"
+grep -q "live_capabilities=1" "${ROOT}/src/api.js" || fail "live capability diagnostics switch missing"
+grep -q "core.troubleshooting-diagnostics" "${ROOT}/src/help/core-articles.js" || fail "diagnostics help registration missing"
+grep -q "core.troubleshooting-migrations" "${ROOT}/src/help/core-articles.js" || fail "migration troubleshooting help registration missing"
+grep -q "diagnostic-section-head" "${ROOT}/src/styles.css" || fail "diagnostics shared styling missing"
+printf '[TEST] PASS diagnostics UI foundation\n'
