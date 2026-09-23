@@ -135,7 +135,7 @@ grep -q 'Sync repositories' "${ROOT}/src/views/ModulesView.vue" || fail "reposit
 # 0.8.0 scheduler UI
 grep -q "'/api/tfd/scheduler/actions/'" "${ROOT}/src/scheduler.js" || fail "scheduler actions API missing"
 grep -q "'/schedules'" "${ROOT}/src/router.js" || fail "scheduler route missing"
-grep -q "FRAMEWORK SCHEDULER" "${ROOT}/src/views/SchedulesView.vue" || fail "scheduler workspace missing"
+grep -q "OPERATIONS / CORE SCHEDULER" "${ROOT}/src/views/SchedulesView.vue" || fail "scheduler workspace missing"
 grep -q "Run now" "${ROOT}/src/views/SchedulesView.vue" || fail "scheduler run-now UI missing"
 node --check "${ROOT}/src/scheduler.js"
 
@@ -167,7 +167,8 @@ node "${ROOT}/tests/session-expiry.mjs"
 # 0.10.1 scheduler hardening UI
 grep -q "getSchedulerConfig" "${ROOT}/src/scheduler.js" || fail "scheduler config API missing"
 grep -q "runSchedulerSelfTest" "${ROOT}/src/scheduler.js" || fail "scheduler self-test API missing"
-grep -q "Configuration & diagnostics" "${ROOT}/src/views/SchedulesView.vue" || fail "scheduler configuration surface missing"
+[[ -f "${ROOT}/src/views/SchedulerSettingsView.vue" ]] || fail "Scheduler administration view missing"
+grep -q "Scheduler Configuration" "${ROOT}/src/views/SchedulerSettingsView.vue" || fail "scheduler configuration surface missing"
 grep -q "Type the schedule name to confirm" "${ROOT}/src/views/SchedulesView.vue" || fail "dangerous Run now confirmation missing"
 
 # 0.10.1 persistent navigation collapse
@@ -510,3 +511,22 @@ grep -q 'class="rail-search-clear"' "${ROOT}/src/App.vue" || fail "navigation se
 grep -q "@keydown.esc.stop.prevent=\"query=''\"" "${ROOT}/src/App.vue" || fail "Escape-to-clear navigation search missing"
 node --check "${ROOT}/src/resource-views.js"
 echo "[TEST] PASS resource view contributions and navigation search clear"
+
+
+# 0.12.1 Scheduler UI separation + canonical module look and feel
+[[ -f "${ROOT}/src/views/SchedulerSettingsView.vue" ]] || fail "Scheduler Configuration page missing"
+[[ -f "${ROOT}/docs/ui-design-standards.md" ]] || fail "canonical UI design standards missing"
+grep -q "path: '/system/scheduler'" "${ROOT}/src/router.js" || fail "Scheduler Configuration route missing"
+grep -q "Scheduler Configuration.*Administration" "${ROOT}/src/App.vue" || fail "Scheduler Configuration administration navigation missing"
+grep -q "Run history" "${ROOT}/src/views/SchedulesView.vue" || fail "Scheduler run-history workspace tab missing"
+grep -q "Filter schedules" "${ROOT}/src/views/SchedulesView.vue" || fail "Scheduler filter UX missing"
+grep -q "deleteConfirm" "${ROOT}/src/views/SchedulesView.vue" || fail "Scheduler delete confirmation modal missing"
+! grep -q "getSchedulerConfig" "${ROOT}/src/views/SchedulesView.vue" || fail "operational Scheduler view must not load configuration"
+! grep -q "getSchedulerHealth" "${ROOT}/src/views/SchedulesView.vue" || fail "operational Scheduler view must not load diagnostics"
+grep -q "getSchedulerConfig" "${ROOT}/src/views/SchedulerSettingsView.vue" || fail "Scheduler Configuration does not load config"
+grep -q "getSchedulerHealth" "${ROOT}/src/views/SchedulerSettingsView.vue" || fail "Scheduler Configuration does not load health"
+grep -q "Do not use .*window.alert.*window.confirm.*window.prompt" "${ROOT}/docs/ui-design-standards.md" || fail "module native-dialog prohibition missing"
+grep -q "Data-display dialog" "${ROOT}/docs/ui-design-standards.md" || fail "data-display dialog standard missing"
+grep -q "Input/action dialog" "${ROOT}/docs/ui-design-standards.md" || fail "input/action dialog standard missing"
+grep -q "Use the Core .*subtabs.* visual pattern" "${ROOT}/docs/ui-design-standards.md" || fail "tab visual contract missing"
+echo "[TEST] PASS Scheduler separation and canonical module UI standards"

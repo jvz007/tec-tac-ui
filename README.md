@@ -1,3 +1,5 @@
+Version **0.12.1** separates Scheduler administration from the operational schedule workspace, refreshes Scheduler UX, and establishes the canonical Tec-Tac module look-and-feel contract in `docs/ui-design-standards.md`.
+
 Version **0.12.0** adds Core-owned cross-module `resourceViews` contributions and a one-click/Escape navigation search clear control. See `docs/module-resource-views.md`.
 
 Version **0.11.18** adds the read-only `modules` runtime service for cheap optional-integration discovery without repeated API/Public Contracts checks. See `docs/module-status.md`.

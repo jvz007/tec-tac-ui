@@ -5,6 +5,7 @@ import AccessView from './views/AccessView.vue'
 import SystemUpdatesView from './views/SystemUpdatesView.vue'
 import StorageView from './views/StorageView.vue'
 import SchedulesView from './views/SchedulesView.vue'
+import SchedulerSettingsView from './views/SchedulerSettingsView.vue'
 import ContractsView from './views/ContractsView.vue'
 import PublicPendingView from './views/PublicPendingView.vue'
 import PreferencesView from './views/PreferencesView.vue'
@@ -18,6 +19,7 @@ export const router = createRouter({
     { path: '/dashboards/:dashboardId', name: 'dashboard-detail', component: DashboardView, meta: { title: 'Dashboard' } },
     { path: '/modules', name: 'modules', component: ModulesView, meta: { title: 'Modules' } },
     { path: '/schedules', name: 'schedules', component: SchedulesView, meta: { title: 'Schedules' } },
+    { path: '/system/scheduler', name: 'scheduler-settings', component: SchedulerSettingsView, meta: { title: 'Scheduler Configuration' } },
     { path: '/access', name: 'access', component: AccessView, meta: { title: 'Access' } },
     { path: '/system/updates', name: 'system-updates', component: SystemUpdatesView, meta: { title: 'System Updates' } },
     { path: '/system/storage', name: 'system-storage', component: StorageView, meta: { title: 'Storage & Housekeeping' } },
