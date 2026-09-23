@@ -123,6 +123,7 @@ export async function loadUiModules(runtime, modules) {
     let moduleDashboardWidgets = null
     let moduleQuickActions = null
     let moduleNotifications = null
+    let moduleHelp = null
     try {
       const imported = await import(/* @vite-ignore */ descriptor.entry)
       const plugin = imported.default || imported
@@ -130,12 +131,16 @@ export async function loadUiModules(runtime, modules) {
         throw new Error('module does not export register(context)')
       }
       const addNavigation = (item) => {
-        if (descriptor.visible === false) return
-        // Package/module navigation may declare a default visibility, but the
-        // resolved descriptor is authoritative after installation. Strip any
-        // stale module-supplied visibility flag so an operator Show override
-        // cannot be hidden again by register().
-        runtime.addNavigation({ ...item, visible: true })
+        // Keep the contribution registered even when globally hidden so Core
+        // surfaces such as Module Manager can still deep-link to an enabled
+        // module. The shell remains authoritative for whether it is shown in
+        // the left navigation.
+        runtime.addNavigation({
+          ...item,
+          visible: descriptor.visible !== false && item?.visible !== false,
+          moduleId: descriptor.id,
+          owner: descriptor.id,
+        })
       }
       const moduleRouter = guardedModuleRouter(runtime.router, descriptor, routeOwners)
       moduleContextActions = runtime.contextActions?.forModule(descriptor.id) || null
@@ -145,6 +150,7 @@ export async function loadUiModules(runtime, modules) {
       moduleDashboardWidgets = runtime.dashboardWidgets?.forModule(descriptor.id) || null
       moduleQuickActions = runtime.quickActions?.forModule(descriptor.id) || null
       moduleNotifications = runtime.notifications?.forModule(descriptor.id) || null
+      moduleHelp = runtime.help?.forModule(descriptor.id, descriptor) || null
       await plugin.register({
         ...runtime,
         router: moduleRouter,
@@ -158,6 +164,7 @@ export async function loadUiModules(runtime, modules) {
         dashboardWidgets: moduleDashboardWidgets,
         quickActions: moduleQuickActions,
         notifications: moduleNotifications,
+        help: moduleHelp,
       })
       loaded.push(descriptor.id)
     } catch (error) {
@@ -168,6 +175,7 @@ export async function loadUiModules(runtime, modules) {
       try { moduleDashboardWidgets?.clear?.() } catch {}
       try { moduleQuickActions?.clear?.() } catch {}
       try { moduleNotifications?.clear?.() } catch {}
+      try { moduleHelp?.clear?.() } catch {}
       failed.push({ id: descriptor.id, message: error?.message || String(error) })
     }
   }

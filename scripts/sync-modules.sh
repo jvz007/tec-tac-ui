@@ -72,6 +72,9 @@ if extensions_root.is_dir():
     src=resolve(entry,"UI entry"); pub=resolve(public_entry,"Public UI entry")
     if src and pub and src.parent != pub.parent: raise SystemExit(f"authenticated/public entries must share a bundle directory in {manifest}")
     bundle=(src or pub).parent; dst=out_root/mid; shutil.copytree(bundle,dst)
+    help_dir=extension/"help"
+    if help_dir.is_dir():
+      shutil.copytree(help_dir,dst/"help",dirs_exist_ok=True)
     def cache_key(path):
       if not path: return None
       digest=hashlib.sha256()

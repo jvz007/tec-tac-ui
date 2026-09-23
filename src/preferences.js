@@ -5,6 +5,7 @@ export const DEFAULT_USER_PREFERENCES = Object.freeze({
   appearance: { theme: 'dark', font_scale: 1 },
   navigation: {
     order: {},
+    section_order: [],
     favorites: [],
     collapsed_sections: {},
     rail_collapsed: false,
@@ -32,6 +33,7 @@ function normalize(value = {}) {
     },
     navigation: {
       order: object(navigation.order),
+      section_order: Array.isArray(navigation.section_order) ? [...new Set(navigation.section_order.filter((item) => typeof item === 'string' && item))] : [],
       favorites: Array.isArray(navigation.favorites) ? [...new Set(navigation.favorites.filter((item) => typeof item === 'string' && item))] : [],
       collapsed_sections: Object.fromEntries(Object.entries(object(navigation.collapsed_sections)).filter(([, v]) => typeof v === 'boolean')),
       rail_collapsed: navigation.rail_collapsed === true,
@@ -54,6 +56,7 @@ function legacySnapshot(username) {
     appearance: { theme: localStorage.getItem('tec_tac_theme') || 'dark', font_scale: Number(localStorage.getItem('tec_tac_font_scale') || '1') },
     navigation: {
       order: object(nav.order),
+      section_order: Array.isArray(nav.section_order) ? nav.section_order : [],
       favorites: Array.isArray(nav.favorites) ? nav.favorites : [],
       collapsed_sections: object(collapsed),
       rail_collapsed: localStorage.getItem('tec_tac_nav_rail_collapsed') === '1',
@@ -79,6 +82,7 @@ function writeLegacyCache(preferences, username) {
   if (username) {
     localStorage.setItem(`tec_tac_nav_preferences:${username}`, JSON.stringify({
       order: preferences.navigation.order,
+      section_order: preferences.navigation.section_order,
       favorites: preferences.navigation.favorites,
     }))
   }

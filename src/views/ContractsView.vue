@@ -8,6 +8,7 @@ const resourceViews=inject('tecTacResourceViews', null)
 const codeEditor=inject('tecTacCodeEditor', null)
 const dashboardWidgets=inject('tecTacDashboardWidgets', null)
 const quickActions=inject('tecTacQuickActions', null)
+const help=inject('tecTacHelp', null)
 const modules=inject('tecTacModules', null)
 const data=ref(null), loading=ref(true), error=ref(''), query=ref(''), exporting=ref('')
 const moduleStatusRows=computed(()=>modules?.list?.() || [])
@@ -24,6 +25,7 @@ const uiResourceViews=computed(()=>(resourceViews?.snapshot?.()||[]).filter(x=>m
 const editorContract=computed(()=>codeEditor?.snapshot?.()||{languages:[],defaults:{},providers:[],theme:'—'})
 const uiDashboardWidgets=computed(()=>(dashboardWidgets?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.title,x.category,x.permission,x.description)))
 const uiQuickActions=computed(()=>(quickActions?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.label,x.group,x.permission,x.description)))
+const uiHelpArticles=computed(()=>(help?.snapshot?.()||[]).filter(x=>match(x.id,x.provider,x.title,x.category,x.summary,(x.routes||[]).join(' '),(x.keywords||[]).join(' '))))
 async function refresh(){loading.value=true;error.value='';try{data.value=await getDeveloperContracts()}catch(e){error.value=e.message||'Unable to load developer contracts.'}finally{loading.value=false}}
 async function exportFile(format){exporting.value=format;error.value='';try{await downloadDeveloperContracts(format)}catch(e){error.value=e.message||'Unable to export developer contracts.'}finally{exporting.value=''}}
 function stateClass(state){return state==='available'?'ok':state==='unhealthy'||state==='version-incompatible'?'danger':state&&state!=='available'?'warn':''}
@@ -91,6 +93,10 @@ onMounted(refresh)
     <div class="section-divider">Dashboard widget contributions</div>
     <div class="callout contract-rules"><b>Dashboard composition boundary</b><span>Core owns dashboard persistence, visibility and layout. Authenticated modules contribute permitted widgets through the module-scoped <span class="mono">dashboardWidgets</span> registry.</span></div>
     <div class="tablewrap"><table><thead><tr><th>Widget</th><th>Provider</th><th>Category</th><th>Default size</th><th>Permission</th></tr></thead><tbody><tr v-for="item in uiDashboardWidgets" :key="item.id"><td><b class="mono">{{item.id}}</b><span class="sub">{{item.title}} · {{item.description||'No description'}}</span></td><td class="mono">{{item.provider}}</td><td>{{item.category}}</td><td class="mono">{{item.defaultSize.w}}×{{item.defaultSize.h}}</td><td class="mono">{{item.permission||'—'}}</td></tr><tr v-if="!uiDashboardWidgets.length"><td colspan="5" class="muted">No dashboard widgets are currently registered or match the current search.</td></tr></tbody></table></div>
+
+    <div class="section-divider">Help article contributions</div>
+    <div class="callout contract-rules"><b>Knowledge boundary</b><span>Core owns the Help and Knowledge Base surfaces. Authenticated modules contribute versioned Markdown articles through the module-scoped <span class="mono">help</span> runtime instead of shipping private help dialogs.</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Article</th><th>Provider</th><th>Category</th><th>Routes</th><th>Source</th><th>State</th></tr></thead><tbody><tr v-for="item in uiHelpArticles" :key="item.id"><td><b>{{item.title}}</b><span class="sub mono">{{item.id}}</span><span v-if="item.summary" class="sub">{{item.summary}}</span></td><td class="mono">{{item.provider}}</td><td>{{item.category}}</td><td class="mono contract-wrap">{{(item.routes||[]).join(', ')||'—'}}</td><td class="mono">{{item.source}}</td><td><span class="pill" :class="item.loadError?'danger':'ok'">{{item.loadError?'load error':(item.loaded?'ready':'lazy')}}</span></td></tr><tr v-if="!uiHelpArticles.length"><td colspan="6" class="muted">No Help articles are currently registered or match the current search.</td></tr></tbody></table></div>
 
     <div class="section-divider">Shared module code editor</div>
     <div class="callout contract-rules"><b>Editor infrastructure boundary</b><span>Authenticated modules consume the Core-owned <span class="mono">codeEditor</span> contract. Monaco and its workers are bundled under <span class="mono">/tec-tac/</span>; modules do not import Monaco, Tactical editor assets or CDN runtimes directly.</span></div>

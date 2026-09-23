@@ -1,3 +1,7 @@
+Version **0.12.3** adds a server-backed per-user Menu Layout page for category/item ordering and a direct **Open** action on enabled Module Manager details. Requires Framework 1.15.28 for persisted section ordering.
+
+Version **0.12.2** fixes the Scheduler workspace so schedule and run-history tables use the full available page width when the editor is closed.
+
 Version **0.12.1** separates Scheduler administration from the operational schedule workspace, refreshes Scheduler UX, and establishes the canonical Tec-Tac module look-and-feel contract in `docs/ui-design-standards.md`.
 
 Version **0.12.0** adds Core-owned cross-module `resourceViews` contributions and a one-click/Escape navigation search clear control. See `docs/module-resource-views.md`.
@@ -491,3 +495,9 @@ The authenticated Core `codeEditor` runtime supports script language IDs `powers
 ## Scheduler structured payloads and Module Manager history (0.11.2)
 
 The Scheduler edits targets/parameters as structured objects with an Advanced JSON fallback. Module Manager includes a persistent History tab backed by Framework lifecycle job records.
+
+## Core Help and Knowledge Base (0.12.4)
+
+Tec-Tac Core owns the authenticated Help experience. The top-bar **?** opens contextual guidance for the current route, while `/help` provides the full searchable Knowledge Base. Core UI/workspace articles ship with the UI version so documentation matches the installed shell.
+
+Authenticated modules receive the module-scoped `help` runtime and may contribute versioned Markdown articles either inline or from a packaged `help/` directory. Modules do not implement separate help drawers or knowledge-base shells. See `docs/module-help.md`.

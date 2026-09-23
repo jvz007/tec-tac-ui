@@ -389,3 +389,15 @@ Before shipping a module UI, confirm:
 ## 20. Change control
 
 This document is part of the public Tec-Tac module UI contract. Shared look-and-feel changes should be made here and in Core styles/components first, then adopted by modules. Module authors should not independently reinterpret these standards for a single module.
+
+## 21. Help and documentation
+
+User-facing Help is a Core-owned surface.
+
+- Use the shared `help` runtime for contextual documentation.
+- Do not create module-specific help drawers, documentation modals or knowledge-base navigation.
+- Every user-facing module page should have at least one route-associated Help article.
+- Use `help.open(articleId)` for field/workflow-specific assistance.
+- Keep developer documentation in repository `docs/`; keep end-user operational guidance in the Help article contract.
+
+See `docs/module-help.md`.

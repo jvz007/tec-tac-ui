@@ -13,6 +13,8 @@ import { createDashboardWidgetRegistry } from './dashboard-widgets'
 import { createQuickActionRegistry } from './quick-actions'
 import { createNotificationService } from './notifications'
 import { createModuleStatusService } from './module-status'
+import { createHelpService } from './help'
+import { registerCoreHelpArticles } from './help/core-articles'
 import { registerCoreDashboardWidgets } from './dashboard-core-widgets'
 import { initializeUserPreferences } from './preferences'
 import './styles.css'
@@ -37,7 +39,9 @@ async function bootstrap() {
   const dashboardWidgets = createDashboardWidgetRegistry({ hasPermission })
   const quickActions = createQuickActionRegistry({ hasPermission })
   const notifications = createNotificationService()
+  const help = createHelpService()
   registerCoreDashboardWidgets(dashboardWidgets, state)
+  registerCoreHelpArticles(help)
 
   app.provide('tecTacState', state)
   app.provide('tecTacNavigation', navigation)
@@ -48,6 +52,7 @@ async function bootstrap() {
   app.provide('tecTacDashboardWidgets', dashboardWidgets)
   app.provide('tecTacQuickActions', quickActions)
   app.provide('tecTacNotifications', notifications)
+  app.provide('tecTacHelp', help)
   app.use(router)
   const initialHashTarget = window.location.hash.startsWith('#/')
     ? window.location.hash.slice(1)
@@ -97,6 +102,7 @@ async function bootstrap() {
         dashboardWidgets,
         quickActions,
         notifications,
+        help,
         modules,
       },
       state.context.modules || staticModules,

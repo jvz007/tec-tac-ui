@@ -20,6 +20,7 @@ watch(() => preferenceState.preferences, (value) => {
 
 const favoriteCount = computed(() => draft.value.navigation?.favorites?.length || 0)
 const orderedSectionCount = computed(() => Object.keys(draft.value.navigation?.order || {}).length)
+const sectionOrderCount = computed(() => draft.value.navigation?.section_order?.length || 0)
 const collapsedCount = computed(() => Object.values(draft.value.navigation?.collapsed_sections || {}).filter(Boolean).length)
 
 async function loadDashboards() {
@@ -90,14 +91,14 @@ onMounted(loadDashboards)
     </section>
 
     <section class="card preference-card">
-      <div class="cardhead"><div><span class="eyebrow">NAVIGATION</span><h3>Menu behavior</h3></div><button class="btn ghost sm" @click="resetNavigation">Reset navigation</button></div>
+      <div class="cardhead"><div><span class="eyebrow">NAVIGATION</span><h3>Menu behavior</h3></div><div class="row"><router-link class="btn primary sm" to="/preferences/menu-layout">Menu layout</router-link><button class="btn ghost sm" @click="resetNavigation">Reset navigation</button></div></div>
       <label class="preference-toggle"><input v-model="draft.navigation.rail_collapsed" type="checkbox"><span><b>Start with navigation collapsed</b><small>The rail can still be expanded at any time.</small></span></label>
       <div class="preference-stats">
         <div><span>Favorites</span><b>{{ favoriteCount }}</b></div>
-        <div><span>Custom category order</span><b>{{ orderedSectionCount }}</b></div>
+        <div><span>Ordered categories</span><b>{{ sectionOrderCount }}</b></div><div><span>Custom item groups</span><b>{{ orderedSectionCount }}</b></div>
         <div><span>Collapsed categories</span><b>{{ collapsedCount }}</b></div>
       </div>
-      <p class="muted smalltext">Menu ordering and Favorites are changed directly from the navigation rail and stored with your Tec-Tac user preferences.</p>
+      <p class="muted smalltext">Use Menu Layout for category and item ordering. Favorites can still be managed from the navigation rail. All changes are stored with your Tec-Tac user preferences.</p>
     </section>
 
     <section class="card preference-card">

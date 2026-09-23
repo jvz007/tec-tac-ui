@@ -9,6 +9,8 @@ import SchedulerSettingsView from './views/SchedulerSettingsView.vue'
 import ContractsView from './views/ContractsView.vue'
 import PublicPendingView from './views/PublicPendingView.vue'
 import PreferencesView from './views/PreferencesView.vue'
+import MenuLayoutView from './views/MenuLayoutView.vue'
+import HelpView from './views/HelpView.vue'
 import { requestLeave, unsavedState } from './unsaved'
 
 export const router = createRouter({
@@ -25,6 +27,9 @@ export const router = createRouter({
     { path: '/system/storage', name: 'system-storage', component: StorageView, meta: { title: 'Storage & Housekeeping' } },
     { path: '/contracts', name: 'contracts', component: ContractsView, meta: { title: 'Public Contracts' } },
     { path: '/preferences', name: 'preferences', component: PreferencesView, meta: { title: 'Preferences' } },
+    { path: '/preferences/menu-layout', name: 'menu-layout', component: MenuLayoutView, meta: { title: 'Menu Layout' } },
+    { path: '/help', name: 'help', component: HelpView, meta: { title: 'Help' } },
+    { path: '/help/:articleId', name: 'help-article', component: HelpView, meta: { title: 'Help' } },
     { path: '/public/:pathMatch(.*)*', name: 'public-pending', component: PublicPendingView, meta: { title: 'Public', public: true } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

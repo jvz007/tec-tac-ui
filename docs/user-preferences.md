@@ -36,3 +36,9 @@ Dashboard composition uses the server-backed preference profile:
 - `dashboard.restore_last_dashboard` controls whether the last dashboard takes priority over the default when opening the Dashboard workspace.
 
 If a saved dashboard ID is no longer visible (for example a shared dashboard became private), Core safely falls back to another visible dashboard.
+
+## Menu Layout (0.12.3)
+
+`/preferences/menu-layout` is the canonical per-user menu arrangement surface. It persists `navigation.section_order` for category ordering and continues to use `navigation.order` for item ordering within each category. Category ownership is not editable: Core/module pages stay in the category assigned by their owner. Favorites remain a separate user shortcut layer and are not treated as an owned navigation category.
+
+The shell resolves category order as: Favorites (when present), the user's saved section order, Core's default section order, then any newly introduced categories not yet present in the saved preference. This lets later Core/module releases add categories without invalidating existing user layouts.

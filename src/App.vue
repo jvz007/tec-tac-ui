@@ -4,17 +4,20 @@ import { useRoute, useRouter } from 'vue-router'
 import LoginPanel from './components/LoginPanel.vue'
 import UnsavedChangesDialog from './components/UnsavedChangesDialog.vue'
 import QuickActionsDialog from './components/QuickActionsDialog.vue'
+import HelpDrawer from './components/HelpDrawer.vue'
 import { logoutTacticalSession } from './api'
 import { state, loadContext } from './state'
 import { requestLeave } from './unsaved'
 import { preferenceState, updateUserPreferences } from './preferences'
 import { startSessionActivityTracking, stopSessionActivityTracking } from './session-security'
+import { coreNavigation, DEFAULT_SECTION_ORDER } from './core-navigation'
 
 const route = useRoute()
 const router = useRouter()
 const dynamicNav = inject('tecTacNavigation', [])
 const quickActions = inject('tecTacQuickActions', null)
 const notifications = inject('tecTacNotifications', null)
+const help = inject('tecTacHelp', null)
 const FONT_SIZES = [
   { value: 0.9, label: 'A−', title: 'Small text' },
   { value: 1, label: 'A', title: 'Default text size' },
@@ -44,9 +47,14 @@ const collapsedSections = computed({
   set: (value) => updateUserPreferences((next) => { next.navigation.collapsed_sections = value || {}; return next }),
 })
 const navPreferences = computed({
-  get: () => ({ order: preferenceState.preferences.navigation.order, favorites: preferenceState.preferences.navigation.favorites }),
+  get: () => ({
+    order: preferenceState.preferences.navigation.order,
+    section_order: preferenceState.preferences.navigation.section_order,
+    favorites: preferenceState.preferences.navigation.favorites,
+  }),
   set: (value) => updateUserPreferences((next) => {
     next.navigation.order = value?.order || {}
+    next.navigation.section_order = Array.isArray(value?.section_order) ? value.section_order : []
     next.navigation.favorites = Array.isArray(value?.favorites) ? value.favorites : []
     return next
   }),
@@ -61,19 +69,7 @@ if (newWindowLaunch.value) {
   window.history.replaceState(window.history.state, '', `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`)
 }
 const publicRoute = computed(() => route.meta?.public === true || route.path.startsWith('/public/'))
-const coreNav = computed(() => {
-  const capabilities = state.context.capabilities || {}
-  return [
-    { label: 'Dashboards', icon: '⌂', to: '/dashboards', section: 'Workspace', visible: true },
-    { label: 'Schedules', icon: '◷', to: '/schedules', section: 'Operations', visible: capabilities.manage_schedules !== false },
-    { label: 'Modules', icon: '▦', to: '/modules', section: 'Administration', visible: true },
-    { label: 'Access', icon: '⛨', to: '/access', section: 'Administration', visible: capabilities.list_accounts !== false || capabilities.list_roles !== false },
-    { label: 'Scheduler Configuration', icon: '◷', to: '/system/scheduler', section: 'Administration', visible: capabilities.manage_schedules === true || state.context.user?.superuser === true },
-    { label: 'System Updates', icon: '⇧', to: '/system/updates', section: 'Administration', visible: capabilities.manage_modules === true || state.context.user?.superuser === true },
-    { label: 'Storage & Housekeeping', icon: '⌫', to: '/system/storage', section: 'Administration', visible: capabilities.manage_modules === true || state.context.user?.superuser === true },
-    { label: 'Public Contracts', icon: '⌘', to: '/contracts', section: 'Administration', visible: capabilities.manage_modules === true || state.context.user?.superuser === true },
-  ]
-})
+const coreNav = computed(() => coreNavigation(state.context))
 
 const visibleNav = computed(() => [...coreNav.value, ...dynamicNav].filter((item) => item.visible !== false && item?.to && item?.label))
 const allNav = computed(() => visibleNav.value.filter((item) => {
@@ -95,7 +91,6 @@ function orderedItems(section, items) {
   })
 }
 
-const sectionOrder = ['Favorites', 'Workspace', 'Operations', 'Extensions', 'Administration', 'Configuration']
 const navGroups = computed(() => {
   const grouped = new Map()
   for (const item of allNav.value) {
@@ -110,11 +105,14 @@ const navGroups = computed(() => {
     if (favorites.length) grouped.set('Favorites', favorites)
   }
 
+  const savedSections = Array.isArray(navPreferences.value.section_order) ? navPreferences.value.section_order : []
+  const sectionOrder = ['Favorites', ...savedSections, ...DEFAULT_SECTION_ORDER]
+  const uniqueSectionOrder = sectionOrder.filter((section, index) => sectionOrder.indexOf(section) === index)
   return [...grouped.entries()]
     .map(([section, items]) => ({ section, items: orderedItems(section, items) }))
     .sort((a, b) => {
-      const ai = sectionOrder.indexOf(a.section)
-      const bi = sectionOrder.indexOf(b.section)
+      const ai = uniqueSectionOrder.indexOf(a.section)
+      const bi = uniqueSectionOrder.indexOf(b.section)
       if (ai === -1 && bi === -1) return a.section.localeCompare(b.section)
       if (ai === -1) return 1
       if (bi === -1) return -1
@@ -213,7 +211,7 @@ function openInNewTab(item) {
   window.open(target.href, '_blank', 'noopener,noreferrer')
   closeNavContextMenu()
 }
-function handleGlobalKey(event) { if (event.key === 'Escape') { closeNavContextMenu(); quickActionsOpen.value = false } }
+function handleGlobalKey(event) { if (event.key === 'Escape') { closeNavContextMenu(); quickActionsOpen.value = false; help?.close?.() } }
 
 async function retry() {
   await loadContext()
@@ -257,6 +255,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
       </div>
       <button v-if="!publicRoute" class="btn ghost sm" @click="backToTactical">↗ Tactical</button>
       <button v-else-if="state.status !== 'ready'" class="btn ghost sm" @click="navigate('/')">Sign in</button>
+      <button v-if="!publicRoute && state.status === 'ready'" class="iconbtn help-topbar-button" type="button" title="Help" aria-label="Open contextual help" @click="help?.open?.()">?</button>
       <div v-if="!publicRoute" class="who">
         <div class="av">{{ initials }}</div>
         <div class="n"><b>{{ state.context.user?.display_name || state.context.user?.username || 'No session' }}</b><span :class="{ 'status-ok': state.authStatus === 'verified', 'status-warn': state.authStatus === 'verifying', 'status-danger': state.authStatus === 'required' || state.authStatus === 'error' }">{{ accountStatus }}</span></div>
@@ -329,6 +328,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
         <button type="button" class="toast-dismiss" title="Dismiss notification" aria-label="Dismiss notification" @click="notifications.dismiss(toast.id)">×</button>
       </article>
     </div>
+    <HelpDrawer />
     <QuickActionsDialog v-model="quickActionsOpen" />
     <UnsavedChangesDialog />
   </div>

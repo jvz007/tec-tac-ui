@@ -50,7 +50,7 @@ onMounted(refresh)
 
     <div class="toolbar scheduler-toolbar"><label class="compact-input scheduler-filter"><span class="sr-only">Filter Scheduler {{tab==='schedules'?'schedules':'history'}}</span><input v-model="query" :placeholder="tab==='schedules'?'Filter schedules…':'Filter run history…'" @keydown.esc.stop.prevent="query=''"/><button v-if="query" class="icon-button" type="button" title="Clear filter" @click="query=''">×</button></label><span class="muted smalltext">{{tab==='schedules'?filteredSchedules.length:filteredRuns.length}} shown</span></div>
 
-    <div v-if="tab==='schedules'" class="schedule-layout"><section>
+    <div v-if="tab==='schedules'" class="schedule-layout" :class="{ 'has-editor': editing }"><section>
       <div v-if="!schedules.length" class="state-inline"><b>No schedules configured.</b> Create a schedule to begin using registered Core and module actions.</div>
       <div v-else-if="!filteredSchedules.length" class="state-inline"><b>No schedules match this filter.</b> Clear the filter to show all schedules.</div>
       <div v-else class="tablewrap"><table><thead><tr><th>Schedule</th><th>Action</th><th>Timing</th><th>Next run</th><th>Last result</th><th>State</th><th>Action</th></tr></thead><tbody>
