@@ -81,6 +81,7 @@ function humanOperation(value) {
 function systemTrustLabel(trust) {
   if (!trust) return 'NOT REPORTED'
   if (trust.verified && trust.trusted) return 'VERIFIED'
+  if (trust.signed && trust.manifest_verified && trust.trusted) return 'SIGNED'
   if (trust.legacy) return 'UNSIGNED / LEGACY'
   if (trust.state === 'unsigned' || trust.signed === false) return 'UNSIGNED'
   return String(trust.state || 'UNTRUSTED').toUpperCase()
@@ -88,6 +89,7 @@ function systemTrustLabel(trust) {
 
 function systemTrustClass(trust) {
   if (trust?.verified && trust?.trusted) return 'ok'
+  if (trust?.signed && trust?.manifest_verified && trust?.trusted) return 'ok'
   if (trust?.state === 'unsigned' || trust?.signed === false) return 'warn'
   return 'danger'
 }
@@ -389,6 +391,21 @@ onBeforeUnmount(() => {
           <dd>
             <span v-if="online[component.id]?.latest_release" class="mono">{{ online[component.id].latest_release.tag }}</span>
             <span v-else class="muted">No cached release yet</span>
+          </dd>
+          <dt>Release trust</dt>
+          <dd>
+            <span v-if="online[component.id]?.latest_release" class="system-trust-badge" tabindex="0">
+              <span class="pill" :class="systemTrustClass(online[component.id].latest_release.release_trust)">{{ systemTrustLabel(online[component.id].latest_release.release_trust) }}</span>
+              <span class="system-trust-popover">
+                <b>{{ online[component.id].latest_release.release_trust?.publisher_display_name || (online[component.id].latest_release.release_trust?.signed ? 'Signed release' : 'Unsigned release') }}</b>
+                <span v-if="online[component.id].latest_release.release_trust?.publisher_id">Publisher ID: <span class="mono">{{ online[component.id].latest_release.release_trust.publisher_id }}</span></span>
+                <span v-if="online[component.id].latest_release.release_trust?.key_id">Key ID: <span class="mono">{{ online[component.id].latest_release.release_trust.key_id }}</span></span>
+                <span v-if="online[component.id].latest_release.release_trust?.algorithm">Algorithm: {{ online[component.id].latest_release.release_trust.algorithm }}</span>
+                <span v-if="online[component.id].latest_release.release_trust?.file_count">Manifest files: {{ online[component.id].latest_release.release_trust.file_count }}</span>
+                <span v-if="online[component.id].latest_release.release_trust?.details">{{ online[component.id].latest_release.release_trust.details }}</span>
+              </span>
+            </span>
+            <span v-else class="muted">Not checked</span>
           </dd>
           <dt>Last checked</dt><dd class="smalltext">{{ formatCheckedAt(online[component.id]?.checked_at) }}<span v-if="online[component.id]?.cache?.stale" class="pill warn ml">STALE</span></dd>
         </dl>

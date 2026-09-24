@@ -668,6 +668,8 @@ printf '[TEST] PASS compact package trust badge and details popover\n'
 grep -q "systemTrustLabel" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "System Updates trust label helper missing"
 grep -q "system-trust-popover" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "System Updates trust details popover missing"
 grep -q "UNSIGNED / LEGACY" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "legacy unsigned update label missing"
+grep -q "Release trust" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "stable release trust row missing"
+grep -q "trust.signed && trust.manifest_verified && trust.trusted" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "signed stable release label helper missing"
 grep -q "item.source.commit.slice" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "history commit provenance missing"
 grep -q '.system-trust-badge:hover .system-trust-popover' "${ROOT}/src/styles.css" || fail "System Updates trust hover styling missing"
 printf '[TEST] PASS signed System Updates trust visibility\n'
