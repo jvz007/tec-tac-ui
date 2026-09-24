@@ -848,8 +848,8 @@
     },
     {
       "path": "tests/release-integrity.sh",
-      "size": 1142,
-      "sha256": "a9a0e20e1fcb76c813fceab51dc245b9b7690b9ae1299a7c455cab9578715c7e"
+      "size": 1124,
+      "sha256": "9342779fa2cd5f659ea2ed5b99cb0741c5225749b239d7286c071b796cfb81ec"
     },
     {
       "path": "tests/session-expiry.mjs",
