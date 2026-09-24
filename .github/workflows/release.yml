@@ -51,6 +51,10 @@ jobs:
             echo "exists=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Preflight signed source tree
+        if: steps.existing.outputs.exists == 'false'
+        run: bash scripts/preflight-signing-tree.sh
+
       - name: Set up Node.js
         if: steps.existing.outputs.exists == 'false'
         uses: actions/setup-node@v4

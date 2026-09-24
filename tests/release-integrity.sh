@@ -25,4 +25,8 @@ CURRENT_NOTE="RELEASE_NOTES_${VERSION}.md"
 printf '%s\n' "${ROOT_NOTES[@]}" | grep -Fxq "${CURRENT_NOTE}" || \
   fail "current release note ${CURRENT_NOTE} not found"
 
+
+[[ -x "${ROOT}/scripts/preflight-signing-tree.sh" ]] || \
+  fail "signing-tree preflight script is missing or not executable"
+
 echo "[TEST] PASS release integrity ${VERSION}"

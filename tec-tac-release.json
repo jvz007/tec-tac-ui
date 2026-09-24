@@ -1,15 +1,15 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.15",
+  "version": "0.12.17",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
   "files": [
     {
       "path": ".github/workflows/release.yml",
-      "size": 2908,
-      "sha256": "6e271bef96cf989b2a43adce9ce5ee79c8536aea0d34bfffe0404b4ce0875e5b"
+      "size": 3057,
+      "sha256": "df4bce626eadd5769d3c13593574e6fd249e5a61c127526cafb7ed23957adefa"
     },
     {
       "path": ".gitignore",
@@ -27,19 +27,19 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.14.md",
-      "size": 820,
-      "sha256": "03a73fdb5a49d71089aa44717a382340270728926ae6fded2cf697b01a5e527b"
+      "path": "RELEASE_NOTES_0.12.16.md",
+      "size": 473,
+      "sha256": "7a07ba920bd56bde8987250da4cf735f1174592e6ea0568b1909fc366143427f"
     },
     {
-      "path": "RELEASE_NOTES_0.12.15.md",
-      "size": 1261,
-      "sha256": "c45b79e26b63c0c8b74aae24cd4b1c9dc00a607afadbcd5f33eb4400c6e1efc8"
+      "path": "RELEASE_NOTES_0.12.17.md",
+      "size": 706,
+      "sha256": "13a3499f8c548c56086e814ea3335bd0bf244da64f6a927e4c1b20a011c40307"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "3af6849efc098a010a05139a6372213ba350f1d017c8339156eec9d3510226b0"
+      "sha256": "2da5007564e3e71a7a6505a33f2c25a50c6977b1b0d556c16e00635826db3a18"
     },
     {
       "path": "docs/context-actions.md",
@@ -464,7 +464,7 @@
     {
       "path": "package.json",
       "size": 442,
-      "sha256": "e251d18d888266e55110928623d55f0ed436ebbda52eab9567ed16790abb5161"
+      "sha256": "aa69b9eec001e00f51b758a4f9ccf03ba0efbedb5971eacbfb94a3d71bc1309b"
     },
     {
       "path": "public/modules/modules.json",
@@ -475,6 +475,11 @@
       "path": "scripts/install.sh",
       "size": 2491,
       "sha256": "da809172423e4d623bc346cb46b4c204e084c1a1d5040e9e50fea2c3eafd1d84"
+    },
+    {
+      "path": "scripts/preflight-signing-tree.sh",
+      "size": 1138,
+      "sha256": "a1bc6b25c1c0a70d160122c03d46a25d876dc2cb0aa43d702880b677b8ebfff2"
     },
     {
       "path": "scripts/repair-nginx.sh",
@@ -658,8 +663,8 @@
     },
     {
       "path": "src/help/articles/schedules.md",
-      "size": 925,
-      "sha256": "9c9a275b5b9b6b3a84c7a058babf59a3820565aeecb7d6f7cc724d3e45aa585b"
+      "size": 1338,
+      "sha256": "741ae14f22776fad64906c67f496718da8dd5dd3f4db35622973f009b0bff619"
     },
     {
       "path": "src/help/articles/storage.md",
@@ -738,8 +743,8 @@
     },
     {
       "path": "src/scheduler.js",
-      "size": 1536,
-      "sha256": "ac8a45039c77bd47e1a06d5f24bbbc31b550aef64d8af7b1fd58beb7a6325edb"
+      "size": 1757,
+      "sha256": "df6e429fcf76d7b0a72fc4c31fd494dc76f9302186337b5b31605305a577c23b"
     },
     {
       "path": "src/session-security.js",
@@ -753,8 +758,8 @@
     },
     {
       "path": "src/styles.css",
-      "size": 85700,
-      "sha256": "fd7baba0453978f9e86d8f0aadaa9026447011c4c9233c63d0f46857c88045bb"
+      "size": 86110,
+      "sha256": "9028badb5c725da0cb3444cfdc7718e30fe6739c5d9ee14a57112b933a27eecc"
     },
     {
       "path": "src/unsaved.js",
@@ -813,8 +818,8 @@
     },
     {
       "path": "src/views/SchedulesView.vue",
-      "size": 16494,
-      "sha256": "a563c58fbcc374cf4a2ce96c7a863355435de5b33a2b5c70367a9f05f516b69f"
+      "size": 18701,
+      "sha256": "b35dfd04669b44c99c31d2f38a85b3301d7f90314337b3e818e0f3d5ff57115a"
     },
     {
       "path": "src/views/StorageView.vue",
@@ -829,7 +834,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "6a5259ce88225a1f48734aeb8281734b322798ea674f73b2c7cc96290bb696a8"
+      "sha256": "21aa62829a9facdc6a8de14fb826278e9d2c39464da14a98e13e5a7bdce576dc"
     },
     {
       "path": "tests/api-raw.mjs",
@@ -838,13 +843,13 @@
     },
     {
       "path": "tests/foundation.sh",
-      "size": 60373,
-      "sha256": "09644f0919a817f53e4fb29295b056eb968fa2157a6222b807eb1f7b4360e4b7"
+      "size": 60725,
+      "sha256": "8f910fd1235e9e9b7559a7d1ecc6e7f35dd612d7457011bd930e44295721793d"
     },
     {
       "path": "tests/release-integrity.sh",
-      "size": 1014,
-      "sha256": "b1d3a276fea75096c5622e1bdcccb2bf6177702ec2968fc4a875bfd137e22251"
+      "size": 1142,
+      "sha256": "a9a0e20e1fcb76c813fceab51dc245b9b7690b9ae1299a7c455cab9578715c7e"
     },
     {
       "path": "tests/session-expiry.mjs",
