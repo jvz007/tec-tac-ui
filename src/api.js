@@ -408,6 +408,17 @@ export async function getSystemUpdateStatus() {
   return apiFetch('/api/tfd/system/updates/')
 }
 
+export async function getUpdateTrustPolicy() {
+  return apiFetch('/api/tfd/system/updates/trust-policy/')
+}
+
+export async function setUpdateTrustPolicy(minimumLevel) {
+  return apiFetch('/api/tfd/system/updates/trust-policy/', {
+    method: 'PUT',
+    body: JSON.stringify({ minimum_level: minimumLevel }),
+  })
+}
+
 export async function checkOnlineSystemUpdate(component, { force = false } = {}) {
   const query = new URLSearchParams({ component })
   if (force) query.set('force', '1')

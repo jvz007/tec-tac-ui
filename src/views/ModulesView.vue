@@ -785,14 +785,16 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
                     <span><strong>Key ID</strong><code>{{ stagedTrust.key_id || '—' }}</code></span>
                     <span><strong>Algorithm</strong><code>{{ stagedTrust.algorithm || 'Ed25519' }}</code></span>
                     <span><strong>Environment</strong><code>{{ stagedTrust.publisher_environment || stagedTrust.server_environment || '—' }}</code></span>
+                    <span><strong>Assurance</strong><code>{{ stagedTrust.assurance || 'standard' }}</code></span>
+                    <span v-if="stagedTrust.acceptance_policy"><strong>Acceptance</strong><code>{{ stagedTrust.acceptance_policy.actual_label }} · minimum {{ stagedTrust.acceptance_policy.minimum_label }}</code></span>
                     <span><strong>SHA256</strong><code>{{ stagedTrust.package_sha256 || row.intake_sha256 || '—' }}</code></span>
                     <span><strong>Required</strong><code>{{ stagedTrust.required_permissions?.length ? stagedTrust.required_permissions.join(', ') : 'none' }}</code></span>
                     <span><strong>Approved</strong><code>{{ stagedTrust.approved_permissions?.length ? stagedTrust.approved_permissions.join(', ') : 'none' }}</code></span>
                   </template>
                   <template v-else-if="stagedTrust.state==='unsigned' || stagedTrust.signed===false">
                     <span class="module-trust-note">No package signature was supplied.</span>
-                    <span class="module-trust-note">Signing is optional for normal modules at this stage.</span>
-                    <span class="module-trust-note">Privileged publisher permissions still require a trusted signature.</span>
+                    <span class="module-trust-note">Unsigned packages are accepted only when the global Update Trust Policy and module-specific rules permit them.</span>
+                    <span class="module-trust-note">Privileged publisher permissions still require a trusted signature regardless of the global minimum.</span>
                   </template>
                   <template v-else>
                     <span class="module-trust-note">{{ stagedTrust.reason || stagedTrust.error || 'Core did not accept the package trust material.' }}</span>

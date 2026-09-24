@@ -648,7 +648,7 @@ grep -q "body.append('metadata',metadata)" "${ROOT}/src/modules.js" || fail "mod
 grep -q "function intakeFileType" "${ROOT}/src/views/ModulesView.vue" || fail "module package sidecar classifier missing"
 grep -q "stagedTrust = computed" "${ROOT}/src/views/ModulesView.vue" || fail "staged package trust result missing"
 grep -q 'data-label="Trust"' "${ROOT}/src/views/ModulesView.vue" || fail "package trust review column missing"
-grep -q "Signing is optional for normal modules at this stage" "${ROOT}/src/views/ModulesView.vue" || fail "unsigned transitional policy is not explicit in trust popover"
+grep -q "global Update Trust Policy" "${ROOT}/src/views/ModulesView.vue" || fail "global module trust policy is not explicit in trust popover"
 grep -q "Privileged publisher permissions still require a trusted signature" "${ROOT}/src/views/ModulesView.vue" || fail "privileged unsigned-package boundary is not visible"
 grep -q "publisher_display_name" "${ROOT}/src/views/ModulesView.vue" || fail "publisher identity is not shown after verification"
 grep -q "key_id" "${ROOT}/src/views/ModulesView.vue" || fail "publisher key identity is not shown after verification"
@@ -673,3 +673,12 @@ grep -q "trust.signed && trust.manifest_verified && trust.trusted" "${ROOT}/src/
 grep -q "item.source.commit.slice" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "history commit provenance missing"
 grep -q '.system-trust-badge:hover .system-trust-popover' "${ROOT}/src/styles.css" || fail "System Updates trust hover styling missing"
 printf '[TEST] PASS signed System Updates trust visibility\n'
+
+# Global System Update / Module Management trust policy UI.
+grep -q "Minimum acceptance level" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "trust policy settings dialog missing"
+grep -q "signed_development" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "signed development trust tier missing"
+grep -q "signed_production" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "signed production trust tier missing"
+grep -q "secure_signed" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "secure signed trust tier missing"
+grep -q "setUpdateTrustPolicy" "${ROOT}/src/api.js" || fail "trust policy API client missing"
+grep -q "releaseAccepted" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "stable release trust acceptance guard missing"
+echo "[TEST] PASS shared update/module trust policy UI"

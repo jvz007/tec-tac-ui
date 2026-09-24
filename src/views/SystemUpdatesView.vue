@@ -6,8 +6,10 @@ import {
   getSystemUpdateBranches,
   getSystemUpdateJob,
   getSystemUpdateStatus,
+  getUpdateTrustPolicy,
   inspectSystemUpdatePackage,
   installSystemUpdatePackage,
+  setUpdateTrustPolicy,
   stageOnlineSystemUpdate,
 } from '../api'
 
@@ -31,6 +33,18 @@ const pollTimer = ref(null)
 const reloadTimer = ref(null)
 const reloadCountdown = ref(0)
 const releaseRefreshTimer = ref(null)
+const trustPolicyOpen = ref(false)
+const trustPolicy = ref(null)
+const trustPolicyDraft = ref('unsigned')
+const trustPolicySaving = ref(false)
+const trustPolicyError = ref('')
+
+const trustPolicyDescriptions = {
+  unsigned: 'Allow unsigned packages where no stricter component or module-specific rule applies.',
+  signed_development: 'Require a trusted development-or-stronger signing tier. Publisher environment isolation still applies.',
+  signed_production: 'Require a trusted production signing key. Development-signed packages are rejected.',
+  secure_signed: 'Require a trusted production key explicitly marked secure/high-assurance in the local publisher policy.',
+}
 
 const systemJobProgress = computed(() => {
   const current = job.value
@@ -99,6 +113,7 @@ async function loadStatus() {
   error.value = ''
   try {
     status.value = await getSystemUpdateStatus()
+    trustPolicy.value = status.value?.update_trust_policy || trustPolicy.value
     for (const component of ['framework', 'ui']) {
       const cached = status.value?.release_cache?.[component]
       if (cached?.latest_release) online.value[component] = cached
@@ -108,6 +123,48 @@ async function loadStatus() {
   } finally {
     loading.value = false
   }
+}
+
+async function openTrustPolicy() {
+  trustPolicyError.value = ''
+  trustPolicyOpen.value = true
+  try {
+    trustPolicy.value = await getUpdateTrustPolicy()
+    trustPolicyDraft.value = trustPolicy.value?.minimum_level || 'unsigned'
+  } catch (err) {
+    trustPolicyError.value = err?.message || 'Unable to load update trust policy.'
+  }
+}
+
+function closeTrustPolicy() {
+  if (trustPolicySaving.value) return
+  trustPolicyOpen.value = false
+  trustPolicyError.value = ''
+}
+
+async function saveTrustPolicy() {
+  if (trustPolicySaving.value) return
+  trustPolicySaving.value = true
+  trustPolicyError.value = ''
+  try {
+    trustPolicy.value = await setUpdateTrustPolicy(trustPolicyDraft.value)
+    if (status.value) status.value.update_trust_policy = trustPolicy.value
+    trustPolicyOpen.value = false
+    await refreshStableReleases()
+  } catch (err) {
+    trustPolicyError.value = err?.message || 'Unable to save update trust policy.'
+  } finally {
+    trustPolicySaving.value = false
+  }
+}
+
+function releaseAccepted(component) {
+  const acceptance = online.value[component]?.latest_release?.release_trust?.acceptance_policy
+  return acceptance?.accepted !== false
+}
+
+function handleKeydown(event) {
+  if (event.key === 'Escape' && trustPolicyOpen.value) closeTrustPolicy()
 }
 
 async function checkOnline(component, { force = false, background = false } = {}) {
@@ -303,6 +360,7 @@ function reloadUi() {
 }
 
 onMounted(async () => {
+  window.addEventListener('keydown', handleKeydown)
   await loadStatus()
   await refreshStableReleases()
   // The backend cache makes this cheap: GitHub is contacted only when the
@@ -310,6 +368,7 @@ onMounted(async () => {
   releaseRefreshTimer.value = window.setInterval(refreshStableReleases, 60 * 60 * 1000)
 })
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleKeydown)
   stopPolling()
   if (reloadTimer.value) window.clearInterval(reloadTimer.value)
   if (releaseRefreshTimer.value) window.clearInterval(releaseRefreshTimer.value)
@@ -323,6 +382,10 @@ onBeforeUnmount(() => {
         <span class="eyebrow">SYSTEM / UPDATE CONTROL</span>
         <h1>System Updates</h1>
         <p>Update the Tec-Tac framework or UI from a stable repository release, an explicitly unlocked branch, or an offline ZIP/TAR.GZ package.</p>
+      </div>
+      <div class="phead-actions trust-policy-head">
+        <span v-if="trustPolicy" class="pill" :class="trustPolicy.minimum_level === 'unsigned' ? 'warn' : 'ok'">{{ trustPolicy.minimum_label }}</span>
+        <button class="btn" type="button" @click="openTrustPolicy">Trust policy</button>
       </div>
     </header>
 
@@ -407,6 +470,10 @@ onBeforeUnmount(() => {
             </span>
             <span v-else class="muted">Not checked</span>
           </dd>
+          <template v-if="online[component.id]?.latest_release?.release_trust?.acceptance_policy">
+            <dt>Acceptance</dt>
+            <dd><span class="pill" :class="online[component.id].latest_release.release_trust.acceptance_policy.accepted ? 'ok' : 'danger'">{{ online[component.id].latest_release.release_trust.acceptance_policy.accepted ? 'ACCEPTED' : 'BLOCKED' }}</span><span class="sub">{{ online[component.id].latest_release.release_trust.acceptance_policy.actual_label || 'Unknown' }} · minimum {{ online[component.id].latest_release.release_trust.acceptance_policy.minimum_label }}</span></dd>
+          </template>
           <dt>Last checked</dt><dd class="smalltext">{{ formatCheckedAt(online[component.id]?.checked_at) }}<span v-if="online[component.id]?.cache?.stale" class="pill warn ml">STALE</span></dd>
         </dl>
 
@@ -419,7 +486,8 @@ onBeforeUnmount(() => {
           <button
             v-if="online[component.id]?.latest_release"
             class="btn primary"
-            :disabled="stageBusy"
+            :disabled="stageBusy || !releaseAccepted(component.id)"
+            :title="!releaseAccepted(component.id) ? 'Release is below the configured trust acceptance level.' : ''"
             @click="stageOnline(component.id, 'release')"
           >
             Download & inspect {{ online[component.id].latest_release.tag }}
@@ -486,6 +554,26 @@ onBeforeUnmount(() => {
         </tbody>
       </table>
     </article>
+
+    <div v-if="trustPolicyOpen" class="modal-backdrop" @click.self="closeTrustPolicy">
+      <section class="modal-panel trust-policy-modal" role="dialog" aria-modal="true" aria-labelledby="trust-policy-title">
+        <div class="cardhead">
+          <div><span class="eyebrow">UPDATE TRUST POLICY</span><h3 id="trust-policy-title">Minimum acceptance level</h3></div>
+          <span class="pill">GLOBAL</span>
+        </div>
+        <p class="compact-copy muted">This Core-enforced minimum applies to both System Updates and Module Management. Existing component/module rules may be stricter. Publisher environment isolation remains enforced.</p>
+        <div v-if="trustPolicyError" class="auth-error" role="alert">{{ trustPolicyError }}</div>
+        <div class="trust-level-list" role="radiogroup" aria-label="Minimum package trust level">
+          <label v-for="level in (trustPolicy?.levels || [])" :key="level.id" class="trust-level-option" :class="{ selected: trustPolicyDraft === level.id }">
+            <input v-model="trustPolicyDraft" type="radio" name="trust-level" :value="level.id" />
+            <span class="trust-level-copy"><b>{{ level.label }}</b><span>{{ trustPolicyDescriptions[level.id] }}</span></span>
+            <span class="mono trust-rank">L{{ level.rank }}</span>
+          </label>
+        </div>
+        <div class="state-inline warning mt"><b>Policy changes take effect immediately for new inspections and install requests.</b> Raising the level can block unsigned or lower-tier module packages and system releases.</div>
+        <div class="modal-actions"><button class="btn" type="button" :disabled="trustPolicySaving" @click="closeTrustPolicy">Cancel</button><button class="btn primary" type="button" :disabled="trustPolicySaving || !trustPolicy?.levels?.length" @click="saveTrustPolicy">{{ trustPolicySaving ? 'Saving…' : 'Save policy' }}</button></div>
+      </section>
+    </div>
 
     <article v-if="job" class="card job-panel mt">
       <div class="cardhead">
