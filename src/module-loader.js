@@ -43,7 +43,7 @@ function moduleIsAllowed(descriptor, context) {
   if (descriptor.allowed === true && context.source === 'backend') return true
   if (context.source !== 'backend') return true
 
-  return descriptor.permissions.every((code) => context.permissions.includes(code))
+  return descriptor.permissions.every((code) => context.permissionSet.has(code))
 }
 
 export async function loadPublicUiModules(runtime, modules) {
@@ -104,11 +104,13 @@ export async function loadUiModules(runtime, modules) {
   const failed = []
   const skipped = []
   const routeOwners = new Map()
+  const permissionSet = new Set(runtime.state.context.permissions || [])
 
   for (const descriptor of modules) {
     if (!descriptor.entry) continue
     if (!moduleIsAllowed(descriptor, {
       permissions: runtime.state.context.permissions || [],
+      permissionSet,
       user: runtime.state.context.user || {},
       source: runtime.state.contextSource,
     })) {

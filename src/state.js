@@ -26,6 +26,7 @@ export const state = reactive({
     preferences: null,
     preferences_initialized: false,
     preferences_updated_at: null,
+    notice_unread_count: 0,
   },
   moduleLoad: { loaded: [], failed: [], skipped: [] },
   publicModuleLoad: { loaded: [], failed: [] },
@@ -33,12 +34,13 @@ export const state = reactive({
 })
 
 function normalizeStaticModules(modules, context = state.context) {
+  const permissionSet = new Set(context.permissions || [])
   return modules.map((module) => {
     const permissions = Array.isArray(module.permissions) ? module.permissions : []
     const allowed = module.allowed !== false && (
       context.user?.superuser ||
       permissions.length === 0 ||
-      permissions.every((code) => context.permissions.includes(code))
+      permissions.every((code) => permissionSet.has(code))
     )
     return {
       ...module,
@@ -70,6 +72,7 @@ function markUnauthenticated(error = null) {
     preferences: null,
     preferences_initialized: false,
     preferences_updated_at: null,
+    notice_unread_count: 0,
   }
 }
 
@@ -84,7 +87,7 @@ if (typeof window !== 'undefined' && !window.__tecTacSessionInvalidListener) {
   })
 }
 
-export async function loadContext() {
+export async function loadContext(staticModules = null) {
   state.status = 'loading'
   state.authStatus = 'verifying'
   state.authProof = null
@@ -100,6 +103,7 @@ export async function loadContext() {
     preferences: null,
     preferences_initialized: false,
     preferences_updated_at: null,
+    notice_unread_count: 0,
   }
 
   if (!tacticalToken()) {
@@ -164,6 +168,7 @@ export async function loadContext() {
       preferences: richContext.preferences || null,
       preferences_initialized: richContext.preferences_initialized === true,
       preferences_updated_at: richContext.preferences_updated_at || null,
+      notice_unread_count: Number(richContext.notice_unread_count || 0),
     } : {
       user: browserUser,
       permissions: [],
@@ -173,9 +178,11 @@ export async function loadContext() {
       preferences: null,
       preferences_initialized: false,
       preferences_updated_at: null,
+      notice_unread_count: 0,
     }
 
-    const modules = normalizeStaticModules(await loadStaticModuleManifest(), baseContext)
+    const manifest = Array.isArray(staticModules) ? staticModules : await loadStaticModuleManifest()
+    const modules = normalizeStaticModules(manifest, baseContext)
     state.context = { ...baseContext, modules }
     state.contextSource = richContext ? 'backend' : 'local-manifest'
     state.status = 'ready'

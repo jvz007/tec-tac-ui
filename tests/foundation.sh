@@ -682,3 +682,14 @@ grep -q "secure_signed" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "secur
 grep -q "setUpdateTrustPolicy" "${ROOT}/src/api.js" || fail "trust policy API client missing"
 grep -q "releaseAccepted" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "stable release trust acceptance guard missing"
 echo "[TEST] PASS shared update/module trust policy UI"
+
+# 0.12.15 persistent Core notification history + bootstrap optimisation
+[[ -f "${ROOT}/src/components/NoticeDrawer.vue" ]] || fail "Notification Center drawer missing"
+grep -q 'Notification history' "${ROOT}/src/App.vue" || fail "notification history topbar control missing"
+grep -q '/api/tfd/ui/notices/' "${ROOT}/src/notifications.js" || fail "notice history API integration missing"
+grep -qi 'runtime-only metadata' "${ROOT}/src/notifications.js" || fail "notice metadata persistence boundary missing"
+grep -q "loadContext(staticModules)" "${ROOT}/src/main.js" || fail "module manifest bootstrap reuse missing"
+grep -q 'permissionSet.has' "${ROOT}/src/main.js" || fail "Set-backed shell permission lookup missing"
+grep -q 'permissionSet.has' "${ROOT}/src/module-loader.js" || fail "Set-backed module permission lookup missing"
+node --check "${ROOT}/src/notifications.js"
+echo "[TEST] PASS notice center and startup optimisation"

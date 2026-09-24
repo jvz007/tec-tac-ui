@@ -79,13 +79,13 @@ onMounted(refresh)
     </tbody></table></div>
 
     <div class="section-divider">Module notifications / toasts</div>
-    <div class="callout contract-rules"><b>Operator notification boundary</b><span>Authenticated modules receive the Core-owned, module-scoped <span class="mono">notifications</span> service. Use it for transient in-app notices such as report completion, warnings and action failures; durable alert state remains module/backend owned.</span></div>
+    <div class="callout contract-rules"><b>Operator notification boundary</b><span>Authenticated modules receive the Core-owned, module-scoped <span class="mono">notifications</span> service. Use it for user-visible in-app notices such as report completion, warnings and action failures. Core shows an immediate toast and records bounded per-user history; durable alert/event state remains module/backend owned.</span></div>
     <div class="tablewrap"><table><thead><tr><th>Method</th><th>Use</th></tr></thead><tbody>
       <tr><td class="mono">notifications.info(message, options)</td><td>Normal informational notice.</td></tr>
       <tr><td class="mono">notifications.success(message, options)</td><td>Successful completion such as a report or scan finishing.</td></tr>
       <tr><td class="mono">notifications.warning(message, options)</td><td>Actionable warning that does not require a modal.</td></tr>
       <tr><td class="mono">notifications.error(message, options)</td><td>Operation failure or important error.</td></tr>
-      <tr><td class="mono">notifications.show({...})</td><td>Explicit level/title/duration/dedupe/action configuration.</td></tr>
+      <tr><td class="mono">notifications.show({...})</td><td>Explicit level/title/duration/dedupe/action configuration. Add <span class="mono">action.route</span> for a durable internal navigation action in history.</td></tr>
       <tr><td class="mono">notifications.dismiss(id) · notifications.clear()</td><td>Dismiss one toast or clear the calling module's visible toasts.</td></tr>
     </tbody></table></div>
 

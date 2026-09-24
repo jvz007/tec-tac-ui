@@ -23,6 +23,7 @@ import './styles.css'
 async function bootstrap() {
   const app = createApp(App)
   const navigation = reactive([])
+  let permissionSet = new Set()
 
   function addNavigation(item) {
     if (!item?.to || !item?.label) return
@@ -31,7 +32,7 @@ async function bootstrap() {
   }
 
   const hasPermission = (code) => (
-    state.context.user?.superuser || state.context.permissions.includes(code)
+    state.context.user?.superuser || permissionSet.has(code)
   )
   const contextActions = createContextActionRegistry({ hasPermission })
   const contextInteractions = createContextInteractionRegistry({ hasPermission })
@@ -39,7 +40,7 @@ async function bootstrap() {
   const codeEditor = createCodeEditorService()
   const dashboardWidgets = createDashboardWidgetRegistry({ hasPermission })
   const quickActions = createQuickActionRegistry({ hasPermission })
-  const notifications = createNotificationService()
+  const notifications = createNotificationService({ api: apiFetch, router })
   const audit = createAuditService(apiFetch)
   const help = createHelpService()
   registerCoreDashboardWidgets(dashboardWidgets, state)
@@ -81,9 +82,11 @@ async function bootstrap() {
 
   // Authenticated context still loads normally. Public routes render regardless
   // of whether this resolves to ready, unauthenticated, or an auth error.
-  await loadContext()
+  await loadContext(staticModules)
 
   if (state.status === 'ready') {
+    permissionSet = new Set(state.context.permissions || [])
+    notifications.setInitialUnreadCount(state.context.notice_unread_count)
     await initializeUserPreferences(state.context)
     const modules = createModuleStatusService(state.context.module_status, state.context.modules || staticModules)
     app.provide('tecTacModules', modules)

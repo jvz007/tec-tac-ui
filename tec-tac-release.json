@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.14",
+  "version": "0.12.15",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -27,19 +27,19 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.13.md",
-      "size": 665,
-      "sha256": "2143c5bde33c62361956f237b7486163d0b0f0d89d49e0b663760a542adf37a3"
-    },
-    {
       "path": "RELEASE_NOTES_0.12.14.md",
       "size": 820,
       "sha256": "03a73fdb5a49d71089aa44717a382340270728926ae6fded2cf697b01a5e527b"
     },
     {
+      "path": "RELEASE_NOTES_0.12.15.md",
+      "size": 1261,
+      "sha256": "c45b79e26b63c0c8b74aae24cd4b1c9dc00a607afadbcd5f33eb4400c6e1efc8"
+    },
+    {
       "path": "VERSION",
       "size": 8,
-      "sha256": "7154bceb4ca356c3cc58b09c20693f188c4354e25896f90167f4e0fef3ab19be"
+      "sha256": "3af6849efc098a010a05139a6372213ba350f1d017c8339156eec9d3510226b0"
     },
     {
       "path": "docs/context-actions.md",
@@ -73,8 +73,8 @@
     },
     {
       "path": "docs/module-notifications.md",
-      "size": 5655,
-      "sha256": "9ff8cc831bc35cd3b9ac887b88049cd8de3b19c0d58bdce716bc05ba0a34b74b"
+      "size": 6193,
+      "sha256": "c86fd3b128472dc9ee8496317b435123e0d3fb118be588231082166fc7a7d819"
     },
     {
       "path": "docs/module-quick-actions.md",
@@ -464,7 +464,7 @@
     {
       "path": "package.json",
       "size": 442,
-      "sha256": "2c85e4a9f1e2dde1efc0b6c16025c555312383a30b409c91040847429468855e"
+      "sha256": "e251d18d888266e55110928623d55f0ed436ebbda52eab9567ed16790abb5161"
     },
     {
       "path": "public/modules/modules.json",
@@ -498,8 +498,8 @@
     },
     {
       "path": "src/App.vue",
-      "size": 20413,
-      "sha256": "c2cde1b12008827cb8a01736363422a60c2276d603af2c59ced6c840c857296b"
+      "size": 20950,
+      "sha256": "eaeee141061648e3fa68890f1b8fd461b98a300195267e2c47dc31b1d75c8f22"
     },
     {
       "path": "src/access.js",
@@ -535,6 +535,11 @@
       "path": "src/components/MarkdownContent.vue",
       "size": 326,
       "sha256": "d00640aacfd2b2011d56d4089dde7e4e74a12c81bfc3aa3676b87d551f72bd21"
+    },
+    {
+      "path": "src/components/NoticeDrawer.vue",
+      "size": 4370,
+      "sha256": "78a28a5f168571f2fdf3ec315af4328e43e0cc87aa2cc3b226fa8d7555de6d8a"
     },
     {
       "path": "src/components/QuickActionsDialog.vue",
@@ -688,13 +693,13 @@
     },
     {
       "path": "src/main.js",
-      "size": 5061,
-      "sha256": "d58c1a9f004a5ff719c35ef449ba5f2e611bfb552096eb81c0da3da26f343745"
+      "size": 5250,
+      "sha256": "c1a1ee14d0805f8edc184b66004d0aaa88bee8bbf06ff9ecc9415ca881ddb07a"
     },
     {
       "path": "src/module-loader.js",
-      "size": 7319,
-      "sha256": "6c7ef16e2e257c730c4d06882035b3dca6bce4985455b01c8ad001fa27cdc854"
+      "size": 7410,
+      "sha256": "9a01920ea3a590599633bcae8a8d4d8bf9f8b71216efb560f28fadaa8f4074ed"
     },
     {
       "path": "src/module-status.js",
@@ -708,8 +713,8 @@
     },
     {
       "path": "src/notifications.js",
-      "size": 5331,
-      "sha256": "a0cbb9712c25440a7519072c5f0e7edb44f3d980fb78eb152a29c32dc2c815a8"
+      "size": 11121,
+      "sha256": "2e470fca6669ceb39e08eded007ebf395663d1fa3058d1ab19f259f94f1179dd"
     },
     {
       "path": "src/preferences.js",
@@ -743,13 +748,13 @@
     },
     {
       "path": "src/state.js",
-      "size": 5458,
-      "sha256": "bd84e29aa175ba68609721c19c3b209b7b1d9abb09a7694c2bf3930b77046ef9"
+      "size": 5790,
+      "sha256": "8e951174190c50be3bc2f6ed325397cc2406c3e32c2b423526aa886de539a101"
     },
     {
       "path": "src/styles.css",
-      "size": 81446,
-      "sha256": "3c09eb4d4d958ff9909597d194d2c49bc1444dfcbb0363866628d1addfd503da"
+      "size": 85700,
+      "sha256": "fd7baba0453978f9e86d8f0aadaa9026447011c4c9233c63d0f46857c88045bb"
     },
     {
       "path": "src/unsaved.js",
@@ -763,8 +768,8 @@
     },
     {
       "path": "src/views/ContractsView.vue",
-      "size": 20998,
-      "sha256": "2f24640c69f194ec9a495d95c0bc7036f9305061ffef4ceadc518e3cdb972ff4"
+      "size": 21171,
+      "sha256": "66bfba1ec9ca7d0bcbfd3c5a32efda64ef145d65cd69d8281ba9a1e65ffa863a"
     },
     {
       "path": "src/views/DashboardView.vue",
@@ -824,7 +829,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "be004282e291e71f5e6e539ebb182bc3cf615fe088b729aca8100ada9619b0fd"
+      "sha256": "6a5259ce88225a1f48734aeb8281734b322798ea674f73b2c7cc96290bb696a8"
     },
     {
       "path": "tests/api-raw.mjs",
@@ -833,8 +838,8 @@
     },
     {
       "path": "tests/foundation.sh",
-      "size": 59440,
-      "sha256": "360cc306dad20dccfe0c612cad89e3dab93353b22be9ec387248eaed9468f6a4"
+      "size": 60373,
+      "sha256": "09644f0919a817f53e4fb29295b056eb968fa2157a6222b807eb1f7b4360e4b7"
     },
     {
       "path": "tests/release-integrity.sh",

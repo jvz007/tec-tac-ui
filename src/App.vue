@@ -5,6 +5,7 @@ import LoginPanel from './components/LoginPanel.vue'
 import UnsavedChangesDialog from './components/UnsavedChangesDialog.vue'
 import QuickActionsDialog from './components/QuickActionsDialog.vue'
 import HelpDrawer from './components/HelpDrawer.vue'
+import NoticeDrawer from './components/NoticeDrawer.vue'
 import { logoutTacticalSession } from './api'
 import { state, loadContext } from './state'
 import { requestLeave } from './unsaved'
@@ -211,7 +212,7 @@ function openInNewTab(item) {
   window.open(target.href, '_blank', 'noopener,noreferrer')
   closeNavContextMenu()
 }
-function handleGlobalKey(event) { if (event.key === 'Escape') { closeNavContextMenu(); quickActionsOpen.value = false; help?.close?.() } }
+function handleGlobalKey(event) { if (event.key === 'Escape') { closeNavContextMenu(); quickActionsOpen.value = false; help?.close?.(); notifications?.closeHistory?.() } }
 
 async function retry() {
   await loadContext()
@@ -255,6 +256,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
       </div>
       <button v-if="!publicRoute" class="btn ghost sm" @click="backToTactical">↗ Tactical</button>
       <button v-else-if="state.status !== 'ready'" class="btn ghost sm" @click="navigate('/')">Sign in</button>
+      <button v-if="!publicRoute && state.status === 'ready'" class="iconbtn notice-topbar-button" type="button" title="Notification history" aria-label="Open notification history" @click="notifications?.openHistory?.()"><span aria-hidden="true">🔔</span><b v-if="notifications?.history?.unreadCount" class="notice-badge">{{ notifications.history.unreadCount > 99 ? '99+' : notifications.history.unreadCount }}</b></button>
       <button v-if="!publicRoute && state.status === 'ready'" class="iconbtn help-topbar-button" type="button" title="Help" aria-label="Open contextual help" @click="help?.open?.()">?</button>
       <div v-if="!publicRoute" class="who">
         <div class="av">{{ initials }}</div>
@@ -328,6 +330,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
         <button type="button" class="toast-dismiss" title="Dismiss notification" aria-label="Dismiss notification" @click="notifications.dismiss(toast.id)">×</button>
       </article>
     </div>
+    <NoticeDrawer />
     <HelpDrawer />
     <QuickActionsDialog v-model="quickActionsOpen" />
     <UnsavedChangesDialog />

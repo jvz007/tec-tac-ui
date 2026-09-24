@@ -11,7 +11,7 @@ This contract is intended for short-lived operator notices such as:
 - a warning requires operator attention;
 - an alert has been received while the module UI is active.
 
-Notifications are browser-session UI messages. They are **not** a durable server-side inbox, audit log, email/SMS/WhatsApp delivery mechanism, or replacement for module-owned alert persistence. A module that needs durable notifications must persist them in its backend and may surface a toast when the browser learns about the event.
+Authenticated notifications are shown immediately as browser toasts **and** recorded in Core's per-user Notification Center. The history is an operator convenience surface, not an audit log or replacement for module-owned alert/event persistence. Email/SMS/WhatsApp delivery remains the responsibility of the outbound Notifications module or another integration.
 
 ## Runtime access
 
@@ -57,7 +57,8 @@ notifications.show({
   dedupeKey: 'optional-module-local-key',
   action: {
     label: 'View report',
-    handler: async () => { /* open the module workflow */ },
+    handler: async () => { /* optional live callback */ },
+    route: '/module/example/object/42', // optional durable internal route
     closeOnClick: true,
   },
   metadata: {},
@@ -127,9 +128,9 @@ notifications.success('Quarterly report is ready.', {
 })
 ```
 
-The handler executes in the module's browser runtime. Core shows a busy state while it runs. If the handler throws, Core preserves the original toast and shows an error toast for the failed action.
+A live `handler` executes in the module's browser runtime. An internal `route` may also be supplied so the action remains usable later from Notification Center history. Routes must begin with `/` and may not be external or protocol-relative URLs. If no live handler is supplied, Core navigates to the route directly.
 
-The action should normally reuse an existing module workflow. Do not place privileged logic in the toast callback; backend authorization remains authoritative.
+Core persists only the action label and safe internal route. JavaScript handlers and runtime `metadata` are never persisted. The action should normally reuse an existing module workflow. Do not place privileged logic in the toast callback; backend authorization remains authoritative.
 
 ## Limits and safety
 
@@ -141,7 +142,9 @@ Core enforces:
 - action label maximum: 60 characters;
 - dedupe key maximum: 120 characters;
 - duration maximum: 60 seconds unless sticky;
-- maximum five visible toasts.
+- maximum five visible toasts;
+- persistent history capped to the latest 500 notices per user and 30 days;
+- only plain-text notice content and optional internal route actions are stored; runtime metadata is not persisted.
 
 Modules must not use notifications to expose secrets, API tokens, passwords, recovery keys, or other sensitive values.
 
