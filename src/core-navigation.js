@@ -14,6 +14,7 @@ export function coreNavigation(context = {}) {
     { label: 'Schedules', icon: '◷', to: '/schedules', section: 'Operations', visible: capabilities.manage_schedules !== false, owner: 'core' },
     { label: 'Modules', icon: '▦', to: '/modules', section: 'Administration', visible: true, owner: 'core' },
     { label: 'Access', icon: '⛨', to: '/access', section: 'Administration', visible: capabilities.list_accounts !== false || capabilities.list_roles !== false, owner: 'core' },
+    { label: 'Clients & Sites', icon: '▤', to: '/resources', section: 'Administration', visible: true, owner: 'core' },
     { label: 'Scheduler Configuration', icon: '◷', to: '/system/scheduler', section: 'Administration', visible: capabilities.manage_schedules === true || superuser, owner: 'core' },
     { label: 'System Updates', icon: '⇧', to: '/system/updates', section: 'Administration', visible: capabilities.manage_modules === true || superuser, owner: 'core' },
     { label: 'Storage & Housekeeping', icon: '⌫', to: '/system/storage', section: 'Administration', visible: capabilities.manage_modules === true || superuser, owner: 'core' },

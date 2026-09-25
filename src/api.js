@@ -483,3 +483,51 @@ export async function getSystemDiagnostics({ liveCapabilities = false } = {}) {
   const query = liveCapabilities ? '?live_capabilities=1' : ''
   return apiFetch(`/api/tfd/system/diagnostics/${query}`)
 }
+
+// Tec-Tac Core Resource Directory APIs
+export async function listResourceClients({ search = '', page = 1, pageSize = 100 } = {}) {
+  const query = new URLSearchParams()
+  if (search) query.set('search', search)
+  query.set('page', String(page))
+  query.set('page_size', String(pageSize))
+  return apiFetch(`/api/tfd/resources/clients/?${query.toString()}`)
+}
+
+export async function createResourceClient(name) {
+  return apiFetch('/api/tfd/resources/clients/', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
+}
+
+export async function updateResourceClient(clientId, name) {
+  return apiFetch(`/api/tfd/resources/clients/${clientId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify({ name }),
+  })
+}
+
+export async function listResourceSites({ clientId = null, search = '', page = 1, pageSize = 100 } = {}) {
+  const query = new URLSearchParams()
+  if (clientId) query.set('client_id', String(clientId))
+  if (search) query.set('search', search)
+  query.set('page', String(page))
+  query.set('page_size', String(pageSize))
+  return apiFetch(`/api/tfd/resources/sites/?${query.toString()}`)
+}
+
+export async function createResourceSite({ clientId, name }) {
+  return apiFetch('/api/tfd/resources/sites/', {
+    method: 'POST',
+    body: JSON.stringify({ client_id: clientId, name }),
+  })
+}
+
+export async function updateResourceSite(siteId, { clientId, name }) {
+  const payload = { name }
+  if (clientId) payload.client_id = clientId
+  return apiFetch(`/api/tfd/resources/sites/${siteId}/`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}

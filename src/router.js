@@ -2,6 +2,7 @@ import { createRouter, createWebHashHistory } from 'vue-router'
 import DashboardView from './views/DashboardView.vue'
 import ModulesView from './views/ModulesView.vue'
 import AccessView from './views/AccessView.vue'
+import ResourcesView from './views/ResourcesView.vue'
 import SystemUpdatesView from './views/SystemUpdatesView.vue'
 import StorageView from './views/StorageView.vue'
 import DiagnosticsView from './views/DiagnosticsView.vue'
@@ -24,6 +25,7 @@ export const router = createRouter({
     { path: '/schedules', name: 'schedules', component: SchedulesView, meta: { title: 'Schedules' } },
     { path: '/system/scheduler', name: 'scheduler-settings', component: SchedulerSettingsView, meta: { title: 'Scheduler Configuration' } },
     { path: '/access', name: 'access', component: AccessView, meta: { title: 'Access' } },
+    { path: '/resources', name: 'resources', component: ResourcesView, meta: { title: 'Clients & Sites' } },
     { path: '/system/updates', name: 'system-updates', component: SystemUpdatesView, meta: { title: 'System Updates' } },
     { path: '/system/storage', name: 'system-storage', component: StorageView, meta: { title: 'Storage & Housekeeping' } },
     { path: '/system/diagnostics', name: 'system-diagnostics', component: DiagnosticsView, meta: { title: 'Troubleshooting & Diagnostics' } },

@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.26",
+  "version": "0.12.27",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -27,14 +27,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.26.md",
-      "size": 447,
-      "sha256": "c89afee121c096b2f35e1762ba4b1faae3bc322bf9d60f20fc7985c16ef5a206"
+      "path": "RELEASE_NOTES_0.12.27.md",
+      "size": 577,
+      "sha256": "d49c8d1bcf1555e962845f2263318bf1525b1705a679050a862c5b0de676e797"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "7de1029e8fc68bf9624c0ff143eb927b5e9ea1846f28c642e5a6f917d17d8af7"
+      "sha256": "b58f1ce0d259da2350cfada92fcfeac9a7a691aac08584110eebe3d6f02be765"
     },
     {
       "path": "docs/context-actions.md",
@@ -479,7 +479,7 @@
     {
       "path": "package.json",
       "size": 442,
-      "sha256": "b554776a395a258c005bd3162b65bc2d9a6da25da1bc6e8e8eba7f2f07d310ba"
+      "sha256": "4ccb82d0c889bdd48a3ea6381e8b798dfcd1a4ff8d68fff4b26d454ca1968dc2"
     },
     {
       "path": "public/modules/modules.json",
@@ -528,8 +528,8 @@
     },
     {
       "path": "src/api.js",
-      "size": 17504,
-      "sha256": "415249a1e7170c0362d2cdd5b6dd48d08c4c7da66c00f5b3384c29e1491b78c6"
+      "size": 19074,
+      "sha256": "6f10641ba55c4bdeff975733dbc11971434c6469e58aefc9fd1faf78ccbf2d73"
     },
     {
       "path": "src/audit.js",
@@ -618,8 +618,8 @@
     },
     {
       "path": "src/core-navigation.js",
-      "size": 1753,
-      "sha256": "19e1ecfcef3fbb7fcd941a261cfe1db31e4d7d5ef8de82a63b9e78bb5ee54c6b"
+      "size": 1875,
+      "sha256": "01ebd3d4f99f7002e29ae3dd5170feaec6fbd60f9380196feb0d405a27f928aa"
     },
     {
       "path": "src/dashboard-core-widgets.js",
@@ -768,8 +768,8 @@
     },
     {
       "path": "src/router.js",
-      "size": 2917,
-      "sha256": "b8331147f9b5b1e23dd947083dfa1b897469302f073a1951e9dd64df13bd4bd5"
+      "size": 3080,
+      "sha256": "6529d0dff9c38ce3186641d83612b8322e618066fa4faed7dc296951c052710a"
     },
     {
       "path": "src/scheduler.js",
@@ -842,6 +842,11 @@
       "sha256": "0313ffbe66dc89021d5a3b8dee18d96038d164d573bf1d6f32df377f4c9c313c"
     },
     {
+      "path": "src/views/ResourcesView.vue",
+      "size": 10106,
+      "sha256": "319f7d5b3fb1b51e0378b55004398ea93cc7cf515f65b8e537e9a77f00db5d8d"
+    },
+    {
       "path": "src/views/SchedulerSettingsView.vue",
       "size": 6302,
       "sha256": "11ca7c52207e343e41f9c7c153d4782f8f0e714e5f350c5dfba346b8872cae6d"
@@ -864,7 +869,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "da86e0c14fddcd530f0be131226b5832c706377402efbe27bb6e8b70781912bd"
+      "sha256": "41fdbafb5a30db83b298f516af92a8556ea9bfd9e342998375dbf75866d6f444"
     },
     {
       "path": "tests/api-raw.mjs",
