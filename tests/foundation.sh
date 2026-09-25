@@ -711,3 +711,8 @@ grep -q 'permissionSet.has' "${ROOT}/src/main.js" || fail "Set-backed shell perm
 grep -q 'permissionSet.has' "${ROOT}/src/module-loader.js" || fail "Set-backed module permission lookup missing"
 node --check "${ROOT}/src/notifications.js"
 echo "[TEST] PASS notice center and startup optimisation"
+
+# Scheduler durability UI
+grep -q "forceDeleteRequired" "$ROOT/src/views/SchedulesView.vue"
+grep -q "Fail active runs & delete" "$ROOT/src/views/SchedulesView.vue"
+grep -q "force=true" "$ROOT/src/scheduler.js"

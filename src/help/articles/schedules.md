@@ -22,3 +22,12 @@ Retention, health and self-tests are intentionally separated from this operation
 ## Ownership
 
 **User schedules** are created and edited by operators in this page. **Module schedules** are definitions owned by installed modules and are intentionally read-only here; change them from the owning module. Both can be executed by Core, and their histories are kept in separate views for clarity.
+
+
+## Stale and missed runs
+
+Core recovers abandoned Scheduler runs automatically. A queued run that never reaches a worker is marked **Failed / Stale** after the configured queue window. A running action is marked stale only after that action's declared timeout plus the Core recovery grace. A delayed Scheduler tick has a three-minute tolerance before an occurrence is classified as missed. Missed occurrences are retained in history as skipped records rather than disappearing silently.
+
+## Deleting a schedule with active runs
+
+Normal delete refuses while a run is queued or running. If the run is genuinely stuck, retry Delete and Tec-Tac will offer **Fail active runs & delete**. This requires typing the schedule name. Core marks each active run `ForceDeleted`, keeps its history/snapshot, and then removes the schedule definition.

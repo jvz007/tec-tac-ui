@@ -5,7 +5,7 @@ export function listSchedules(ownerType=null){ const q=ownerType?`?owner_type=${
 export function getSchedule(id){ return apiFetch(`/api/tfd/scheduler/schedules/${encodeURIComponent(id)}/`) }
 export function createSchedule(payload){ return apiFetch('/api/tfd/scheduler/schedules/',{method:'POST',body:JSON.stringify(payload)}) }
 export function updateSchedule(id,payload){ return apiFetch(`/api/tfd/scheduler/schedules/${encodeURIComponent(id)}/`,{method:'PATCH',body:JSON.stringify(payload)}) }
-export function deleteSchedule(id){ return apiFetch(`/api/tfd/scheduler/schedules/${encodeURIComponent(id)}/`,{method:'DELETE'}) }
+export function deleteSchedule(id,{force=false}={}){ const q=force?'?force=true':''; return apiFetch(`/api/tfd/scheduler/schedules/${encodeURIComponent(id)}/${q}`,{method:'DELETE'}) }
 export function runScheduleNow(id){ return apiFetch(`/api/tfd/scheduler/schedules/${encodeURIComponent(id)}/run/`,{method:'POST',body:JSON.stringify({})}) }
 export function listScheduleRuns(scheduleId=null,ownerType=null){ const params=new URLSearchParams(); if(scheduleId)params.set('schedule_id',scheduleId); if(ownerType)params.set('owner_type',ownerType); const q=params.toString()?`?${params.toString()}`:''; return apiFetch(`/api/tfd/scheduler/runs/${q}`) }
 
