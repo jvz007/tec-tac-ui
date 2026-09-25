@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   checkOnlineSystemUpdate,
   discardSystemUpdatePackage,
@@ -38,7 +38,8 @@ const trustPolicy = ref(null)
 const trustPolicyDraft = ref('unsigned')
 const trustPolicySaving = ref(false)
 const trustPolicyError = ref('')
-const trustPolicyTotp = ref('')
+const trustPolicyGuidance = ref(null)
+const trustPolicyCommandCopied = ref(false)
 
 const trustPolicyLowering = computed(() => {
   const current = trustPolicy.value?.minimum_level
@@ -139,7 +140,8 @@ async function openTrustPolicy() {
   try {
     trustPolicy.value = await getUpdateTrustPolicy()
     trustPolicyDraft.value = trustPolicy.value?.minimum_level || 'unsigned'
-    trustPolicyTotp.value = ''
+    trustPolicyGuidance.value = null
+    trustPolicyCommandCopied.value = false
   } catch (err) {
     trustPolicyError.value = err?.message || 'Unable to load update trust policy.'
   }
@@ -149,24 +151,25 @@ function closeTrustPolicy() {
   if (trustPolicySaving.value) return
   trustPolicyOpen.value = false
   trustPolicyError.value = ''
-  trustPolicyTotp.value = ''
+  trustPolicyGuidance.value = null
+  trustPolicyCommandCopied.value = false
 }
 
 async function saveTrustPolicy() {
   if (trustPolicySaving.value) return
   trustPolicySaving.value = true
   trustPolicyError.value = ''
+  trustPolicyGuidance.value = null
+  trustPolicyCommandCopied.value = false
   try {
-    if (trustPolicyLowering.value && !trustPolicyTotp.value.trim()) {
-      trustPolicyError.value = 'Enter a fresh authenticator code to lower the trust policy.'
+    const result = await setUpdateTrustPolicy(trustPolicyDraft.value)
+    if (result?.status === 'console_required') {
+      trustPolicyGuidance.value = result
       return
     }
-    trustPolicy.value = await setUpdateTrustPolicy(trustPolicyDraft.value, {
-      totp: trustPolicyLowering.value ? trustPolicyTotp.value.trim() : '',
-    })
+    trustPolicy.value = result
     if (status.value) status.value.update_trust_policy = trustPolicy.value
     trustPolicyOpen.value = false
-    trustPolicyTotp.value = ''
     await refreshStableReleases()
   } catch (err) {
     trustPolicyError.value = err?.message || 'Unable to save update trust policy.'
@@ -174,6 +177,20 @@ async function saveTrustPolicy() {
     trustPolicySaving.value = false
   }
 }
+
+async function copyTrustPolicyCommand() {
+  const command = trustPolicyGuidance.value?.command
+  if (!command || !navigator.clipboard) return
+  await navigator.clipboard.writeText(command)
+  trustPolicyCommandCopied.value = true
+  window.setTimeout(() => { trustPolicyCommandCopied.value = false }, 1800)
+}
+
+watch(trustPolicyDraft, () => {
+  trustPolicyGuidance.value = null
+  trustPolicyCommandCopied.value = false
+})
+
 
 function releaseAccepted(component) {
   const acceptance = online.value[component]?.latest_release?.release_trust?.acceptance_policy
@@ -587,15 +604,21 @@ onBeforeUnmount(() => {
             <span class="mono trust-rank">L{{ level.rank }}</span>
           </label>
         </div>
-        <div v-if="trustPolicyLowering" class="trust-stepup mt">
-          <div class="state-inline warning"><b>Lowering the trust floor requires step-up authentication.</b> Enter a fresh authenticator code from the current effective superuser account. Core validates the active Knox session and TOTP independently before changing the root-owned policy.</div>
-          <label class="field compact-field mt">
-            <span>Authenticator code</span>
-            <input v-model="trustPolicyTotp" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="000000" :disabled="trustPolicySaving" />
-          </label>
+        <div v-if="trustPolicyLowering" class="state-inline mt">
+          <b>Lowering the trust floor is a console-controlled operation.</b> Saving this selection will provide the temporary root-console command; it will not change the policy from the web process.
+        </div>
+        <div v-if="trustPolicyGuidance" class="trust-console-guidance mt" role="status">
+          <div class="state-inline">
+            <b>Console change required.</b> Run the command below from the Tec-Tac server with normal <span class="mono">sudo</span> authentication. Temporary reductions automatically revert to the previous level.
+          </div>
+          <div class="trust-console-command">
+            <code class="mono">{{ trustPolicyGuidance.command }}</code>
+            <button class="btn sm" type="button" @click="copyTrustPolicyCommand">{{ trustPolicyCommandCopied ? 'Copied' : 'Copy command' }}</button>
+          </div>
+          <a v-if="trustPolicyGuidance.help_url" class="btn sm ghost mt" :href="trustPolicyGuidance.help_url" target="_blank" rel="noopener noreferrer">How to change the trust level</a>
         </div>
         <div class="state-inline warning mt"><b>Policy changes take effect immediately for new inspections and install requests.</b> Raising the level can block unsigned or lower-tier module packages and system releases.</div>
-        <div class="modal-actions"><button class="btn" type="button" :disabled="trustPolicySaving" @click="closeTrustPolicy">Cancel</button><button class="btn primary" type="button" :disabled="trustPolicySaving || !trustPolicy?.levels?.length || (trustPolicyLowering && !trustPolicyTotp.trim())" @click="saveTrustPolicy">{{ trustPolicySaving ? 'Saving…' : 'Save policy' }}</button></div>
+        <div class="modal-actions"><button class="btn" type="button" :disabled="trustPolicySaving" @click="closeTrustPolicy">Cancel</button><button class="btn primary" type="button" :disabled="trustPolicySaving || !trustPolicy?.levels?.length" @click="saveTrustPolicy">{{ trustPolicySaving ? 'Saving…' : 'Save policy' }}</button></div>
       </section>
     </div>
 

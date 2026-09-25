@@ -699,8 +699,10 @@ grep -q "signed_production" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "s
 grep -q "secure_signed" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "secure signed trust tier missing"
 grep -q "setUpdateTrustPolicy" "${ROOT}/src/api.js" || fail "trust policy API client missing"
 grep -q "trustPolicyLowering" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "trust policy downgrade detection missing"
-grep -q "Authenticator code" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "trust policy downgrade step-up field missing"
-grep -q "totp: trustPolicyLowering.value" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "trust policy downgrade TOTP submission missing"
+grep -q "console_required" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "trust policy console guidance handling missing"
+grep -q "Copy command" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "trust policy console command copy action missing"
+grep -q "How to change the trust level" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "trust policy help link missing"
+! grep -q "Authenticator code" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "obsolete trust-policy TOTP downgrade field remains"
 grep -q "releaseAccepted" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "stable release trust acceptance guard missing"
 echo "[TEST] PASS shared update/module trust policy UI"
 

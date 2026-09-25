@@ -17,3 +17,16 @@ Lifecycle jobs retain failure details so an interrupted or failed update can be 
 ## Trust policy changes
 
 Raising the global trust floor is applied immediately by Core. Lowering the trust floor is a higher-risk operation and requires a fresh authenticator code from an effective superuser. Core independently verifies the active Knox session and TOTP before updating the root-owned policy. A direct root-console policy change remains available as a break-glass recovery path.
+
+
+## Lowering the trust floor
+
+Trust-floor reductions are intentionally not performed by the web process. Tec-Tac returns a root-console command instead. Run it on the server with normal `sudo` authentication, provide a reason, and confirm the requested level. Temporary reductions automatically revert after 8 hours unless `--hours` is specified.
+
+Example:
+
+```text
+sudo tec-tac-trust-policy set signed_development --reason "Testing a development-signed release" --hours 8
+```
+
+The console tool writes `/var/log/tec-tac/trust-policy-audit.jsonl` and schedules the revert with a persistent systemd timer.
