@@ -35,15 +35,17 @@ for f in \
   [[ -f "${ROOT}/${f}" ]] || fail "missing ${f}"
 done
 
-for needle in "'/v2/checkcreds/'" "'/v2/login/'" "'/accounts/users/setup_totp/'" "'/logout/'"; do
+for needle in "'/v2/checkcreds/'" "'/v2/login/'" "'/logout/'"; do
   grep -q "${needle}" "${ROOT}/src/api.js" || fail "Tactical auth endpoint ${needle} missing"
 done
-grep -q 'fetchTacticalTotpQr' "${ROOT}/src/api.js"
+grep -q 'auth/totp/enrollment' "${ROOT}/src/api.js" || fail "Core one-time TOTP enrollment endpoint missing"
+if grep -q 'fetchTacticalTotpQr' "${ROOT}/src/api.js"; then fail "reusable TOTP QR retrieval must be retired"; fi
+if grep -q '/accounts/users/setup_totp/' "${ROOT}/src/api.js"; then fail "UI must not bypass Core one-time TOTP enrollment"; fi
 grep -q 'tecTacTotpIssuer' "${ROOT}/src/api.js" || fail "colon-free Tec-Tac TOTP issuer helper missing" || fail "TOTP QR helper missing"
-grep -q '/api/tfd/auth/totp/qr/' "${ROOT}/src/api.js" || fail "Tec-Tac TOTP QR endpoint missing"
+grep -q '/api/tfd/auth/totp/enrollment/' "${ROOT}/src/api.js" || fail "Tec-Tac one-time TOTP enrollment endpoint missing"
 grep -q 'tecTacUiBaseUrl' "${ROOT}/src/api.js" || fail "Tec-Tac UI base URL helper missing"
-grep -q 'ui_url: tecTacUiBaseUrl()' "${ROOT}/src/api.js" || fail "TOTP QR request does not bind issuer to the actual UI URL"
-grep -q 'tacticalTotpProvisioningUri' "${ROOT}/src/api.js" || fail "manual TOTP provisioning URI override missing"
+grep -q 'ui_url: tecTacUiBaseUrl()' "${ROOT}/src/api.js" || fail "TOTP enrollment request does not bind issuer to the actual UI URL"
+grep -q 'data.qr_svg' "${ROOT}/src/api.js" || fail "one-time TOTP enrollment response validation missing"
 grep -q 'totp-qr-image' "${ROOT}/src/components/LoginPanel.vue" || fail "TOTP QR image UI missing"
 grep -q "'/api/tfd/modules/v2/'" "${ROOT}/src/modules.js" || fail "module v2 catalog API missing"
 grep -q "modules/v2/packages/inspect/" "${ROOT}/src/modules.js" || fail "module v2 package inspect API missing"
@@ -721,3 +723,9 @@ echo "[TEST] PASS notice center and startup optimisation"
 grep -q "forceDeleteRequired" "$ROOT/src/views/SchedulesView.vue"
 grep -q "Fail active runs & delete" "$ROOT/src/views/SchedulesView.vue"
 grep -q "force=true" "$ROOT/src/scheduler.js"
+
+# Trust-policy help must stay inside the built-in Knowledge Base.
+grep -q "core.trust-policy" "${ROOT}/src/help/core-articles.js" || fail "trust-policy help registration missing"
+grep -q "trust-policy.md?raw" "${ROOT}/src/help/core-articles.js" || fail "trust-policy article import missing"
+grep -q "help.open\|help?.open" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "System Updates does not open built-in help"
+if grep -q "trustPolicyGuidance.help_url" "${ROOT}/src/views/SystemUpdatesView.vue"; then fail "trust-policy guidance still binds an external help URL"; fi

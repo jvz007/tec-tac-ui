@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   checkOnlineSystemUpdate,
   discardSystemUpdatePackage,
@@ -13,6 +13,7 @@ import {
   stageOnlineSystemUpdate,
 } from '../api'
 
+const help = inject('tecTacHelp', null)
 const status = ref(null)
 const loading = ref(true)
 const error = ref('')
@@ -176,6 +177,13 @@ async function saveTrustPolicy() {
   } finally {
     trustPolicySaving.value = false
   }
+}
+
+
+function openTrustPolicyHelp() {
+  const articleId = trustPolicyGuidance.value?.help_article || 'core.trust-policy'
+  try { help?.open?.(articleId) }
+  catch { help?.open?.('core.trust-policy') }
 }
 
 async function copyTrustPolicyCommand() {
@@ -615,7 +623,7 @@ onBeforeUnmount(() => {
             <code class="mono">{{ trustPolicyGuidance.command }}</code>
             <button class="btn sm" type="button" @click="copyTrustPolicyCommand">{{ trustPolicyCommandCopied ? 'Copied' : 'Copy command' }}</button>
           </div>
-          <a v-if="trustPolicyGuidance.help_url" class="btn sm ghost mt" :href="trustPolicyGuidance.help_url" target="_blank" rel="noopener noreferrer">How to change the trust level</a>
+          <button v-if="trustPolicyGuidance.help_article" class="btn sm ghost mt" type="button" @click="openTrustPolicyHelp">How to change the trust level</button>
         </div>
         <div class="state-inline warning mt"><b>Policy changes take effect immediately for new inspections and install requests.</b> Raising the level can block unsigned or lower-tier module packages and system releases.</div>
         <div class="modal-actions"><button class="btn" type="button" :disabled="trustPolicySaving" @click="closeTrustPolicy">Cancel</button><button class="btn primary" type="button" :disabled="trustPolicySaving || !trustPolicy?.levels?.length" @click="saveTrustPolicy">{{ trustPolicySaving ? 'Saving…' : 'Save policy' }}</button></div>

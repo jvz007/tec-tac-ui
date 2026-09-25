@@ -6,6 +6,7 @@ import schedulerConfiguration from './articles/scheduler-configuration.md?raw'
 import modules from './articles/modules.md?raw'
 import access from './articles/access.md?raw'
 import systemUpdates from './articles/system-updates.md?raw'
+import trustPolicy from './articles/trust-policy.md?raw'
 import storage from './articles/storage.md?raw'
 import publicContracts from './articles/public-contracts.md?raw'
 import preferences from './articles/preferences.md?raw'
@@ -22,6 +23,7 @@ const CORE_ARTICLES = [
   { id: 'core.modules', title: 'Modules', category: 'Core Administration', summary: 'Module lifecycle, bundles, dependencies, visibility and package inspection.', order: 20, keywords: ['modules', 'install', 'bundle', 'update', 'visibility'], routes: ['/modules'], content: modules },
   { id: 'core.access', title: 'Access', category: 'Core Administration', summary: 'Tactical identities, Tec-Tac permissions and role editing safeguards.', order: 30, keywords: ['access', 'roles', 'permissions', 'users'], routes: ['/access'], content: access },
   { id: 'core.system-updates', title: 'System Updates', category: 'Core Administration', summary: 'Framework/UI release discovery and controlled update lifecycle.', order: 40, keywords: ['updates', 'release', 'framework', 'ui'], routes: ['/system/updates'], content: systemUpdates },
+  { id: 'core.trust-policy', title: 'Changing the trust level', category: 'Core Administration', summary: 'What trust levels mean, and how to lower one temporarily from the server console.', order: 45, keywords: ['trust', 'signing', 'unsigned', 'downgrade', 'console'], routes: ['/system/updates'], content: trustPolicy },
   { id: 'core.storage', title: 'Storage & Housekeeping', category: 'Core Administration', summary: 'Storage visibility, retention and cleanup controls.', order: 50, keywords: ['storage', 'housekeeping', 'retention', 'cleanup'], routes: ['/system/storage'], content: storage },
   { id: 'core.troubleshooting-diagnostics', title: 'Troubleshooting & Diagnostics', category: 'Core Administration', summary: 'Read-only Core system diagnostics and health checks.', order: 55, keywords: ['diagnostics', 'troubleshooting', 'health', 'services', 'migration'], routes: ['/system/diagnostics'], content: troubleshootingDiagnostics },
   { id: 'core.troubleshooting-migrations', title: 'Migration drift', category: 'Troubleshooting', summary: 'Understand Core and module Django migration drift and the supported repair workflow.', order: 10, keywords: ['migration', 'makemigrations', 'drift', 'django'], routes: ['/system/diagnostics'], content: troubleshootingMigrations },

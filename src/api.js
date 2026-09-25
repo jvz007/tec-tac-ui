@@ -15,17 +15,6 @@ export function tecTacTotpIssuer() {
   return `${url.hostname}${path}`.replaceAll(':', '-').slice(0, 160) || 'tec-tac'
 }
 
-function tacticalTotpProvisioningUri(username, secret, issuer = tecTacTotpIssuer()) {
-  const account = encodeURIComponent(String(username || ''))
-  const safeIssuer = String(issuer || 'Tec-Tac').replaceAll(':', '-')
-  const issuerLabel = encodeURIComponent(safeIssuer)
-  const params = new URLSearchParams({
-    secret: String(secret || ''),
-    issuer: safeIssuer,
-  })
-  return `otpauth://totp/${issuerLabel}:${account}?${params.toString()}`
-}
-
 export function tacticalToken() {
   return localStorage.getItem('access_token')
 }
@@ -74,6 +63,7 @@ export const CORE_SESSION_FAILURE_CODES = new Set([
   'session_ip_changed', // Framework 1.15.16 compatibility alias.
   'session_revoked',
   'session_invalid_state',
+  'mfa_enrollment_required',
 ])
 
 export function coreSessionFailureCode(payload) {
@@ -88,6 +78,7 @@ export function coreSessionFailureMessage(code) {
   if (code === 'session_ip_change' || code === 'session_ip_changed') return 'Your network address changed. Sign in again to continue.'
   if (code === 'session_revoked') return 'Your Tec-Tac session was revoked. Sign in again.'
   if (code === 'session_invalid_state') return 'Your Tec-Tac session is no longer trusted. Sign in again.'
+  if (code === 'mfa_enrollment_required') return 'Complete authenticator enrollment before using Tec-Tac.'
   return null
 }
 
@@ -234,73 +225,26 @@ export async function loginTacticalWithBackupCode(username, password, backupCode
 }
 
 
-export async function setupTacticalTotp() {
-  const data = await apiFetch('/accounts/users/setup_totp/', { method: 'POST' })
-  if (!data || typeof data !== 'object' || !data.totp_key) {
-    const error = new Error('Tactical did not return TOTP enrollment details.')
+export async function setupTacticalTotp(password) {
+  const query = new URLSearchParams({ ui_url: tecTacUiBaseUrl() })
+  const data = await apiFetch(`/api/tfd/auth/totp/enrollment/?${query.toString()}`, {
+    method: 'POST',
+    body: JSON.stringify({ password: String(password || '') }),
+  })
+  if (!data || typeof data !== 'object' || !data.totp_key || !data.qr_url || !data.qr_svg) {
+    const error = new Error('Tec-Tac did not return one-time TOTP enrollment details.')
     error.status = 502
     error.payload = data
     throw error
   }
 
-  // Tactical's upstream serializer derives issuer_name from the first CORS
-  // origin. That can be an API/test hostname rather than the Tec-Tac UI the
-  // operator is enrolling. Keep Tactical as secret/auth authority but replace
-  // only the provisioning label with the actual Tec-Tac UI base URL.
-  const uiUrl = tecTacUiBaseUrl()
-  const issuer = tecTacTotpIssuer()
-  return {
-    ...data,
-    qr_url: tacticalTotpProvisioningUri(data.username, data.totp_key, issuer),
-    ui_url: uiUrl,
-    issuer,
-  }
+  // Core destroys Tactical's short-lived setup Knox token before returning the
+  // seed. Remove the now-invalid browser copy too. Final verification uses
+  // Tactical's normal /v2/login/ endpoint and returns a fresh operational token.
+  clearTacticalSession()
+  return data
 }
 
-export async function fetchTacticalTotpQr() {
-  const base = apiBase()
-  const token = tacticalToken()
-  if (!base) throw new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.')
-  if (!token) {
-    const error = new Error('No Tactical setup token is present in this browser session.')
-    error.status = 401
-    throw error
-  }
-
-  const query = new URLSearchParams({ ui_url: tecTacUiBaseUrl() })
-  const response = await fetch(`${base}/api/tfd/auth/totp/qr/?${query.toString()}`, {
-    method: 'GET',
-    headers: {
-      Accept: 'image/svg+xml, application/json',
-      Authorization: `Token ${token}`,
-    },
-    credentials: 'include',
-    cache: 'no-store',
-  })
-
-  if (!response.ok) {
-    const payload = await parseResponsePayload(response)
-    if (response.status === 401) {
-      const sessionCode = coreSessionFailureCode(payload)
-      invalidateTacticalSession(
-        coreSessionFailureMessage(sessionCode) || messageFromPayload(payload, 'Your Tactical session is no longer valid. Sign in again.'),
-        { code: sessionCode },
-      )
-    }
-    const error = new Error(messageFromPayload(payload, `TOTP QR request failed: ${response.status} ${response.statusText}`))
-    error.status = response.status
-    error.payload = payload
-    throw error
-  }
-
-  const blob = await response.blob()
-  if (!blob.type.includes('svg') && !blob.type.includes('image')) {
-    const error = new Error('Tec-Tac did not return a QR image.')
-    error.status = 502
-    throw error
-  }
-  return blob
-}
 
 export async function validateTacticalSession() {
   const base = apiBase()

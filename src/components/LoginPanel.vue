@@ -3,7 +3,6 @@ import { computed, nextTick, ref } from 'vue'
 import {
   checkTacticalCredentials,
   clearTacticalSession,
-  fetchTacticalTotpQr,
   loginTacticalWithTotp,
   loginTacticalWithBackupCode,
   setupTacticalTotp,
@@ -22,6 +21,7 @@ const qrSrc = ref('')
 const qrError = ref('')
 const copied = ref(false)
 const totpInput = ref(null)
+const setupPasswordInput = ref(null)
 
 const setupKey = computed(() => setup.value?.totp_key || '')
 const setupUri = computed(() => setup.value?.qr_url || '')
@@ -51,7 +51,13 @@ async function submitCredentials() {
       return
     }
     if (result.requiresTotpSetup) {
-      await beginTotpSetup()
+      // The credential check proved the password to Tactical and returned a
+      // short-lived setup token. Require a fresh second password entry before
+      // Core will disclose the one-time authenticator seed.
+      password.value = ''
+      step.value = 'setup-proof'
+      await nextTick()
+      setupPasswordInput.value?.focus()
       return
     }
     finishLogin()
@@ -70,25 +76,38 @@ function clearQr() {
 
 async function beginTotpSetup() {
   error.value = ''
+  copied.value = false
+  if (!password.value) {
+    error.value = 'Re-enter your current password to begin authenticator enrollment.'
+    return
+  }
+  busy.value = true
   clearQr()
-  const result = await setupTacticalTotp()
-  if (!result || !result.totp_key || !result.qr_url) {
-    throw Object.assign(new Error('Tactical did not return the authenticator setup details.'), { status: 502 })
-  }
-  setup.value = result
   try {
-    const qrBlob = await fetchTacticalTotpQr()
-    qrSrc.value = URL.createObjectURL(qrBlob)
+    const result = await setupTacticalTotp(password.value)
+    if (!result || !result.totp_key || !result.qr_url || !result.qr_svg) {
+      throw Object.assign(new Error('Tec-Tac did not return the authenticator setup details.'), { status: 502 })
+    }
+    setup.value = result
+    try {
+      const qrBlob = new Blob([result.qr_svg], { type: 'image/svg+xml;charset=utf-8' })
+      qrSrc.value = URL.createObjectURL(qrBlob)
+    } catch (err) {
+      // The secret is intentionally one-time. Keep the manual key visible if the
+      // browser cannot render the bundled SVG; never attempt to retrieve it again.
+      qrError.value = err?.message || 'QR code could not be rendered.'
+    }
+    twofactor.value = ''
+    step.value = 'setup'
+    await nextTick()
+    totpInput.value?.focus()
   } catch (err) {
-    // Enrollment is already active at this point. Keep the manual key visible
-    // and report QR failure without abandoning the setup flow.
-    qrError.value = err?.message || 'QR code could not be generated.'
+    error.value = normalizeError(err)
+  } finally {
+    busy.value = false
   }
-  twofactor.value = ''
-  step.value = 'setup'
-  await nextTick()
-  totpInput.value?.focus()
 }
+
 
 async function submitTotp() {
   error.value = ''
@@ -140,9 +159,9 @@ function useAuthenticator() {
 }
 
 async function submitSetupTotp() {
-  // Tactical marks the secret active when /accounts/users/setup_totp/ is called.
-  // Complete enrollment by proving the generated code through Tactical's normal
-  // /v2/login/ endpoint before Tec-Tac exposes the operational shell.
+  // Core has issued the secret once and destroyed the setup token. Complete
+  // enrollment by proving the generated code through Tactical's normal /v2/login/
+  // endpoint before Tec-Tac exposes the operational shell.
   await submitTotp()
 }
 
@@ -265,6 +284,24 @@ function openTactical() {
       </div>
     </form>
 
+    <form v-else-if="step === 'setup-proof'" class="login-form" @submit.prevent="beginTotpSetup">
+      <div class="auth-step">
+        <span class="pill warn">SETUP SESSION</span>
+        <span class="mono">{{ username }}</span>
+      </div>
+
+      <div class="state-inline warning"><b>Fresh password proof required.</b> Tactical has issued a short-lived setup credential, but Tec-Tac will not disclose an authenticator seed until you enter your current password again.</div>
+      <label class="field">
+        <span>Re-enter current password</span>
+        <input ref="setupPasswordInput" v-model="password" type="password" autocomplete="current-password" :disabled="busy" />
+      </label>
+      <div v-if="error" class="auth-error" role="alert">{{ error }}</div>
+      <div class="login-actions">
+        <button class="btn primary" type="submit" :disabled="busy || !password">{{ busy ? 'Preparing enrollment…' : 'Begin authenticator setup' }}</button>
+        <button class="btn" type="button" :disabled="busy" @click="backToCredentials">Back</button>
+      </div>
+    </form>
+
     <form v-else class="login-form" @submit.prevent="submitSetupTotp">
       <div class="auth-step">
         <span class="pill warn">AUTHENTICATOR SETUP</span>
@@ -320,7 +357,7 @@ function openTactical() {
       <p class="field-help">Enter the current code from the account you just added. Tec-Tac only opens after Tactical verifies it.</p>
 
       <div v-if="error" class="auth-error" role="alert">{{ error }}</div>
-      <div class="totp-enrollment-warning"><span class="pill warn">ENROLLMENT ACTIVE</span><span>Once this setup key is issued, Tactical treats two-factor authentication as configured. Complete verification now. If the key is lost, an administrator must reset 2FA for the account.</span></div>
+      <div class="totp-enrollment-warning"><span class="pill warn">ONE-TIME ENROLLMENT</span><span>This setup key cannot be retrieved again and the temporary setup session has already been revoked. Complete verification now. If the key is lost, an administrator must reset 2FA for the account.</span></div>
 
       <div class="login-actions">
         <button class="btn primary" type="submit" :disabled="busy">{{ busy ? 'Verifying…' : 'Verify and sign in' }}</button>
