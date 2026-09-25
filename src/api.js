@@ -469,10 +469,12 @@ export async function getUpdateTrustPolicy() {
   return apiFetch('/api/tfd/system/updates/trust-policy/')
 }
 
-export async function setUpdateTrustPolicy(minimumLevel) {
+export async function setUpdateTrustPolicy(minimumLevel, { totp = '' } = {}) {
+  const payload = { minimum_level: minimumLevel }
+  if (totp) payload.totp = totp
   return apiFetch('/api/tfd/system/updates/trust-policy/', {
     method: 'PUT',
-    body: JSON.stringify({ minimum_level: minimumLevel }),
+    body: JSON.stringify(payload),
   })
 }
 

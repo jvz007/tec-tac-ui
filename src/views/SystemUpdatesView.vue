@@ -38,6 +38,14 @@ const trustPolicy = ref(null)
 const trustPolicyDraft = ref('unsigned')
 const trustPolicySaving = ref(false)
 const trustPolicyError = ref('')
+const trustPolicyTotp = ref('')
+
+const trustPolicyLowering = computed(() => {
+  const current = trustPolicy.value?.minimum_level
+  const levels = trustPolicy.value?.levels || []
+  const rank = Object.fromEntries(levels.map((item) => [item.id, Number(item.rank)]))
+  return current in rank && trustPolicyDraft.value in rank && rank[trustPolicyDraft.value] < rank[current]
+})
 
 const trustPolicyDescriptions = {
   unsigned: 'Allow unsigned packages where no stricter component or module-specific rule applies.',
@@ -131,6 +139,7 @@ async function openTrustPolicy() {
   try {
     trustPolicy.value = await getUpdateTrustPolicy()
     trustPolicyDraft.value = trustPolicy.value?.minimum_level || 'unsigned'
+    trustPolicyTotp.value = ''
   } catch (err) {
     trustPolicyError.value = err?.message || 'Unable to load update trust policy.'
   }
@@ -140,6 +149,7 @@ function closeTrustPolicy() {
   if (trustPolicySaving.value) return
   trustPolicyOpen.value = false
   trustPolicyError.value = ''
+  trustPolicyTotp.value = ''
 }
 
 async function saveTrustPolicy() {
@@ -147,9 +157,16 @@ async function saveTrustPolicy() {
   trustPolicySaving.value = true
   trustPolicyError.value = ''
   try {
-    trustPolicy.value = await setUpdateTrustPolicy(trustPolicyDraft.value)
+    if (trustPolicyLowering.value && !trustPolicyTotp.value.trim()) {
+      trustPolicyError.value = 'Enter a fresh authenticator code to lower the trust policy.'
+      return
+    }
+    trustPolicy.value = await setUpdateTrustPolicy(trustPolicyDraft.value, {
+      totp: trustPolicyLowering.value ? trustPolicyTotp.value.trim() : '',
+    })
     if (status.value) status.value.update_trust_policy = trustPolicy.value
     trustPolicyOpen.value = false
+    trustPolicyTotp.value = ''
     await refreshStableReleases()
   } catch (err) {
     trustPolicyError.value = err?.message || 'Unable to save update trust policy.'
@@ -570,8 +587,15 @@ onBeforeUnmount(() => {
             <span class="mono trust-rank">L{{ level.rank }}</span>
           </label>
         </div>
+        <div v-if="trustPolicyLowering" class="trust-stepup mt">
+          <div class="state-inline warning"><b>Lowering the trust floor requires step-up authentication.</b> Enter a fresh authenticator code from the current effective superuser account. Core validates the active Knox session and TOTP independently before changing the root-owned policy.</div>
+          <label class="field compact-field mt">
+            <span>Authenticator code</span>
+            <input v-model="trustPolicyTotp" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="000000" :disabled="trustPolicySaving" />
+          </label>
+        </div>
         <div class="state-inline warning mt"><b>Policy changes take effect immediately for new inspections and install requests.</b> Raising the level can block unsigned or lower-tier module packages and system releases.</div>
-        <div class="modal-actions"><button class="btn" type="button" :disabled="trustPolicySaving" @click="closeTrustPolicy">Cancel</button><button class="btn primary" type="button" :disabled="trustPolicySaving || !trustPolicy?.levels?.length" @click="saveTrustPolicy">{{ trustPolicySaving ? 'Saving…' : 'Save policy' }}</button></div>
+        <div class="modal-actions"><button class="btn" type="button" :disabled="trustPolicySaving" @click="closeTrustPolicy">Cancel</button><button class="btn primary" type="button" :disabled="trustPolicySaving || !trustPolicy?.levels?.length || (trustPolicyLowering && !trustPolicyTotp.trim())" @click="saveTrustPolicy">{{ trustPolicySaving ? 'Saving…' : 'Save policy' }}</button></div>
       </section>
     </div>
 
