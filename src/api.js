@@ -2,6 +2,30 @@ export function apiBase() {
   return window._env_?.PROD_URL || ''
 }
 
+export function tecTacUiBaseUrl() {
+  const basePath = import.meta.env?.BASE_URL || '/tec-tac/'
+  return new URL(basePath, window.location.origin).toString()
+}
+
+export function tecTacTotpIssuer() {
+  const url = new URL(tecTacUiBaseUrl())
+  const path = url.pathname.replace(/\/+$/, '') || '/tec-tac'
+  // otpauth labels use ':' as the issuer/account separator. Keep the issuer
+  // itself colon-free and aligned with Core's QR generation.
+  return `${url.hostname}${path}`.replaceAll(':', '-').slice(0, 160) || 'tec-tac'
+}
+
+function tacticalTotpProvisioningUri(username, secret, issuer = tecTacTotpIssuer()) {
+  const account = encodeURIComponent(String(username || ''))
+  const safeIssuer = String(issuer || 'Tec-Tac').replaceAll(':', '-')
+  const issuerLabel = encodeURIComponent(safeIssuer)
+  const params = new URLSearchParams({
+    secret: String(secret || ''),
+    issuer: safeIssuer,
+  })
+  return `otpauth://totp/${issuerLabel}:${account}?${params.toString()}`
+}
+
 export function tacticalToken() {
   return localStorage.getItem('access_token')
 }
@@ -212,13 +236,25 @@ export async function loginTacticalWithBackupCode(username, password, backupCode
 
 export async function setupTacticalTotp() {
   const data = await apiFetch('/accounts/users/setup_totp/', { method: 'POST' })
-  if (!data || typeof data !== 'object' || !data.totp_key || !data.qr_url) {
+  if (!data || typeof data !== 'object' || !data.totp_key) {
     const error = new Error('Tactical did not return TOTP enrollment details.')
     error.status = 502
     error.payload = data
     throw error
   }
-  return data
+
+  // Tactical's upstream serializer derives issuer_name from the first CORS
+  // origin. That can be an API/test hostname rather than the Tec-Tac UI the
+  // operator is enrolling. Keep Tactical as secret/auth authority but replace
+  // only the provisioning label with the actual Tec-Tac UI base URL.
+  const uiUrl = tecTacUiBaseUrl()
+  const issuer = tecTacTotpIssuer()
+  return {
+    ...data,
+    qr_url: tacticalTotpProvisioningUri(data.username, data.totp_key, issuer),
+    ui_url: uiUrl,
+    issuer,
+  }
 }
 
 export async function fetchTacticalTotpQr() {
@@ -231,7 +267,8 @@ export async function fetchTacticalTotpQr() {
     throw error
   }
 
-  const response = await fetch(`${base}/api/tfd/auth/totp/qr/`, {
+  const query = new URLSearchParams({ ui_url: tecTacUiBaseUrl() })
+  const response = await fetch(`${base}/api/tfd/auth/totp/qr/?${query.toString()}`, {
     method: 'GET',
     headers: {
       Accept: 'image/svg+xml, application/json',

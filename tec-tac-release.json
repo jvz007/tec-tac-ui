@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.18",
+  "version": "0.12.20",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -27,19 +27,19 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.17.md",
-      "size": 706,
-      "sha256": "13a3499f8c548c56086e814ea3335bd0bf244da64f6a927e4c1b20a011c40307"
+      "path": "RELEASE_NOTES_0.12.19.md",
+      "size": 511,
+      "sha256": "9a4f7a20c1b6e839dedb4bc72f239bc7cbe329eca458072a53219cc0dad6e578"
     },
     {
-      "path": "RELEASE_NOTES_0.12.18.md",
-      "size": 925,
-      "sha256": "490fc66d8ac27ca74b1caf3bc8eba9f7f1510cb3c931a37e3a5765711b7d6514"
+      "path": "RELEASE_NOTES_0.12.20.md",
+      "size": 404,
+      "sha256": "325ac426b1899357c451d8b3a40d0f23490f77d80ea4c54981261272cc59aa11"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "e1af4e6e2c66454dd6b2a0d3b93c6338e540d1b7b66e6b70c00bebbe48b0afe8"
+      "sha256": "930b66dd572e2b6a55598db4f71cf0fadb007568340cbfa149de9f130754be5c"
     },
     {
       "path": "docs/context-actions.md",
@@ -282,6 +282,11 @@
       "sha256": "7a07ba920bd56bde8987250da4cf735f1174592e6ea0568b1909fc366143427f"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.17.md",
+      "size": 706,
+      "sha256": "13a3499f8c548c56086e814ea3335bd0bf244da64f6a927e4c1b20a011c40307"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.2.md",
       "size": 511,
       "sha256": "f9eab0faf59e5b323a5fc4a9eb30510d3d55c3568af3de8604eb952a99a3e2fe"
@@ -469,7 +474,7 @@
     {
       "path": "package.json",
       "size": 442,
-      "sha256": "5e33e082fd43da413e407c8ba571461e81e82c38655f35cdc7c0ce982a9305cf"
+      "sha256": "5c14182746e3bcb2320219240a81f8b4f4c3e019efde2825170d723d42d9ab2f"
     },
     {
       "path": "public/modules/modules.json",
@@ -518,8 +523,8 @@
     },
     {
       "path": "src/api.js",
-      "size": 17827,
-      "sha256": "941e5f6f7b717a9b583bf36061baf351e585cf676bc00ff36505d7788f4b3c49"
+      "size": 19368,
+      "sha256": "b6f074ef9a888bbece3f54662f6f33c7e0dad22d1a11a2637df8ed0650144ac5"
     },
     {
       "path": "src/audit.js",
@@ -849,7 +854,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "e7dd7f90992d8d8237b5c3d9fa1c8e6a8eea1aec477f5564b2a9851fb9c7d16b"
+      "sha256": "1d3f3b9956be1cf0a043b18093921b1e82bbf6550ff41871d81d87bc3b20c2cc"
     },
     {
       "path": "tests/api-raw.mjs",
@@ -858,8 +863,8 @@
     },
     {
       "path": "tests/foundation.sh",
-      "size": 61901,
-      "sha256": "d28f34f1dbd9ab4461bf20b4a07d81678116807a32ef3a35ba5414d77ca1175c"
+      "size": 62337,
+      "sha256": "0439a720404edd2d53d20f7a07c264b6ca4c4fac69c689d3e631038b087f100c"
     },
     {
       "path": "tests/release-integrity.sh",
