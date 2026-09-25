@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.25",
+  "version": "0.12.26",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -27,14 +27,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.25.md",
-      "size": 823,
-      "sha256": "cd45d30547de30c5c36930a6cc5aa82eaf6a0e867825658f7cc911abdde5a015"
+      "path": "RELEASE_NOTES_0.12.26.md",
+      "size": 447,
+      "sha256": "c89afee121c096b2f35e1762ba4b1faae3bc322bf9d60f20fc7985c16ef5a206"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "022fface886ec4a8ce836f587430d0d4585d7acc4850fe3fac0c6d42bf8b2ccd"
+      "sha256": "7de1029e8fc68bf9624c0ff143eb927b5e9ea1846f28c642e5a6f917d17d8af7"
     },
     {
       "path": "docs/context-actions.md",
@@ -292,6 +292,11 @@
       "sha256": "d400a259676534590ce9f3cba80e37bacb5469fc5c5bf42c87a97e4249454d51"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.25.md",
+      "size": 823,
+      "sha256": "cd45d30547de30c5c36930a6cc5aa82eaf6a0e867825658f7cc911abdde5a015"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.3.md",
       "size": 1021,
       "sha256": "70e5fa8c02489739b377a6b900b0ec5f6918b2cfbc7f387c8eed624e9c5a6614"
@@ -474,7 +479,7 @@
     {
       "path": "package.json",
       "size": 442,
-      "sha256": "2883fb00319f2c4e82a9157a54c5c6565ef83e5190a4e2ab9c8a6be2e2a61673"
+      "sha256": "b554776a395a258c005bd3162b65bc2d9a6da25da1bc6e8e8eba7f2f07d310ba"
     },
     {
       "path": "public/modules/modules.json",
@@ -738,8 +743,8 @@
     },
     {
       "path": "src/modules.js",
-      "size": 4219,
-      "sha256": "c2735113f1f135f65f428bbaa754a73e8f55fcd98ce7cc5ef48a7fafb8fdd204"
+      "size": 4808,
+      "sha256": "66d2641d074b850afd556897066ff81e979a8223e2960632043f58bb6ff37885"
     },
     {
       "path": "src/notifications.js",
@@ -823,8 +828,8 @@
     },
     {
       "path": "src/views/ModulesView.vue",
-      "size": 65869,
-      "sha256": "0817e4b176b30b05b2b61be73d3adb80bd19254f82935689bc47fd0c148ea04e"
+      "size": 67324,
+      "sha256": "169a76b420d600cd74fbea3d73d37842c114e267ca49b5d2499116abcce01f66"
     },
     {
       "path": "src/views/PreferencesView.vue",
@@ -859,7 +864,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "d3fe42aadb0180b699454aff4634defa5eacc2138b6a5e1331257c6dfb7a2ca2"
+      "sha256": "da86e0c14fddcd530f0be131226b5832c706377402efbe27bb6e8b70781912bd"
     },
     {
       "path": "tests/api-raw.mjs",
@@ -868,8 +873,8 @@
     },
     {
       "path": "tests/foundation.sh",
-      "size": 64045,
-      "sha256": "1d7be94402f17151f53d0814904b9dcb6100ea806cafa4423328e588b020cfc8"
+      "size": 64542,
+      "sha256": "eccbee1f6d203389fdb80d4363029c14e1545e276ebfcad928d3f02ee38b1a0b"
     },
     {
       "path": "tests/mfa-enrollment-hardening.mjs",

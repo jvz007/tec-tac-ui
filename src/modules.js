@@ -32,7 +32,21 @@ export function syncAllModuleRepositories(){ return apiFetch('/api/tfd/modules/r
 export function listOnlineModuleCatalog(){ return apiFetch('/api/tfd/modules/catalog/online/') }
 export function stageOnlineModulePackage(repositoryId,moduleId,version=null){ return apiFetch('/api/tfd/modules/catalog/online/stage/',{method:'POST',body:JSON.stringify({repository_id:repositoryId,module_id:moduleId,version})}) }
 
-export function inspectModuleHotfix(file){ const body=new FormData(); body.append('hotfix',file); return apiFetch('/api/tfd/modules/hotfixes/inspect/',{method:'POST',body}) }
+export function inspectModuleHotfix(files){
+  const list=Array.isArray(files)?files:[files].filter(Boolean)
+  const body=new FormData(); let hotfix=null,signature=null,metadata=null
+  for(const file of list){
+    const name=String(file?.name||'')
+    if(/\.sig$/i.test(name)){signature=file;continue}
+    if(/\.release(?:\(\d+\))?\.json$/i.test(name)){metadata=file;continue}
+    if(/\.zip$/i.test(name)){if(hotfix) throw new Error('Select exactly one hotfix ZIP.'); hotfix=file;continue}
+  }
+  if(!hotfix) throw new Error('Select a managed hotfix ZIP.')
+  body.append('hotfix',hotfix)
+  if(signature) body.append('signature',signature)
+  if(metadata) body.append('metadata',metadata)
+  return apiFetch('/api/tfd/modules/hotfixes/inspect/',{method:'POST',body})
+}
 export function discardModuleHotfix(uploadId){ return apiFetch(`/api/tfd/modules/hotfixes/${encodeURIComponent(uploadId)}/`,{method:'DELETE'}) }
 export function applyModuleHotfix(uploadId){ return apiFetch(`/api/tfd/modules/hotfixes/${encodeURIComponent(uploadId)}/apply/`,{method:'POST',body:JSON.stringify({})}) }
 export function getModuleHotfixJob(jobId){ return apiFetch(`/api/tfd/modules/hotfixes/jobs/${encodeURIComponent(jobId)}/`,{rejectErrorPayload:false}) }

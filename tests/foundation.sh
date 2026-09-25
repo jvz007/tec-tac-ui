@@ -479,6 +479,10 @@ grep -q "activeTab==='hotfixes'" "${ROOT}/src/views/ModulesView.vue" || fail "Mo
 grep -q 'Apply hotfix' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix apply action missing"
 grep -q 'Rollback' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix rollback action missing"
 grep -q 'sha256_before' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix before-hash inspection missing"
+grep -q "body.append('signature',signature)" "${ROOT}/src/modules.js" || fail "managed hotfix detached-signature upload missing"
+grep -q "body.append('metadata',metadata)" "${ROOT}/src/modules.js" || fail "managed hotfix release-metadata upload missing"
+grep -q 'hotfixTrust' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix trust visibility missing"
+grep -q 'verify them again as root' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix root re-verification guidance missing"
 echo "[TEST] PASS managed module hotfix UI"
 
 # 0.11.16 24-hour System Updates release cache integration

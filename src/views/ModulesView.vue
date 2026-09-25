@@ -41,7 +41,7 @@ const jobHistory = ref([])
 const historyLoading = ref(false)
 const historySelectedId = ref(null)
 const hotfixFileInput = ref(null)
-const hotfixFile = ref(null)
+const hotfixFiles = ref([])
 const hotfixInspecting = ref(false)
 const hotfixStaged = ref(null)
 const hotfixJob = ref(null)
@@ -88,6 +88,10 @@ const selected = computed(() => modules.value.find((x) => x.id === selectedId.va
 const selectedHistory = computed(() => jobHistory.value.find((x) => x.id === historySelectedId.value) || null)
 const hotfixedModules = computed(() => modules.value.filter((x) => Number(x.hotfixes?.count || 0) > 0))
 const hotfixPreview = computed(() => hotfixStaged.value?.preview || null)
+const hotfixTrust = computed(() => hotfixStaged.value?.publisher_trust || null)
+const hotfixZip = computed(() => hotfixFiles.value.find(file=>/\.zip$/i.test(String(file?.name||'')))||null)
+const hotfixSignature = computed(() => hotfixFiles.value.find(file=>/\.sig$/i.test(String(file?.name||'')))||null)
+const hotfixMetadata = computed(() => hotfixFiles.value.find(file=>/\.release(?:\(\d+\))?\.json$/i.test(String(file?.name||'')))||null)
 const hotfixJobRunning = computed(() => hotfixJob.value && !['succeeded','failed','dispatch_failed'].includes(hotfixJob.value.status))
 const enabledCount = computed(() => modules.value.filter((x) => x.managed && x.enabled).length)
 const disabledCount = computed(() => modules.value.filter((x) => x.managed && !x.enabled).length)
@@ -587,18 +591,18 @@ function historyTime(value){return value?new Date(value).toLocaleString():'—'}
 function historyModules(job){return (job.module_ids?.length?job.module_ids:[job.plugin_id]).filter(Boolean).join(', ')||'—'}
 
 function chooseHotfixFile(){ hotfixFileInput.value?.click() }
-function hotfixFileChanged(event){ hotfixFile.value=event?.target?.files?.[0]||null; hotfixStaged.value=null; hotfixJobError.value='' }
+function hotfixFileChanged(event){ hotfixFiles.value=[...(event?.target?.files||[])]; hotfixStaged.value=null; hotfixJobError.value='' }
 async function inspectHotfix(){
-  if(!hotfixFile.value||!canManage.value||hotfixInspecting.value) return
+  if(!hotfixZip.value||!canManage.value||hotfixInspecting.value) return
   hotfixInspecting.value=true; hotfixJobError.value=''
-  try{ hotfixStaged.value=await inspectModuleHotfix(hotfixFile.value); hotfixSelectedModuleId.value=hotfixPreview.value?.module_id||null; if(hotfixSelectedModuleId.value) await loadHotfixRows(hotfixSelectedModuleId.value) }
+  try{ hotfixStaged.value=await inspectModuleHotfix(hotfixFiles.value); hotfixSelectedModuleId.value=hotfixPreview.value?.module_id||null; if(hotfixSelectedModuleId.value) await loadHotfixRows(hotfixSelectedModuleId.value) }
   catch(e){ hotfixJobError.value=e?.message||'Unable to inspect hotfix.' }
   finally{ hotfixInspecting.value=false }
 }
 async function discardHotfixStage(){
   const id=hotfixStaged.value?.upload_id
   try{ if(id) await discardModuleHotfix(id) }catch{}
-  hotfixStaged.value=null; hotfixFile.value=null; if(hotfixFileInput.value) hotfixFileInput.value.value=''
+  hotfixStaged.value=null; hotfixFiles.value=[]; if(hotfixFileInput.value) hotfixFileInput.value.value=''
 }
 async function loadHotfixRows(moduleId=hotfixSelectedModuleId.value){
   if(!moduleId||!canManage.value){hotfixRows.value=[];return}
@@ -630,7 +634,7 @@ async function pollHotfixJob(){
     if(['succeeded','failed','dispatch_failed'].includes(hotfixJob.value.status)){
       if(hotfixJob.value.status==='succeeded'){
         const moduleId=hotfixJob.value.module_id||hotfixSelectedModuleId.value
-        await refresh(moduleId); await loadHotfixRows(moduleId); hotfixStaged.value=null; hotfixFile.value=null; if(hotfixFileInput.value) hotfixFileInput.value.value=''
+        await refresh(moduleId); await loadHotfixRows(moduleId); hotfixStaged.value=null; hotfixFiles.value=[]; if(hotfixFileInput.value) hotfixFileInput.value.value=''
       }
       return
     }
@@ -896,13 +900,14 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
     <div class="grid g2 mb">
       <section class="card">
         <div class="cardhead"><div><span class="eyebrow">MANAGED HOTFIX</span><h3>Inspect & apply</h3><p>Hotfixes are exact-version, SHA-256-bound module file replacements managed by Core.</p></div><span v-if="hotfixStaged" class="pill ok">INSPECTED</span></div>
-        <input ref="hotfixFileInput" class="sr-only" type="file" accept=".zip,application/zip" @change="hotfixFileChanged">
+        <input ref="hotfixFileInput" class="sr-only" type="file" multiple accept=".zip,.sig,.json,application/zip,application/json" @change="hotfixFileChanged">
         <div v-if="!hotfixStaged" class="drop-zone" :class="{disabled:!canManage||hotfixInspecting||hotfixJobRunning}" role="button" tabindex="0" @click="chooseHotfixFile" @keydown.enter.prevent="chooseHotfixFile">
-          <b>{{ hotfixFile?.name || 'Choose managed hotfix ZIP' }}</b><span>{{ hotfixFile ? 'Ready to inspect' : 'tec_tac_hotfix.json + payload/' }}</span>
+          <b>{{ hotfixZip?.name || 'Choose signed hotfix files' }}</b><span>{{ hotfixZip ? `${hotfixFiles.length} file${hotfixFiles.length===1?'':'s'} selected` : 'ZIP + detached .sig + .release.json' }}</span>
         </div>
-        <div v-if="hotfixFile&&!hotfixStaged" class="row mt"><button class="btn primary" :disabled="hotfixInspecting||hotfixJobRunning" @click="inspectHotfix">{{hotfixInspecting?'Inspecting…':'Inspect hotfix'}}</button><button class="btn" @click="discardHotfixStage">Clear</button></div>
+        <div v-if="hotfixZip&&!hotfixStaged" class="state-inline mt" :class="{warning:!hotfixSignature||!hotfixMetadata}"><b>Publisher trust.</b> <span v-if="hotfixSignature&&hotfixMetadata">Detached signature and release metadata detected. Core will verify them again as root immediately before apply.</span><span v-else>Signature companions are incomplete. Production trust policy will reject unsigned hotfixes; development systems follow the configured root trust floor.</span></div>
+        <div v-if="hotfixZip&&!hotfixStaged" class="row mt"><button class="btn primary" :disabled="hotfixInspecting||hotfixJobRunning" @click="inspectHotfix">{{hotfixInspecting?'Inspecting…':'Inspect hotfix'}}</button><button class="btn" @click="discardHotfixStage">Clear</button></div>
         <div v-if="hotfixStaged" class="hotfix-preview">
-          <dl class="kvlist"><dt>Module</dt><dd class="mono">{{hotfixPreview?.module_id}}</dd><dt>Hotfix</dt><dd class="mono">{{hotfixPreview?.id}}</dd><dt>Base version</dt><dd class="mono">{{hotfixPreview?.base_version}}</dd><dt>Files</dt><dd>{{hotfixPreview?.targets?.length||0}}</dd><dt>Reload</dt><dd class="mono">{{hotfixPreview?.reload||'none'}}</dd><dt>UI sync</dt><dd>{{hotfixPreview?.ui_sync?'yes':'no'}}</dd></dl>
+          <dl class="kvlist"><dt>Module</dt><dd class="mono">{{hotfixPreview?.module_id}}</dd><dt>Hotfix</dt><dd class="mono">{{hotfixPreview?.id}}</dd><dt>Base version</dt><dd class="mono">{{hotfixPreview?.base_version}}</dd><dt>Files</dt><dd>{{hotfixPreview?.targets?.length||0}}</dd><dt>Reload</dt><dd class="mono">{{hotfixPreview?.reload||'none'}}</dd><dt>UI sync</dt><dd>{{hotfixPreview?.ui_sync?'yes':'no'}}</dd><dt>Package trust</dt><dd><span class="pill" :class="hotfixTrust?.verified&&hotfixTrust?.trusted?'ok':(hotfixTrust?.state==='unsigned'?'warn':'danger')">{{ hotfixTrust?.verified&&hotfixTrust?.trusted?'verified':(hotfixTrust?.state||'unknown') }}</span></dd><dt>Publisher</dt><dd>{{ hotfixTrust?.publisher_display_name || hotfixTrust?.publisher_id || '—' }}</dd><dt>Signing key</dt><dd class="mono">{{ hotfixTrust?.key_id || '—' }}</dd></dl>
           <p class="compact-copy">{{hotfixPreview?.description||'No description supplied.'}}</p>
           <div class="tablewrap"><table><thead><tr><th>Component</th><th>Path</th><th>Before SHA256</th><th>After SHA256</th></tr></thead><tbody><tr v-for="target in hotfixPreview?.targets||[]" :key="`${target.component}:${target.path}`"><td>{{target.component}}</td><td class="mono">{{target.path}}</td><td class="mono">{{compactHash(target.sha256_before)}}</td><td class="mono">{{compactHash(target.sha256_after)}}</td></tr></tbody></table></div>
           <div class="row mt"><button class="btn primary" :disabled="hotfixJobRunning" @click="applyHotfix">Apply hotfix</button><button class="btn" :disabled="hotfixJobRunning" @click="discardHotfixStage">Discard</button></div>
