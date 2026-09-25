@@ -5,6 +5,7 @@ import {
   clearTacticalSession,
   fetchTacticalTotpQr,
   loginTacticalWithTotp,
+  loginTacticalWithBackupCode,
   setupTacticalTotp,
 } from '../api'
 
@@ -12,6 +13,7 @@ const uiVersion = __TEC_TAC_UI_VERSION__
 const username = ref('')
 const password = ref('')
 const twofactor = ref('')
+const backupCode = ref('')
 const step = ref('credentials')
 const busy = ref(false)
 const error = ref('')
@@ -107,6 +109,36 @@ async function submitTotp() {
   }
 }
 
+async function submitBackupCode() {
+  error.value = ''
+  const code = backupCode.value.trim()
+  if (!code) {
+    error.value = 'Enter one of your unused backup codes.'
+    return
+  }
+  busy.value = true
+  try {
+    await loginTacticalWithBackupCode(username.value.trim(), password.value, code)
+    finishLogin()
+  } catch (err) {
+    error.value = normalizeError(err)
+  } finally {
+    busy.value = false
+  }
+}
+
+function useBackupCode() {
+  error.value = ''
+  backupCode.value = ''
+  step.value = 'backup'
+}
+
+function useAuthenticator() {
+  error.value = ''
+  twofactor.value = ''
+  step.value = 'totp'
+}
+
 async function submitSetupTotp() {
   // Tactical marks the secret active when /accounts/users/setup_totp/ is called.
   // Complete enrollment by proving the generated code through Tactical's normal
@@ -129,6 +161,7 @@ function backToCredentials() {
   step.value = 'credentials'
   setup.value = null
   twofactor.value = ''
+  backupCode.value = ''
   password.value = ''
   error.value = ''
   copied.value = false
@@ -137,6 +170,7 @@ function backToCredentials() {
 function finishLogin() {
   password.value = ''
   twofactor.value = ''
+  backupCode.value = ''
   clearQr()
   setup.value = null
   window.location.reload()
@@ -198,6 +232,35 @@ function openTactical() {
 
       <div class="login-actions">
         <button class="btn primary" type="submit" :disabled="busy">{{ busy ? 'Signing in…' : 'Sign in' }}</button>
+        <button class="btn" type="button" :disabled="busy" @click="useBackupCode">Use backup code</button>
+        <button class="btn" type="button" :disabled="busy" @click="backToCredentials">Back</button>
+      </div>
+    </form>
+
+    <form v-else-if="step === 'backup'" class="login-form" @submit.prevent="submitBackupCode">
+      <div class="auth-step">
+        <span class="pill warn">RECOVERY SIGN-IN</span>
+        <span class="mono">{{ username }}</span>
+      </div>
+
+      <label class="field">
+        <span>Backup code</span>
+        <input
+          v-model="backupCode"
+          name="backup_code"
+          autocomplete="one-time-code"
+          maxlength="16"
+          placeholder="ABCDE-FGHIJ"
+          :disabled="busy"
+        />
+      </label>
+      <p class="field-help">Enter one unused Tec-Tac MFA backup code. Each code works once and is invalidated immediately after successful verification.</p>
+
+      <div v-if="error" class="auth-error" role="alert">{{ error }}</div>
+
+      <div class="login-actions">
+        <button class="btn primary" type="submit" :disabled="busy">{{ busy ? 'Signing in…' : 'Sign in with backup code' }}</button>
+        <button class="btn" type="button" :disabled="busy" @click="useAuthenticator">Use authenticator</button>
         <button class="btn" type="button" :disabled="busy" @click="backToCredentials">Back</button>
       </div>
     </form>

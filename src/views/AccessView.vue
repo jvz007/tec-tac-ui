@@ -1,16 +1,24 @@
 <script setup>
-import { ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import UsersPanel from '../components/access/UsersPanel.vue'
 import RolesPanel from '../components/access/RolesPanel.vue'
 import SessionPanel from '../components/access/SessionPanel.vue'
+import MfaRecoveryPanel from '../components/access/MfaRecoveryPanel.vue'
+import AdminSessionsPanel from '../components/access/AdminSessionsPanel.vue'
 import { requestLeave } from '../unsaved'
 
+const state = inject('tecTacState')
 const tab = ref('users')
-const tabs = [
-  { id:'users', label:'Users', hint:'Tactical accounts and role assignment' },
-  { id:'roles', label:'Roles & permissions', hint:'Native Tactical and Tec-Tac grants' },
-  { id:'session', label:'My session', hint:'Resolved identity and logout' },
-]
+const tabs = computed(() => {
+  const items = [
+    { id:'users', label:'Users', hint:'Tactical accounts and role assignment' },
+    { id:'roles', label:'Roles & permissions', hint:'Native Tactical and Tec-Tac grants' },
+    { id:'session', label:'My session', hint:'Resolved identity and logout' },
+    { id:'mfa', label:'MFA & recovery', hint:'Authenticator recovery and backup codes' },
+  ]
+  if (state.context.capabilities?.manage_accounts) items.push({ id:'login-sessions', label:'Login sessions', hint:'Admin session visibility and revocation' })
+  return items
+})
 
 function selectTab(id) {
   if (id === tab.value) return
@@ -26,6 +34,8 @@ function selectTab(id) {
     </nav>
     <UsersPanel v-if="tab === 'users'" />
     <RolesPanel v-else-if="tab === 'roles'" />
-    <SessionPanel v-else />
+    <SessionPanel v-else-if="tab === 'session'" />
+    <MfaRecoveryPanel v-else-if="tab === 'mfa'" />
+    <AdminSessionsPanel v-else-if="tab === 'login-sessions'" />
   </section>
 </template>

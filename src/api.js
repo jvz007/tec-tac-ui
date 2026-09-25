@@ -190,6 +190,26 @@ export async function loginTacticalWithTotp(username, password, twofactor) {
 }
 
 
+export async function loginTacticalWithBackupCode(username, password, backupCode) {
+  const data = await tacticalAuthRequest('/api/tfd/auth/login/backup-code/', {
+    username,
+    password,
+    backup_code: backupCode,
+  })
+  if (!data.token) {
+    const error = new Error('Tec-Tac accepted the recovery request but did not return a Tactical access token.')
+    error.status = 502
+    throw error
+  }
+  storeTacticalSession({
+    token: data.token,
+    username: data.username || username,
+    name: data.name || null,
+  })
+  return { authenticated: true, mfa: 'backup_code' }
+}
+
+
 export async function setupTacticalTotp() {
   const data = await apiFetch('/accounts/users/setup_totp/', { method: 'POST' })
   if (!data || typeof data !== 'object' || !data.totp_key || !data.qr_url) {

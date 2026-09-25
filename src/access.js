@@ -77,3 +77,32 @@ export function updateRoleExtensionPermissions(id, permissions) {
     body: JSON.stringify({ permissions }),
   })
 }
+
+export function getMfaBackupCodeStatus() {
+  return apiFetch('/api/tfd/auth/mfa/backup-codes/')
+}
+
+export function generateMfaBackupCodes(password, totp) {
+  return apiFetch('/api/tfd/auth/mfa/backup-codes/', {
+    method: 'POST',
+    body: JSON.stringify({ password, totp }),
+  })
+}
+
+export function listActiveLoginSessions() {
+  return apiFetch('/api/tfd/access/sessions/')
+}
+
+export function revokeLoginSession(sessionId, reason = 'administrator-request') {
+  return apiFetch(`/api/tfd/access/sessions/${encodeURIComponent(sessionId)}/revoke/`, {
+    method: 'DELETE',
+    body: JSON.stringify({ reason }),
+  })
+}
+
+export function revokeUserLoginSessions(userId, reason = 'administrator-request') {
+  return apiFetch(`/api/tfd/access/users/${encodeURIComponent(userId)}/sessions/revoke/`, {
+    method: 'POST',
+    body: JSON.stringify({ reason }),
+  })
+}

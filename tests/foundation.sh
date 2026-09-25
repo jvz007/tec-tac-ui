@@ -25,6 +25,8 @@ for f in \
   src/components/access/UsersPanel.vue \
   src/components/access/RolesPanel.vue \
   src/components/access/SessionPanel.vue \
+  src/components/access/MfaRecoveryPanel.vue \
+  src/components/access/AdminSessionsPanel.vue \
   src/components/UnsavedChangesDialog.vue \
   src/unsaved.js \
   scripts/install.sh \
@@ -52,6 +54,15 @@ grep -q "FormData" "${ROOT}/src/api.js" || fail "multipart request handling miss
 grep -q "logoutTacticalSession" "${ROOT}/src/App.vue" || fail "topbar logout missing"
 grep -q "tacticalAuthStage" "${ROOT}/src/state.js" || fail "setup-token startup guard missing"
 grep -q "Verify and sign in" "${ROOT}/src/components/LoginPanel.vue" || fail "TOTP enrollment verification UI missing"
+grep -q "Use backup code" "${ROOT}/src/components/LoginPanel.vue" || fail "MFA backup-code login option missing"
+grep -q "loginTacticalWithBackupCode" "${ROOT}/src/api.js" || fail "backup-code login API missing"
+grep -q "/api/tfd/auth/login/backup-code/" "${ROOT}/src/api.js" || fail "backup-code Core login endpoint missing"
+grep -q "MFA & recovery" "${ROOT}/src/views/AccessView.vue" || fail "MFA recovery Access tab missing"
+grep -q "Login sessions" "${ROOT}/src/views/AccessView.vue" || fail "admin login-session Access tab missing"
+grep -q "generateMfaBackupCodes" "${ROOT}/src/components/access/MfaRecoveryPanel.vue" || fail "MFA backup-code generation UI missing"
+grep -q "listActiveLoginSessions" "${ROOT}/src/components/access/AdminSessionsPanel.vue" || fail "admin login-session list UI missing"
+grep -q "revokeLoginSession" "${ROOT}/src/components/access/AdminSessionsPanel.vue" || fail "individual session revocation UI missing"
+grep -q "revokeUserLoginSessions" "${ROOT}/src/components/access/AdminSessionsPanel.vue" || fail "user-wide session revocation UI missing"
 grep -q "loadPublicUiModules" "${ROOT}/src/main.js" || fail "public module bootstrap missing"
 grep -q "registerPublic" "${ROOT}/src/module-loader.js" || fail "public module runtime missing"
 grep -q "publicApiFetch" "${ROOT}/src/api.js" || fail "public API helper missing"

@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.17",
+  "version": "0.12.18",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -27,19 +27,19 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.16.md",
-      "size": 473,
-      "sha256": "7a07ba920bd56bde8987250da4cf735f1174592e6ea0568b1909fc366143427f"
-    },
-    {
       "path": "RELEASE_NOTES_0.12.17.md",
       "size": 706,
       "sha256": "13a3499f8c548c56086e814ea3335bd0bf244da64f6a927e4c1b20a011c40307"
     },
     {
+      "path": "RELEASE_NOTES_0.12.18.md",
+      "size": 925,
+      "sha256": "490fc66d8ac27ca74b1caf3bc8eba9f7f1510cb3c931a37e3a5765711b7d6514"
+    },
+    {
       "path": "VERSION",
       "size": 8,
-      "sha256": "2da5007564e3e71a7a6505a33f2c25a50c6977b1b0d556c16e00635826db3a18"
+      "sha256": "e1af4e6e2c66454dd6b2a0d3b93c6338e540d1b7b66e6b70c00bebbe48b0afe8"
     },
     {
       "path": "docs/context-actions.md",
@@ -277,6 +277,11 @@
       "sha256": "03a73fdb5a49d71089aa44717a382340270728926ae6fded2cf697b01a5e527b"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.16.md",
+      "size": 473,
+      "sha256": "7a07ba920bd56bde8987250da4cf735f1174592e6ea0568b1909fc366143427f"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.2.md",
       "size": 511,
       "sha256": "f9eab0faf59e5b323a5fc4a9eb30510d3d55c3568af3de8604eb952a99a3e2fe"
@@ -464,7 +469,7 @@
     {
       "path": "package.json",
       "size": 442,
-      "sha256": "aa69b9eec001e00f51b758a4f9ccf03ba0efbedb5971eacbfb94a3d71bc1309b"
+      "sha256": "5e33e082fd43da413e407c8ba571461e81e82c38655f35cdc7c0ce982a9305cf"
     },
     {
       "path": "public/modules/modules.json",
@@ -508,13 +513,13 @@
     },
     {
       "path": "src/access.js",
-      "size": 3799,
-      "sha256": "93d3c422c01aa96c6106e31901e20baf4af48e2bdcd3928ad9975e3401413712"
+      "size": 4659,
+      "sha256": "fc86d499eb5960716c346e38cc2c926dec02350c9f944d6b0ac4b143cd59bfc6"
     },
     {
       "path": "src/api.js",
-      "size": 17245,
-      "sha256": "aaf06429c4c33787e04cc047ba8113402e47f91a290ea58d0d8dc0b2285d5234"
+      "size": 17827,
+      "sha256": "941e5f6f7b717a9b583bf36061baf351e585cf676bc00ff36505d7788f4b3c49"
     },
     {
       "path": "src/audit.js",
@@ -533,8 +538,8 @@
     },
     {
       "path": "src/components/LoginPanel.vue",
-      "size": 9496,
-      "sha256": "0008f2eda8d449deff2b120d8a93d7d7ec90a68f0515f057c61fdcd99a658849"
+      "size": 11487,
+      "sha256": "677021c46b3f573b64f9fe1e73cab5965035e93fc9440c16a5a4ed9d03ae7a5e"
     },
     {
       "path": "src/components/MarkdownContent.vue",
@@ -560,6 +565,16 @@
       "path": "src/components/UnsavedChangesDialog.vue",
       "size": 1182,
       "sha256": "a0f7250f5a51a9d723d9520895673cd378cb0ecedeceabb5466d28ddebf17bc7"
+    },
+    {
+      "path": "src/components/access/AdminSessionsPanel.vue",
+      "size": 4115,
+      "sha256": "593286bbeeb87841d13e19546ffcdede9d1f7970770b3ba721f8ed1225979036"
+    },
+    {
+      "path": "src/components/access/MfaRecoveryPanel.vue",
+      "size": 6741,
+      "sha256": "3e0fbde93dd69123e6bf8f4be21efa9ee66fd5b030bf6b5251445fa2e04a75ff"
     },
     {
       "path": "src/components/access/RolesPanel.vue",
@@ -758,8 +773,8 @@
     },
     {
       "path": "src/styles.css",
-      "size": 86110,
-      "sha256": "9028badb5c725da0cb3444cfdc7718e30fe6739c5d9ee14a57112b933a27eecc"
+      "size": 86758,
+      "sha256": "34a34fbda52220d1fa0d5290432cd6d4e817d853591686df39965b55a01be8e1"
     },
     {
       "path": "src/unsaved.js",
@@ -768,8 +783,8 @@
     },
     {
       "path": "src/views/AccessView.vue",
-      "size": 1386,
-      "sha256": "4882c1ff894af405df9b03f5945acd32b5f765c070ddd1dcfbc0a35bffd0e446"
+      "size": 2036,
+      "sha256": "7b235b8e1415c3b63fa050f3b9b7301c2bfa3526201238a3bfcad872ba00b7a7"
     },
     {
       "path": "src/views/ContractsView.vue",
@@ -834,7 +849,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "21aa62829a9facdc6a8de14fb826278e9d2c39464da14a98e13e5a7bdce576dc"
+      "sha256": "e7dd7f90992d8d8237b5c3d9fa1c8e6a8eea1aec477f5564b2a9851fb9c7d16b"
     },
     {
       "path": "tests/api-raw.mjs",
@@ -843,8 +858,8 @@
     },
     {
       "path": "tests/foundation.sh",
-      "size": 60725,
-      "sha256": "8f910fd1235e9e9b7559a7d1ecc6e7f35dd612d7457011bd930e44295721793d"
+      "size": 61901,
+      "sha256": "d28f34f1dbd9ab4461bf20b4a07d81678116807a32ef3a35ba5414d77ca1175c"
     },
     {
       "path": "tests/release-integrity.sh",

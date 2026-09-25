@@ -221,3 +221,12 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 
 /* 0.12.16 Scheduler ownership split */
 .scheduler-owner-tabs{grid-template-columns:repeat(4,minmax(0,1fr))}.scheduler-owner-tabs button{min-width:0}.scheduler-owner-tabs button span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}@media(max-width:1050px){.scheduler-owner-tabs{grid-template-columns:repeat(2,minmax(0,1fr))}}@media(max-width:620px){.scheduler-owner-tabs{grid-template-columns:1fr}}
+
+/* 0.12.18 Access security: MFA recovery + admin login sessions */
+.mfa-code-modal{width:min(620px,100%)}
+.backup-code-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:14px 0}
+.backup-code{display:block;padding:10px 12px;border:1px solid var(--line);background:var(--bg-2);border-radius:3px;text-align:center;font-size:calc(14px * var(--font-scale));letter-spacing:.08em}
+.security-list{display:grid;gap:9px;margin:8px 0 0;padding-left:20px;color:var(--dim)}
+.security-list li{padding-left:2px}
+.table-actions{display:flex;gap:6px;flex-wrap:wrap}
+@media(max-width:720px){.backup-code-grid{grid-template-columns:1fr}}
