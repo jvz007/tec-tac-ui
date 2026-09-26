@@ -1,15 +1,15 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.32",
+  "version": "0.12.33",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
   "files": [
     {
       "path": ".github/workflows/release.yml",
-      "size": 3057,
-      "sha256": "df4bce626eadd5769d3c13593574e6fd249e5a61c127526cafb7ed23957adefa"
+      "size": 3120,
+      "sha256": "9eae329a9b878fff757dfa2ef1ea093b7e4f646a60e30c9819d87a77fa775a8a"
     },
     {
       "path": ".gitignore",
@@ -27,19 +27,19 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.31.md",
-      "size": 493,
-      "sha256": "6793555c8326696eb5d710142527ba1a26a8b3c2b02c8699a68b578ef2d7c991"
-    },
-    {
       "path": "RELEASE_NOTES_0.12.32.md",
       "size": 449,
       "sha256": "ba9aa0681483907199c9e15b9fb4a89a55a4e977c45c33b3e315cf80c0d4f295"
     },
     {
+      "path": "RELEASE_NOTES_0.12.33.md",
+      "size": 490,
+      "sha256": "97f2e5c5e84ef07ec926216efc57d49bc0b21e96946a0c2dd4a7b993d3e378d0"
+    },
+    {
       "path": "VERSION",
       "size": 8,
-      "sha256": "33355d1c3087f6a81ca2e4be5720a4f83ad2c84c3f248a18e431fc2c00a92016"
+      "sha256": "58c10074d494a33f17697d30986bc0a54758abedf0f3c9e151645ffe8755a60e"
     },
     {
       "path": "docs/context-actions.md",
@@ -327,6 +327,11 @@
       "sha256": "024869552cd8055f780142b071c09c0d778b64548463485506d09f3bfa5ae297"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.31.md",
+      "size": 493,
+      "sha256": "6793555c8326696eb5d710142527ba1a26a8b3c2b02c8699a68b578ef2d7c991"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.4.md",
       "size": 1363,
       "sha256": "565212cb0172a00de43b3b824cc9a007b133ece23127c71298f94b06a0c3fc6d"
@@ -502,9 +507,14 @@
       "sha256": "d3874f5e651993e863e6313ba03efedc86e838557cd41df8e3c7e75433dcdbd9"
     },
     {
+      "path": "package-lock.json",
+      "size": 20699,
+      "sha256": "c2b19a8e1aa282441cf48dde0e998cd926a8b8f259e908abc8a430ed30fddec1"
+    },
+    {
       "path": "package.json",
-      "size": 518,
-      "sha256": "97a66370baf60e4ddccab7701071e4a4326073946c506af1a8764b891cdf61e1"
+      "size": 561,
+      "sha256": "a759313ff267d9aeb9dc011568dec346676d7a83083b3b6e42b78228cab4bd84"
     },
     {
       "path": "public/modules/modules.json",
@@ -899,7 +909,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "9dc76cdbedcd14b22f274674ec03c7c5097ac13b9920ad3e3f06b28d3ad51ff7"
+      "sha256": "b15938118df66fef22c8c7fab088ac2e31e80de5b6430b050401288224fde1b7"
     },
     {
       "path": "tests/api-raw.mjs",
@@ -925,6 +935,11 @@
       "path": "tests/release-integrity.sh",
       "size": 1124,
       "sha256": "9342779fa2cd5f659ea2ed5b99cb0741c5225749b239d7286c071b796cfb81ec"
+    },
+    {
+      "path": "tests/release-workflow-lockfile.sh",
+      "size": 1793,
+      "sha256": "e7d93da17a425b13847a74ccff1cf0071d4948e2aac653840fa9d895413b8ebc"
     },
     {
       "path": "tests/session-expiry.mjs",
