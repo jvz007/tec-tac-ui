@@ -735,3 +735,13 @@ grep -q "core.trust-policy" "${ROOT}/src/help/core-articles.js" || fail "trust-p
 grep -q "trust-policy.md?raw" "${ROOT}/src/help/core-articles.js" || fail "trust-policy article import missing"
 grep -q "help.open\|help?.open" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "System Updates does not open built-in help"
 if grep -q "trustPolicyGuidance.help_url" "${ROOT}/src/views/SystemUpdatesView.vue"; then fail "trust-policy guidance still binds an external help URL"; fi
+
+# 0.12.34 Core Resource Directory scale/performance regression
+grep -q 'const PAGE_SIZE = 50' "${ROOT}/src/views/ResourcesView.vue" || fail "Resource Directory must use bounded server pages"
+if grep -q 'pageSize: 500' "${ROOT}/src/views/ResourcesView.vue"; then fail "Resource Directory reintroduced 500-row fetches"; fi
+grep -q 'clientCount' "${ROOT}/src/views/ResourcesView.vue" || fail "Resource Directory total client count missing"
+grep -q 'clientPages' "${ROOT}/src/views/ResourcesView.vue" || fail "Resource Directory client pagination missing"
+grep -q 'sitePages' "${ROOT}/src/views/ResourcesView.vue" || fail "Resource Directory site pagination missing"
+grep -q 'setTimeout(() => { void loadClients({ resetPage: true }) }, 300)' "${ROOT}/src/views/ResourcesView.vue" || fail "Resource client search debounce missing"
+grep -q 'loadSiteClientOptions' "${ROOT}/src/views/ResourcesView.vue" || fail "Paged site client picker search missing"
+echo "[TEST] PASS resource directory scale contract"

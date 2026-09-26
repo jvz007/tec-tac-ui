@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.33",
+  "version": "0.12.35",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -27,19 +27,19 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.32.md",
-      "size": 449,
-      "sha256": "ba9aa0681483907199c9e15b9fb4a89a55a4e977c45c33b3e315cf80c0d4f295"
+      "path": "RELEASE_NOTES_0.12.34-1.md",
+      "size": 1046,
+      "sha256": "14cd599db88064da4c102c5b3f726207253e1a0e0489688fb23dbb25ad32725c"
     },
     {
-      "path": "RELEASE_NOTES_0.12.33.md",
-      "size": 490,
-      "sha256": "97f2e5c5e84ef07ec926216efc57d49bc0b21e96946a0c2dd4a7b993d3e378d0"
+      "path": "RELEASE_NOTES_0.12.35.md",
+      "size": 811,
+      "sha256": "fda2477b7e33894339910aed4c09ce2dcb2b6ee06fc7ddf8c14efe60e93c7f40"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "58c10074d494a33f17697d30986bc0a54758abedf0f3c9e151645ffe8755a60e"
+      "sha256": "2602ef0a400ebc0e5116ed78bc8fb34cedd4dbae316696cbccba8b70f59ba4ed"
     },
     {
       "path": "docs/context-actions.md",
@@ -508,13 +508,13 @@
     },
     {
       "path": "package-lock.json",
-      "size": 20699,
-      "sha256": "c2b19a8e1aa282441cf48dde0e998cd926a8b8f259e908abc8a430ed30fddec1"
+      "size": 44095,
+      "sha256": "9c8202723d993e821548819e18ead7dbec5ace170e2d39a77b758b924d0a9970"
     },
     {
       "path": "package.json",
-      "size": 561,
-      "sha256": "a759313ff267d9aeb9dc011568dec346676d7a83083b3b6e42b78228cab4bd84"
+      "size": 600,
+      "sha256": "2532534985ccce3eb2406f118119eb86d93d3559f8df489867074c0334743a88"
     },
     {
       "path": "public/modules/modules.json",
@@ -558,8 +558,8 @@
     },
     {
       "path": "src/access.js",
-      "size": 6297,
-      "sha256": "96bd2e454d4075191abf093303aeabc8033dcbd0c2b6538c59c0a4b3c12bb76e"
+      "size": 6324,
+      "sha256": "0e97b06310a29b4c0b50db2398454400d198517c0c3f19c4a1c5be375114869b"
     },
     {
       "path": "src/api.js",
@@ -633,8 +633,8 @@
     },
     {
       "path": "src/components/access/SessionSecurityPanel.vue",
-      "size": 19231,
-      "sha256": "fe44a1c53ae900e0066bd1817f1af0331c9a2c51fa49206d4efbedbae658e9fb"
+      "size": 20188,
+      "sha256": "d713b769520d4df6d1f359bc681a107cd468ce9ac5c488ae3b2a5c581feb6fd9"
     },
     {
       "path": "src/components/access/UsersPanel.vue",
@@ -783,8 +783,8 @@
     },
     {
       "path": "src/modules.js",
-      "size": 4808,
-      "sha256": "66d2641d074b850afd556897066ff81e979a8223e2960632043f58bb6ff37885"
+      "size": 5041,
+      "sha256": "4705d7d93bdd447b37e707cb12769c8634d87e97e25484287e1a631b22a93083"
     },
     {
       "path": "src/notifications.js",
@@ -868,8 +868,8 @@
     },
     {
       "path": "src/views/ModulesView.vue",
-      "size": 67324,
-      "sha256": "169a76b420d600cd74fbea3d73d37842c114e267ca49b5d2499116abcce01f66"
+      "size": 68263,
+      "sha256": "23498cd9a6e574efc5cfbe75dd6fbb566c8064e06a184a67e88e759e9d3b3dc4"
     },
     {
       "path": "src/views/PreferencesView.vue",
@@ -883,8 +883,8 @@
     },
     {
       "path": "src/views/ResourcesView.vue",
-      "size": 10106,
-      "sha256": "319f7d5b3fb1b51e0378b55004398ea93cc7cf515f65b8e537e9a77f00db5d8d"
+      "size": 15303,
+      "sha256": "fb25680388814a6ea78c2aa331270985a3644ce19c1847ed42aba8e68696381d"
     },
     {
       "path": "src/views/SchedulerSettingsView.vue",
@@ -909,7 +909,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "b15938118df66fef22c8c7fab088ac2e31e80de5b6430b050401288224fde1b7"
+      "sha256": "df13c72f3a1f20002a00356a19705850d4d9e9763a76c44ecdfff99d68c69d7e"
     },
     {
       "path": "tests/api-raw.mjs",
@@ -918,8 +918,13 @@
     },
     {
       "path": "tests/foundation.sh",
-      "size": 64865,
-      "sha256": "57c9303601b6befe11786fd51d31e443ef2c9088ff240c4af5ec4b1d010c7509"
+      "size": 65865,
+      "sha256": "867bfaed8b483e5cc383ff541ce700c58ec67bd44a3f71220c512d688d67c2a3"
+    },
+    {
+      "path": "tests/history-pagination-ui.sh",
+      "size": 1222,
+      "sha256": "e0af7894327e3809ba5fea152b13bac497c7322cd5ecf7d1e34292c78c37b2f6"
     },
     {
       "path": "tests/mfa-admin-recovery-ui.sh",

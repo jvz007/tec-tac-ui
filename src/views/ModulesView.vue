@@ -40,6 +40,10 @@ const repositories = ref([])
 const jobHistory = ref([])
 const historyLoading = ref(false)
 const historySelectedId = ref(null)
+const historyPage = ref(1)
+const historyPageSize = ref(50)
+const historyTotal = ref(0)
+const historyPages = ref(0)
 const hotfixFileInput = ref(null)
 const hotfixFiles = ref([])
 const hotfixInspecting = ref(false)
@@ -582,10 +586,18 @@ async function setVisibility(item, visible) {
   }
 }
 
-async function loadJobHistory(){
+async function loadJobHistory(page=historyPage.value){
   if(!canManage.value) return
   historyLoading.value=true
-  try{const data=await listModuleJobs(250);jobHistory.value=data.jobs||[];if(historySelectedId.value&&!jobHistory.value.some(x=>x.id===historySelectedId.value))historySelectedId.value=null}catch(e){error.value=e?.message||'Unable to load module history.'}finally{historyLoading.value=false}
+  try{
+    const targetPage=Math.max(1,Number(page)||1)
+    const data=await listModuleJobs({page:targetPage,pageSize:historyPageSize.value})
+    jobHistory.value=data.jobs||[]
+    historyPage.value=Number(data.page||targetPage)
+    historyTotal.value=Number(data.total??data.count??jobHistory.value.length)
+    historyPages.value=Number(data.pages||0)
+    if(historySelectedId.value&&!jobHistory.value.some(x=>x.id===historySelectedId.value))historySelectedId.value=null
+  }catch(e){error.value=e?.message||'Unable to load module history.'}finally{historyLoading.value=false}
 }
 function historyTime(value){return value?new Date(value).toLocaleString():'—'}
 function historyModules(job){return (job.module_ids?.length?job.module_ids:[job.plugin_id]).filter(Boolean).join(', ')||'—'}
@@ -712,7 +724,7 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
     <button :class="{active:activeTab==='online'}" role="tab" @click="activeTab='online'"><b>Online catalog</b><span>{{ onlineCatalog.length }} modules · {{ updatesAvailable }} updates</span></button>
     <button :class="{active:activeTab==='repositories'}" role="tab" @click="activeTab='repositories'"><b>Repositories</b><span>{{ repositories.length }} configured · {{ repositoryErrors }} errors</span></button>
     <button v-if="canManage" :class="{active:activeTab==='hotfixes'}" role="tab" @click="activeTab='hotfixes'"><b>Hotfixes</b><span>{{ hotfixedModules.length }} hotfixed modules</span></button>
-    <button v-if="canManage" :class="{active:activeTab==='history'}" role="tab" @click="activeTab='history';loadJobHistory()"><b>History</b><span>{{ jobHistory.length }} lifecycle records</span></button>
+    <button v-if="canManage" :class="{active:activeTab==='history'}" role="tab" @click="activeTab='history';loadJobHistory()"><b>History</b><span>{{ historyTotal || jobHistory.length }} lifecycle records</span></button>
   </div>
 
   <template v-if="activeTab==='installed'">
@@ -926,13 +938,13 @@ onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); 
   </template>
 
   <template v-else-if="activeTab==='history'">
-    <div class="toolbar"><span class="muted mono">{{ jobHistory.length }} lifecycle records</span><span class="spacer"></span><button class="btn sm" :disabled="historyLoading" @click="loadJobHistory">{{historyLoading?'Loading…':'Refresh history'}}</button></div>
+    <div class="toolbar"><span class="muted mono">{{ historyTotal }} lifecycle records · page {{ historyPage }}{{ historyPages ? ` / ${historyPages}` : '' }}</span><span class="spacer"></span><button class="btn sm" :disabled="historyLoading" @click="loadJobHistory(historyPage)">{{historyLoading?'Loading…':'Refresh history'}}</button></div>
     <div v-if="historyLoading&&!jobHistory.length" class="state-inline">Loading module lifecycle history…</div>
     <div v-else-if="!jobHistory.length" class="state-inline"><b>No module lifecycle history yet.</b></div>
     <div v-else class="module-history-layout">
       <div class="tablewrap"><table><thead><tr><th>Time</th><th>Action</th><th>Module(s)</th><th>Requested by</th><th>Status</th><th>Stage</th></tr></thead><tbody>
         <tr v-for="job in jobHistory" :key="job.id" class="clickrow" :class="{selected:historySelectedId===job.id}" @click="historySelectedId=job.id"><td class="mono">{{historyTime(job.created_at)}}</td><td><b>{{job.action}}</b><span v-if="job.replace" class="sub">replacement / upgrade</span></td><td class="mono">{{historyModules(job)}}</td><td>{{job.requested_by||'unknown / legacy'}}</td><td><span class="pill" :class="{ok:job.status==='succeeded',danger:['failed','dispatch_failed'].includes(job.status),warn:!['succeeded','failed','dispatch_failed'].includes(job.status)}">{{job.status}}</span></td><td class="mono">{{job.stage||'—'}}</td></tr>
-      </tbody></table></div>
+      </tbody></table><div class="toolbar"><span class="muted mono">Showing {{ jobHistory.length }} of {{ historyTotal }}</span><span class="spacer"></span><button class="btn sm" :disabled="historyLoading || historyPage <= 1" @click="loadJobHistory(historyPage - 1)">Previous</button><button class="btn sm" :disabled="historyLoading || !historyPages || historyPage >= historyPages" @click="loadJobHistory(historyPage + 1)">Next</button></div></div>
       <aside v-if="selectedHistory" class="card module-history-detail"><div class="cardhead"><div><span class="eyebrow">LIFECYCLE RECORD</span><h3>{{selectedHistory.action}} · {{historyModules(selectedHistory)}}</h3></div><span class="pill" :class="{ok:selectedHistory.status==='succeeded',danger:['failed','dispatch_failed'].includes(selectedHistory.status),warn:!['succeeded','failed','dispatch_failed'].includes(selectedHistory.status)}">{{selectedHistory.status}}</span></div><dl class="kvlist"><dt>Created</dt><dd class="mono">{{historyTime(selectedHistory.created_at)}}</dd><dt>Started</dt><dd class="mono">{{historyTime(selectedHistory.started_at)}}</dd><dt>Finished</dt><dd class="mono">{{historyTime(selectedHistory.finished_at)}}</dd><dt>Requested by</dt><dd>{{selectedHistory.requested_by||'unknown / legacy'}}</dd><dt>Job ID</dt><dd class="mono">{{selectedHistory.id}}</dd><dt>Package</dt><dd class="mono">{{selectedHistory.package_filename||'—'}}</dd><template v-if="selectedHistory.publisher_trust"><dt>Package trust</dt><dd><span class="pill" :class="selectedHistory.publisher_trust.verified&&selectedHistory.publisher_trust.trusted?'ok':(selectedHistory.publisher_trust.state==='unsigned'?'':'danger')">{{ selectedHistory.publisher_trust.verified&&selectedHistory.publisher_trust.trusted?'verified':(selectedHistory.publisher_trust.state||'unknown') }}</span></dd><dt>Publisher</dt><dd>{{ selectedHistory.publisher_trust.publisher_display_name || selectedHistory.publisher_trust.publisher_id || '—' }}</dd><dt>Key ID</dt><dd class="mono">{{ selectedHistory.publisher_trust.key_id || '—' }}</dd></template></dl><div v-if="selectedHistory.error" class="auth-error">{{selectedHistory.error}}</div><div v-if="selectedHistory.log_tail?.length" class="section-divider">Log tail</div><pre v-if="selectedHistory.log_tail?.length" class="job-log">{{selectedHistory.log_tail.join('\n')}}</pre></aside>
     </div>
   </template>

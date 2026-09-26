@@ -147,11 +147,10 @@ export function revokeCoreSession(sessionId, reason = 'administrator-request') {
   })
 }
 
-export function getCoreSessionAudit({ username = '', eventType = '', limit = 200 } = {}) {
-  const query = new URLSearchParams()
+export function getCoreSessionAudit({ username = '', eventType = '', page = 1, pageSize = 50 } = {}) {
+  const query = new URLSearchParams({ page: String(page), page_size: String(pageSize) })
   if (username) query.set('username', username)
   if (eventType) query.set('event_type', eventType)
-  query.set('limit', String(limit))
   return apiFetch(`/api/tfd/session/audit/?${query.toString()}`)
 }
 

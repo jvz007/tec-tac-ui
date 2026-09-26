@@ -40,7 +40,11 @@ const revoking = ref(false)
 const auditRows = ref([])
 const auditUsername = ref('')
 const auditEventType = ref('')
-const auditLimit = ref(200)
+const auditPage = ref(1)
+const auditPageSize = ref(50)
+const auditTotal = ref(0)
+const auditPages = ref(0)
+const auditLoading = ref(false)
 
 const diagnostics = ref(null)
 
@@ -192,22 +196,31 @@ async function confirmRevoke() {
   }
 }
 
-async function loadAudit() {
-  loading.value = true
+async function loadAudit(page = auditPage.value) {
+  auditLoading.value = true
   error.value = ''
   try {
+    const targetPage = Math.max(1, Number(page) || 1)
     const data = await getCoreSessionAudit({
       username: auditUsername.value.trim(),
       eventType: auditEventType.value.trim(),
-      limit: Number(auditLimit.value) || 200,
+      page: targetPage,
+      pageSize: auditPageSize.value,
     })
     auditRows.value = Array.isArray(data?.events) ? data.events : []
+    auditPage.value = Number(data?.page || targetPage)
+    auditTotal.value = Number(data?.total ?? data?.count ?? auditRows.value.length)
+    auditPages.value = Number(data?.pages || 0)
   } catch (err) {
-    auditRows.value = []
     error.value = err?.message || 'Unable to load Core session audit events.'
   } finally {
-    loading.value = false
+    auditLoading.value = false
   }
+}
+
+function applyAuditFilters() {
+  auditPage.value = 1
+  loadAudit(1)
 }
 
 async function loadDiagnostics() {
@@ -321,12 +334,12 @@ onBeforeUnmount(() => clearUnsaved(OWNER))
 
     <template v-else-if="section === 'audit'">
       <div class="toolbar">
-        <label class="compact-input"><span class="sr-only">Filter audit by username</span><input v-model="auditUsername" placeholder="Username (optional)" /></label>
-        <label class="compact-input"><span class="sr-only">Filter audit by event type</span><input v-model="auditEventType" placeholder="Event type (optional)" /></label>
-        <label class="compact-input narrow"><span class="sr-only">Audit event limit</span><input v-model.number="auditLimit" type="number" min="1" max="1000" /></label>
-        <span class="spacer"></span><button class="btn" :disabled="loading" @click="loadAudit">Apply</button>
+        <label class="compact-input"><span class="sr-only">Filter audit by username</span><input v-model="auditUsername" placeholder="Username (optional)" @keyup.enter="applyAuditFilters" /></label>
+        <label class="compact-input"><span class="sr-only">Filter audit by event type</span><input v-model="auditEventType" placeholder="Event type (optional)" @keyup.enter="applyAuditFilters" /></label>
+        <span class="muted mono">{{ auditTotal }} events · page {{ auditPage }}{{ auditPages ? ` / ${auditPages}` : '' }}</span>
+        <span class="spacer"></span><button class="btn" :disabled="auditLoading" @click="applyAuditFilters">{{ auditLoading ? 'Loading…' : 'Apply' }}</button>
       </div>
-      <div v-if="loading" class="callout mono">Loading session audit…</div>
+      <div v-if="auditLoading && !auditRows.length" class="callout mono">Loading session audit…</div>
       <div v-else class="tablewrap">
         <table>
           <thead><tr><th>Time</th><th>User</th><th>Event</th><th>Detail</th><th>Requested by</th><th>Session</th></tr></thead>
@@ -338,6 +351,7 @@ onBeforeUnmount(() => clearUnsaved(OWNER))
           </tbody>
         </table>
       </div>
+      <div class="toolbar mt"><span class="muted mono">Showing {{ auditRows.length }} of {{ auditTotal }} events</span><span class="spacer"></span><button class="btn sm" :disabled="auditLoading || auditPage <= 1" @click="loadAudit(auditPage - 1)">Previous</button><button class="btn sm" :disabled="auditLoading || !auditPages || auditPage >= auditPages" @click="loadAudit(auditPage + 1)">Next</button></div>
     </template>
 
     <template v-else>

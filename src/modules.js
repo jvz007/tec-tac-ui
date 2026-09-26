@@ -20,7 +20,13 @@ export function setModuleEnabled(moduleId,enabled,cascade=false){ return apiFetc
 export function setModuleVisible(moduleId,visible){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/visibility/`,{method:'POST',body:JSON.stringify({visible:!!visible})}) }
 export function checkModuleRemoval(moduleId){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/remove-check/`) }
 export function removeModule(moduleId){ return apiFetch(`/api/tfd/modules/${encodeURIComponent(moduleId)}/remove/`,{method:'POST',body:JSON.stringify({})}) }
-export function listModuleJobs(limit=200){ return apiFetch(`/api/tfd/modules/v2/jobs/?limit=${encodeURIComponent(limit)}`) }
+export function listModuleJobs({page=1,pageSize=50,status='',action='',search=''}={}){
+  const query=new URLSearchParams({page:String(page),page_size:String(pageSize)})
+  if(status) query.set('status',status)
+  if(action) query.set('action',action)
+  if(search) query.set('search',search)
+  return apiFetch(`/api/tfd/modules/v2/jobs/?${query.toString()}`)
+}
 export function getModuleJob(jobId){ return apiFetch(`/api/tfd/modules/v2/jobs/${encodeURIComponent(jobId)}/`,{rejectErrorPayload:false}) }
 
 export function listModuleRepositories(){ return apiFetch('/api/tfd/modules/repositories/') }
