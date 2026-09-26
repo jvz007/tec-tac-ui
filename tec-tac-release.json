@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.35",
+  "version": "0.12.36",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -27,19 +27,19 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.34-1.md",
-      "size": 1046,
-      "sha256": "14cd599db88064da4c102c5b3f726207253e1a0e0489688fb23dbb25ad32725c"
-    },
-    {
       "path": "RELEASE_NOTES_0.12.35.md",
       "size": 811,
       "sha256": "fda2477b7e33894339910aed4c09ce2dcb2b6ee06fc7ddf8c14efe60e93c7f40"
     },
     {
+      "path": "RELEASE_NOTES_0.12.36.md",
+      "size": 708,
+      "sha256": "b8361a4c0846876b0034914d85a74f6ed1919816f841bd2ab20c4d0bcd33b794"
+    },
+    {
       "path": "VERSION",
       "size": 8,
-      "sha256": "2602ef0a400ebc0e5116ed78bc8fb34cedd4dbae316696cbccba8b70f59ba4ed"
+      "sha256": "9cd3feed63962e3ed74cd14e066e2641129cfec495a8d9ecddc3e00122438292"
     },
     {
       "path": "docs/context-actions.md",
@@ -509,12 +509,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "9c8202723d993e821548819e18ead7dbec5ace170e2d39a77b758b924d0a9970"
+      "sha256": "ab04afb70e4736f00537f0133170151b51689b56bbdf5ea9747858be48db80d0"
     },
     {
       "path": "package.json",
-      "size": 600,
-      "sha256": "2532534985ccce3eb2406f118119eb86d93d3559f8df489867074c0334743a88"
+      "size": 645,
+      "sha256": "501d86c7c678f5971d0dc9368f48c173b7a8d9948118794cb9ad6513d03f407b"
     },
     {
       "path": "public/modules/modules.json",
@@ -558,8 +558,8 @@
     },
     {
       "path": "src/access.js",
-      "size": 6324,
-      "sha256": "0e97b06310a29b4c0b50db2398454400d198517c0c3f19c4a1c5be375114869b"
+      "size": 6609,
+      "sha256": "a3a66e6c8ad471699960f81fa9a757cb2bd451608d9d015e58fddeb7f976042f"
     },
     {
       "path": "src/api.js",
@@ -613,8 +613,8 @@
     },
     {
       "path": "src/components/access/AdminSessionsPanel.vue",
-      "size": 4115,
-      "sha256": "593286bbeeb87841d13e19546ffcdede9d1f7970770b3ba721f8ed1225979036"
+      "size": 5238,
+      "sha256": "cbfa48acf76855d47f91f5038e6bdaf6eae53845a22bfdcfa06504cbc48e17ab"
     },
     {
       "path": "src/components/access/MfaRecoveryPanel.vue",
@@ -909,7 +909,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "df13c72f3a1f20002a00356a19705850d4d9e9763a76c44ecdfff99d68c69d7e"
+      "sha256": "29743e27276e192f9b5b48a564fb4b72826fcf943a4313c66a66ca12962d87f8"
     },
     {
       "path": "tests/api-raw.mjs",
@@ -925,6 +925,11 @@
       "path": "tests/history-pagination-ui.sh",
       "size": 1222,
       "sha256": "e0af7894327e3809ba5fea152b13bac497c7322cd5ecf7d1e34292c78c37b2f6"
+    },
+    {
+      "path": "tests/login-session-pagination-ui.sh",
+      "size": 1105,
+      "sha256": "7a3ac2a111bd8f178e31ca902182e90097c578ec26c2f0dddc8494af5f80126e"
     },
     {
       "path": "tests/mfa-admin-recovery-ui.sh",

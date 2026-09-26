@@ -100,8 +100,12 @@ export function invalidateUserMfaBackupCodes(userId, reason = 'administrator-req
   })
 }
 
-export function listActiveLoginSessions() {
-  return apiFetch('/api/tfd/access/sessions/')
+export function listActiveLoginSessions(options = null) {
+  if (!options) return apiFetch('/api/tfd/access/sessions/')
+  const { page = 1, pageSize = 50, search = '' } = options
+  const query = new URLSearchParams({ page: String(page), page_size: String(pageSize) })
+  if (search) query.set('search', search)
+  return apiFetch(`/api/tfd/access/sessions/?${query.toString()}`)
 }
 
 export function revokeLoginSession(sessionId, reason = 'administrator-request') {
