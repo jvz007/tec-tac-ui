@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.27",
+  "version": "0.12.28",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,9 +32,14 @@
       "sha256": "d49c8d1bcf1555e962845f2263318bf1525b1705a679050a862c5b0de676e797"
     },
     {
+      "path": "RELEASE_NOTES_0.12.28.md",
+      "size": 1078,
+      "sha256": "84dada1ac836596ac42d731d392b7c3d95337073ad8820eb436dbacd824280d1"
+    },
+    {
       "path": "VERSION",
       "size": 8,
-      "sha256": "b58f1ce0d259da2350cfada92fcfeac9a7a691aac08584110eebe3d6f02be765"
+      "sha256": "87c13ddc268e17d9b01a80221b9bc58d6218a44c10ac69fd7f4916aa201d04ca"
     },
     {
       "path": "docs/context-actions.md",
@@ -478,8 +483,8 @@
     },
     {
       "path": "package.json",
-      "size": 442,
-      "sha256": "4ccb82d0c889bdd48a3ea6381e8b798dfcd1a4ff8d68fff4b26d454ca1968dc2"
+      "size": 479,
+      "sha256": "fe17ccddb5d5269a295f7e50851f74aeff02008f498ddf0219a0b7402411d212"
     },
     {
       "path": "public/modules/modules.json",
@@ -523,6 +528,11 @@
     },
     {
       "path": "src/access.js",
+      "size": 5934,
+      "sha256": "7c28e85f7aebefdee6adb75a88f9af09d6bff4b03600ec74ea79d288dec6a310"
+    },
+    {
+      "path": "src/access.js.orig",
       "size": 4659,
       "sha256": "fc86d499eb5960716c346e38cc2c926dec02350c9f944d6b0ac4b143cd59bfc6"
     },
@@ -595,6 +605,11 @@
       "path": "src/components/access/SessionPanel.vue",
       "size": 2274,
       "sha256": "e81d7a3455a8de0f448c4d694ec60a1df78cd1dea2952eab1663c6248845f4a8"
+    },
+    {
+      "path": "src/components/access/SessionSecurityPanel.vue",
+      "size": 19231,
+      "sha256": "fe44a1c53ae900e0066bd1817f1af0331c9a2c51fa49206d4efbedbae658e9fb"
     },
     {
       "path": "src/components/access/UsersPanel.vue",
@@ -798,8 +813,8 @@
     },
     {
       "path": "src/views/AccessView.vue",
-      "size": 2036,
-      "sha256": "7b235b8e1415c3b63fa050f3b9b7301c2bfa3526201238a3bfcad872ba00b7a7"
+      "size": 2387,
+      "sha256": "6e56e092c547e1b15412480efeb1a75ac16140c138e643859b63d0623a7512c7"
     },
     {
       "path": "src/views/ContractsView.vue",
@@ -868,8 +883,8 @@
     },
     {
       "path": "tec_tac_package.json",
-      "size": 138,
-      "sha256": "41fdbafb5a30db83b298f516af92a8556ea9bfd9e342998375dbf75866d6f444"
+      "size": 140,
+      "sha256": "a26a3fb1a94602554352f5286725b4bf6b75db261fe525c3d1c47b658987712a"
     },
     {
       "path": "tests/api-raw.mjs",
@@ -895,6 +910,11 @@
       "path": "tests/session-expiry.mjs",
       "size": 2842,
       "sha256": "8e89ab53e90c1bffc507643ebb8b604f6e7a7b9370f45525f288cab3929982ae"
+    },
+    {
+      "path": "tests/session-security-ui.sh",
+      "size": 2290,
+      "sha256": "5ac9231868eb3d0f839beda5e323419a2c0bd9be6b6b5639965dc39454244b06"
     },
     {
       "path": "vite.config.js",

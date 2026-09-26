@@ -5,6 +5,7 @@ import RolesPanel from '../components/access/RolesPanel.vue'
 import SessionPanel from '../components/access/SessionPanel.vue'
 import MfaRecoveryPanel from '../components/access/MfaRecoveryPanel.vue'
 import AdminSessionsPanel from '../components/access/AdminSessionsPanel.vue'
+import SessionSecurityPanel from '../components/access/SessionSecurityPanel.vue'
 import { requestLeave } from '../unsaved'
 
 const state = inject('tecTacState')
@@ -17,6 +18,7 @@ const tabs = computed(() => {
     { id:'mfa', label:'MFA & recovery', hint:'Authenticator recovery and backup codes' },
   ]
   if (state.context.capabilities?.manage_accounts) items.push({ id:'login-sessions', label:'Login sessions', hint:'Admin session visibility and revocation' })
+  if (state.context.capabilities?.manage_schedules || state.context.user?.superuser === true) items.push({ id:'session-security', label:'Session security', hint:'Core trust policy, sessions & audit' })
   return items
 })
 
@@ -37,5 +39,6 @@ function selectTab(id) {
     <SessionPanel v-else-if="tab === 'session'" />
     <MfaRecoveryPanel v-else-if="tab === 'mfa'" />
     <AdminSessionsPanel v-else-if="tab === 'login-sessions'" />
+    <SessionSecurityPanel v-else-if="tab === 'session-security'" />
   </section>
 </template>
