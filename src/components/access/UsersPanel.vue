@@ -1,6 +1,6 @@
 <script setup>
 import { computed, inject, onMounted, reactive, ref } from 'vue'
-import { createUser, deleteUser, listRoles, listUsers, resetUserPassword, resetUserTotp, updateUser } from '../../access'
+import { createUser, deleteUser, getUserMfaRecovery, invalidateUserMfaBackupCodes, listRoles, listUsers, resetUserPassword, resetUserTotp, updateUser } from '../../access'
 
 const state = inject('tecTacState')
 const users = ref([])
@@ -13,10 +13,16 @@ const editing = ref(null)
 const creating = ref(false)
 const saving = ref(false)
 const passwordReset = ref('')
+const mfaRecovery = ref(null)
+const mfaLoading = ref(false)
+const mfaError = ref('')
+const mfaNotice = ref('')
+const showInvalidateRecovery = ref(false)
 
 const createForm = reactive({ username:'', first_name:'', last_name:'', email:'', password:'', role:null })
 const canManage = computed(() => state.context.capabilities?.manage_accounts !== false)
 const capabilityResolved = computed(() => state.context.capabilities !== null)
+const isCurrentUser = computed(() => Boolean(editing.value && state.context.user?.username === editing.value.username))
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
   if (!q) return users.value
@@ -39,8 +45,45 @@ async function load() {
   } finally { loading.value = false }
 }
 
-function beginEdit(user) { editing.value = { ...user }; creating.value = false; passwordReset.value = '' }
-function closeEditor() { editing.value = null; creating.value = false; passwordReset.value = '' }
+function beginEdit(user) {
+  editing.value = { ...user }
+  creating.value = false
+  passwordReset.value = ''
+  mfaRecovery.value = null
+  mfaError.value = ''
+  mfaNotice.value = ''
+  showInvalidateRecovery.value = false
+  void loadMfaRecovery(user)
+}
+function closeEditor() {
+  editing.value = null
+  creating.value = false
+  passwordReset.value = ''
+  mfaRecovery.value = null
+  mfaError.value = ''
+  mfaNotice.value = ''
+  showInvalidateRecovery.value = false
+}
+
+async function loadMfaRecovery(user = editing.value) {
+  if (!user || (capabilityResolved.value && !canManage.value)) {
+    mfaRecovery.value = null
+    mfaError.value = ''
+    mfaLoading.value = false
+    return
+  }
+  const targetId = user.id
+  mfaLoading.value = true
+  mfaError.value = ''
+  try {
+    const data = await getUserMfaRecovery(targetId)
+    if (editing.value?.id === targetId) mfaRecovery.value = data || null
+  } catch (err) {
+    if (editing.value?.id === targetId) mfaError.value = err?.message || 'Unable to load MFA recovery status.'
+  } finally {
+    if (editing.value?.id === targetId) mfaLoading.value = false
+  }
+}
 
 async function addUser() {
   saving.value = true; error.value = ''
@@ -86,10 +129,32 @@ async function changePassword() {
 
 async function resetTotp() {
   if (!editing.value || !window.confirm(`Reset 2FA for ${editing.value.username}? They must enroll again at next sign-in.`)) return
-  saving.value = true; error.value = ''
-  try { await resetUserTotp(editing.value.id) }
+  saving.value = true; error.value = ''; mfaNotice.value = ''
+  try {
+    await resetUserTotp(editing.value.id)
+    mfaNotice.value = '2FA reset. Recovery codes bound to the previous authenticator are no longer valid.'
+    await loadMfaRecovery(editing.value)
+  }
   catch (err) { error.value = err.message || 'Unable to reset 2FA.' }
   finally { saving.value = false }
+}
+
+function requestInvalidateRecovery() {
+  if (!editing.value || !mfaRecovery.value?.status?.configured || !mfaRecovery.value?.can_invalidate) return
+  showInvalidateRecovery.value = true
+}
+
+async function invalidateRecovery() {
+  if (!editing.value) return
+  saving.value = true; mfaError.value = ''; mfaNotice.value = ''
+  try {
+    const data = await invalidateUserMfaBackupCodes(editing.value.id)
+    mfaRecovery.value = { ...mfaRecovery.value, status: data?.status || mfaRecovery.value?.status }
+    mfaNotice.value = `${data?.invalidated ?? 0} backup code${data?.invalidated === 1 ? '' : 's'} invalidated.`
+    showInvalidateRecovery.value = false
+  } catch (err) {
+    mfaError.value = err?.message || 'Unable to invalidate backup codes.'
+  } finally { saving.value = false }
 }
 
 onMounted(load)
@@ -146,10 +211,53 @@ onMounted(load)
         <div class="section-divider"><span>Credential actions</span></div>
         <label class="field"><span>New password</span><input v-model="passwordReset" type="password" autocomplete="new-password" /></label>
         <div class="editor-actions"><button class="btn" :disabled="saving || !passwordReset || (capabilityResolved && !canManage)" @click="changePassword">Reset password</button><button class="btn warnbtn" :disabled="saving || (capabilityResolved && !canManage)" @click="resetTotp">Reset 2FA</button></div>
-        <p class="field-help">Tactical protects the installation/root user from destructive UI changes. Any such rejection is returned by Tactical and shown here.</p>
+
+        <div class="section-divider"><span>MFA & recovery</span></div>
+        <div v-if="capabilityResolved && !canManage" class="state-inline warning"><b>Status unavailable.</b> MFA recovery administration requires <span class="mono">can_manage_accounts</span>.</div>
+        <div v-else-if="mfaLoading" class="callout mono">Loading MFA recovery status…</div>
+        <div v-else-if="mfaError" class="state-inline denied" role="alert"><b>MFA recovery status failed.</b> {{ mfaError }}</div>
+        <template v-else-if="mfaRecovery?.status">
+          <dl class="kvlist">
+            <dt>TOTP</dt><dd>{{ mfaRecovery.status.totp_configured ? 'configured' : 'not configured' }}</dd>
+            <dt>Backup codes</dt><dd>{{ mfaRecovery.status.configured ? 'configured' : 'not created' }}</dd>
+            <dt>Available</dt><dd class="mono">{{ mfaRecovery.status.unused ?? 0 }} / {{ mfaRecovery.status.total ?? 0 }}</dd>
+            <dt>Used</dt><dd class="mono">{{ mfaRecovery.status.used ?? 0 }}</dd>
+            <dt>Last generated</dt><dd class="mono smalltext">{{ mfaRecovery.status.generated_at || '—' }}</dd>
+          </dl>
+          <div v-if="mfaRecovery.status.sso_user" class="state-inline warning"><b>SSO managed.</b> Tec-Tac backup codes are not available for this account.</div>
+          <div v-else-if="!mfaRecovery.status.totp_configured" class="state-inline warning"><b>Authenticator enrollment required.</b> Backup codes can only be created after TOTP is configured.</div>
+          <div v-else-if="!mfaRecovery.status.configured" class="state-inline"><b>No recovery set exists.</b> {{ isCurrentUser ? 'Create one from the MFA & recovery tab.' : 'The user can create their first set from Access → MFA & recovery after signing in.' }}</div>
+          <div v-else class="state-inline"><b>Recovery set active.</b> Creation and rotation remain self-service because they require the user’s current password and TOTP proof.</div>
+          <div v-if="mfaNotice" class="state-inline"><b>Updated.</b> {{ mfaNotice }}</div>
+          <div class="editor-actions">
+            <button class="btn danger" :disabled="saving || !mfaRecovery.status.configured || !mfaRecovery.can_invalidate" @click="requestInvalidateRecovery">Invalidate backup codes</button>
+            <button class="btn" :disabled="mfaLoading" @click="loadMfaRecovery()">Refresh MFA status</button>
+          </div>
+          <p v-if="!mfaRecovery.can_invalidate" class="field-help">This protected/root account requires effective superuser authority for destructive MFA recovery actions.</p>
+        </template>
+        <p class="field-help">Tactical protects the installation/root user from destructive UI changes. Tec-Tac never lets an administrator generate or reveal another user's backup codes.</p>
       </aside>
 
       <aside v-else class="editor-panel empty-editor"><span class="eyebrow">USER DETAIL</span><p>Select a user to inspect or edit the account.</p></aside>
+    </div>
+
+    <div v-if="showInvalidateRecovery && editing" class="modal-backdrop" @click.self="showInvalidateRecovery = false">
+      <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="invalidate-recovery-title">
+        <div class="cardhead">
+          <div><span class="eyebrow">MFA RECOVERY</span><h3 id="invalidate-recovery-title">Invalidate backup codes</h3></div>
+          <button class="btn sm ghost" :disabled="saving" aria-label="Close" @click="showInvalidateRecovery = false">×</button>
+        </div>
+        <div class="state-inline warning"><b>{{ editing.username }}</b> will immediately lose every remaining Tec-Tac backup code. This does not reset their authenticator or password.</div>
+        <dl class="kvlist">
+          <dt>Target</dt><dd class="mono">{{ editing.username }}</dd>
+          <dt>Available codes</dt><dd class="mono">{{ mfaRecovery?.status?.unused ?? 0 }}</dd>
+          <dt>Total set</dt><dd class="mono">{{ mfaRecovery?.status?.total ?? 0 }}</dd>
+        </dl>
+        <div class="modal-actions">
+          <button class="btn danger" :disabled="saving" @click="invalidateRecovery">{{ saving ? 'Invalidating…' : 'Invalidate codes' }}</button>
+          <button class="btn" :disabled="saving" @click="showInvalidateRecovery = false">Cancel</button>
+        </div>
+      </section>
     </div>
   </div>
 </template>

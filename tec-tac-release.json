@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.28",
+  "version": "0.12.29",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -27,19 +27,19 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.27.md",
-      "size": 577,
-      "sha256": "d49c8d1bcf1555e962845f2263318bf1525b1705a679050a862c5b0de676e797"
-    },
-    {
       "path": "RELEASE_NOTES_0.12.28.md",
       "size": 1078,
       "sha256": "84dada1ac836596ac42d731d392b7c3d95337073ad8820eb436dbacd824280d1"
     },
     {
+      "path": "RELEASE_NOTES_0.12.29.md",
+      "size": 938,
+      "sha256": "97a20525226c09b70e55f11e70f4ebe6a3af4bd649afc29383a84a8d8ac915ab"
+    },
+    {
       "path": "VERSION",
       "size": 8,
-      "sha256": "87c13ddc268e17d9b01a80221b9bc58d6218a44c10ac69fd7f4916aa201d04ca"
+      "sha256": "52640525aadcd96b879858d59242bffd818aaa0b57ec307e8ae67507949a91f7"
     },
     {
       "path": "docs/context-actions.md",
@@ -302,6 +302,11 @@
       "sha256": "cd45d30547de30c5c36930a6cc5aa82eaf6a0e867825658f7cc911abdde5a015"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.27.md",
+      "size": 577,
+      "sha256": "d49c8d1bcf1555e962845f2263318bf1525b1705a679050a862c5b0de676e797"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.3.md",
       "size": 1021,
       "sha256": "70e5fa8c02489739b377a6b900b0ec5f6918b2cfbc7f387c8eed624e9c5a6614"
@@ -483,8 +488,8 @@
     },
     {
       "path": "package.json",
-      "size": 479,
-      "sha256": "fe17ccddb5d5269a295f7e50851f74aeff02008f498ddf0219a0b7402411d212"
+      "size": 518,
+      "sha256": "4271b2b3244fdbb9c5820fd7a0f4d2d4b47778711303762d5b1a2b03701c08c9"
     },
     {
       "path": "public/modules/modules.json",
@@ -528,13 +533,8 @@
     },
     {
       "path": "src/access.js",
-      "size": 5934,
-      "sha256": "7c28e85f7aebefdee6adb75a88f9af09d6bff4b03600ec74ea79d288dec6a310"
-    },
-    {
-      "path": "src/access.js.orig",
-      "size": 4659,
-      "sha256": "fc86d499eb5960716c346e38cc2c926dec02350c9f944d6b0ac4b143cd59bfc6"
+      "size": 6297,
+      "sha256": "96bd2e454d4075191abf093303aeabc8033dcbd0c2b6538c59c0a4b3c12bb76e"
     },
     {
       "path": "src/api.js",
@@ -593,8 +593,8 @@
     },
     {
       "path": "src/components/access/MfaRecoveryPanel.vue",
-      "size": 6741,
-      "sha256": "3e0fbde93dd69123e6bf8f4be21efa9ee66fd5b030bf6b5251445fa2e04a75ff"
+      "size": 7021,
+      "sha256": "49fd5cc88c205a3ed43ee9c57b490883367f5f9f7240366fc3254eac48eeb220"
     },
     {
       "path": "src/components/access/RolesPanel.vue",
@@ -613,8 +613,8 @@
     },
     {
       "path": "src/components/access/UsersPanel.vue",
-      "size": 9701,
-      "sha256": "d2585126aa0a905f5496032da4fc82b16c9b324e17589f51e865cb3c313d9dc3"
+      "size": 15851,
+      "sha256": "4477d5a6d144dce5aeb480bf738d6220064e33aa92a7ea6fbf240c89f3153295"
     },
     {
       "path": "src/context-actions.js",
@@ -883,8 +883,8 @@
     },
     {
       "path": "tec_tac_package.json",
-      "size": 140,
-      "sha256": "a26a3fb1a94602554352f5286725b4bf6b75db261fe525c3d1c47b658987712a"
+      "size": 138,
+      "sha256": "8a9ac3287d00ac512b3d01da560b5d1217e94757b2af5d7df80c4cacf7e494a2"
     },
     {
       "path": "tests/api-raw.mjs",
@@ -895,6 +895,11 @@
       "path": "tests/foundation.sh",
       "size": 64542,
       "sha256": "eccbee1f6d203389fdb80d4363029c14e1545e276ebfcad928d3f02ee38b1a0b"
+    },
+    {
+      "path": "tests/mfa-admin-recovery-ui.sh",
+      "size": 1478,
+      "sha256": "8e0001a370806d01b23e50623e245642e2a164e2782131e34738fc11e2f7a899"
     },
     {
       "path": "tests/mfa-enrollment-hardening.mjs",
@@ -913,8 +918,8 @@
     },
     {
       "path": "tests/session-security-ui.sh",
-      "size": 2290,
-      "sha256": "5ac9231868eb3d0f839beda5e323419a2c0bd9be6b6b5639965dc39454244b06"
+      "size": 1999,
+      "sha256": "09e060cc5d821edcee8eb71d5c78f97545c3759fd908a93c6a23ab3f9e17ef07"
     },
     {
       "path": "vite.config.js",

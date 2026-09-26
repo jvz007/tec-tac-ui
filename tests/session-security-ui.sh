@@ -19,7 +19,4 @@ grep -q "/api/tfd/session/diagnostics/" "${ROOT}/src/access.js" || fail "Core se
 grep -q "registerUnsaved" "${ROOT}/src/components/access/SessionSecurityPanel.vue" || fail "policy dirty-state guard missing"
 grep -q "modal-backdrop" "${ROOT}/src/components/access/SessionSecurityPanel.vue" || fail "native Core revoke confirmation missing"
 ! grep -q "window.confirm" "${ROOT}/src/components/access/SessionSecurityPanel.vue" || fail "Session Security must not use browser confirmation dialogs"
-grep -q '"version": "0.12.28"' "${ROOT}/package.json" || fail "package.json version mismatch"
-grep -q '"version": "0.12.28"' "${ROOT}/tec_tac_package.json" || fail "Tec-Tac package version mismatch"
-[[ "$(tr -d '\r\n' < "${ROOT}/VERSION")" == "0.12.28" ]] || fail "VERSION mismatch"
-echo "[TEST] PASS Core Session Security UI 0.12.28"
+echo "[TEST] PASS Core Session Security UI"

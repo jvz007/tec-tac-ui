@@ -89,6 +89,17 @@ export function generateMfaBackupCodes(password, totp) {
   })
 }
 
+export function getUserMfaRecovery(userId) {
+  return apiFetch(`/api/tfd/access/users/${encodeURIComponent(userId)}/mfa/`)
+}
+
+export function invalidateUserMfaBackupCodes(userId, reason = 'administrator-request') {
+  return apiFetch(`/api/tfd/access/users/${encodeURIComponent(userId)}/mfa/`, {
+    method: 'DELETE',
+    body: JSON.stringify({ reason }),
+  })
+}
+
 export function listActiveLoginSessions() {
   return apiFetch('/api/tfd/access/sessions/')
 }

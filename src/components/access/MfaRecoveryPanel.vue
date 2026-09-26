@@ -108,7 +108,7 @@ onMounted(load)
       <div v-if="status?.sso_user" class="state-inline warning"><b>SSO managed.</b> Backup codes are not available for accounts whose authentication is delegated to SSO.</div>
       <div v-else-if="!status?.totp_configured" class="state-inline warning"><b>TOTP required.</b> Complete authenticator enrollment before creating recovery codes.</div>
       <div class="editor-actions">
-        <button class="btn primary" :disabled="!canGenerate" @click="openGenerate">{{ status?.configured ? 'Regenerate backup codes' : 'Generate backup codes' }}</button>
+        <button class="btn primary" :disabled="!canGenerate" @click="openGenerate">{{ status?.configured ? 'Rotate backup codes' : 'Generate backup codes' }}</button>
         <button class="btn" @click="load">Refresh</button>
       </div>
     </article>
@@ -126,17 +126,18 @@ onMounted(load)
     <div v-if="showGenerate" class="modal-backdrop" @click.self="closeGenerate">
       <section class="modal-panel mfa-code-modal" role="dialog" aria-modal="true" aria-labelledby="backup-code-title">
         <div class="cardhead">
-          <div><span class="eyebrow">MFA RECOVERY</span><h3 id="backup-code-title">{{ codes.length ? 'Save your backup codes' : 'Generate backup codes' }}</h3></div>
+          <div><span class="eyebrow">MFA RECOVERY</span><h3 id="backup-code-title">{{ codes.length ? 'Save your backup codes' : (status?.configured ? 'Rotate backup codes' : 'Generate backup codes') }}</h3></div>
           <button class="btn sm ghost" aria-label="Close" @click="closeGenerate">×</button>
         </div>
 
         <template v-if="!codes.length">
-          <div class="state-inline warning"><b>This replaces the current set.</b> Any existing unused backup codes stop working immediately after generation.</div>
+          <div v-if="status?.configured" class="state-inline warning"><b>Rotation invalidates the current set.</b> Every existing unused backup code stops working immediately when the new set is created.</div>
+          <div v-else class="state-inline"><b>First recovery set.</b> The codes are shown once after creation; save them before closing this window.</div>
           <label class="field"><span>Current password</span><input v-model="password" type="password" autocomplete="current-password" :disabled="busy" /></label>
           <label class="field"><span>Current authenticator code</span><input v-model="totp" inputmode="numeric" autocomplete="one-time-code" maxlength="12" placeholder="000000" :disabled="busy" /></label>
           <div v-if="error" class="auth-error" role="alert">{{ error }}</div>
           <div class="editor-actions">
-            <button class="btn primary" :disabled="busy || !password || !totp.trim()" @click="generate">{{ busy ? 'Generating…' : 'Generate new codes' }}</button>
+            <button class="btn primary" :disabled="busy || !password || !totp.trim()" @click="generate">{{ busy ? 'Generating…' : (status?.configured ? 'Rotate codes' : 'Generate codes') }}</button>
             <button class="btn" :disabled="busy" @click="closeGenerate">Cancel</button>
           </div>
         </template>
