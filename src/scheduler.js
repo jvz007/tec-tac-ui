@@ -7,7 +7,7 @@ export function createSchedule(payload){ return apiFetch('/api/tfd/scheduler/sch
 export function updateSchedule(id,payload){ return apiFetch(`/api/tfd/scheduler/schedules/${encodeURIComponent(id)}/`,{method:'PATCH',body:JSON.stringify(payload)}) }
 export function deleteSchedule(id,{force=false}={}){ const q=force?'?force=true':''; return apiFetch(`/api/tfd/scheduler/schedules/${encodeURIComponent(id)}/${q}`,{method:'DELETE'}) }
 export function runScheduleNow(id){ return apiFetch(`/api/tfd/scheduler/schedules/${encodeURIComponent(id)}/run/`,{method:'POST',body:JSON.stringify({})}) }
-export function listScheduleRuns(scheduleId=null,ownerType=null){ const params=new URLSearchParams(); if(scheduleId)params.set('schedule_id',scheduleId); if(ownerType)params.set('owner_type',ownerType); const q=params.toString()?`?${params.toString()}`:''; return apiFetch(`/api/tfd/scheduler/runs/${q}`) }
+export function listScheduleRuns({scheduleId=null,ownerType=null,page=null,pageSize=null,search='',status=''}={}){ const params=new URLSearchParams(); if(scheduleId)params.set('schedule_id',scheduleId); if(ownerType)params.set('owner_type',ownerType); if(page)params.set('page',String(page)); if(pageSize)params.set('page_size',String(pageSize)); if(search)params.set('search',search); if(status)params.set('status',status); const q=params.toString()?`?${params.toString()}`:''; return apiFetch(`/api/tfd/scheduler/runs/${q}`) }
 
 export function getSchedulerConfig(){ return apiFetch('/api/tfd/scheduler/config/') }
 export function updateSchedulerConfig(payload){ return apiFetch('/api/tfd/scheduler/config/',{method:'PATCH',body:JSON.stringify(payload)}) }
