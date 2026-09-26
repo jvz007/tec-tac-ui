@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.30",
+  "version": "0.12.31",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -27,19 +27,19 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.29.md",
-      "size": 938,
-      "sha256": "97a20525226c09b70e55f11e70f4ebe6a3af4bd649afc29383a84a8d8ac915ab"
-    },
-    {
       "path": "RELEASE_NOTES_0.12.30.md",
       "size": 520,
       "sha256": "024869552cd8055f780142b071c09c0d778b64548463485506d09f3bfa5ae297"
     },
     {
+      "path": "RELEASE_NOTES_0.12.31.md",
+      "size": 493,
+      "sha256": "6793555c8326696eb5d710142527ba1a26a8b3c2b02c8699a68b578ef2d7c991"
+    },
+    {
       "path": "VERSION",
       "size": 8,
-      "sha256": "e24a09ecc9bad38728f8850f6a655963d4b67aab64934afb76a5b8530bf93a5c"
+      "sha256": "c620579d29e1a58b8f9d35ef6acc0a8b7dfbcdd73424553015bf47b3c9a17ad5"
     },
     {
       "path": "docs/context-actions.md",
@@ -312,6 +312,11 @@
       "sha256": "84dada1ac836596ac42d731d392b7c3d95337073ad8820eb436dbacd824280d1"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.29.md",
+      "size": 938,
+      "sha256": "97a20525226c09b70e55f11e70f4ebe6a3af4bd649afc29383a84a8d8ac915ab"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.3.md",
       "size": 1021,
       "sha256": "70e5fa8c02489739b377a6b900b0ec5f6918b2cfbc7f387c8eed624e9c5a6614"
@@ -494,7 +499,7 @@
     {
       "path": "package.json",
       "size": 518,
-      "sha256": "6227cd51513355bd31fe61e13047dd91938431448699ffe3259e7c0ac1149801"
+      "sha256": "b16f717e83ca151868cfa230f4d0d3637fbba52157e96edbb33a7473ae18d9c8"
     },
     {
       "path": "public/modules/modules.json",
@@ -808,8 +813,8 @@
     },
     {
       "path": "src/styles.css",
-      "size": 86711,
-      "sha256": "526f67ad0a3321be3c07818fa3880ed0e03905362dc3b0519aaf22439a8f4b41"
+      "size": 86761,
+      "sha256": "d4ecaea05ae3119984263ef58c47cb5371b340c573ea508d0a5c078a1bfde2c1"
     },
     {
       "path": "src/unsaved.js",
@@ -883,13 +888,13 @@
     },
     {
       "path": "src/views/SystemUpdatesView.vue",
-      "size": 31133,
-      "sha256": "cf393b7e2fb5f42c71886c5f0ff2b647805f16c120c8dadedcf7b7ffd3f7a11f"
+      "size": 31175,
+      "sha256": "8b2beb32407b5ce7e89ed71c48dc472ff44ceb75b908ea813749a1a6acde5870"
     },
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "200b8a2631d097eee143c565f2d4f4ae24f7ae34fedcb37bf2dcb6b6528d3905"
+      "sha256": "4cab9c3b6ed530324d9685dd401da3ad45abe252f760de625c3094e9c3bd416c"
     },
     {
       "path": "tests/api-raw.mjs",
@@ -898,8 +903,8 @@
     },
     {
       "path": "tests/foundation.sh",
-      "size": 64542,
-      "sha256": "eccbee1f6d203389fdb80d4363029c14e1545e276ebfcad928d3f02ee38b1a0b"
+      "size": 64868,
+      "sha256": "01c50cda91adf03822d0f7a36561caf7deded3799a03cbca129f6cc83df0ac91"
     },
     {
       "path": "tests/mfa-admin-recovery-ui.sh",
@@ -928,8 +933,8 @@
     },
     {
       "path": "tests/system-update-trust-popover-focus.sh",
-      "size": 747,
-      "sha256": "505661221f360621de5184d3c432f0fe676dff742534801287a430cf8624fe9e"
+      "size": 964,
+      "sha256": "931f75a032e025e00830017b36e89bd595a43cdc3c7cb66af55575b208810f31"
     },
     {
       "path": "vite.config.js",
