@@ -1,26 +1,20 @@
-# Review scope: Tec-Tac UI 0.12.41
+# FIXING.md — UI 0.12.42
 
-This release is intentionally narrow. Review only the tracker item below unless a regression is directly caused by this change.
+## Review scope
 
-## Tracker item in this release
+This is the UI/test half of the final D1 hardening pass.
 
-### U3 - failed Account Protection save navigates away
-
-Expected result:
-- A rejected Account Protection policy save must reject back into the shared unsaved-change workflow.
-- The pending navigation action must not run.
-- Dirty state and the unsaved-change dialog must remain active.
-- The operator's requested checkbox value must not be reset on failure.
-- The failure message must be shown by the unsaved-change dialog.
-
-Primary files:
-- `src/components/access/AccountSecurityPanel.vue`
-- `src/account-security-policy-save.js`
-- `src/unsaved.js` (unchanged shared mechanism, exercised by regression)
-- `tests/account-security-policy-save-flow.mjs`
-- `tests/account-security-policy-ui.sh`
+### L87 — account-protection UI regression was mostly grep-based
+- Added `tests/account-security-policy-api.mjs` to execute the policy GET/PUT helpers and verify endpoint, method and boolean payload behavior.
+- Kept `tests/account-security-policy-save-flow.mjs` as the behavioral unsaved-navigation regression that catches the U3 lifecycle bug.
+- Reduced `tests/account-security-policy-ui.sh` to behavioral test execution plus only minimal wiring checks that require a mounted Vue/browser harness to exercise fully.
 
 ## Explicitly not in this release
+- No production Account Protection UI behavior change.
+- U1, U2 and U4 remain for later tracker passes.
+- No unrelated UI Low items.
 
-- No other UI Medium or Low tracker items are addressed.
-- No visual redesign was made; the existing Access > Account Protection surface is preserved.
+## Primary files to inspect
+- `tests/account-security-policy-api.mjs`
+- `tests/account-security-policy-save-flow.mjs`
+- `tests/account-security-policy-ui.sh`
