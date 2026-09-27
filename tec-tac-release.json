@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.42",
+  "version": "0.12.43",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -23,8 +23,8 @@
     },
     {
       "path": "FIXING.md",
-      "size": 948,
-      "sha256": "2601cb07c7251bf832332fbf20ec0236fadc99ab09d3abf84aa4c97151199636"
+      "size": 1001,
+      "sha256": "0e947b1eb3c3e3080404a0eb3f5f4ff8d1d4942c55bddafc98302372ac1b88bd"
     },
     {
       "path": "LICENSE",
@@ -37,19 +37,19 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.41.md",
-      "size": 765,
-      "sha256": "2d43a8c4004a2c6e9e53b4d615ee4332880a06ccb11680877c619fc4a5775449"
-    },
-    {
       "path": "RELEASE_NOTES_0.12.42.md",
       "size": 464,
       "sha256": "58b4bf4460419cad90d9feebebda15e09550d729f8f2de6274e6f2e6d7b00272"
     },
     {
+      "path": "RELEASE_NOTES_0.12.43.md",
+      "size": 491,
+      "sha256": "5589a93567ffb3f641222fd5d464e396c2f9d823576f89c3fd07b437ad15ca78"
+    },
+    {
       "path": "VERSION",
       "size": 8,
-      "sha256": "dde00fc13787371064eae813700ade0be8fd4c85ca06f83dd97bd1942f13c856"
+      "sha256": "5d44901b140670ffa32cc81966a2fdac1aaf180327c10737f316e31f15ccd491"
     },
     {
       "path": "docs/context-actions.md",
@@ -105,6 +105,11 @@
       "path": "docs/module-status.md",
       "size": 1383,
       "sha256": "dc7852ac2da6b099c6fe02de4610fa17e1120872db936059b2ab83011a64a89f"
+    },
+    {
+      "path": "docs/releases/0.12.41.md",
+      "size": 765,
+      "sha256": "2d43a8c4004a2c6e9e53b4d615ee4332880a06ccb11680877c619fc4a5775449"
     },
     {
       "path": "docs/releases/README.md",
@@ -529,12 +534,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "be743dff8353d6cb3d1f2228a101bc4647a2047f2a35ad18c106674fece6546a"
+      "sha256": "ffb2d565b12eadb2ffb3dffe855f88ee143d1df216a6ac988258bc1d582131d8"
     },
     {
       "path": "package.json",
-      "size": 774,
-      "sha256": "805f4e01c3d2b943ba51bda042eda0558e014a331729eddff7f026dfd79d0854"
+      "size": 808,
+      "sha256": "61bedb5efd419c90d65ac5a131d6e286db8268e9c2f9755f502047b4c41d8c47"
     },
     {
       "path": "public/modules/modules.json",
@@ -842,6 +847,11 @@
       "sha256": "6529d0dff9c38ce3186641d83612b8322e618066fa4faed7dc296951c052710a"
     },
     {
+      "path": "src/scheduler-health.js",
+      "size": 398,
+      "sha256": "9b2cd8f85cf5d1a090829c6f01fb50e1486fe782a20ae926ab592d843100597b"
+    },
+    {
       "path": "src/scheduler.js",
       "size": 2032,
       "sha256": "a3c6bcace8178813cc4d7abb68c20a3601123f59402791d9e614fe7490aba155"
@@ -918,8 +928,8 @@
     },
     {
       "path": "src/views/SchedulerSettingsView.vue",
-      "size": 6852,
-      "sha256": "945aced6e78af466994d4cecaa10f7e7e8a1b58875dd49585f20a35402593465"
+      "size": 6848,
+      "sha256": "ef3c2662be022590225bcba17d73ac66fdf07bce643bfe56304fe6192167eacd"
     },
     {
       "path": "src/views/SchedulesView.vue",
@@ -939,7 +949,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "f52b5b360135bddf84c40922d63be7eaa379ed8dab9c1d3559ff48b7612b7cbc"
+      "sha256": "47d6f8e31fd3d4087c5e78425fb3e3ad010df13607b65a2da4183ca02a2a36fd"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -963,8 +973,13 @@
     },
     {
       "path": "tests/d5-scope-health-ui.sh",
-      "size": 626,
-      "sha256": "7fe9741e0bd83009102e360d69c8f64717a7de5222624716f284a8b1cc335e6a"
+      "size": 673,
+      "sha256": "b10347d827dc9ae5054ffa22fac14646a14d4b4f4709cef268ad85748b3d2aeb"
+    },
+    {
+      "path": "tests/d5-scope-health.mjs",
+      "size": 981,
+      "sha256": "3feac6173d5290a4adb0cfc96d70d82234003cb3948214170860605726e1178a"
     },
     {
       "path": "tests/foundation.sh",

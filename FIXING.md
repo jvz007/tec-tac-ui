@@ -1,20 +1,30 @@
-# FIXING.md — UI 0.12.42
+# FIXING.md — UI 0.12.43
 
 ## Review scope
 
-This is the UI/test half of the final D1 hardening pass.
+This release is intentionally limited to the **D5 Scheduler health regression gap** from Claude's tracker.
 
-### L87 — account-protection UI regression was mostly grep-based
-- Added `tests/account-security-policy-api.mjs` to execute the policy GET/PUT helpers and verify endpoint, method and boolean payload behavior.
-- Kept `tests/account-security-policy-save-flow.mjs` as the behavioral unsaved-navigation regression that catches the U3 lifecycle bug.
-- Reduced `tests/account-security-policy-ui.sh` to behavioral test execution plus only minimal wiring checks that require a mounted Vue/browser harness to exercise fully.
+Review that:
 
-## Explicitly not in this release
-- No production Account Protection UI behavior change.
-- U1, U2 and U4 remain for later tracker passes.
-- No unrelated UI Low items.
+1. The existing Scheduler Configuration `AuthorizationRevoked` warning still renders from backend health data.
+2. Zero revoked runs hide the warning.
+3. Nonzero revoked runs expose the count and latest schedule label.
+4. Schedule name falls back to schedule id when needed.
+5. The behavior is covered by an executable Node regression rather than only grep assertions.
 
-## Primary files to inspect
-- `tests/account-security-policy-api.mjs`
-- `tests/account-security-policy-save-flow.mjs`
-- `tests/account-security-policy-ui.sh`
+## Files/areas changed
+
+- `src/scheduler-health.js`
+- `src/views/SchedulerSettingsView.vue`
+- `tests/d5-scope-health.mjs`
+- `package.json` test runner
+
+## Expected outcome
+
+D5's UI health-output coverage is behavioral without changing the established SHTF visual language.
+
+## Explicitly out of scope
+
+- Other Scheduler UI Low findings.
+- U1–U4 except previously closed items.
+- Historical release-note archive cleanup beyond normal current-release housekeeping.

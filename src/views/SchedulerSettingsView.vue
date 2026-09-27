@@ -1,10 +1,12 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { getSchedulerConfig, getSchedulerHealth, runSchedulerSelfTest, updateSchedulerConfig } from '../scheduler'
+import { authorizationRevokedState } from '../scheduler-health'
 
 const config=ref(null), health=ref(null), loading=ref(true), refreshing=ref(false), saving=ref(false), selfTesting=ref(''), error=ref(''), notice=ref('')
 const configDraft=ref(48)
 const healthState=computed(()=>health.value?.tick_health || 'unknown')
+const revokedState=computed(()=>authorizationRevokedState(health.value))
 function nextLabel(iso){return iso?new Date(iso).toLocaleString():'—'}
 function statusClass(v){return v==='succeeded'||v==='healthy'?'ok':v==='failed'||v==='degraded'?'danger':v==='running'||v==='queued'||v==='unknown'?'warn':''}
 async function load({quiet=false}={}){
@@ -73,11 +75,11 @@ onMounted(load)
           <dt>Tick age</dt><dd class="mono">{{health?.tick_age_seconds ?? '—'}} sec</dd>
           <dt>Last tick</dt><dd class="mono">checked {{health?.last_checked ?? '—'}} · queued {{health?.last_queued ?? '—'}} · skipped {{health?.last_skipped ?? '—'}} · cleaned {{health?.last_cleaned ?? '—'}}</dd>
           <dt>Last dispatch</dt><dd class="mono">{{nextLabel(health?.last_dispatch_at)}}</dd>
-          <dt>Authorization revoked</dt><dd class="mono">{{health?.authorization_revoked_last_24h ?? '—'}} skipped in last 24h</dd>
+          <dt>Authorization revoked</dt><dd class="mono">{{revokedState.count}} skipped in last 24h</dd>
         </dl>
-        <div v-if="health?.authorization_revoked_last_24h" class="state-inline warning">
+        <div v-if="revokedState.visible" class="state-inline warning">
           <b>AuthorizationRevoked</b>
-          <span class="mono">{{health.last_authorization_revoked?.schedule_name || health.last_authorization_revoked?.schedule_id || 'schedule'}}</span>
+          <span class="mono">{{revokedState.label}}</span>
           <span>was skipped because its saved owner no longer has the required action or Tactical resource scope.</span>
         </div>
         <div v-if="health?.last_tick_error||health?.last_dispatch_error" class="state-inline warning mono">{{health.last_tick_error||health.last_dispatch_error}}</div>
