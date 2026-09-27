@@ -8,7 +8,7 @@ This setting controls how long completed or expired one-off schedule definitions
 
 ## Runtime health
 
-Runtime health shows the latest scheduler tick, queue/running counts, failures and dispatch state. Use it when schedules are not being picked up or execution appears delayed.
+Runtime health shows the latest scheduler tick, queue/running counts, failures, dispatch state, and any `AuthorizationRevoked` skips from the last 24 hours. Use it when schedules are not being picked up, execution appears delayed, or a saved owner has lost action/resource scope.
 
 ## Self-tests
 
