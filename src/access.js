@@ -100,6 +100,17 @@ export function invalidateUserMfaBackupCodes(userId, reason = 'administrator-req
   })
 }
 
+export function getAccountSecurityPolicy() {
+  return apiFetch('/api/tfd/access/security-policy/')
+}
+
+export function updateAccountSecurityPolicy(protectSuperuserAccounts) {
+  return apiFetch('/api/tfd/access/security-policy/', {
+    method: 'PUT',
+    body: JSON.stringify({ protect_superuser_accounts: Boolean(protectSuperuserAccounts) }),
+  })
+}
+
 export function listActiveLoginSessions(options = null) {
   if (!options) return apiFetch('/api/tfd/access/sessions/')
   const { page = 1, pageSize = 50, search = '' } = options
