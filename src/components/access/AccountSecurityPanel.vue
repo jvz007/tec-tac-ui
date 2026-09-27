@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { getAccountSecurityPolicy, updateAccountSecurityPolicy } from '../../access'
+import { persistAccountSecurityPolicy } from '../../account-security-policy-save'
 import { clearUnsaved, registerUnsaved } from '../../unsaved'
 
 const loading = ref(true)
@@ -40,7 +41,7 @@ async function savePolicy() {
   error.value = ''
   notice.value = ''
   try {
-    const response = await updateAccountSecurityPolicy(requested.value)
+    const response = await persistAccountSecurityPolicy(requested.value, updateAccountSecurityPolicy)
     policy.value = response?.policy || policy.value
     requested.value = policy.value?.protect_superuser_accounts === true
     clearUnsaved(unsavedId)
@@ -49,7 +50,10 @@ async function savePolicy() {
       : 'Superuser account protection is disabled; Tactical native account-management behaviour applies.'
   } catch (err) {
     error.value = err?.message || 'Unable to update account security policy.'
-    requested.value = policy.value?.protect_superuser_accounts === true
+    // Preserve the operator's requested value and reject the save. The global
+    // unsaved-change dialog must remain open and must not navigate away after
+    // a failed policy write.
+    throw err
   } finally {
     saving.value = false
   }

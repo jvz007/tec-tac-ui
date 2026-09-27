@@ -13,6 +13,8 @@ grep -q 'AccountSecurityPanel' "$VIEW" || fail "Access view does not register ac
 grep -q "id:'account-security'" "$VIEW" || fail "Account protection tab missing"
 grep -q 'registerUnsaved' "$PANEL" || fail "unsaved policy guard missing"
 grep -q 'watch(dirty' "$PANEL" || fail "dirty watcher missing"
+grep -q 'persistAccountSecurityPolicy' "$PANEL" || fail "policy save helper missing"
+node "${ROOT}/tests/account-security-policy-save-flow.mjs"
 grep -q "registerUnsaved(unsavedId, 'Superuser account protection policy', { save: savePolicy, discard: loadPolicy })" "$PANEL" || fail "unsaved save/discard handlers missing"
 grep -q 'clearUnsaved(unsavedId)' "$PANEL" || fail "unsaved state is not cleared"
 ! grep -q 'unregisterUnsaved' "$PANEL" || fail "non-existent unregisterUnsaved export still referenced"
