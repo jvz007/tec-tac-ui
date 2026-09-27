@@ -26,6 +26,7 @@ const policy = reactive({
   ip_change_policy: 'reauthenticate',
   session_audit_enabled: true,
   activity_heartbeat_seconds: 60,
+  history_retention_days: 30,
   trusted_proxies_text: '',
 })
 const policyBaseline = ref('')
@@ -61,6 +62,7 @@ const policySnapshot = computed(() => JSON.stringify({
   ip_change_policy: policy.ip_change_policy,
   session_audit_enabled: Boolean(policy.session_audit_enabled),
   activity_heartbeat_seconds: Number(policy.activity_heartbeat_seconds),
+  history_retention_days: Number(policy.history_retention_days),
   trusted_proxies: normalizeProxyLines(policy.trusted_proxies_text),
 }))
 
@@ -69,9 +71,11 @@ const canSave = computed(() => {
   const idle = Number(policy.idle_timeout_minutes)
   const absolute = Number(policy.absolute_lifetime_minutes)
   const heartbeat = Number(policy.activity_heartbeat_seconds)
+  const retention = Number(policy.history_retention_days)
   return idle >= 1 && idle <= 1440
     && absolute >= 1 && absolute <= 10080
     && heartbeat >= 30 && heartbeat <= 3600
+    && retention >= 1 && retention <= 3650
     && ['off', 'audit', 'reauthenticate', 'terminate'].includes(policy.ip_change_policy)
 })
 
@@ -94,6 +98,7 @@ function applyPolicy(source) {
   policy.ip_change_policy = String(next.ip_change_policy || 'reauthenticate')
   policy.session_audit_enabled = next.session_audit_enabled !== false
   policy.activity_heartbeat_seconds = Number(next.activity_heartbeat_seconds ?? 60)
+  policy.history_retention_days = Number(next.history_retention_days ?? 30)
   policy.trusted_proxies_text = Array.isArray(next.trusted_proxies) ? next.trusted_proxies.join('\n') : ''
   policyBaseline.value = JSON.stringify({
     idle_timeout_minutes: policy.idle_timeout_minutes,
@@ -101,6 +106,7 @@ function applyPolicy(source) {
     ip_change_policy: policy.ip_change_policy,
     session_audit_enabled: policy.session_audit_enabled,
     activity_heartbeat_seconds: policy.activity_heartbeat_seconds,
+    history_retention_days: policy.history_retention_days,
     trusted_proxies: normalizeProxyLines(policy.trusted_proxies_text),
   })
   clearUnsaved(OWNER)
@@ -136,6 +142,7 @@ async function savePolicy() {
       ip_change_policy: policy.ip_change_policy,
       session_audit_enabled: Boolean(policy.session_audit_enabled),
       activity_heartbeat_seconds: Number(policy.activity_heartbeat_seconds),
+      history_retention_days: Number(policy.history_retention_days),
       trusted_proxies: normalizeProxyLines(policy.trusted_proxies_text),
     }
     const data = await updateCoreSessionPolicy(payload)
@@ -286,6 +293,10 @@ onBeforeUnmount(() => clearUnsaved(OWNER))
             <label class="field"><span>IP address change</span><select v-model="policy.ip_change_policy"><option value="off">Off</option><option value="audit">Audit only</option><option value="reauthenticate">Require reauthentication</option><option value="terminate">Terminate session</option></select></label>
             <label class="field"><span>Activity heartbeat (seconds)</span><input v-model.number="policy.activity_heartbeat_seconds" type="number" min="30" max="3600" /><small>30–3600 seconds</small></label>
           </div>
+          <div class="field-grid">
+            <label class="field"><span>Session history retention (days)</span><input v-model.number="policy.history_retention_days" type="number" min="1" max="3650" /><small>1–3650 days · applies to Tec-Tac trust and session-audit tables</small></label>
+            <div class="state-inline"><b>Tombstone safety.</b> Revoked trust records remain beyond this window while their Knox token, API key, or Django session could still authenticate.</div>
+          </div>
           <label class="checkline"><input v-model="policy.session_audit_enabled" type="checkbox" /><span>Record session-security audit events</span></label>
           <label class="field"><span>Trusted reverse proxies</span><textarea v-model="policy.trusted_proxies_text" rows="5" spellcheck="false" placeholder="10.0.0.10/32&#10;192.168.1.0/24"></textarea><small>One IP address or CIDR network per line. Core rejects /0 networks.</small></label>
           <div class="editor-actions"><button class="btn primary" :disabled="saving || !dirty || !canSave" @click="savePolicy">{{ saving ? 'Saving…' : 'Save policy' }}</button><button class="btn" :disabled="saving || !dirty" @click="loadPolicy">Discard changes</button></div>
@@ -358,7 +369,7 @@ onBeforeUnmount(() => clearUnsaved(OWNER))
       <div class="toolbar"><span class="muted">Live Core session-security state.</span><span class="spacer"></span><button class="btn" :disabled="loading" @click="loadDiagnostics">Refresh</button></div>
       <div v-if="loading" class="callout mono">Loading session diagnostics…</div>
       <div v-else-if="diagnostics" class="grid g2">
-        <article class="card"><div class="cardhead"><div><span class="eyebrow">CAPABILITY</span><h3>{{ diagnostics.capability || 'core.session_security' }}</h3></div><span class="pill" :class="diagnostics.enabled ? 'ok' : 'warn'">{{ diagnostics.enabled ? 'ENABLED' : 'DISABLED' }}</span></div><dl class="kvlist"><dt>Version</dt><dd class="mono">{{ diagnostics.version || '—' }}</dd><dt>IP-change policy</dt><dd class="mono">{{ diagnostics.policy?.ip_change_policy || '—' }}</dd><dt>Audit enabled</dt><dd>{{ diagnostics.policy?.session_audit_enabled ? 'yes' : 'no' }}</dd></dl></article>
+        <article class="card"><div class="cardhead"><div><span class="eyebrow">CAPABILITY</span><h3>{{ diagnostics.capability || 'core.session_security' }}</h3></div><span class="pill" :class="diagnostics.enabled ? 'ok' : 'warn'">{{ diagnostics.enabled ? 'ENABLED' : 'DISABLED' }}</span></div><dl class="kvlist"><dt>Version</dt><dd class="mono">{{ diagnostics.version || '—' }}</dd><dt>IP-change policy</dt><dd class="mono">{{ diagnostics.policy?.ip_change_policy || '—' }}</dd><dt>Audit enabled</dt><dd>{{ diagnostics.policy?.session_audit_enabled ? 'yes' : 'no' }}</dd><dt>History retention</dt><dd class="mono">{{ diagnostics.policy?.history_retention_days ?? 30 }} days</dd></dl></article>
         <article class="card"><div class="cardhead"><div><span class="eyebrow">SESSION COUNTS</span><h3>Core trust records</h3></div></div><dl class="kvlist"><dt>Active</dt><dd class="mono">{{ diagnostics.counts?.active ?? 0 }}</dd><dt>Revoked</dt><dd class="mono">{{ diagnostics.counts?.revoked ?? 0 }}</dd><dt>Expired, not revoked</dt><dd class="mono">{{ diagnostics.counts?.expired_unrevoked ?? 0 }}</dd></dl></article>
       </div>
     </template>
