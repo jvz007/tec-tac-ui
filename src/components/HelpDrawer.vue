@@ -1,7 +1,8 @@
 <script setup>
-import { computed, inject, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownContent from './MarkdownContent.vue'
+import { createLatestRequestGate } from '../admin-session-state'
 
 const help = inject('tecTacHelp', null)
 const route = useRoute()
@@ -9,23 +10,40 @@ const router = useRouter()
 const query = ref('')
 const loadingArticle = ref(false)
 const loadError = ref('')
+const requestGate = createLatestRequestGate()
 
 const contextArticles = computed(() => help?.forRoute?.(route.path) || [])
 const active = computed(() => help?.get?.(help?.state?.activeArticleId) || null)
 const results = computed(() => query.value.trim() ? (help?.search?.(query.value).slice(0, 8) || []) : [])
 
 watch(() => help?.state?.drawerOpen, (open) => {
-  if (!open) query.value = ''
-  else void help?.hydrate?.()
+  if (!open) {
+    query.value = ''
+    requestGate.begin()
+    loadingArticle.value = false
+    loadError.value = ''
+  } else void help?.hydrate?.()
 })
 
 watch(() => help?.state?.activeArticleId, async (id) => {
-  if (!id) { loadError.value = ''; return }
+  const requestId = requestGate.begin()
+  if (!id) {
+    loadingArticle.value = false
+    loadError.value = ''
+    return
+  }
   loadingArticle.value = true
   loadError.value = ''
-  try { await help?.load?.(id) } catch (error) { loadError.value = error?.message || 'Unable to load help article.' }
-  finally { loadingArticle.value = false }
+  try {
+    await help?.load?.(id)
+  } catch (error) {
+    if (requestGate.isCurrent(requestId)) loadError.value = error?.message || 'Unable to load help article.'
+  } finally {
+    if (requestGate.isCurrent(requestId)) loadingArticle.value = false
+  }
 })
+
+onBeforeUnmount(() => requestGate.begin())
 
 function openArticle(id) { help?.open?.(id) }
 function back() { help?.open?.() }
