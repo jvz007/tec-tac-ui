@@ -1,6 +1,8 @@
 <script setup>
 import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { createLatestRequestGate } from '../admin-session-state'
+import { loadLatestHotfixRows } from '../module-hotfix-loader'
 import {
   addModuleRepository,
   checkModuleRemoval,
@@ -53,6 +55,7 @@ const hotfixJobError = ref('')
 const hotfixSelectedModuleId = ref(null)
 const hotfixRows = ref([])
 const hotfixLoading = ref(false)
+const hotfixRowsRequestGate = createLatestRequestGate()
 let hotfixPollTimer = null
 const onlineCatalog = ref([])
 const onlineQuery = ref('')
@@ -617,11 +620,18 @@ async function discardHotfixStage(){
   hotfixStaged.value=null; hotfixFiles.value=[]; if(hotfixFileInput.value) hotfixFileInput.value.value=''
 }
 async function loadHotfixRows(moduleId=hotfixSelectedModuleId.value){
-  if(!moduleId||!canManage.value){hotfixRows.value=[];return}
+  if(!moduleId||!canManage.value){hotfixRowsRequestGate.begin();hotfixRows.value=[];hotfixLoading.value=false;return}
   hotfixSelectedModuleId.value=moduleId; hotfixLoading.value=true; hotfixJobError.value=''
-  try{ const data=await listModuleHotfixes(moduleId); hotfixRows.value=data.hotfixes||[] }
-  catch(e){ hotfixRows.value=[]; hotfixJobError.value=e?.message||'Unable to load applied hotfixes.' }
-  finally{ hotfixLoading.value=false }
+  const result=await loadLatestHotfixRows({
+    moduleId,
+    listHotfixes:listModuleHotfixes,
+    requestGate:hotfixRowsRequestGate,
+    isSelected:(id)=>hotfixSelectedModuleId.value===id,
+  })
+  if(result.stale)return
+  hotfixRows.value=result.rows
+  hotfixJobError.value=result.error
+  hotfixLoading.value=false
 }
 async function applyHotfix(){
   const id=hotfixStaged.value?.upload_id
@@ -698,7 +708,7 @@ async function poll() {
 }
 function reloadTecTac() { window.location.reload() }
 onMounted(async () => { await refresh(); await Promise.all([loadRepositories(), loadOnlineCatalog(), loadJobHistory()]) })
-onBeforeUnmount(() => { clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); clearInterval(reloadTimer) })
+onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); clearInterval(reloadTimer) })
 </script>
 
 <template>

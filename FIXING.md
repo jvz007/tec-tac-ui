@@ -1,5 +1,5 @@
-# Fixing — UI 0.12.53
+# Fixing — UI 0.12.54
 
-This release prevents stale dashboard list requests from committing after a newer refresh or after the view unmounts. Dashboard loading must remain guarded by the shared latest-request generation mechanism.
+Module hotfix history is now protected from out-of-order module-selection requests.
 
-Regression: `tests/ui-0.12.53.mjs`.
+Regression: `tests/ui-0.12.54.mjs`.
