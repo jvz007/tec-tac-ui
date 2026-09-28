@@ -696,8 +696,8 @@ grep -q "UNSIGNED / LEGACY" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "l
 grep -q "Release trust" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "stable release trust row missing"
 grep -q "trust.signed && trust.manifest_verified && trust.trusted" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "signed stable release label helper missing"
 grep -q "item.source.commit.slice" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "history commit provenance missing"
-grep -q '@mouseenter="trustPopoverHover = trustPopoverKey' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "System Updates trust trigger pointer state missing"
-grep -q '@focus="trustPopoverFocus = trustPopoverKey' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "System Updates trust keyboard focus state missing"
+grep -q "setTrustPopover('hover', trustPopoverKey" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "System Updates trust trigger pointer state missing"
+grep -q "setTrustPopover('focus', trustPopoverKey" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "System Updates trust keyboard focus state missing"
 grep -q 'system-trust-popover{pointer-events:none' "${ROOT}/src/styles.css" || fail "System Updates trust popover must remain pointer-inert"
 printf '[TEST] PASS signed System Updates trust visibility\n'
 

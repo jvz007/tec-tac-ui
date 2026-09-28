@@ -8,6 +8,7 @@ import {
   updateResourceClient,
   updateResourceSite,
 } from '../api'
+import { clientChangeSiteSearchState, consumeSiteSearchSuppression } from '../resource-site-search-state'
 
 const PAGE_SIZE = 50
 const state = inject('tecTacState')
@@ -221,10 +222,9 @@ watch(clientSearch, () => {
 })
 watch(siteSearch, () => {
   clearTimeout(siteTimer)
-  if (suppressNextSiteSearchLoad) {
-    suppressNextSiteSearchLoad = false
-    return
-  }
+  const gate = consumeSiteSearchSuppression(suppressNextSiteSearchLoad)
+  suppressNextSiteSearchLoad = gate.suppressNextSearchLoad
+  if (gate.skipLoad) return
   siteTimer = setTimeout(() => { void loadSites({ resetPage: true }) }, 300)
 })
 watch(siteClientSearch, () => {
@@ -233,8 +233,9 @@ watch(siteClientSearch, () => {
 })
 watch(selectedClientId, () => {
   clearTimeout(siteTimer)
-  suppressNextSiteSearchLoad = Boolean(siteSearch.value)
-  siteSearch.value = ''
+  const transition = clientChangeSiteSearchState(siteSearch.value)
+  suppressNextSiteSearchLoad = transition.suppressNextSearchLoad
+  siteSearch.value = transition.nextSearch
   sitePage.value = 1
   void loadSites()
 })

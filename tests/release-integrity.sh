@@ -18,8 +18,8 @@ mapfile -t ROOT_NOTES < <(
     -printf '%f\n' | sort
 )
 
-[[ ${#ROOT_NOTES[@]} -le 2 ]] || \
-  fail "expected no more than two root release notes, found ${#ROOT_NOTES[@]}"
+[[ ${#ROOT_NOTES[@]} -eq 1 ]] || \
+  fail "expected exactly one root release note, found ${#ROOT_NOTES[@]}"
 
 CURRENT_NOTE="RELEASE_NOTES_${VERSION}.md"
 printf '%s\n' "${ROOT_NOTES[@]}" | grep -Fxq "${CURRENT_NOTE}" || \

@@ -11,9 +11,9 @@ UPDATES="$ROOT/src/views/SystemUpdatesView.vue"
 RESOURCES="$ROOT/src/views/ResourcesView.vue"
 
 # L64: every affected surface routes through the tested clipboard helper and exposes an error target.
-grep -q "copyTextToClipboard" "$LOGIN" || fail "LoginPanel clipboard helper missing"
-grep -q "copyTextToClipboard" "$MFA" || fail "MFA recovery clipboard helper missing"
-grep -q "copyTextToClipboard" "$UPDATES" || fail "System Updates clipboard helper missing"
+grep -q "copyTextWithFeedback" "$LOGIN" || fail "LoginPanel clipboard helper missing"
+grep -q "copyTextWithFeedback" "$MFA" || fail "MFA recovery clipboard helper missing"
+grep -q "copyTextWithFeedback" "$UPDATES" || fail "System Updates clipboard helper missing"
 
 # L68: both trust triggers describe their tooltip and explicitly close on click/Escape.
 COUNT_DESC="$(grep -o 'aria-describedby=' "$UPDATES" | wc -l)"
@@ -26,8 +26,8 @@ grep -q 'role="tooltip"' "$UPDATES" || fail "trust tooltip role missing"
 
 # L69: a client switch clears any pending site debounce, suppresses the watcher caused by clearing search,
 # and performs the one immediate fetch itself.
-grep -q 'suppressNextSiteSearchLoad = Boolean(siteSearch.value)' "$RESOURCES" || fail "client-change site-search suppression missing"
-grep -q 'if (suppressNextSiteSearchLoad)' "$RESOURCES" || fail "site-search watcher suppression missing"
+grep -q 'clientChangeSiteSearchState' "$RESOURCES" || fail "client-change site-search suppression missing"
+grep -q 'consumeSiteSearchSuppression' "$RESOURCES" || fail "site-search watcher suppression missing"
 grep -A6 'watch(selectedClientId' "$RESOURCES" | grep -q 'void loadSites()' || fail "client change no longer performs immediate site fetch"
 
 echo "ui-hygiene-0.12.45: PASS"
