@@ -1,8 +1,9 @@
 <script setup>
-import { computed, inject, onMounted, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { createDashboard, deleteDashboard, listDashboards, updateDashboard } from '../dashboards'
 import { preferenceState, updateUserPreferences } from '../preferences'
+import { createKeyedLatestRequestGate } from '../latest-request-gate'
 
 const route = useRoute()
 const router = useRouter()
@@ -21,6 +22,7 @@ const createName = ref('')
 const createVisibility = ref('private')
 const showWidgetCatalog = ref(false)
 const draggedInstance = ref(null)
+const dashboardLoadGate = createKeyedLatestRequestGate(['dashboards'])
 
 const availableWidgets = computed(() => dashboardWidgets?.list?.() || [])
 const widgetCategories = computed(() => [...new Set(availableWidgets.value.map((item) => item.category))])
@@ -48,16 +50,20 @@ function widgetStyle(instance) {
 }
 
 async function load() {
+  const requestId = dashboardLoadGate.begin('dashboards')
   loading.value = true
   error.value = ''
   try {
     const response = await listDashboards()
+    if (!dashboardLoadGate.isCurrent('dashboards', requestId)) return
     dashboards.value = response?.dashboards || []
     await selectFromRouteOrPreferences()
   } catch (e) {
-    error.value = e?.message || 'Unable to load dashboards.'
+    if (dashboardLoadGate.isCurrent('dashboards', requestId)) {
+      error.value = e?.message || 'Unable to load dashboards.'
+    }
   } finally {
-    loading.value = false
+    if (dashboardLoadGate.isCurrent('dashboards', requestId)) loading.value = false
   }
 }
 
@@ -254,6 +260,7 @@ watch(() => route.params.dashboardId, async (id) => {
 })
 
 onMounted(load)
+onBeforeUnmount(() => dashboardLoadGate.invalidate('dashboards'))
 </script>
 
 <template>

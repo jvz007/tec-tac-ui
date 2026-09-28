@@ -1,5 +1,5 @@
-# Review note for UI 0.12.47
+# Fixing — UI 0.12.51
 
-Unsigned full-source delivery.
+This release prevents stale dashboard list requests from committing after a newer refresh or after the view unmounts. Dashboard loading must remain guarded by the shared latest-request generation mechanism.
 
-Scope is exactly L64, L68, L69, L72 and L73 from the current tracker. These were partly-closed UI findings whose remaining gap was behavioral regression coverage tied to the real production paths.
+Regression: `tests/ui-0.12.51.mjs`.
