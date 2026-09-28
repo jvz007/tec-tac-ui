@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.54",
+  "version": "0.12.55",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -19,7 +19,7 @@
     {
       "path": "FIXING.md",
       "size": 146,
-      "sha256": "c1c1761729eb4a3ef30f48de7ac733873ad62f539b3268f5f305f83615d8e610"
+      "sha256": "caf1b522d6f59077909363bfa40d686cdeafecbcdc3c39b30dda7d64e67d703a"
     },
     {
       "path": "LICENSE",
@@ -32,14 +32,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.54.md",
-      "size": 793,
-      "sha256": "532c8156b6ee5a2f90cdf0bdf7d36b44bdaa850855ceded0f2b9ae4989a5c3fb"
+      "path": "RELEASE_NOTES_0.12.55.md",
+      "size": 990,
+      "sha256": "41a849700b2de23b638ab5be78c4dbb8f759f278c0068f24c65075e8d2620d61"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "feb613dda1fc41177b82a33641d2bafd4655b4d0bd1b3bd42e902abb95be8fca"
+      "sha256": "77899324b0c647a27ea4d8f07e5f4f46830fed16857ec11a3ef931b6a05afb4a"
     },
     {
       "path": "docs/context-actions.md",
@@ -437,6 +437,11 @@
       "sha256": "95cd005ce66bde3bb5d573b84b5d0ae9c7edd64f856084153593b5747577f162"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.54.md",
+      "size": 793,
+      "sha256": "532c8156b6ee5a2f90cdf0bdf7d36b44bdaa850855ceded0f2b9ae4989a5c3fb"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.6.md",
       "size": 784,
       "sha256": "28d39a76eeec9bacfd5a0e24f63cecaff46d0da776e84ef31a4def39ab8aecac"
@@ -604,12 +609,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "a6e2593d8a914295c45d5bc50d41064aea583a6c945c646580b5adaa76f18286"
+      "sha256": "9b78d12ae358fed9859de8322f8c6cbcbe1be329566fcba66ef099c09af22cbf"
     },
     {
       "path": "package.json",
-      "size": 1172,
-      "sha256": "3226579034342b7ef33032f3f4ee6804e1716c3d93f55aa98fc5c4cc129e1cfa"
+      "size": 1221,
+      "sha256": "19c0b05074cdd30f6a8fe19dfcb657c8fb54f545b850580ff1610433b43efd86"
     },
     {
       "path": "public/modules/modules.json",
@@ -1079,7 +1084,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "6227d4ab384b651539b555e51849c8e13e211021ad79de3985a87462278e8a29"
+      "sha256": "3e8fd597fb48a305cafbf878c46edf1e18b1fd046d4c33fd372a6e90b401ccd1"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1290,6 +1295,16 @@
       "path": "tests/ui-tracker-closure-0.12.48.sh",
       "size": 146,
       "sha256": "172d08778d80d980a21780afd1f1262027652ee336679fa02469f17e1101e72f"
+    },
+    {
+      "path": "tests/ui-tracker-open-closure-0.12.55.mjs",
+      "size": 5036,
+      "sha256": "dbd8655def8e114a0ab5e0e601db95ca31212b1f3cf66053ff4c2c6e79d87b0b"
+    },
+    {
+      "path": "tests/ui-tracker-open-closure-0.12.55.sh",
+      "size": 152,
+      "sha256": "f5a2f186c428e0bc8a61009c20a4270a565158f07c5ecb2e24a167fb20d5bc33"
     },
     {
       "path": "vite.config.js",
