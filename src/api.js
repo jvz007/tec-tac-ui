@@ -531,3 +531,33 @@ export async function updateResourceSite(siteId, { clientId, name }) {
     body: JSON.stringify(payload),
   })
 }
+
+
+export async function getBackupRestoreDestinations() {
+  return apiFetch('/api/tfd/system/backups/restore/')
+}
+
+export async function startBackupInventory(destinationIds) {
+  return apiFetch('/api/tfd/system/backups/restore/', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'list', destination_ids: destinationIds }),
+  })
+}
+
+export async function startRestoreValidation({ backupRef, destinationId, restoreMode, overrides = [] }) {
+  return apiFetch('/api/tfd/system/backups/restore/', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'validate', backup_ref: backupRef, destination_id: destinationId, restore_mode: restoreMode, overrides }),
+  })
+}
+
+export async function startServerRestore({ backupRef, destinationId, restoreMode, validationJobId, overrides = {} }) {
+  return apiFetch('/api/tfd/system/backups/restore/', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'restore', backup_ref: backupRef, destination_id: destinationId, restore_mode: restoreMode, validation_job_id: validationJobId, overrides, confirmed: true }),
+  })
+}
+
+export async function getBackupRestoreJob(jobId) {
+  return apiFetch(`/api/tfd/system/backups/restore/jobs/${jobId}/`, { rejectErrorPayload: false })
+}

@@ -6,6 +6,7 @@ import ResourcesView from './views/ResourcesView.vue'
 import SystemUpdatesView from './views/SystemUpdatesView.vue'
 import StorageView from './views/StorageView.vue'
 import DiagnosticsView from './views/DiagnosticsView.vue'
+import BackupRestoreView from './views/BackupRestoreView.vue'
 import SchedulesView from './views/SchedulesView.vue'
 import SchedulerSettingsView from './views/SchedulerSettingsView.vue'
 import ContractsView from './views/ContractsView.vue'
@@ -29,6 +30,7 @@ export const router = createRouter({
     { path: '/system/updates', name: 'system-updates', component: SystemUpdatesView, meta: { title: 'System Updates' } },
     { path: '/system/storage', name: 'system-storage', component: StorageView, meta: { title: 'Storage & Housekeeping' } },
     { path: '/system/diagnostics', name: 'system-diagnostics', component: DiagnosticsView, meta: { title: 'Troubleshooting & Diagnostics' } },
+    { path: '/system/backups', name: 'system-backups', component: BackupRestoreView, meta: { title: 'Backup & Restore' } },
     { path: '/contracts', name: 'contracts', component: ContractsView, meta: { title: 'Public Contracts' } },
     { path: '/preferences', name: 'preferences', component: PreferencesView, meta: { title: 'Preferences' } },
     { path: '/preferences/menu-layout', name: 'menu-layout', component: MenuLayoutView, meta: { title: 'Menu Layout' } },
