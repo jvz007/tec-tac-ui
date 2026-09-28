@@ -25,6 +25,14 @@ CURRENT_NOTE="RELEASE_NOTES_${VERSION}.md"
 printf '%s\n' "${ROOT_NOTES[@]}" | grep -Fxq "${CURRENT_NOTE}" || \
   fail "current release note ${CURRENT_NOTE} not found"
 
+for archived in 0.12.32 0.12.33 0.12.34 0.12.35; do
+  note="${ROOT}/docs/releases/RELEASE_NOTES_${archived}.md"
+  [[ -f "${note}" ]] || fail "missing recovered archived release note ${archived}"
+  head -n 1 "${note}" | grep -Fxq "# Tec-Tac UI ${archived}" || \
+    fail "archived release note heading mismatch for ${archived}"
+done
+[[ ! -e "${ROOT}/docs/releases/RELEASE_NOTES_0.12.34-1.md" ]] || \
+  fail "rebuild-suffixed 0.12.34-1 must not be a separate archive identity"
 
 [[ -f "${ROOT}/scripts/preflight-signing-tree.sh" ]] || \
   fail "signing-tree preflight script is missing"

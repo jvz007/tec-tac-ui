@@ -200,7 +200,8 @@ grep -q 'UI_SOURCE_ROOT=' "${ROOT}/scripts/install.sh" || fail "UI installer doe
 if grep -q 'REPO_ROOT=' "${ROOT}/scripts/install.sh"; then fail "UI installer still uses collision-prone REPO_ROOT"; fi
 echo "[TEST] PASS layout integration"
 
-grep -q 'npm install --no-package-lock' "${ROOT}/scripts/install.sh" || fail "UI installer may dirty source checkout with package-lock.json"
+grep -qx 'npm ci' <(grep -E '^npm (ci|install)( |$)' "${ROOT}/scripts/install.sh") || fail "UI installer must use exactly npm ci from the committed lock file"
+! grep -Eq '^npm install( |$)' "${ROOT}/scripts/install.sh" || fail "UI installer must not use npm install"
 echo "[TEST] PASS source checkout clean install"
 
 # 0.10.6 dynamic module manifest/cache/route ownership hardening

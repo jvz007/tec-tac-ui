@@ -1,15 +1,11 @@
-# FIXING.md — UI 0.12.45
+# Fixing / Review Scope — UI 0.12.46
 
-## Review scope
+This full-source release is based on the review-passed UI 0.12.45 baseline.
 
-This release is limited to five UI Low findings: L64, L65, L66, L68 and L69.
+Review scope:
 
-## Expected outcome
+- U1 — server installer ignores the npm lock file.
+- L70 — Admin Sessions can show stale out-of-order responses and does not explicitly warn before revoking the current session.
+- L74 — archived release notes for 0.12.32 through 0.12.35 are missing.
 
-Clipboard failures are visible to the operator, one-time enrollment loss explains the reset path, duplicate signature/metadata companions fail closed, trust popovers have complete keyboard/accessibility close behavior, and client switching does not double-fetch sites when a search was active.
-
-## Explicitly out of scope
-
-- L70 session-row ordering/current-session warning.
-- L74 historical UI release-note restoration.
-- Core changes.
+No unrelated UI behavior is intentionally changed in this pass.

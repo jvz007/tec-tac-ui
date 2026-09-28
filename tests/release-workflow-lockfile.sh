@@ -29,6 +29,8 @@ WF=.github/workflows/release.yml
 grep -Fq 'uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4' "$WF"
 grep -Fq 'uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4' "$WF"
 grep -Fq 'run: npm ci' "$WF"
+grep -qx 'npm ci' <(grep -E '^npm (ci|install)( |$)' scripts/install.sh) || { echo '[TEST] FAIL UI installer must use npm ci' >&2; exit 1; }
+! grep -Eq '^npm install( |$)' scripts/install.sh || { echo '[TEST] FAIL UI installer must not use npm install' >&2; exit 1; }
 if grep -Eq 'uses: actions/(checkout|setup-node)@v[0-9]+' "$WF"; then
   echo '[TEST] FAIL release workflow contains a floating GitHub Action tag' >&2
   exit 1

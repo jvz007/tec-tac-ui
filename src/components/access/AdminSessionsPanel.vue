@@ -1,6 +1,7 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { listActiveLoginSessions, revokeLoginSession, revokeUserLoginSessions } from '../../access'
+import { createLatestRequestGate, revokeSessionPrompt, revokeUserSessionsPrompt } from '../../admin-session-state'
 
 const sessions = ref([])
 const loading = ref(true)
@@ -12,6 +13,7 @@ const pageSize = 50
 const total = ref(0)
 const pages = ref(0)
 let searchTimer = null
+const requestGate = createLatestRequestGate()
 
 function when(value) {
   if (!value) return '—'
@@ -19,11 +21,13 @@ function when(value) {
 }
 
 async function load(targetPage = page.value) {
+  const requestId = requestGate.begin()
   loading.value = true
   error.value = ''
   try {
     const requestedPage = Math.max(1, Number(targetPage) || 1)
     const data = await listActiveLoginSessions({ page: requestedPage, pageSize, search: search.value.trim() })
+    if (!requestGate.isCurrent(requestId)) return
     const rows = Array.isArray(data?.sessions) ? data.sessions : []
     const resolvedPages = Number(data?.pages || 0)
     const resolvedTotal = Number(data?.total ?? data?.count ?? rows.length)
@@ -35,9 +39,9 @@ async function load(targetPage = page.value) {
     total.value = resolvedTotal
     pages.value = resolvedPages
   } catch (err) {
-    error.value = err?.message || 'Unable to load active login sessions.'
+    if (requestGate.isCurrent(requestId)) error.value = err?.message || 'Unable to load active login sessions.'
   } finally {
-    loading.value = false
+    if (requestGate.isCurrent(requestId)) loading.value = false
   }
 }
 
@@ -50,7 +54,7 @@ function scheduleSearch() {
 }
 
 async function revoke(row) {
-  if (!window.confirm(`Revoke this active login session for ${row.username}? The session will stop authenticating immediately.`)) return
+  if (!window.confirm(revokeSessionPrompt(row))) return
   busyId.value = row.id
   error.value = ''
   try {
@@ -64,7 +68,7 @@ async function revoke(row) {
 }
 
 async function revokeAll(row) {
-  if (!window.confirm(`Revoke ALL active login sessions for ${row.username}? This may also sign out the current administrator if it is the same account.`)) return
+  if (!window.confirm(revokeUserSessionsPrompt(row))) return
   busyId.value = `user:${row.user_id}`
   error.value = ''
   try {
