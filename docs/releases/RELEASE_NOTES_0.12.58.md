@@ -9,3 +9,8 @@
 - Displays the exact current-to-restored Core version transition and an explicit “This puts Core back to X” warning before a downgrade restore is confirmed.
 - Restore starts only after an explicit destructive confirmation modal.
 - Added behavior coverage for restore readiness, recovery identity display data and downgrade warning state.
+
+## Review rebuild
+
+- Raised the Tec-Tac Framework requirement to `>=1.15.162,<2.0.0`, the Core release that introduced the native Backup & Restore endpoints.
+- Added route-contract regression coverage for every Tec-Tac API URL used by `src/api.js`.

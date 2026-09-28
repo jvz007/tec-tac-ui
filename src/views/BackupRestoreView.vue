@@ -27,10 +27,10 @@ let pollTimer = null
 const selectedBackup = computed(() => backups.value.find((item) => item.backup_ref === selectedBackupRef.value) || null)
 const selectedDestination = computed(() => destinations.value.find((item) => item.id === selectedDestinationId.value) || null)
 const confirmationState = computed(() => restoreConfirmationState(validation.value))
-const signer = computed(() => confirmationState.value.signer || selectedBackup.value?.recovery_signer || null)
 const versionTransition = computed(() => confirmationState.value.transition)
 const canRestore = computed(() => Boolean(confirmationState.value.ready && selectedBackup.value && selectedDestination.value && !busy.value))
 const downgradeNotice = computed(() => confirmationState.value.downgradeNotice)
+const review = computed(() => confirmationState.value.review)
 
 function fmtBytes(value) {
   let n = Number(value || 0); const units = ['B','KB','MB','GB','TB']; let i = 0
@@ -141,10 +141,10 @@ onBeforeUnmount(() => { stopped = true; if (pollTimer) clearTimeout(pollTimer) }
     <section v-if="validation" class="card mb">
       <div class="cardhead"><div><span class="eyebrow">VALIDATION</span><h3>Restore identity & transition</h3></div><span class="pill" :class="validation.ok ? 'ok' : 'warn'">{{ validation.ok ? 'READY' : 'NOT READY' }}</span></div>
       <div class="grid g4 mb">
-        <article class="tile"><div class="lbl">Server name</div><div class="big compact">{{ signer?.server_name || '—' }}</div><div class="brk">source server</div></article>
-        <article class="tile"><div class="lbl">Installation ID</div><div class="big compact mono">{{ signer?.installation_id || '—' }}</div><div class="brk">source installation</div></article>
-        <article class="tile"><div class="lbl">Signer key</div><div class="big compact mono">{{ signer?.key_id || '—' }}</div><div class="brk">recovery signer</div></article>
-        <article class="tile"><div class="lbl">Signer fingerprint</div><div class="big compact mono">{{ signer?.public_key_sha256 || '—' }}</div><div class="brk">SHA-256</div></article>
+        <article class="tile"><div class="lbl">Server name</div><div class="big compact">{{ review.sourceServerName || '—' }}</div><div class="brk">source server</div></article>
+        <article class="tile"><div class="lbl">Installation ID</div><div class="big compact mono">{{ review.installationId || '—' }}</div><div class="brk">source installation</div></article>
+        <article class="tile"><div class="lbl">Signer key</div><div class="big compact mono">{{ review.signerKeyId || '—' }}</div><div class="brk">recovery signer</div></article>
+        <article class="tile"><div class="lbl">Signer fingerprint</div><div class="big compact mono">{{ review.signerFingerprint || '—' }}</div><div class="brk">SHA-256</div></article>
       </div>
       <div v-if="versionTransition" class="state-inline" :class="versionTransition.is_core_downgrade ? 'warning' : ''"><b>Core {{ versionTransition.current_core_version || 'current' }} → {{ versionTransition.restored_core_version || 'backup version' }}</b><span v-if="versionTransition.notice">{{ versionTransition.notice }}</span></div>
       <div v-if="downgradeNotice" class="state-inline warning" role="alert"><b>Downgrade warning:</b> {{ downgradeNotice }}</div>
@@ -156,9 +156,9 @@ onBeforeUnmount(() => { stopped = true; if (pollTimer) clearTimeout(pollTimer) }
   </template>
 
   <div v-if="confirmRestore" class="modal-backdrop" @click.self="confirmRestore=false"><section class="modal-panel"><div class="cardhead"><div><span class="eyebrow">CONFIRM RESTORE</span><h3>Restore this recovery bundle?</h3></div><span class="pill warn">DESTRUCTIVE</span></div>
-    <p><b>{{ signer?.server_name || 'Unknown server' }}</b> · <span class="mono">{{ signer?.installation_id || 'No installation ID' }}</span></p>
-    <p>Recovery signer fingerprint: <span class="mono">{{ signer?.public_key_sha256 || 'Unknown' }}</span></p>
-    <div v-if="downgradeNotice" class="state-inline warning"><b>This puts Core back to {{ versionTransition?.restored_core_version || 'an older version' }}.</b><span>{{ downgradeNotice }}</span></div>
+    <p><b>{{ review.sourceServerName || 'Unknown server' }}</b> · <span class="mono">{{ review.installationId || 'No installation ID' }}</span></p>
+    <p>Recovery signer fingerprint: <span class="mono">{{ review.signerFingerprint || 'Unknown' }}</span></p>
+    <div v-if="downgradeNotice" class="state-inline warning"><b>{{ review.downgradeHeadline }}</b><span>{{ downgradeNotice }}</span></div>
     <p v-else-if="versionTransition">Core transition: <b>{{ versionTransition.current_core_version || 'current' }} → {{ versionTransition.restored_core_version || 'backup version' }}</b>.</p>
     <p>The restore will only start after this confirmation. Validation must remain successful.</p>
     <div class="modal-actions"><button class="btn danger" :disabled="busy" @click="restoreNow">Confirm restore</button><button class="btn" :disabled="busy" @click="confirmRestore=false">Cancel</button></div>

@@ -8,9 +8,9 @@ const normal = restoreConfirmationState({
   version_transition: { current_core_version: '1.15.162', restored_core_version: '1.15.161', is_core_downgrade: false },
 })
 assert.equal(normal.ready, true)
-assert.equal(normal.signer.installation_id, 'install-a')
-assert.equal(normal.signer.server_name, 'source-rmm')
-assert.equal(normal.signer.public_key_sha256, 'abc123')
+assert.equal(normal.review.installationId, 'install-a')
+assert.equal(normal.review.sourceServerName, 'source-rmm')
+assert.equal(normal.review.signerFingerprint, 'abc123')
 assert.equal(normal.downgradeNotice, '')
 
 const downgrade = restoreConfirmationState({
@@ -28,9 +28,9 @@ assert.equal(restoreConfirmationState(null).ready, false)
 
 const view = fs.readFileSync(new URL('../src/views/BackupRestoreView.vue', import.meta.url), 'utf8')
 assert.match(view, /restoreConfirmationState/)
-assert.match(view, /This puts Core back to/)
-assert.match(view, /installation_id/)
-assert.match(view, /public_key_sha256/)
+assert.match(view, /review\.downgradeHeadline/)
+assert.match(view, /review\.installationId/)
+assert.match(view, /review\.signerFingerprint/)
 assert.match(view, /:disabled="!canRestore"/)
 assert.match(view, /startRestoreValidation/)
 assert.match(view, /startServerRestore/)
