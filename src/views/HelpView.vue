@@ -1,7 +1,8 @@
 <script setup>
-import { computed, inject, onMounted, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import MarkdownContent from '../components/MarkdownContent.vue'
+import { createLatestRequestGate } from '../admin-session-state'
 
 const help = inject('tecTacHelp', null)
 const route = useRoute()
@@ -10,6 +11,7 @@ const query = ref('')
 const category = ref('')
 const loading = ref(true)
 const error = ref('')
+const requestGate = createLatestRequestGate()
 
 const allArticles = computed(() => help?.list?.() || [])
 const categories = computed(() => [...new Set(allArticles.value.map((article) => article.category))].sort())
@@ -17,25 +19,37 @@ const results = computed(() => help?.search?.(query.value, { category: category.
 const selectedId = computed(() => route.params.articleId ? String(route.params.articleId) : '')
 const selected = computed(() => selectedId.value ? help?.get?.(selectedId.value) : null)
 
-async function hydrate() {
-  loading.value = true
+async function loadSelection(id, { initial = false } = {}) {
+  const requestId = requestGate.begin()
+  if (initial) loading.value = true
   error.value = ''
   try {
-    await help?.hydrate?.()
-    if (selectedId.value) await help?.load?.(selectedId.value)
-  } catch (e) { error.value = e?.message || 'Unable to load knowledge base.' }
-  finally { loading.value = false }
+    if (initial) await help?.hydrate?.()
+    if (id) await help?.load?.(id)
+  } catch (e) {
+    if (requestGate.isCurrent(requestId)) error.value = e?.message || (initial ? 'Unable to load knowledge base.' : 'Unable to load help article.')
+  } finally {
+    if (requestGate.isCurrent(requestId)) loading.value = false
+  }
 }
 
-watch(selectedId, async (id) => {
-  if (!id) return
-  error.value = ''
-  try { await help?.load?.(id) } catch (e) { error.value = e?.message || 'Unable to load help article.' }
+async function hydrate() {
+  await loadSelection(selectedId.value, { initial: true })
+}
+
+watch(selectedId, (id) => {
+  if (!id) {
+    requestGate.begin()
+    error.value = ''
+    return
+  }
+  void loadSelection(id)
 })
 
 function openArticle(id) { router.push(`/help/${encodeURIComponent(id)}`) }
 function clearFilters() { query.value = ''; category.value = '' }
 onMounted(hydrate)
+onBeforeUnmount(() => requestGate.begin())
 </script>
 
 <template>
