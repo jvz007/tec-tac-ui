@@ -18,3 +18,16 @@ export async function loadScheduleHistoryPage({ fetchRuns, owner, page = 1, page
     return { ok: false, error: error?.message || 'Unable to load Scheduler history.' }
   }
 }
+
+
+export function scheduleHistoryCommit(result, owner) {
+  if (!result?.ok) return { ok: false, historyError: result?.error || 'Unable to load Scheduler history.' }
+  return {
+    ok: true,
+    historyError: '',
+    owner: owner === 'module' ? 'module' : 'user',
+    rows: Array.isArray(result.rows) ? result.rows : [],
+    meta: result.meta || { page: 1, pages: 0, total: 0 },
+    loaded: true,
+  }
+}

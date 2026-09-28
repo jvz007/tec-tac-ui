@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.47",
+  "version": "0.12.48",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.47.md",
-      "size": 935,
-      "sha256": "82589f821699781c9ba78e4ce912d2d7af21a6fd7fd77c0d6c0bf97fefd493d8"
+      "path": "RELEASE_NOTES_0.12.48.md",
+      "size": 839,
+      "sha256": "42658fe2b5e9b6d3c7a3dd30c4b7c33c3f1488f985c72313789bb61203392ab5"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "f511cf206bb243ec02fd7ad2de9029af1a8f8ed9335261fea067a3f0b534be57"
+      "sha256": "bd88ea9c3d124301885aa31ecce84af909c39ed9df6b1a761c1975325222ee6e"
     },
     {
       "path": "docs/context-actions.md",
@@ -95,11 +95,6 @@
       "path": "docs/module-status.md",
       "size": 1383,
       "sha256": "dc7852ac2da6b099c6fe02de4610fa17e1120872db936059b2ab83011a64a89f"
-    },
-    {
-      "path": "docs/releases/0.12.41.md",
-      "size": 765,
-      "sha256": "2d43a8c4004a2c6e9e53b4d615ee4332880a06ccb11680877c619fc4a5775449"
     },
     {
       "path": "docs/releases/README.md",
@@ -372,6 +367,11 @@
       "sha256": "44d28d9b0a4e41587482b1e32de8193a8d2cea761e8d103114189b8a98e5b597"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.41.md",
+      "size": 765,
+      "sha256": "2d43a8c4004a2c6e9e53b4d615ee4332880a06ccb11680877c619fc4a5775449"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.42.md",
       "size": 464,
       "sha256": "58b4bf4460419cad90d9feebebda15e09550d729f8f2de6274e6f2e6d7b00272"
@@ -395,6 +395,11 @@
       "path": "docs/releases/RELEASE_NOTES_0.12.46.md",
       "size": 1439,
       "sha256": "28c6c0e3bc7e782cc7c01a36ab9f8c315bbf043b875d2c94778616e1f7dc59d0"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.47.md",
+      "size": 935,
+      "sha256": "82589f821699781c9ba78e4ce912d2d7af21a6fd7fd77c0d6c0bf97fefd493d8"
     },
     {
       "path": "docs/releases/RELEASE_NOTES_0.12.5.md",
@@ -569,12 +574,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "75a1ff44f2361101a7d041aac80a9e92c5023ce940c04f29edd041a43adddc39"
+      "sha256": "4c9f5d4d44adcebb029e5c0896bccf4c4b17db6cf89860c3a5d31b1a805ea1c9"
     },
     {
       "path": "package.json",
-      "size": 960,
-      "sha256": "0c75f10d347f610c9248b7670d694ee6ed0d8ce1a5544a652639737be1296e96"
+      "size": 1004,
+      "sha256": "4c1ac67bc2f97cfde300f39fa2b5c131ed8cf73ae25bc21c1b0617f9ffa706ed"
     },
     {
       "path": "public/modules/modules.json",
@@ -913,8 +918,8 @@
     },
     {
       "path": "src/scheduler-history-loader.js",
-      "size": 931,
-      "sha256": "333cba98794030d1260080eccdfc6bf55d3e0853773d8dd74110fb83eca00ad4"
+      "size": 1333,
+      "sha256": "cba51773c1f7598ca4a4f3bf518bda980a6805c2581e8fe33d7389e76ac6ed9a"
     },
     {
       "path": "src/scheduler-history-state.js",
@@ -1013,8 +1018,8 @@
     },
     {
       "path": "src/views/SchedulesView.vue",
-      "size": 22726,
-      "sha256": "e44aca892c974fc7ffc4d24e770dbe8544c468e415efebe09a7d0e6074db2e83"
+      "size": 22830,
+      "sha256": "dcd68ad38f0913a0f5941a4fbb857462b9ca339541b67926b8b6fd47bfd61b5a"
     },
     {
       "path": "src/views/StorageView.vue",
@@ -1029,7 +1034,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "7e48203d9965c1111496dcf41765074e6122e5f8fe54df16d2469a42f09a5d34"
+      "sha256": "e24ea341d617829ff7e3fb7594d9619a6d800f13c9e4bbe072da850682ea36ef"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1113,8 +1118,8 @@
     },
     {
       "path": "tests/release-notes-l74.mjs",
-      "size": 820,
-      "sha256": "b7901640b13d7f2160302fa5567e0cb96bd95f2e0ddd21ec313d0ff89f258345"
+      "size": 1134,
+      "sha256": "863af0182b4cc9f004be17072b39e9c4b856a42055b7b410bfaa1668c89dcf37"
     },
     {
       "path": "tests/release-workflow-lockfile.sh",
@@ -1170,6 +1175,16 @@
       "path": "tests/ui-partial-closure-0.12.47.sh",
       "size": 1728,
       "sha256": "1f3ef8b411ee10df5bc1f715541d8dbbbb362b8a78fe77f37bcd4b5ad5541eb5"
+    },
+    {
+      "path": "tests/ui-tracker-closure-0.12.48.mjs",
+      "size": 5006,
+      "sha256": "9199825b23ba96aa32fbfcdc27f702762d411d18f87904fe3e9c864e20891679"
+    },
+    {
+      "path": "tests/ui-tracker-closure-0.12.48.sh",
+      "size": 146,
+      "sha256": "172d08778d80d980a21780afd1f1262027652ee336679fa02469f17e1101e72f"
     },
     {
       "path": "vite.config.js",
