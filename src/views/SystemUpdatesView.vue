@@ -13,6 +13,7 @@ import {
   stageOnlineSystemUpdate,
 } from '../api'
 import { copyTextWithFeedback } from '../copy-feedback'
+import { createKeyedLatestRequestGate } from '../latest-request-gate'
 import { trustPopoverDomId, trustPopoverOpen, trustPopoverTransition } from '../system-trust-popover-state'
 
 const help = inject('tecTacHelp', null)
@@ -25,6 +26,8 @@ const advancedUnlocked = ref(false)
 const branches = ref({ framework: [], ui: [] })
 const selectedBranch = ref({ framework: 'main', ui: 'main' })
 const branchBusy = ref({ framework: false, ui: false })
+const onlineRequestGate = createKeyedLatestRequestGate(['framework', 'ui'])
+const branchRequestGate = createKeyedLatestRequestGate(['framework', 'ui'])
 const stage = ref(null)
 const stageBusy = ref(false)
 const offlineInput = ref(null)
@@ -246,14 +249,19 @@ function handleKeydown(event) {
 }
 
 async function checkOnline(component, { force = false, background = false } = {}) {
+  const requestId = onlineRequestGate.begin(component)
   onlineBusy.value[component] = !background
   if (!background) error.value = ''
   try {
-    online.value[component] = await checkOnlineSystemUpdate(component, { force })
+    const result = await checkOnlineSystemUpdate(component, { force })
+    if (!onlineRequestGate.isCurrent(component, requestId)) return
+    online.value[component] = result
   } catch (err) {
-    if (!background) error.value = err?.message || 'Unable to check repository release.'
+    if (onlineRequestGate.isCurrent(component, requestId) && !background) {
+      error.value = err?.message || 'Unable to check repository release.'
+    }
   } finally {
-    onlineBusy.value[component] = false
+    if (onlineRequestGate.isCurrent(component, requestId)) onlineBusy.value[component] = false
   }
 }
 
@@ -273,17 +281,21 @@ async function unlockAdvanced() {
 }
 
 async function loadBranches(component) {
+  const requestId = branchRequestGate.begin(component)
   branchBusy.value[component] = true
   try {
     const result = await getSystemUpdateBranches(component)
+    if (!branchRequestGate.isCurrent(component, requestId)) return
     branches.value[component] = result.branches || []
     if (!branches.value[component].some((item) => item.name === selectedBranch.value[component])) {
       selectedBranch.value[component] = branches.value[component][0]?.name || ''
     }
   } catch (err) {
-    error.value = err?.message || 'Unable to list repository branches.'
+    if (branchRequestGate.isCurrent(component, requestId)) {
+      error.value = err?.message || 'Unable to list repository branches.'
+    }
   } finally {
-    branchBusy.value[component] = false
+    if (branchRequestGate.isCurrent(component, requestId)) branchBusy.value[component] = false
   }
 }
 
@@ -446,6 +458,7 @@ onMounted(async () => {
   releaseRefreshTimer.value = window.setInterval(refreshStableReleases, 60 * 60 * 1000)
 })
 onBeforeUnmount(() => {
+  for (const component of ['framework', 'ui']) { onlineRequestGate.invalidate(component); branchRequestGate.invalidate(component) }
   window.removeEventListener('keydown', handleKeydown)
   stopPolling()
   if (reloadTimer.value) window.clearInterval(reloadTimer.value)
