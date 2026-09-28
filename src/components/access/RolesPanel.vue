@@ -2,6 +2,8 @@
 import { computed, inject, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { TACTICAL_PERMISSION_GROUPS, createRole, deleteRole, getRole, getRoleExtensionPermissions, listRoles, permissionLabel, updateRole, updateRoleExtensionPermissions } from '../../access'
 import { clearUnsaved, registerUnsaved, requestLeave } from '../../unsaved'
+import { createLatestRequestGate } from '../../admin-session-state'
+import { loadLatestRoleSelection } from '../../role-selection-loader'
 
 const state = inject('tecTacState')
 const roles = ref([])
@@ -21,6 +23,7 @@ const permissionQuery = ref('')
 const enabledOnly = ref(false)
 const collapsedGroups = ref({})
 const OWNER = 'roles-editor'
+const roleRequestGate = createLatestRequestGate()
 
 const canManage = computed(() => state.context.capabilities?.manage_roles !== false)
 const capabilityResolved = computed(() => state.context.capabilities !== null)
@@ -150,21 +153,22 @@ async function loadRoles(preferredId = null) {
 
 async function loadRole(id) {
   error.value = ''
-  selected.value = await getRole(id)
-  try {
-    const ext = await getRoleExtensionPermissions(id)
-    extensionCatalog.value = ext.extensions || []
-    extensionPermissions.value = { ...(ext.permissions || {}) }
-  } catch (err) {
-    extensionCatalog.value = []
-    extensionPermissions.value = {}
-    if (err.status !== 404 && err.status !== 403) throw err
-  }
+  const result = await loadLatestRoleSelection({
+    id,
+    getRole,
+    getExtensionPermissions: getRoleExtensionPermissions,
+    requestGate: roleRequestGate,
+  })
+  if (result.stale) return false
+  selected.value = result.role
+  extensionCatalog.value = result.extensions
+  extensionPermissions.value = result.permissions
   baseline.value = snapshot()
   permissionQuery.value = ''
   enabledOnly.value = false
   collapsedGroups.value = {}
   clearUnsaved(OWNER)
+  return true
 }
 
 async function chooseRole(id, force = false) {
@@ -261,7 +265,7 @@ function setEditorTab(id) { editorTab.value = id; permissionQuery.value = ''; en
 function beforeUnload(event) { if (!dirty.value) return; event.preventDefault(); event.returnValue = '' }
 
 onMounted(() => { window.addEventListener('beforeunload', beforeUnload); loadRoles() })
-onBeforeUnmount(() => { window.removeEventListener('beforeunload', beforeUnload) })
+onBeforeUnmount(() => { roleRequestGate.begin(); window.removeEventListener('beforeunload', beforeUnload) })
 </script>
 
 <template>

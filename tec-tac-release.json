@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.52",
+  "version": "0.12.53",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -19,7 +19,7 @@
     {
       "path": "FIXING.md",
       "size": 269,
-      "sha256": "a68eb4f3ca52481cec89447c5b6cb8a7066c7506ec265b22abacb7051b5816d7"
+      "sha256": "7858a35030006dc4cbc1a7abf41bed672874a745bd3031ffee9be9945c277733"
     },
     {
       "path": "LICENSE",
@@ -32,14 +32,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.52.md",
-      "size": 533,
-      "sha256": "9b4dca7d9cbf5f9656e04f06a5502d65b07c427ed831d5124fd6655d660e11ad"
+      "path": "RELEASE_NOTES_0.12.53.md",
+      "size": 705,
+      "sha256": "95cd005ce66bde3bb5d573b84b5d0ae9c7edd64f856084153593b5747577f162"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "0b8130c9a771ef473f72f636bf079167448b0666faaeb67a9a7121a097655ea1"
+      "sha256": "e5e3626764ea72981763111371cc4bff65b43f40ef7889be5054d87aeefb051a"
     },
     {
       "path": "docs/context-actions.md",
@@ -427,6 +427,11 @@
       "sha256": "4929ad1b0cb8e755ce7369e45615a2b14d2d596edb215330ea10b6a6f25cc2e2"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.52.md",
+      "size": 533,
+      "sha256": "9b4dca7d9cbf5f9656e04f06a5502d65b07c427ed831d5124fd6655d660e11ad"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.6.md",
       "size": 784,
       "sha256": "28d39a76eeec9bacfd5a0e24f63cecaff46d0da776e84ef31a4def39ab8aecac"
@@ -594,12 +599,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "800ea518f91faabaa3cde4c8136943e9094f62598f702e3be3ecdc98e695f4ed"
+      "sha256": "b6cc6d1ae0408532aab9011e986e3dd97e12f9e5b40a3a8266950c16c8c724f7"
     },
     {
       "path": "package.json",
-      "size": 1116,
-      "sha256": "06a7f0636cabd2120214839a817bfbedf54dd479b7268b6fe1ac62c4d68b0a1c"
+      "size": 1144,
+      "sha256": "057190c2f48e9f078c5c3fca851fc2e989d9597c6a0bec1dabddbde816fdfc3e"
     },
     {
       "path": "public/modules/modules.json",
@@ -728,8 +733,8 @@
     },
     {
       "path": "src/components/access/RolesPanel.vue",
-      "size": 21995,
-      "sha256": "2a23b3baa92c379663f42ccf17c411627d0a263d325c0809e9351b07aa38227e"
+      "size": 22185,
+      "sha256": "04f3710e9bbc538504edd7445d20e52339f919e5ebf7e1555f13214f1f5efd6f"
     },
     {
       "path": "src/components/access/SessionPanel.vue",
@@ -932,6 +937,11 @@
       "sha256": "f983782e3c8b26aa72238acdc7f499d1260966c0a22ee02198bc39511577a8c4"
     },
     {
+      "path": "src/role-selection-loader.js",
+      "size": 721,
+      "sha256": "ae755ecad41cb802f758c54f660955df0a6ea141121d3b50bda63b1c7796dd52"
+    },
+    {
       "path": "src/router.js",
       "size": 3080,
       "sha256": "6529d0dff9c38ce3186641d83612b8322e618066fa4faed7dc296951c052710a"
@@ -1059,7 +1069,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "a23a9869e0277e8862d392e09539cb17bc8c00f7d2e911ef38c26eddfc20ec39"
+      "sha256": "f6bb6111167209a2ca6b856921475e71acd7528276d449953501de5a0380f3c7"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1220,6 +1230,16 @@
       "path": "tests/ui-0.12.52.sh",
       "size": 130,
       "sha256": "af9a13d34d88b87c097f38ae81f851ddd37a12016e4e751c304ae1188ea36525"
+    },
+    {
+      "path": "tests/ui-0.12.53.mjs",
+      "size": 2154,
+      "sha256": "64ec8ad952b2d85da1ecb863f6502beeb960d9701b7cf2da11d5265a2c323f58"
+    },
+    {
+      "path": "tests/ui-0.12.53.sh",
+      "size": 88,
+      "sha256": "d84135189ec1e733b8731f23db9f28d2bd5f4898fe76dbb1137ebd3c9c98d678"
     },
     {
       "path": "tests/ui-hygiene-0.12.45.mjs",
