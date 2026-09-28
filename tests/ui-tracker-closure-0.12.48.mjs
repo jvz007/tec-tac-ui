@@ -47,8 +47,9 @@ gate = consumeSiteSearchSuppression(suppression)
 if (!gate.skipLoad) loads += 1
 assert.equal(loads, 2, 'next real site search was incorrectly suppressed')
 const resourceView = read('src/views/ResourcesView.vue')
-assert.match(resourceView, /clientChangeSiteSearchState\(siteSearch\.value\)/)
-assert.match(resourceView, /consumeSiteSearchSuppression\(suppressNextSiteSearchLoad\)/)
+assert.match(resourceView, /createResourceSiteSearchCoordinator/)
+assert.match(resourceView, /siteSearchCoordinator\.clientChanged\(siteSearch\.value\)/)
+assert.match(resourceView, /siteSearchCoordinator\.searchChanged\(\)/)
 
 // L73: commit results through the same pure transition used by the view. Applying
 // a failed history result changes historyError only; an unrelated Scheduler error

@@ -26,8 +26,8 @@ grep -q 'role="tooltip"' "$UPDATES" || fail "trust tooltip role missing"
 
 # L69: a client switch clears any pending site debounce, suppresses the watcher caused by clearing search,
 # and performs the one immediate fetch itself.
-grep -q 'clientChangeSiteSearchState' "$RESOURCES" || fail "client-change site-search suppression missing"
-grep -q 'consumeSiteSearchSuppression' "$RESOURCES" || fail "site-search watcher suppression missing"
-grep -A6 'watch(selectedClientId' "$RESOURCES" | grep -q 'void loadSites()' || fail "client change no longer performs immediate site fetch"
+grep -q 'createResourceSiteSearchCoordinator' "$RESOURCES" || fail "client/site search coordinator missing"
+grep -A4 'watch(selectedClientId' "$RESOURCES" | grep -q 'siteSearchCoordinator.clientChanged' || fail "client change no longer uses the coordinated immediate site fetch"
+grep -q 'watch(siteSearch, () => { siteSearchCoordinator.searchChanged() })' "$RESOURCES" || fail "site-search watcher no longer uses duplicate-load suppression coordinator"
 
 echo "ui-hygiene-0.12.45: PASS"

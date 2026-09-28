@@ -29,11 +29,12 @@ python3 - "${ROOT}" "${VERSION}" <<'PY_ARCHIVE'
 from pathlib import Path
 import re,sys
 root=Path(sys.argv[1]); version=sys.argv[2]
-m=re.fullmatch(r"0\.12\.(\d+)", version)
+m=re.fullmatch(r"0\.12\.(\d+)(?:-(\d+))?", version)
 assert m, version
-current=int(m.group(1))
+current=int(m.group(1)); rebuild=m.group(2) is not None
 archive=root/'docs'/'releases'
-for patch in range(32,current):
+stop=current + (1 if rebuild else 0)
+for patch in range(32,stop):
     archived=f"0.12.{patch}"
     note=archive/f"RELEASE_NOTES_{archived}.md"
     assert note.is_file(), f"missing archived release note {archived}"

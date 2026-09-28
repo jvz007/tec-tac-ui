@@ -3,7 +3,6 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { copyTextWithFeedback } from '../src/copy-feedback.js'
-import { clientChangeSiteSearchState, consumeSiteSearchSuppression } from '../src/resource-site-search-state.js'
 import { scheduleHistoryCommit } from '../src/scheduler-history-loader.js'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
@@ -29,26 +28,7 @@ for (const [rel, fn, errorRef] of [
   assert.ok(body.includes(errorRef), `${fn} does not surface clipboard errors`)
 }
 
-// L69: a client change with an active site search produces one immediate load.
-// The synthetic siteSearch reset is consumed exactly once and does not schedule
-// a second debounced request; the next genuine user search does.
-let loads = 0
-let suppression = false
-let search = 'printer'
-const transition = clientChangeSiteSearchState(search)
-suppression = transition.suppressNextSearchLoad
-search = transition.nextSearch
-loads += 1 // selectedClientId watcher immediate load
-let gate = consumeSiteSearchSuppression(suppression)
-suppression = gate.suppressNextSearchLoad
-if (!gate.skipLoad) loads += 1
-assert.equal(loads, 1, 'synthetic search reset caused a duplicate site load')
-gate = consumeSiteSearchSuppression(suppression)
-if (!gate.skipLoad) loads += 1
-assert.equal(loads, 2, 'next real site search was incorrectly suppressed')
-const resourceView = read('src/views/ResourcesView.vue')
-assert.match(resourceView, /clientChangeSiteSearchState\(siteSearch\.value\)/)
-assert.match(resourceView, /consumeSiteSearchSuppression\(suppressNextSiteSearchLoad\)/)
+// L69 is behaviorally covered by tests/ui-l69-resource-search-0.12.57.mjs using the production coordinator.
 
 // L73: commit results through the same pure transition used by the view. Applying
 // a failed history result changes historyError only; an unrelated Scheduler error

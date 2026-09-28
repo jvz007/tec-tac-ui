@@ -5,10 +5,11 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const version = fs.readFileSync(path.join(root, 'VERSION'), 'utf8').trim()
-const match = version.match(/^0\.12\.(\d+)$/)
+const match = version.match(/^0\.12\.(\d+)(?:-(\d+))?$/)
 assert.ok(match, `unexpected UI version ${version}`)
 const currentPatch = Number(match[1])
-for (let patch = 32; patch < currentPatch; patch += 1) {
+const stopPatch = currentPatch + (match[2] ? 1 : 0)
+for (let patch = 32; patch < stopPatch; patch += 1) {
   const archived = `0.12.${patch}`
   const file = path.join(root, 'docs', 'releases', `RELEASE_NOTES_${archived}.md`)
   assert.equal(fs.existsSync(file), true, `missing archived release note ${archived}`)

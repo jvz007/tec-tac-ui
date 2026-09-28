@@ -19,8 +19,9 @@ grep -q ':aria-describedby=' "$UPDATES" || fail 'trust trigger aria-describedby 
 grep -q 'role="tooltip"' "$UPDATES" || fail 'trust tooltip semantics missing'
 grep -q '@click="closeTrustPopover(\$event)"' "$UPDATES" || fail 'click close missing'
 grep -q '@keydown\.esc\.stop\.prevent="closeTrustPopover(\$event)"' "$UPDATES" || fail 'Escape close missing'
-grep -q 'clientChangeSiteSearchState' "$RESOURCES" || fail 'client-change search gate missing'
-grep -q 'consumeSiteSearchSuppression' "$RESOURCES" || fail 'search suppression consumption missing'
+grep -q 'createResourceSiteSearchCoordinator' "$RESOURCES" || fail 'client/site search coordinator missing'
+grep -q 'siteSearchCoordinator.searchChanged' "$RESOURCES" || fail 'search coordinator watcher missing'
+grep -q 'siteSearchCoordinator.clientChanged' "$RESOURCES" || fail 'client-change coordinator path missing'
 grep -q 'loadScheduleHistoryPage' "$SCHEDULES" || fail 'Scheduler history loader helper missing'
 LOAD_LINE="$(grep 'async function loadRunHistory' "$SCHEDULES")"
 [[ "$LOAD_LINE" != *'error.value'* ]] || fail 'history loader still writes unrelated Scheduler error state'

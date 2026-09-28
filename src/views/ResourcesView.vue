@@ -8,7 +8,7 @@ import {
   updateResourceClient,
   updateResourceSite,
 } from '../api'
-import { clientChangeSiteSearchState, consumeSiteSearchSuppression } from '../resource-site-search-state'
+import { createResourceSiteSearchCoordinator } from '../resource-site-search-state'
 
 const PAGE_SIZE = 50
 const state = inject('tecTacState')
@@ -215,35 +215,29 @@ function changeSitePage(next) {
 let clientTimer
 let siteTimer
 let siteClientTimer
-let suppressNextSiteSearchLoad = false
+const siteSearchCoordinator = createResourceSiteSearchCoordinator({
+  cancelScheduled: () => clearTimeout(siteTimer),
+  clearSearch: () => { siteSearch.value = '' },
+  loadImmediate: () => { sitePage.value = 1; void loadSites() },
+  scheduleLoad: () => { siteTimer = setTimeout(() => { void loadSites({ resetPage: true }) }, 300) },
+})
 watch(clientSearch, () => {
   clearTimeout(clientTimer)
   clientTimer = setTimeout(() => { void loadClients({ resetPage: true }) }, 300)
 })
-watch(siteSearch, () => {
-  clearTimeout(siteTimer)
-  const gate = consumeSiteSearchSuppression(suppressNextSiteSearchLoad)
-  suppressNextSiteSearchLoad = gate.suppressNextSearchLoad
-  if (gate.skipLoad) return
-  siteTimer = setTimeout(() => { void loadSites({ resetPage: true }) }, 300)
-})
+watch(siteSearch, () => { siteSearchCoordinator.searchChanged() })
 watch(siteClientSearch, () => {
   clearTimeout(siteClientTimer)
   siteClientTimer = setTimeout(() => { void loadSiteClientOptions() }, 300)
 })
 watch(selectedClientId, () => {
-  clearTimeout(siteTimer)
-  const transition = clientChangeSiteSearchState(siteSearch.value)
-  suppressNextSiteSearchLoad = transition.suppressNextSearchLoad
-  siteSearch.value = transition.nextSearch
-  sitePage.value = 1
-  void loadSites()
+  siteSearchCoordinator.clientChanged(siteSearch.value)
 })
 
 onMounted(() => { void loadClients() })
 onBeforeUnmount(() => {
   clearTimeout(clientTimer)
-  clearTimeout(siteTimer)
+  siteSearchCoordinator.reset()
   clearTimeout(siteClientTimer)
   clientRequest += 1
   siteRequest += 1
