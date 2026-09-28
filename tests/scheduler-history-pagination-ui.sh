@@ -9,15 +9,25 @@ grep -q "params.set('page'" "$API"
 grep -q "params.set('page_size'" "$API"
 grep -q "params.set('search'" "$API"
 grep -q "const runPageSize=50" "$VIEW"
-grep -q "loadRunHistory" "$VIEW"
+grep -q "historyCountLabel" "$VIEW"
+grep -q "historyPageState" "$VIEW"
+grep -q "historyError" "$VIEW"
+grep -q "userHistoryLoaded" "$VIEW"
+grep -q "moduleHistoryLoaded" "$VIEW"
+grep -q "state.retryPage" "$VIEW"
+grep -q "refreshing" "$VIEW"
 grep -q "historySearchTimer=setTimeout" "$VIEW"
-grep -q "300)" "$VIEW"
 grep -q "changeRunPage" "$VIEW"
 grep -q "Page {{runMeta.page}} / {{runMeta.pages}}" "$VIEW"
 grep -q "historyLoading && !runs.length" "$VIEW"
 grep -q "onUnmounted(()=>clearTimeout(historySearchTimer))" "$VIEW"
+node "$ROOT/tests/scheduler-history-state.mjs"
 if grep -q "listScheduleRuns()" "$VIEW"; then
   echo "Scheduler initial refresh must not eagerly load run history" >&2
+  exit 1
+fi
+if grep -q "historyLoading.value=true;error.value=''" "$VIEW"; then
+  echo "Scheduler history loading must not clear the global Scheduler error" >&2
   exit 1
 fi
 if grep -q "runs.value.slice(0,100)" "$VIEW"; then

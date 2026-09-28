@@ -1,30 +1,21 @@
-# FIXING.md — UI 0.12.43
+# FIXING.md — UI 0.12.44
 
 ## Review scope
 
-This release is intentionally limited to the **D5 Scheduler health regression gap** from Claude's tracker.
+This release is limited to the remaining UI lifecycle/navigation/Scheduler-history findings:
 
-Review that:
-
-1. The existing Scheduler Configuration `AuthorizationRevoked` warning still renders from backend health data.
-2. Zero revoked runs hide the warning.
-3. Nonzero revoked runs expose the count and latest schedule label.
-4. Schedule name falls back to schedule id when needed.
-5. The behavior is covered by an executable Node regression rather than only grep assertions.
-
-## Files/areas changed
-
-- `src/scheduler-health.js`
-- `src/views/SchedulerSettingsView.vue`
-- `tests/d5-scope-health.mjs`
-- `package.json` test runner
+- U3 / L87: Account Security failed-save unsaved-navigation lifecycle.
+- L67: Clients & Sites navigation visibility follows `list_clients` / superuser context.
+- L71: history tabs do not claim `0 runs` before first successful history load.
+- L72: background refresh preserves visible content and history pagination recovers to the last valid page.
+- L73: Scheduler history errors are isolated from unrelated page errors.
 
 ## Expected outcome
 
-D5's UI health-output coverage is behavioral without changing the established SHTF visual language.
+The real Account Security panel uses the tested lifecycle helper, and Scheduler history refresh/search state stays stable under failures and paging changes.
 
 ## Explicitly out of scope
 
-- Other Scheduler UI Low findings.
-- U1–U4 except previously closed items.
-- Historical release-note archive cleanup beyond normal current-release housekeeping.
+- Other UI low findings.
+- Core changes.
+- Unrelated visual redesign.

@@ -1,68 +1,30 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { onBeforeUnmount, onMounted } from 'vue'
 import { getAccountSecurityPolicy, updateAccountSecurityPolicy } from '../../access'
-import { persistAccountSecurityPolicy } from '../../account-security-policy-save'
 import { clearUnsaved, registerUnsaved } from '../../unsaved'
+import { useAccountSecurityPolicy } from '../../use-account-security-policy'
 
-const loading = ref(true)
-const saving = ref(false)
-const error = ref('')
-const notice = ref('')
-const policy = ref(null)
-const canChange = ref(false)
-const requested = ref(false)
-const dirty = computed(() => policy.value && requested.value !== policy.value.protect_superuser_accounts)
-const unsavedId = 'account-security-policy'
-
-watch(dirty, (value) => {
-  if (value) registerUnsaved(unsavedId, 'Superuser account protection policy', { save: savePolicy, discard: loadPolicy })
-  else clearUnsaved(unsavedId)
+const {
+  loading,
+  saving,
+  error,
+  notice,
+  policy,
+  canChange,
+  requested,
+  dirty,
+  loadPolicy,
+  savePolicy,
+  dispose,
+} = useAccountSecurityPolicy({
+  getPolicy: getAccountSecurityPolicy,
+  updatePolicy: updateAccountSecurityPolicy,
+  registerUnsaved,
+  clearUnsaved,
 })
 
-async function loadPolicy() {
-  loading.value = true
-  error.value = ''
-  try {
-    const response = await getAccountSecurityPolicy()
-    policy.value = response?.policy || null
-    canChange.value = response?.can_change === true
-    requested.value = policy.value?.protect_superuser_accounts === true
-    clearUnsaved(unsavedId)
-  } catch (err) {
-    error.value = err?.message || 'Unable to load account security policy.'
-  } finally {
-    loading.value = false
-  }
-}
-
-async function savePolicy() {
-  if (!canChange.value || saving.value) return
-  saving.value = true
-  error.value = ''
-  notice.value = ''
-  try {
-    const response = await persistAccountSecurityPolicy(requested.value, updateAccountSecurityPolicy)
-    policy.value = response?.policy || policy.value
-    requested.value = policy.value?.protect_superuser_accounts === true
-    clearUnsaved(unsavedId)
-    notice.value = requested.value
-      ? 'Superuser account protection is enabled.'
-      : 'Superuser account protection is disabled; Tactical native account-management behaviour applies.'
-  } catch (err) {
-    error.value = err?.message || 'Unable to update account security policy.'
-    // Preserve the operator's requested value and reject the save. The global
-    // unsaved-change dialog must remain open and must not navigate away after
-    // a failed policy write.
-    throw err
-  } finally {
-    saving.value = false
-  }
-}
-
-onMounted(() => {
-  loadPolicy()
-})
-onBeforeUnmount(() => clearUnsaved(unsavedId))
+onMounted(loadPolicy)
+onBeforeUnmount(dispose)
 </script>
 
 <template>
