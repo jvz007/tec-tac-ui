@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { generateMfaBackupCodes, getMfaBackupCodeStatus } from '../../access'
+import { copyTextToClipboard } from '../../clipboard'
 
 const loading = ref(true)
 const busy = ref(false)
@@ -61,10 +62,16 @@ async function generate() {
 }
 
 async function copyAll() {
-  if (!codes.value.length || !navigator.clipboard) return
-  await navigator.clipboard.writeText(codes.value.join('\n'))
-  copied.value = true
-  window.setTimeout(() => { copied.value = false }, 1800)
+  if (!codes.value.length) return
+  error.value = ''
+  try {
+    await copyTextToClipboard(codes.value.join('\n'), { failureMessage: 'Could not copy the MFA backup codes.' })
+    copied.value = true
+    window.setTimeout(() => { copied.value = false }, 1800)
+  } catch (err) {
+    copied.value = false
+    error.value = err?.message || 'Could not copy the MFA backup codes.'
+  }
 }
 
 function downloadCodes() {

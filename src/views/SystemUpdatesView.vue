@@ -12,6 +12,7 @@ import {
   setUpdateTrustPolicy,
   stageOnlineSystemUpdate,
 } from '../api'
+import { copyTextToClipboard } from '../clipboard'
 
 const help = inject('tecTacHelp', null)
 const status = ref(null)
@@ -50,6 +51,16 @@ function trustPopoverKey(scope, id = '') {
 
 function isTrustPopoverOpen(key) {
   return trustPopoverHover.value === key || trustPopoverFocus.value === key
+}
+
+function trustPopoverId(key) {
+  return `system-trust-popover-${String(key).replace(/[^a-z0-9_-]+/gi, '-')}`
+}
+
+function closeTrustPopover(event = null) {
+  trustPopoverHover.value = null
+  trustPopoverFocus.value = null
+  event?.currentTarget?.blur?.()
 }
 
 
@@ -199,10 +210,16 @@ function openTrustPolicyHelp() {
 
 async function copyTrustPolicyCommand() {
   const command = trustPolicyGuidance.value?.command
-  if (!command || !navigator.clipboard) return
-  await navigator.clipboard.writeText(command)
-  trustPolicyCommandCopied.value = true
-  window.setTimeout(() => { trustPolicyCommandCopied.value = false }, 1800)
+  if (!command) return
+  trustPolicyError.value = ''
+  try {
+    await copyTextToClipboard(command, { failureMessage: 'Could not copy the trust-policy console command.' })
+    trustPolicyCommandCopied.value = true
+    window.setTimeout(() => { trustPolicyCommandCopied.value = false }, 1800)
+  } catch (err) {
+    trustPolicyCommandCopied.value = false
+    trustPolicyError.value = err?.message || 'Could not copy the trust-policy console command.'
+  }
 }
 
 watch(trustPolicyDraft, () => {
@@ -217,7 +234,13 @@ function releaseAccepted(component) {
 }
 
 function handleKeydown(event) {
-  if (event.key === 'Escape' && trustPolicyOpen.value) closeTrustPolicy()
+  if (event.key !== 'Escape') return
+  if (trustPopoverHover.value || trustPopoverFocus.value) {
+    closeTrustPopover()
+    document.activeElement?.blur?.()
+    return
+  }
+  if (trustPolicyOpen.value) closeTrustPolicy()
 }
 
 async function checkOnline(component, { force = false, background = false } = {}) {
@@ -519,8 +542,11 @@ onBeforeUnmount(() => {
                 @mouseleave="trustPopoverHover = null"
                 @focus="trustPopoverFocus = trustPopoverKey('release', component.id)"
                 @blur="trustPopoverFocus = null"
+                @click="closeTrustPopover($event)"
+                @keydown.esc.stop.prevent="closeTrustPopover($event)"
+                :aria-describedby="isTrustPopoverOpen(trustPopoverKey('release', component.id)) ? trustPopoverId(trustPopoverKey('release', component.id)) : undefined"
               >{{ systemTrustLabel(online[component.id].latest_release.release_trust) }}</span>
-              <span v-if="isTrustPopoverOpen(trustPopoverKey('release', component.id))" class="system-trust-popover">
+              <span :id="trustPopoverId(trustPopoverKey('release', component.id))" v-if="isTrustPopoverOpen(trustPopoverKey('release', component.id))" class="system-trust-popover" role="tooltip">
                 <b>{{ online[component.id].latest_release.release_trust?.publisher_display_name || (online[component.id].latest_release.release_trust?.signed ? 'Signed release' : 'Unsigned release') }}</b>
                 <span v-if="online[component.id].latest_release.release_trust?.publisher_id">Publisher ID: <span class="mono">{{ online[component.id].latest_release.release_trust.publisher_id }}</span></span>
                 <span v-if="online[component.id].latest_release.release_trust?.key_id">Key ID: <span class="mono">{{ online[component.id].latest_release.release_trust.key_id }}</span></span>
@@ -584,7 +610,7 @@ onBeforeUnmount(() => {
         <div><span>Installed</span><b class="mono">{{ stage.preview.installed_version || 'none' }}</b></div>
         <div><span>Package</span><b class="mono">{{ stage.preview.version }}</b></div>
         <div><span>Source</span><b>{{ stage.preview.source?.type || 'offline' }}</b></div>
-        <div><span>Trust</span><span class="system-trust-badge"><span class="pill system-trust-trigger" tabindex="0" :class="systemTrustClass(stage.preview.release_trust)" @mouseenter="trustPopoverHover = trustPopoverKey('stage')" @mouseleave="trustPopoverHover = null" @focus="trustPopoverFocus = trustPopoverKey('stage')" @blur="trustPopoverFocus = null">{{ systemTrustLabel(stage.preview.release_trust) }}</span><span v-if="isTrustPopoverOpen(trustPopoverKey('stage'))" class="system-trust-popover"><b>{{ stage.preview.release_trust?.publisher_display_name || (stage.preview.release_trust?.legacy ? 'Legacy unsigned release' : 'Unsigned source') }}</b><span v-if="stage.preview.release_trust?.publisher_id">Publisher ID: <span class="mono">{{ stage.preview.release_trust.publisher_id }}</span></span><span v-if="stage.preview.release_trust?.key_id">Key ID: <span class="mono">{{ stage.preview.release_trust.key_id }}</span></span><span v-if="stage.preview.release_trust?.algorithm">Algorithm: {{ stage.preview.release_trust.algorithm }}</span><span v-if="stage.preview.release_trust?.file_count">Verified files: {{ stage.preview.release_trust.file_count }}</span><span v-if="stage.preview.release_trust?.details">{{ stage.preview.release_trust.details }}</span></span></span></div>
+        <div><span>Trust</span><span class="system-trust-badge"><span class="pill system-trust-trigger" tabindex="0" :class="systemTrustClass(stage.preview.release_trust)" @mouseenter="trustPopoverHover = trustPopoverKey('stage')" @mouseleave="trustPopoverHover = null" @focus="trustPopoverFocus = trustPopoverKey('stage')" @blur="trustPopoverFocus = null" @click="closeTrustPopover($event)" @keydown.esc.stop.prevent="closeTrustPopover($event)" :aria-describedby="isTrustPopoverOpen(trustPopoverKey('stage')) ? trustPopoverId(trustPopoverKey('stage')) : undefined">{{ systemTrustLabel(stage.preview.release_trust) }}</span><span :id="trustPopoverId(trustPopoverKey('stage'))" v-if="isTrustPopoverOpen(trustPopoverKey('stage'))" class="system-trust-popover" role="tooltip"><b>{{ stage.preview.release_trust?.publisher_display_name || (stage.preview.release_trust?.legacy ? 'Legacy unsigned release' : 'Unsigned source') }}</b><span v-if="stage.preview.release_trust?.publisher_id">Publisher ID: <span class="mono">{{ stage.preview.release_trust.publisher_id }}</span></span><span v-if="stage.preview.release_trust?.key_id">Key ID: <span class="mono">{{ stage.preview.release_trust.key_id }}</span></span><span v-if="stage.preview.release_trust?.algorithm">Algorithm: {{ stage.preview.release_trust.algorithm }}</span><span v-if="stage.preview.release_trust?.file_count">Verified files: {{ stage.preview.release_trust.file_count }}</span><span v-if="stage.preview.release_trust?.details">{{ stage.preview.release_trust.details }}</span></span></span></div>
         <div><span>SHA256</span><b class="mono hash-short">{{ stage.sha256 }}</b></div>
       </div>
       <div v-if="!stage.preview.installable" class="state-inline denied">{{ stage.preview.install_block_reason }}</div>

@@ -214,12 +214,17 @@ function changeSitePage(next) {
 let clientTimer
 let siteTimer
 let siteClientTimer
+let suppressNextSiteSearchLoad = false
 watch(clientSearch, () => {
   clearTimeout(clientTimer)
   clientTimer = setTimeout(() => { void loadClients({ resetPage: true }) }, 300)
 })
 watch(siteSearch, () => {
   clearTimeout(siteTimer)
+  if (suppressNextSiteSearchLoad) {
+    suppressNextSiteSearchLoad = false
+    return
+  }
   siteTimer = setTimeout(() => { void loadSites({ resetPage: true }) }, 300)
 })
 watch(siteClientSearch, () => {
@@ -227,6 +232,8 @@ watch(siteClientSearch, () => {
   siteClientTimer = setTimeout(() => { void loadSiteClientOptions() }, 300)
 })
 watch(selectedClientId, () => {
+  clearTimeout(siteTimer)
+  suppressNextSiteSearchLoad = Boolean(siteSearch.value)
   siteSearch.value = ''
   sitePage.value = 1
   void loadSites()

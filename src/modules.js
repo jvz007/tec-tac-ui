@@ -6,8 +6,8 @@ export function inspectModulePackages(files){
   let metadata=null
   for(const file of files){
     const name=String(file?.name||'')
-    if(/\.sig$/i.test(name)){ signature=file; continue }
-    if(/\.release(?:\(\d+\))?\.json$/i.test(name)){ metadata=file; continue }
+    if(/\.sig$/i.test(name)){ if(signature) throw new Error('Select exactly one detached signature (.sig).'); signature=file; continue }
+    if(/\.release(?:\(\d+\))?\.json$/i.test(name)){ if(metadata) throw new Error('Select exactly one release metadata file (.release.json).'); metadata=file; continue }
     body.append('packages',file)
   }
   if(signature) body.append('signature',signature)
@@ -43,8 +43,8 @@ export function inspectModuleHotfix(files){
   const body=new FormData(); let hotfix=null,signature=null,metadata=null
   for(const file of list){
     const name=String(file?.name||'')
-    if(/\.sig$/i.test(name)){signature=file;continue}
-    if(/\.release(?:\(\d+\))?\.json$/i.test(name)){metadata=file;continue}
+    if(/\.sig$/i.test(name)){if(signature) throw new Error('Select exactly one detached signature (.sig).');signature=file;continue}
+    if(/\.release(?:\(\d+\))?\.json$/i.test(name)){if(metadata) throw new Error('Select exactly one release metadata file (.release.json).');metadata=file;continue}
     if(/\.zip$/i.test(name)){if(hotfix) throw new Error('Select exactly one hotfix ZIP.'); hotfix=file;continue}
   }
   if(!hotfix) throw new Error('Select a managed hotfix ZIP.')

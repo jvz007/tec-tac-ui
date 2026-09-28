@@ -7,6 +7,8 @@ import {
   loginTacticalWithBackupCode,
   setupTacticalTotp,
 } from '../api'
+import { copyTextToClipboard } from '../clipboard'
+import { enrollmentSetupErrorMessage } from '../mfa-enrollment'
 
 const uiVersion = __TEC_TAC_UI_VERSION__
 const username = ref('')
@@ -102,7 +104,7 @@ async function beginTotpSetup() {
     await nextTick()
     totpInput.value?.focus()
   } catch (err) {
-    error.value = normalizeError(err)
+    error.value = enrollmentSetupErrorMessage(err, normalizeError)
   } finally {
     busy.value = false
   }
@@ -166,10 +168,16 @@ async function submitSetupTotp() {
 }
 
 async function copySetupKey() {
-  if (!setupKey.value || !navigator.clipboard) return
-  await navigator.clipboard.writeText(setupKey.value)
-  copied.value = true
-  window.setTimeout(() => { copied.value = false }, 1800)
+  if (!setupKey.value) return
+  error.value = ''
+  try {
+    await copyTextToClipboard(setupKey.value, { failureMessage: 'Could not copy the authenticator setup key.' })
+    copied.value = true
+    window.setTimeout(() => { copied.value = false }, 1800)
+  } catch (err) {
+    copied.value = false
+    error.value = err?.message || 'Could not copy the authenticator setup key.'
+  }
 }
 
 function backToCredentials() {
