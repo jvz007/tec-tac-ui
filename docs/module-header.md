@@ -23,7 +23,8 @@ export default {
 
 - IDs must be namespaced to the provider module.
 - A Vue component is required.
-- `permission` is optional UI gating; backend authorization remains authoritative.
+- `permission` / `permissions` may narrow UI gating. If omitted, Core automatically uses the module permissions declared by the authenticated module descriptor; a contribution is never allowed to bypass its module permission boundary.
+- Header contributions render only while the authenticated context is trusted as backend-supplied. If that provenance is absent or degraded, the slot fails closed.
 - `visible(context)` is an optional synchronous visibility predicate.
 - `props` may be an object or a synchronous function of the Core header context.
 - Core sorts by `order`, then label/id, and renders at most six module header contributions.

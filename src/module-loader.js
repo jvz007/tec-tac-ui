@@ -163,7 +163,7 @@ export async function loadUiModules(runtime, modules) {
       moduleNotifications = runtime.notifications?.forModule(descriptor.id) || null
       moduleAudit = runtime.audit?.forModule(descriptor.id) || null
       moduleHelp = runtime.help?.forModule(descriptor.id, descriptor) || null
-      moduleHeader = runtime.header?.forModule(descriptor.id) || null
+      moduleHeader = runtime.header?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null
       await plugin.register({
         ...runtime,
         context: runtime.state.context,

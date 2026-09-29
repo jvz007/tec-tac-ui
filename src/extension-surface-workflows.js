@@ -8,14 +8,17 @@ export async function beginLoginSso(ssoProviders, entry, context = {}) {
 export function appHeaderItems(header, context = {}) {
   return header?.list?.(context) || []
 }
-export function resourceActionContext(resourceType, row) {
-  return { resource_type: resourceType, resource: row, [resourceType]: row, selection: [row] }
+export function resourceActionContext(resourceType, row, { client = null } = {}) {
+  const context = { resource_type: resourceType, resource: row, [resourceType]: row, selection: [row] }
+  if (resourceType === 'client') context.client = row
+  if (resourceType === 'site' && client) context.client = client
+  return context
 }
-export function resourceContextMenuActions(contextActions, resourceType, row) {
+export function resourceContextMenuActions(contextActions, resourceType, row, parent = {}) {
   if (!contextActions?.list) return []
-  return contextActions.list({ resource: resourceType, placement: `${resourceType}.context-menu`, context: resourceActionContext(resourceType, row) })
+  return contextActions.list({ resource: resourceType, placement: `${resourceType}.context-menu`, context: resourceActionContext(resourceType, row, parent) })
 }
-export async function executeResourceContextMenuAction(contextActions, action, resourceType, row) {
+export async function executeResourceContextMenuAction(contextActions, action, resourceType, row, parent = {}) {
   if (!action || action.state?.enabled === false || !contextActions?.execute) return undefined
-  return contextActions.execute(action.id, resourceActionContext(resourceType, row))
+  return contextActions.execute(action.id, resourceActionContext(resourceType, row, parent))
 }

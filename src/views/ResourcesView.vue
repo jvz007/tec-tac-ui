@@ -52,8 +52,12 @@ const moduleActionBusyId = ref('')
 const selectedClient = computed(() => clients.value.find((x) => x.id === selectedClientId.value) || null)
 
 
+function moduleActionParent(resourceType) {
+  return resourceType === 'site' ? { client: selectedClient.value } : {}
+}
+
 function moduleActions(resourceType, row) {
-  return resourceContextMenuActions(contextActions, resourceType, row)
+  return resourceContextMenuActions(contextActions, resourceType, row, moduleActionParent(resourceType))
 }
 
 async function runModuleAction(action, resourceType, row) {
@@ -63,7 +67,7 @@ async function runModuleAction(action, resourceType, row) {
   notice.value = ''
   moduleActionBusyId.value = action.id
   try {
-    await executeResourceContextMenuAction(contextActions, action, resourceType, row)
+    await executeResourceContextMenuAction(contextActions, action, resourceType, row, moduleActionParent(resourceType))
   } catch (e) {
     error.value = message(e, `Unable to run ${action.label}.`)
   } finally {

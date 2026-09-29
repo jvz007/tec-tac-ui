@@ -46,7 +46,7 @@ async function bootstrap() {
   const audit = createAuditService(apiFetch)
   const help = createHelpService()
   const ssoProviders = createSsoProviderRegistry()
-  const header = createHeaderContributionRegistry({ hasPermission })
+  const header = createHeaderContributionRegistry({ hasPermission, isTrustedContext: () => state.contextSource === 'backend' })
   registerCoreDashboardWidgets(dashboardWidgets, state)
   registerCoreHelpArticles(help)
 

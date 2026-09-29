@@ -31,5 +31,5 @@ assert.deepEqual(surface.resourceContextMenuActions(actions,'site',{id:8}).map(x
 
 const login=fs.readFileSync(new URL('../src/components/LoginPanel.vue',import.meta.url),'utf8'); assert.match(login,/loginSsoEntries\(/); assert.match(login,/@click="beginSso\(entry\)"/)
 const app=fs.readFileSync(new URL('../src/App.vue',import.meta.url),'utf8'); assert.match(app,/appHeaderItems\(/); assert.match(app,/module-header-contributions/)
-const resources=fs.readFileSync(new URL('../src/views/ResourcesView.vue',import.meta.url),'utf8'); assert.match(resources,/resourceContextMenuActions\(contextActions, resourceType, row\)/); assert.match(resources,/executeResourceContextMenuAction\(contextActions, action, resourceType, row\)/)
+const resources=fs.readFileSync(new URL('../src/views/ResourcesView.vue',import.meta.url),'utf8'); assert.match(resources,/resourceContextMenuActions\(contextActions, resourceType, row(?:,|\))/); assert.match(resources,/executeResourceContextMenuAction\(contextActions, action, resourceType, row(?:,|\))/)
 console.log('F8/F9/F10 extension surfaces done-when 0.12.66: PASS')

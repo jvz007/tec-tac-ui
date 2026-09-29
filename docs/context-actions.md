@@ -128,4 +128,4 @@ Registered browser actions are runtime UI state. If live enumeration is added to
 
 ## Clients & Sites contexts
 
-`client.context-menu` executes with `{ resource_type:'client', resource:client, client, selection:[client] }`. `site.context-menu` uses the same shape with `site`. The Clients & Sites screen owns placement and destructive confirmation for actions marked `dangerous`; providers still own backend authorization and the action implementation.
+`client.context-menu` executes with `{ resource_type:'client', resource:client, client, selection:[client] }`. `site.context-menu` executes with `{ resource_type:'site', resource:site, site, client, selection:[site] }`, where `client` is the site’s currently selected parent client from the Core resource directory. The Clients & Sites screen owns placement and destructive confirmation for actions marked `dangerous`; providers still own backend authorization and the action implementation.

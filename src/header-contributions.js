@@ -2,7 +2,12 @@ import { markRaw, reactive } from 'vue'
 
 const MAX_VISIBLE_HEADER_CONTRIBUTIONS = 6
 
-function normalize(provider, source) {
+function asPermissionList(value) {
+  const values = Array.isArray(value) ? value : (value == null || value === '' ? [] : [value])
+  return [...new Set(values.map((item) => String(item || '').trim()).filter(Boolean))]
+}
+
+function normalize(provider, source, defaults = {}) {
   if (!source || typeof source !== 'object') throw new Error('header contribution registration requires a descriptor')
   const id = String(source.id || '').trim()
   if (!id) throw new Error(`module ${provider} attempted to register a header contribution without an id`)
@@ -10,12 +15,17 @@ function normalize(provider, source) {
   if (!source.component) throw new Error(`header contribution ${id} requires a Vue component`)
   const rawProps = source.props
   if (rawProps != null && typeof rawProps !== 'function' && typeof rawProps !== 'object') throw new Error(`header contribution ${id} props must be an object or function`)
+
+  const explicitPermissions = asPermissionList(source.permissions ?? source.permission)
+  const permissions = explicitPermissions.length ? explicitPermissions : asPermissionList(defaults.permissions)
+
   return {
     id,
     provider,
     label: String(source.label || id),
     order: Number.isFinite(Number(source.order)) ? Number(source.order) : 500,
-    permission: source.permission == null ? null : String(source.permission),
+    permissions,
+    permission: permissions.length === 1 ? permissions[0] : null,
     visible: typeof source.visible === 'function' ? source.visible : null,
     component: markRaw(source.component),
     props: rawProps ?? null,
@@ -23,13 +33,14 @@ function normalize(provider, source) {
   }
 }
 
-export function createHeaderContributionRegistry({ hasPermission = () => true } = {}) {
+export function createHeaderContributionRegistry({ hasPermission = () => false, isTrustedContext = () => true } = {}) {
   const entries = new Map()
   const signal = reactive({ version: 0 })
   const touch = () => { signal.version += 1 }
 
   function evaluate(entry, context = {}) {
-    if (entry.permission && !hasPermission(entry.permission)) return false
+    if (!isTrustedContext()) return false
+    if (entry.permissions.some((permission) => !hasPermission(permission))) return false
     if (!entry.visible) return true
     try { return entry.visible(context) !== false } catch { return false }
   }
@@ -55,11 +66,12 @@ export function createHeaderContributionRegistry({ hasPermission = () => true } 
       .map((entry) => ({ ...entry, resolvedProps: resolveProps(entry, context) }))
   }
 
-  function forModule(provider) {
+  function forModule(provider, defaults = {}) {
     const owned = new Set()
+    const moduleDefaults = { permissions: asPermissionList(defaults.permissions) }
     return Object.freeze({
       register(source) {
-        const entry = normalize(provider, source)
+        const entry = normalize(provider, source, moduleDefaults)
         const existing = entries.get(entry.id)
         if (existing && existing.provider !== provider) throw new Error(`header contribution ${entry.id} is already owned by ${existing.provider}`)
         entries.set(entry.id, entry)
