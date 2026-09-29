@@ -29,7 +29,7 @@ export default {
 - Core owns placement on the Tec-Tac login screen.
 - Public modules may initiate SSO only. They **must not own `/account/provider/callback`**, exchange `/accounts/ssoproviders/token/`, receive a Tactical access token, or inspect Tactical/Django authentication storage.
 - Tactical/allauth must return the browser to `/account/provider/callback`. The Tec-Tac nginx integration redirects that exact callback to `#/sso/callback`.
-- The Core callback exchanges Tactical's pending SSO session using the browser's session cookie and CSRF token, stores the returned Knox token, verifies it, then crosses `/api/tfd/ui/context/` before loading the operational shell. That establishes the normal Tec-Tac session-security/audit boundary.
+- The Core callback exchanges Tactical's pending SSO session using the browser's session cookie and CSRF token, stores the returned Knox token, verifies it, then crosses `/api/tfd/ui/context/` before loading the operational shell. That establishes the normal Tec-Tac session-security boundary and creates the standard `session_created` audit row for a new trusted session.
 - SSO accounts follow Tactical's SSO MFA model: the external identity provider owns their MFA lifecycle; Tec-Tac's local-TOTP enrollment gate is not substituted for it.
 - `begin()` receives navigation context only; it never receives Tactical credentials, authenticated Core context, CSRF values or tokens.
 - Optional synchronous `visible(context)` may hide a provider when the module knows it is unavailable.
