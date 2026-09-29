@@ -1,6 +1,7 @@
 <script setup>
 import { computed, inject, onMounted, ref } from 'vue'
 import { downloadDeveloperContracts, getDeveloperContracts } from '../contracts'
+import { browserContractRows } from '../public-contract-browser'
 
 const contextActions=inject('tecTacContextActions', null)
 const contextInteractions=inject('tecTacContextInteractions', null)
@@ -15,6 +16,7 @@ const moduleStatusRows=computed(()=>modules?.list?.() || [])
 const q=computed(()=>query.value.trim().toLowerCase())
 const match=(...values)=>!q.value||values.some(v=>String(v??'').toLowerCase().includes(q.value))
 const core=computed(()=>(data.value?.core||[]).filter(x=>match(x.area,x.import_path,x.name,x.purpose,x.audience)))
+const browser=computed(()=>browserContractRows(data.value, query.value))
 const caps=computed(()=>(data.value?.capabilities||[]).filter(x=>match(x.id,x.module_id,x.capability_version,x.state,x.description,(x.operations||[]).join(' '))))
 const actions=computed(()=>(data.value?.scheduler_actions||[]).filter(x=>match(x.id,x.module_id,x.label,x.description,x.permission,(x.target_types||[]).join(' '))))
 const permissions=computed(()=>(data.value?.permissions||[]).filter(x=>match(x.id,x.version,(x.permissions||[]).join(' '))))
@@ -44,6 +46,10 @@ onMounted(refresh)
 
     <div class="section-divider">Core Python contracts</div>
     <div class="tablewrap"><table><thead><tr><th>Area</th><th>Import</th><th>Function / signature</th><th>Audience</th><th>Purpose</th></tr></thead><tbody><tr v-for="item in core" :key="item.import_path+item.name"><td class="mono">{{item.area}}</td><td class="mono">{{item.import_path}}</td><td><b class="mono">{{item.name}}{{item.signature||'()'}}</b></td><td>{{item.audience}}</td><td>{{item.purpose}}</td></tr><tr v-if="!core.length"><td colspan="5" class="muted">No core contracts match the current search.</td></tr></tbody></table></div>
+
+    <div class="section-divider">Browser / UI module contracts</div>
+    <div class="callout contract-rules"><b>Stable browser API</b><span>These services are supplied by the Tec-Tac UI runtime even when no provider module has registered a live contribution yet. Use the canonical docs for descriptor shapes and lifecycle rules.</span></div>
+    <div class="tablewrap"><table><thead><tr><th>Contract</th><th>Phase</th><th>Service</th><th>Operations</th><th>Audience</th><th>Canonical docs</th><th>Purpose</th></tr></thead><tbody><tr v-for="item in browser" :key="item.id"><td><b class="mono">{{item.id}}</b></td><td><span class="pill">{{item.phase}}</span></td><td class="mono">{{item.service}}</td><td class="mono contract-wrap">{{(item.operations||[]).join(', ')||'—'}}</td><td>{{item.audience}}</td><td class="mono contract-wrap">{{item.docs}}</td><td>{{item.purpose}}</td></tr><tr v-if="!browser.length"><td colspan="7" class="muted">No browser contracts match the current search.</td></tr></tbody></table></div>
 
     <div class="section-divider">Registered capabilities</div>
     <div class="tablewrap"><table><thead><tr><th>Capability</th><th>Provider</th><th>Contract</th><th>Package</th><th>Operations</th><th>State</th></tr></thead><tbody><tr v-for="item in caps" :key="item.id"><td><b class="mono">{{item.id}}</b><span class="sub">{{item.description||'No description'}}</span><details v-if="item.metadata&&Object.keys(item.metadata).length" class="contract-meta"><summary>Published metadata</summary><pre>{{JSON.stringify(item.metadata,null,2)}}</pre></details></td><td class="mono">{{item.module_id}}</td><td class="mono">{{item.capability_version||'—'}}</td><td class="mono">{{item.installed_version||'—'}}</td><td class="mono">{{(item.operations||[]).join(', ')||'—'}}</td><td><span class="pill" :class="stateClass(item.state)">{{item.state}}</span><span v-if="item.reason" class="sub dangertext">{{item.reason}}</span></td></tr><tr v-if="!caps.length"><td colspan="6" class="muted">No registered capabilities match the current search.</td></tr></tbody></table></div>

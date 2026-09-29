@@ -1,5 +1,7 @@
-# Fixing / review notes — UI 0.12.63
+# Fixing / review notes — UI 0.12.64
 
+
+Module-development readiness: Public Contracts now renders Core's static browser/UI runtime catalog separately from live provider registrations, with behavioral filtering coverage. Regression: `tests/browser-contract-catalog-0.12.64.mjs`.
 
 Tracker closure focus: D2, D3 and F1-F10. Replaces remaining source-wiring assertions with production workflow/consumer behavior tests and raises the Core floor to 1.15.169 for module-readable Tactical UI context.
 # Fixing 0.12.61
