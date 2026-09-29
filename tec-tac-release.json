@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.60",
+  "version": "0.12.61",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -19,7 +19,7 @@
     {
       "path": "FIXING.md",
       "size": 731,
-      "sha256": "82aa5a0b49dea4a13642a1740abce299d8dabf51cefe4dca8f10ca0a3493c6a9"
+      "sha256": "b2553b97b1c8deb7cc4e89dfd97fa425f3b7ec73ff7e57f87084d40bdc188b8e"
     },
     {
       "path": "LICENSE",
@@ -32,14 +32,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.60.md",
-      "size": 677,
-      "sha256": "42a0e66599bfe070b0b2ba4d8d4b04a5c0004e99e2ccbc2d0cc8f6e07aecf74f"
+      "path": "RELEASE_NOTES_0.12.61.md",
+      "size": 802,
+      "sha256": "bf57fc2198a1cbde3bf0270493ffb68529c929ebbad1f1a0752aaf32c14f89ed"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "2c571764015f4c4268d0ef34fba5f857939f3948458ff25952ea5adbbb768f75"
+      "sha256": "330900d039c35e1182b5ea6e5afd847763ecb7e7f0bb1aafcb223f88a75253cf"
     },
     {
       "path": "docs/context-actions.md",
@@ -487,6 +487,11 @@
       "sha256": "28d39a76eeec9bacfd5a0e24f63cecaff46d0da776e84ef31a4def39ab8aecac"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.60.md",
+      "size": 677,
+      "sha256": "42a0e66599bfe070b0b2ba4d8d4b04a5c0004e99e2ccbc2d0cc8f6e07aecf74f"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.7.md",
       "size": 578,
       "sha256": "cea6a69c99e8f715e8841a9787c7e486fe2d560b8fd9f39c4fbf0d42f9320093"
@@ -649,12 +654,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "956bb4efec8d41658b9c6823aad15b65c8dac107cad3ecf0a2780da1c8adfee2"
+      "sha256": "ad37235a25920f1b4be8cb772c89720ecb7edd0aed6726234b1bee948616bb8f"
     },
     {
       "path": "package.json",
-      "size": 1580,
-      "sha256": "a6c4355a08ce97288b2a2a963ab9bebc1dcc14aaa6a646ca8473d07cba70f516"
+      "size": 1624,
+      "sha256": "f3b5559ce4de592fc236e01207f85026a4ea91715dd64dc7f18299a5ec589125"
     },
     {
       "path": "public/modules/modules.json",
@@ -718,8 +723,8 @@
     },
     {
       "path": "src/api.js",
-      "size": 20293,
-      "sha256": "c84b2d74d04a436abfd04f757d09b140d998bbfcf4e77f5c2e0d9a5b0c8d6bd8"
+      "size": 21424,
+      "sha256": "42e6d666026726638cbba30c056f77bab7893830a9e6b258442aefa4c4609b2a"
     },
     {
       "path": "src/audit.js",
@@ -1123,8 +1128,8 @@
     },
     {
       "path": "src/views/ResourcesView.vue",
-      "size": 15656,
-      "sha256": "5a835ed91d8f3d3e7b3c203c17a331a3f13d294cbfc3561a087d2a11784e0370"
+      "size": 24029,
+      "sha256": "a9d2b2dceb4957683a8d6fcf33f884d0a755aced0a3e41871e480a99d626a26d"
     },
     {
       "path": "src/views/SchedulerSettingsView.vue",
@@ -1149,7 +1154,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "797b5b47fc5daa8f32d5325793fb05cdfc2641ac6c1e08c2050bcf5a5bf0e5e9"
+      "sha256": "8ff5ed8e9385f9adde7a1c671222c5c09452355326b33d1d4a9f506eaaedb4be"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1179,7 +1184,7 @@
     {
       "path": "tests/api-contract-routes-0.12.58-1.mjs",
       "size": 1632,
-      "sha256": "7bfb12c1065e9ce0cb41bb0995bbfd88a1ec17c4fa0ff238d1276e7e5f6acf1b"
+      "sha256": "eaab6e0fa5f12110b60f8a555a340955e258566f2ec4f9c76889aef26a7a4692"
     },
     {
       "path": "tests/api-raw.mjs",
@@ -1205,6 +1210,11 @@
       "path": "tests/fixtures/core-http-routes-1.15.162.json",
       "size": 4065,
       "sha256": "bc300ffdaa85b636342776036b3865716ddf1e964c05a3d91d78721dd6be7b34"
+    },
+    {
+      "path": "tests/fixtures/core-http-routes-1.15.168.json",
+      "size": 4329,
+      "sha256": "9a6c4c9405eaa658e24f91e4b9b6a56f527e6047dad7d18cf27195433019cb40"
     },
     {
       "path": "tests/foundation.sh",
@@ -1260,6 +1270,11 @@
       "path": "tests/release-workflow-lockfile.sh",
       "size": 2061,
       "sha256": "876d71a4c8fad5f9122d1f54c1fd3777a8f8494ad74873b984cf1eb01f1d9847"
+    },
+    {
+      "path": "tests/resource-features-0.12.61.mjs",
+      "size": 1930,
+      "sha256": "d9b30ff205ac3875e65db15cc371029b48148a2184ba8825c03c7083938b2663"
     },
     {
       "path": "tests/scheduler-history-pagination-ui.sh",

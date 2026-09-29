@@ -532,6 +532,31 @@ export async function updateResourceSite(siteId, { clientId, name }) {
   })
 }
 
+export async function deleteResourceClient(clientId, { moveToSiteId = null } = {}) {
+  return apiFetch(`/api/tfd/resources/clients/${clientId}/`, {
+    method: 'DELETE',
+    body: JSON.stringify(moveToSiteId ? { move_to_site_id: moveToSiteId } : {}),
+  })
+}
+
+export async function deleteResourceSite(siteId, { moveToSiteId = null } = {}) {
+  return apiFetch(`/api/tfd/resources/sites/${siteId}/`, {
+    method: 'DELETE',
+    body: JSON.stringify(moveToSiteId ? { move_to_site_id: moveToSiteId } : {}),
+  })
+}
+
+export async function getResourceCustomFields(resourceType, resourceId) {
+  if (resourceType === 'client') return apiFetch(`/api/tfd/resources/clients/${resourceId}/custom-fields/`)
+  return apiFetch(`/api/tfd/resources/sites/${resourceId}/custom-fields/`)
+}
+
+export async function updateResourceCustomFields(resourceType, resourceId, values) {
+  const options = { method: 'PATCH', body: JSON.stringify({ values }) }
+  if (resourceType === 'client') return apiFetch(`/api/tfd/resources/clients/${resourceId}/custom-fields/`, options)
+  return apiFetch(`/api/tfd/resources/sites/${resourceId}/custom-fields/`, options)
+}
+
 
 export async function getBackupRestoreDestinations() {
   return apiFetch('/api/tfd/system/backups/restore/')

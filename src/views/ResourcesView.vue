@@ -3,9 +3,13 @@ import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   createResourceClient,
   createResourceSite,
+  deleteResourceClient,
+  deleteResourceSite,
+  getResourceCustomFields,
   listResourceClients,
   listResourceSites,
   updateResourceClient,
+  updateResourceCustomFields,
   updateResourceSite,
 } from '../api'
 import { createResourceSiteSearchCoordinator } from '../resource-site-search-state'
@@ -38,6 +42,8 @@ const siteClientSearch = ref('')
 const siteClientOptions = ref([])
 const loadingSiteClientOptions = ref(false)
 const saving = ref(false)
+const deleteDialog = ref(null)
+const customFieldDialog = ref(null)
 
 const selectedClient = computed(() => clients.value.find((x) => x.id === selectedClientId.value) || null)
 
@@ -201,6 +207,106 @@ async function saveSite() {
   } finally { saving.value = false }
 }
 
+async function loadAllSites(clientId = null) {
+  const rows = []
+  let page = 1
+  while (true) {
+    const payload = await listResourceSites({ clientId, page, pageSize: 100 })
+    rows.push(...(Array.isArray(payload?.items) ? payload.items : []))
+    const pages = Number(payload?.pages || 0)
+    if (!pages || page >= pages) break
+    page += 1
+  }
+  return rows
+}
+
+async function openDeleteClient(client) {
+  error.value = ''
+  deleteDialog.value = { type: 'client', row: client, destination_site_id: '', sites: [], loading: true }
+  try {
+    const all = await loadAllSites()
+    if (!deleteDialog.value || deleteDialog.value.row.id !== client.id) return
+    deleteDialog.value.sites = all.filter((site) => site.client_id !== client.id)
+  } catch (e) {
+    error.value = message(e, 'Unable to load relocation sites.')
+    deleteDialog.value = null
+  } finally {
+    if (deleteDialog.value?.row.id === client.id) deleteDialog.value.loading = false
+  }
+}
+
+async function openDeleteSite(site) {
+  error.value = ''
+  deleteDialog.value = { type: 'site', row: site, destination_site_id: '', sites: [], loading: true }
+  try {
+    const all = await loadAllSites(site.client_id)
+    if (!deleteDialog.value || deleteDialog.value.row.id !== site.id) return
+    deleteDialog.value.sites = all.filter((candidate) => candidate.id !== site.id)
+  } catch (e) {
+    error.value = message(e, 'Unable to load relocation sites.')
+    deleteDialog.value = null
+  } finally {
+    if (deleteDialog.value?.row.id === site.id) deleteDialog.value.loading = false
+  }
+}
+
+async function confirmDeleteResource() {
+  const draft = deleteDialog.value
+  if (!draft) return
+  saving.value = true
+  error.value = ''
+  notice.value = ''
+  try {
+    const moveToSiteId = draft.destination_site_id ? Number(draft.destination_site_id) : null
+    const result = draft.type === 'client'
+      ? await deleteResourceClient(draft.row.id, { moveToSiteId })
+      : await deleteResourceSite(draft.row.id, { moveToSiteId })
+    const moved = Number(result?.moved_agents || 0)
+    notice.value = `${draft.type === 'client' ? 'Client' : 'Site'} deleted. ${moved} agent${moved === 1 ? '' : 's'} moved.`
+    const deletedClientId = draft.type === 'client' ? draft.row.id : null
+    deleteDialog.value = null
+    if (deletedClientId && selectedClientId.value === deletedClientId) selectedClientId.value = null
+    await loadClients()
+    await loadSites()
+  } catch (e) {
+    error.value = message(e, `Unable to delete ${draft.type}.`)
+  } finally { saving.value = false }
+}
+
+async function openCustomFields(resourceType, row) {
+  error.value = ''
+  customFieldDialog.value = { resourceType, row, fields: [], loading: true }
+  try {
+    const payload = await getResourceCustomFields(resourceType, row.id)
+    if (!customFieldDialog.value || customFieldDialog.value.row.id !== row.id || customFieldDialog.value.resourceType !== resourceType) return
+    customFieldDialog.value.fields = (payload?.fields || []).map((field) => ({
+      ...field,
+      value: Array.isArray(field.value) ? [...field.value] : field.value,
+    }))
+  } catch (e) {
+    error.value = message(e, 'Unable to load custom fields.')
+    customFieldDialog.value = null
+  } finally {
+    if (customFieldDialog.value?.row.id === row.id && customFieldDialog.value.resourceType === resourceType) customFieldDialog.value.loading = false
+  }
+}
+
+async function saveCustomFields() {
+  const draft = customFieldDialog.value
+  if (!draft) return
+  saving.value = true
+  error.value = ''
+  notice.value = ''
+  try {
+    const values = draft.fields.map((field) => ({ field_id: field.field_id, value: field.value }))
+    await updateResourceCustomFields(draft.resourceType, draft.row.id, values)
+    notice.value = `${draft.resourceType === 'client' ? 'Client' : 'Site'} custom fields updated.`
+    customFieldDialog.value = null
+  } catch (e) {
+    error.value = message(e, 'Unable to save custom fields.')
+  } finally { saving.value = false }
+}
+
 function changeClientPage(next) {
   if (next < 1 || next > clientPages.value || next === clientPage.value) return
   clientPage.value = next
@@ -262,7 +368,7 @@ onBeforeUnmount(() => {
         <div v-if="loadingClients && !clients.length" class="state-inline">Loading clients…</div>
         <div v-else-if="!clients.length" class="empty">No clients match the current scope and search.</div>
         <div v-else class="tablewrap resource-table"><table><thead><tr><th>Client</th><th>ID</th><th></th></tr></thead><tbody>
-          <tr v-for="client in clients" :key="client.id" class="clickrow" :class="{selected:selectedClientId===client.id}" @click="chooseClient(client.id)"><td><b>{{client.name}}</b></td><td class="mono">{{client.id}}</td><td><button v-if="canManageClients" class="btn sm" @click.stop="openEditClient(client)">Edit</button></td></tr>
+          <tr v-for="client in clients" :key="client.id" class="clickrow" :class="{selected:selectedClientId===client.id}" @click="chooseClient(client.id)"><td><b>{{client.name}}</b></td><td class="mono">{{client.id}}</td><td><div v-if="canManageClients" class="row resource-actions"><button class="btn sm" @click.stop="openEditClient(client)">Edit</button><button class="btn sm" @click.stop="openCustomFields('client', client)">Fields</button><button class="btn sm danger" @click.stop="openDeleteClient(client)">Delete</button></div></td></tr>
         </tbody></table></div>
         <div v-if="clientPages>1" class="resource-pager"><span class="muted mono">Page {{clientPage}} / {{clientPages}}</span><div class="row"><button class="btn sm" :disabled="clientPage<=1||loadingClients" @click="changeClientPage(clientPage-1)">Previous</button><button class="btn sm" :disabled="clientPage>=clientPages||loadingClients" @click="changeClientPage(clientPage+1)">Next</button></div></div>
       </section>
@@ -274,7 +380,7 @@ onBeforeUnmount(() => {
         <div v-else-if="!selectedClient" class="empty">Select a client to inspect its sites.</div>
         <div v-else-if="!sites.length" class="empty">No sites match this client and search.</div>
         <div v-else class="tablewrap resource-table"><table><thead><tr><th>Site</th><th>ID</th><th></th></tr></thead><tbody>
-          <tr v-for="site in sites" :key="site.id"><td><b>{{site.name}}</b></td><td class="mono">{{site.id}}</td><td><button v-if="canManageSites" class="btn sm" @click="openEditSite(site)">Edit</button></td></tr>
+          <tr v-for="site in sites" :key="site.id"><td><b>{{site.name}}</b></td><td class="mono">{{site.id}}</td><td><div v-if="canManageSites" class="row resource-actions"><button class="btn sm" @click="openEditSite(site)">Edit</button><button class="btn sm" @click="openCustomFields('site', site)">Fields</button><button class="btn sm danger" @click="openDeleteSite(site)">Delete</button></div></td></tr>
         </tbody></table></div>
         <div v-if="sitePages>1" class="resource-pager"><span class="muted mono">Page {{sitePage}} / {{sitePages}}</span><div class="row"><button class="btn sm" :disabled="sitePage<=1||loadingSites" @click="changeSitePage(sitePage-1)">Previous</button><button class="btn sm" :disabled="sitePage>=sitePages||loadingSites" @click="changeSitePage(sitePage+1)">Next</button></div></div>
       </section>
@@ -299,9 +405,39 @@ onBeforeUnmount(() => {
         <div class="modal-actions"><button class="btn" :disabled="saving" @click="siteDialog=null">Cancel</button><button class="btn primary" :disabled="saving||!siteDialog.name.trim()||!siteDialog.client_id" @click="saveSite">{{saving?'Saving…':'Save site'}}</button></div>
       </section>
     </div>
+
+    <div v-if="deleteDialog" class="modal-backdrop" @click.self="deleteDialog=null">
+      <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="resource-delete-title">
+        <div class="cardhead"><div><span class="eyebrow">DELETE {{deleteDialog.type.toUpperCase()}}</span><h3 id="resource-delete-title">{{deleteDialog.row.name}}</h3></div></div>
+        <div class="auth-error mb"><b>This is destructive.</b> The resource is deleted from Tactical after any required agent relocation completes.</div>
+        <label class="field"><span>Move agents to</span><select v-model="deleteDialog.destination_site_id" :disabled="deleteDialog.loading"><option value="">No destination — valid only when there are no agents</option><option v-for="site in deleteDialog.sites" :key="site.id" :value="String(site.id)">{{site.name}} · site {{site.id}}<template v-if="deleteDialog.type==='client'"> · client {{site.client_id}}</template></option></select></label>
+        <p v-if="deleteDialog.type==='site'" class="muted compact-copy">Site deletion only allows relocation to another site under the same client. Core refuses deletion of a client's last site.</p>
+        <p v-else class="muted compact-copy">If agents exist under this client, choose a site belonging to a different client. Core moves all agents atomically before deleting the client.</p>
+        <div class="modal-actions"><button class="btn" :disabled="saving" @click="deleteDialog=null">Cancel</button><button class="btn danger" :disabled="saving||deleteDialog.loading" @click="confirmDeleteResource">{{saving?'Deleting…':'Delete permanently'}}</button></div>
+      </section>
+    </div>
+
+    <div v-if="customFieldDialog" class="modal-backdrop" @click.self="customFieldDialog=null">
+      <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="custom-fields-title">
+        <div class="cardhead"><div><span class="eyebrow">CUSTOM FIELDS</span><h3 id="custom-fields-title">{{customFieldDialog.row.name}}</h3><p>Values are stored in Tactical. Hidden custom-field definitions are not exposed here.</p></div></div>
+        <div v-if="customFieldDialog.loading" class="state-inline">Loading custom fields…</div>
+        <div v-else-if="!customFieldDialog.fields.length" class="empty">No editable custom fields are configured for this resource type.</div>
+        <div v-else class="custom-field-list">
+          <label v-for="field in customFieldDialog.fields" :key="field.field_id" class="field">
+            <span>{{field.name}} <small v-if="field.required">· required</small></span>
+            <input v-if="field.type==='checkbox'" v-model="field.value" type="checkbox">
+            <select v-else-if="field.type==='single'" v-model="field.value"><option value="">—</option><option v-for="option in field.options" :key="option" :value="option">{{option}}</option></select>
+            <select v-else-if="field.type==='multiple'" v-model="field.value" multiple><option v-for="option in field.options" :key="option" :value="option">{{option}}</option></select>
+            <input v-else-if="field.type==='number'" v-model="field.value" type="number" step="any">
+            <input v-else v-model="field.value" type="text" :placeholder="field.type==='datetime'?'Tactical date/time value':''">
+          </label>
+        </div>
+        <div class="modal-actions"><button class="btn" :disabled="saving" @click="customFieldDialog=null">Cancel</button><button class="btn primary" :disabled="saving||customFieldDialog.loading" @click="saveCustomFields">{{saving?'Saving…':'Save fields'}}</button></div>
+      </section>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.resources-grid{align-items:start}.resource-pane{min-width:0}.resource-table{max-height:62vh;overflow:auto}.resource-table table{width:100%}.resource-table tr.selected td{background:var(--surface-hover)}.resource-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}.resource-pager .row{margin:0}
+.resources-grid{align-items:start}.resource-pane{min-width:0}.resource-table{max-height:62vh;overflow:auto}.resource-table table{width:100%}.resource-table tr.selected td{background:var(--surface-hover)}.resource-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}.resource-pager .row{margin:0}.resource-actions{flex-wrap:nowrap;justify-content:flex-end}.custom-field-list{display:grid;gap:12px;max-height:55vh;overflow:auto;padding-right:4px}.custom-field-list select[multiple]{min-height:110px}
 </style>

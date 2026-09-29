@@ -1,4 +1,4 @@
-# Fixing 0.12.60
+# Fixing 0.12.61
 
 - Final D2/D3 behavioral closure: the Backup & Restore view consumes the tested recovery review model for identity and downgrade confirmation copy.
 

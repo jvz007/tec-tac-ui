@@ -1,7 +1,7 @@
 import fs from 'node:fs'
 import assert from 'node:assert/strict'
 const api=fs.readFileSync(new URL('../src/api.js', import.meta.url),'utf8')
-const fixture=JSON.parse(fs.readFileSync(new URL('./fixtures/core-http-routes-1.15.162.json', import.meta.url),'utf8'))
+const fixture=JSON.parse(fs.readFileSync(new URL('./fixtures/core-http-routes-1.15.168.json', import.meta.url),'utf8'))
 const manifest=JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url),'utf8'))
 const frameworkRange=manifest.requires['tec-tac-framework']
 const minMatch=/^>=(\d+)\.(\d+)\.(\d+),<2\.0\.0$/.exec(frameworkRange)
