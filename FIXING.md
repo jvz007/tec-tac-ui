@@ -1,3 +1,5 @@
+Tracker acceptance consolidation: one browser acceptance runner for D2/D3 and F1/F2/F4-F10; no new product behavior.
+
 # Fixing / review notes — UI 0.12.66
 
 Tracker done-when evidence: dedicated production-boundary regressions for F1/F2/F4-F10 while retaining the 0.12.65 D2/D3 production restore workflow coverage.
