@@ -12,6 +12,7 @@ import { requestLeave } from './unsaved'
 import { preferenceState, updateUserPreferences } from './preferences'
 import { startSessionActivityTracking, stopSessionActivityTracking } from './session-security'
 import { coreNavigation, DEFAULT_SECTION_ORDER } from './core-navigation'
+import { appHeaderItems } from './extension-surface-workflows'
 
 const route = useRoute()
 const router = useRouter()
@@ -131,7 +132,7 @@ const currentTitle = computed(() => route.meta.title || visibleNav.value.find((i
 const quickPins = computed(() => quickActions?.listPins?.() || [])
 const topQuickPins = computed(() => quickPins.value.slice(0, 6))
 const quickOverflowCount = computed(() => Math.max(0, quickPins.value.length - topQuickPins.value.length))
-const headerItems = computed(() => header?.list?.({ route, state, user: state.context.user || {} }) || [])
+const headerItems = computed(() => appHeaderItems(header, { route, state, user: state.context.user || {} }))
 
 const accountStatus = computed(() => {
   if (state.authStatus === 'verifying') return 'VERIFYING'

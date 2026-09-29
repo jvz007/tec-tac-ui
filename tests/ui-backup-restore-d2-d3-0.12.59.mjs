@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict'
-import fs from 'node:fs'
-import { restoreConfirmationState } from '../src/backup-restore-state.js'
+import { restoreConfirmationState, restoreReviewRows, canStartRestore } from '../src/backup-restore-state.js'
 
 const validated = restoreConfirmationState({
   ok: true,
@@ -31,15 +30,15 @@ const notReady = restoreConfirmationState({ ok: false })
 assert.equal(notReady.ready, false)
 assert.equal(notReady.review.downgradeHeadline, '')
 
-// The SFC consumes the behavioral review model rather than rebuilding identity
-// or downgrade copy itself. That keeps the tested state and displayed state one path.
-const view = fs.readFileSync(new URL('../src/views/BackupRestoreView.vue', import.meta.url), 'utf8')
-assert.match(view, /const review = computed\(\(\) => confirmationState\.value\.review\)/)
-assert.match(view, /review\.sourceServerName/)
-assert.match(view, /review\.installationId/)
-assert.match(view, /review\.signerFingerprint/)
-assert.match(view, /review\.downgradeHeadline/)
-assert.match(view, /:disabled="!canRestore"/)
-assert.match(view, /validationJobId/)
+const rows = restoreReviewRows(validated)
+assert.deepEqual(rows.map((row) => [row.id, row.value]), [
+  ['server_name', 'old-rmm'],
+  ['installation_id', 'install-old'],
+  ['signer_key', 'old-key'],
+  ['signer_fingerprint', 'deadbeef'],
+])
+assert.equal(canStartRestore({ confirmationState: validated, selectedBackup: { backup_ref: 'b1' }, selectedDestination: { id: 'd1' }, busy: false, validationJobId: 'job-1' }), true)
+assert.equal(canStartRestore({ confirmationState: validated, selectedBackup: { backup_ref: 'b1' }, selectedDestination: { id: 'd1' }, busy: false, validationJobId: '' }), false)
+assert.equal(canStartRestore({ confirmationState: notReady, selectedBackup: { backup_ref: 'b1' }, selectedDestination: { id: 'd1' }, busy: false, validationJobId: 'job-1' }), false)
 
 console.log('ui backup restore D2/D3 behavioral review model 0.12.59: PASS')

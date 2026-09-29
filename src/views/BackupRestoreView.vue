@@ -7,7 +7,7 @@ import {
   startRestoreValidation,
   startServerRestore,
 } from '../api'
-import { restoreConfirmationState } from '../backup-restore-state'
+import { restoreConfirmationState, restoreReviewRows, canStartRestore } from '../backup-restore-state'
 
 const loading = ref(true)
 const busy = ref(false)
@@ -28,7 +28,8 @@ const selectedBackup = computed(() => backups.value.find((item) => item.backup_r
 const selectedDestination = computed(() => destinations.value.find((item) => item.id === selectedDestinationId.value) || null)
 const confirmationState = computed(() => restoreConfirmationState(validation.value))
 const versionTransition = computed(() => confirmationState.value.transition)
-const canRestore = computed(() => Boolean(confirmationState.value.ready && selectedBackup.value && selectedDestination.value && !busy.value))
+const reviewRows = computed(() => restoreReviewRows(confirmationState.value))
+const canRestore = computed(() => canStartRestore({ confirmationState: confirmationState.value, selectedBackup: selectedBackup.value, selectedDestination: selectedDestination.value, busy: busy.value, validationJobId: validationJobId.value }))
 const downgradeNotice = computed(() => confirmationState.value.downgradeNotice)
 const review = computed(() => confirmationState.value.review)
 
@@ -141,10 +142,7 @@ onBeforeUnmount(() => { stopped = true; if (pollTimer) clearTimeout(pollTimer) }
     <section v-if="validation" class="card mb">
       <div class="cardhead"><div><span class="eyebrow">VALIDATION</span><h3>Restore identity & transition</h3></div><span class="pill" :class="validation.ok ? 'ok' : 'warn'">{{ validation.ok ? 'READY' : 'NOT READY' }}</span></div>
       <div class="grid g4 mb">
-        <article class="tile"><div class="lbl">Server name</div><div class="big compact">{{ review.sourceServerName || '—' }}</div><div class="brk">source server</div></article>
-        <article class="tile"><div class="lbl">Installation ID</div><div class="big compact mono">{{ review.installationId || '—' }}</div><div class="brk">source installation</div></article>
-        <article class="tile"><div class="lbl">Signer key</div><div class="big compact mono">{{ review.signerKeyId || '—' }}</div><div class="brk">recovery signer</div></article>
-        <article class="tile"><div class="lbl">Signer fingerprint</div><div class="big compact mono">{{ review.signerFingerprint || '—' }}</div><div class="brk">SHA-256</div></article>
+        <article v-for="item in reviewRows" :key="item.id" class="tile"><div class="lbl">{{ item.label }}</div><div class="big compact" :class="{mono:item.id!=='server_name'}">{{ item.value }}</div><div class="brk">{{ item.hint }}</div></article>
       </div>
       <div v-if="versionTransition" class="state-inline" :class="versionTransition.is_core_downgrade ? 'warning' : ''"><b>Core {{ versionTransition.current_core_version || 'current' }} → {{ versionTransition.restored_core_version || 'backup version' }}</b><span v-if="versionTransition.notice">{{ versionTransition.notice }}</span></div>
       <div v-if="downgradeNotice" class="state-inline warning" role="alert"><b>Downgrade warning:</b> {{ downgradeNotice }}</div>

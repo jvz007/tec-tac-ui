@@ -1,5 +1,7 @@
-# Fixing / review notes — UI 0.12.62
+# Fixing / review notes — UI 0.12.63
 
+
+Tracker closure focus: D2, D3 and F1-F10. Replaces remaining source-wiring assertions with production workflow/consumer behavior tests and raises the Core floor to 1.15.169 for module-readable Tactical UI context.
 # Fixing 0.12.61
 
 - Final D2/D3 behavioral closure: the Backup & Restore view consumes the tested recovery review model for identity and downgrade confirmation copy.

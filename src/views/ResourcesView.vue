@@ -13,6 +13,8 @@ import {
   updateResourceSite,
 } from '../api'
 import { createResourceSiteSearchCoordinator } from '../resource-site-search-state'
+import { loadRelocationSites, deleteResourceWorkflow, editableCustomFieldRows, saveCustomFieldsWorkflow } from '../resource-feature-workflows'
+import { resourceContextMenuActions, executeResourceContextMenuAction } from '../extension-surface-workflows'
 
 const PAGE_SIZE = 50
 const state = inject('tecTacState')
@@ -50,22 +52,8 @@ const moduleActionBusyId = ref('')
 const selectedClient = computed(() => clients.value.find((x) => x.id === selectedClientId.value) || null)
 
 
-function moduleActionContext(resourceType, row) {
-  return {
-    resource_type: resourceType,
-    resource: row,
-    [resourceType]: row,
-    selection: [row],
-  }
-}
-
 function moduleActions(resourceType, row) {
-  if (!contextActions?.list) return []
-  return contextActions.list({
-    resource: resourceType,
-    placement: `${resourceType}.context-menu`,
-    context: moduleActionContext(resourceType, row),
-  })
+  return resourceContextMenuActions(contextActions, resourceType, row)
 }
 
 async function runModuleAction(action, resourceType, row) {
@@ -75,7 +63,7 @@ async function runModuleAction(action, resourceType, row) {
   notice.value = ''
   moduleActionBusyId.value = action.id
   try {
-    await contextActions.execute(action.id, moduleActionContext(resourceType, row))
+    await executeResourceContextMenuAction(contextActions, action, resourceType, row)
   } catch (e) {
     error.value = message(e, `Unable to run ${action.label}.`)
   } finally {
@@ -242,26 +230,13 @@ async function saveSite() {
   } finally { saving.value = false }
 }
 
-async function loadAllSites(clientId = null) {
-  const rows = []
-  let page = 1
-  while (true) {
-    const payload = await listResourceSites({ clientId, page, pageSize: 100 })
-    rows.push(...(Array.isArray(payload?.items) ? payload.items : []))
-    const pages = Number(payload?.pages || 0)
-    if (!pages || page >= pages) break
-    page += 1
-  }
-  return rows
-}
-
 async function openDeleteClient(client) {
   error.value = ''
   deleteDialog.value = { type: 'client', row: client, destination_site_id: '', sites: [], loading: true }
   try {
-    const all = await loadAllSites()
+    const all = await loadRelocationSites({ listResourceSites, excludeClientId: client.id })
     if (!deleteDialog.value || deleteDialog.value.row.id !== client.id) return
-    deleteDialog.value.sites = all.filter((site) => site.client_id !== client.id)
+    deleteDialog.value.sites = all
   } catch (e) {
     error.value = message(e, 'Unable to load relocation sites.')
     deleteDialog.value = null
@@ -274,9 +249,9 @@ async function openDeleteSite(site) {
   error.value = ''
   deleteDialog.value = { type: 'site', row: site, destination_site_id: '', sites: [], loading: true }
   try {
-    const all = await loadAllSites(site.client_id)
+    const all = await loadRelocationSites({ listResourceSites, clientId: site.client_id, excludeSiteId: site.id })
     if (!deleteDialog.value || deleteDialog.value.row.id !== site.id) return
-    deleteDialog.value.sites = all.filter((candidate) => candidate.id !== site.id)
+    deleteDialog.value.sites = all
   } catch (e) {
     error.value = message(e, 'Unable to load relocation sites.')
     deleteDialog.value = null
@@ -292,13 +267,9 @@ async function confirmDeleteResource() {
   error.value = ''
   notice.value = ''
   try {
-    const moveToSiteId = draft.destination_site_id ? Number(draft.destination_site_id) : null
-    const result = draft.type === 'client'
-      ? await deleteResourceClient(draft.row.id, { moveToSiteId })
-      : await deleteResourceSite(draft.row.id, { moveToSiteId })
-    const moved = Number(result?.moved_agents || 0)
-    notice.value = `${draft.type === 'client' ? 'Client' : 'Site'} deleted. ${moved} agent${moved === 1 ? '' : 's'} moved.`
-    const deletedClientId = draft.type === 'client' ? draft.row.id : null
+    const result = await deleteResourceWorkflow(draft, { deleteResourceClient, deleteResourceSite })
+    notice.value = result.message
+    const deletedClientId = result.deletedClientId
     deleteDialog.value = null
     if (deletedClientId && selectedClientId.value === deletedClientId) selectedClientId.value = null
     await loadClients()
@@ -314,10 +285,7 @@ async function openCustomFields(resourceType, row) {
   try {
     const payload = await getResourceCustomFields(resourceType, row.id)
     if (!customFieldDialog.value || customFieldDialog.value.row.id !== row.id || customFieldDialog.value.resourceType !== resourceType) return
-    customFieldDialog.value.fields = (payload?.fields || []).map((field) => ({
-      ...field,
-      value: Array.isArray(field.value) ? [...field.value] : field.value,
-    }))
+    customFieldDialog.value.fields = editableCustomFieldRows(payload)
   } catch (e) {
     error.value = message(e, 'Unable to load custom fields.')
     customFieldDialog.value = null
@@ -333,9 +301,8 @@ async function saveCustomFields() {
   error.value = ''
   notice.value = ''
   try {
-    const values = draft.fields.map((field) => ({ field_id: field.field_id, value: field.value }))
-    await updateResourceCustomFields(draft.resourceType, draft.row.id, values)
-    notice.value = `${draft.resourceType === 'client' ? 'Client' : 'Site'} custom fields updated.`
+    const result = await saveCustomFieldsWorkflow(draft, { updateResourceCustomFields })
+    notice.value = result.message
     customFieldDialog.value = null
   } catch (e) {
     error.value = message(e, 'Unable to save custom fields.')

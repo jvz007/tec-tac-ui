@@ -33,3 +33,16 @@ export function restoreConfirmationState(validation) {
     },
   }
 }
+export function restoreReviewRows(state) {
+  const review = state?.review || {}
+  return [
+    { id: 'server_name', label: 'Server name', value: review.sourceServerName || '—', hint: 'source server' },
+    { id: 'installation_id', label: 'Installation ID', value: review.installationId || '—', hint: 'source installation' },
+    { id: 'signer_key', label: 'Signer key', value: review.signerKeyId || '—', hint: 'recovery signer' },
+    { id: 'signer_fingerprint', label: 'Signer fingerprint', value: review.signerFingerprint || '—', hint: 'SHA-256' },
+  ]
+}
+
+export function canStartRestore({ confirmationState, selectedBackup, selectedDestination, busy, validationJobId }) {
+  return Boolean(confirmationState?.ready && selectedBackup && selectedDestination && !busy && String(validationJobId || '').trim())
+}

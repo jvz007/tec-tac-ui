@@ -1,5 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
+import { changePasswordWorkflow, resetTotpWorkflow, revokeOthersWorkflow, saveTacticalUiWorkflow } from '../my-account-workflows'
 import { clearTacticalSession } from '../api'
 import {
   changeMyPassword,
@@ -40,36 +41,40 @@ async function load() {
 
 async function changePassword() {
   if (!password.current || !password.next) return
-  if (password.next !== password.confirm) { error.value = 'New password and confirmation do not match.'; return }
   busy.value = 'password'
   error.value = ''
   try {
-    const result = await changeMyPassword(password.current, password.next)
+    const result = await changePasswordWorkflow(password, { changeMyPassword })
     password.current = ''; password.next = ''; password.confirm = ''
-    flash(`Password changed. ${Number(result?.other_sessions_revoked || 0)} other session(s) signed out.`)
+    flash(result.message)
   } catch (err) { fail(err, 'Unable to change password.') }
   finally { busy.value = '' }
 }
 
 async function resetMfa() {
   if (!mfa.password || !mfa.code.trim()) return
-  if (!window.confirm('Reset your authenticator and sign out every active session? You will need to sign in and enrol two-factor authentication again.')) return
   busy.value = 'mfa'
   error.value = ''
   try {
-    await resetMyTotp(mfa.password, mfa.code.trim())
-    clearTacticalSession()
-    window.location.reload()
+    const result = await resetTotpWorkflow(mfa, {
+      resetMyTotp,
+      confirmReset: () => window.confirm('Reset your authenticator and sign out every active session? You will need to sign in and enrol two-factor authentication again.'),
+      clearSession: clearTacticalSession,
+      reload: () => window.location.reload(),
+    })
+    if (result.cancelled) busy.value = ''
   } catch (err) { fail(err, 'Unable to reset two-factor authentication.'); busy.value = '' }
 }
 
 async function revokeOthers() {
-  if (!window.confirm('Sign out every other active session for your account? Your current session will stay signed in.')) return
   busy.value = 'sessions'
   error.value = ''
   try {
-    const result = await revokeMyOtherSessions()
-    flash(`${Number(result?.revoked || 0)} other session(s) signed out.`)
+    const result = await revokeOthersWorkflow({
+      revokeMyOtherSessions,
+      confirmRevoke: () => window.confirm('Sign out every other active session for your account? Your current session will stay signed in.'),
+    })
+    if (!result.cancelled) flash(result.message)
   } catch (err) { fail(err, 'Unable to sign out other sessions.') }
   finally { busy.value = '' }
 }
@@ -78,12 +83,9 @@ async function saveTacticalUi() {
   busy.value = 'tactical'
   error.value = ''
   try {
-    const response = await saveMyTacticalUiPreferences({
-      agent_dblclick_action: tactical.agent_dblclick_action,
-      url_action_id: tactical.url_action_id || null,
-    })
-    data.value = { ...data.value, tactical_ui: response?.preferences || tacticalUi.value }
-    flash('Tactical UI preferences saved.')
+    const result = await saveTacticalUiWorkflow(tactical, { saveMyTacticalUiPreferences })
+    data.value = { ...data.value, tactical_ui: result.preferences || tacticalUi.value }
+    flash(result.message)
   } catch (err) { fail(err, 'Unable to save Tactical UI preferences.') }
   finally { busy.value = '' }
 }

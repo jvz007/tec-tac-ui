@@ -68,20 +68,22 @@ assert.equal(contextActions.list({ resource: 'site', placement: 'site.context-me
 halo.clear()
 assert.equal(contextActions.list({ resource: 'client', placement: 'client.context-menu' }).length, 0)
 
-// Consumer wiring: behavior above is useful only if Core-owned UI surfaces consume it.
-const loader = fs.readFileSync(new URL('../src/module-loader.js', import.meta.url), 'utf8')
-const login = fs.readFileSync(new URL('../src/components/LoginPanel.vue', import.meta.url), 'utf8')
-const app = fs.readFileSync(new URL('../src/App.vue', import.meta.url), 'utf8')
-const resources = fs.readFileSync(new URL('../src/views/ResourcesView.vue', import.meta.url), 'utf8')
-assert.match(loader, /ssoProviders: moduleSsoProviders/)
-assert.match(loader, /moduleSsoProviders\?\.clear/)
-assert.match(loader, /header: moduleHeader/)
-assert.match(loader, /moduleHeader\?\.clear/)
-assert.match(login, /ssoProviders\.begin\(entry\.id/)
-assert.match(login, /v-for="entry in ssoEntries"/)
-assert.match(app, /header\?\.list/)
-assert.match(app, /v-for="item in headerItems"/)
-assert.match(resources, /placement: `\$\{resourceType\}\.context-menu`/)
-assert.match(resources, /contextActions\.execute\(action\.id/)
+// Consumer wiring is exercised through the same production helper functions used
+// by LoginPanel, App and ResourcesView; no source-text assertions are required.
+const surface = await import('../src/extension-surface-workflows.js')
+assert.deepEqual(surface.loginSsoEntries(sso, {}).map((row) => row.id), [])
+// Re-register one provider after the cleanup assertion above and execute through
+// the LoginPanel helper boundary.
+ssoA.register({ id: 'global-settings.entra', label: 'Microsoft Entra ID' }, async (ctx) => { started = ctx; return 'started-again' })
+assert.equal(await surface.beginLoginSso(sso, surface.loginSsoEntries(sso, {})[0], { return_to: '/tec-tac/' }), 'started-again')
+assert.equal(started.return_to, '/tec-tac/')
+allowed = new Set(['alerts.view'])
+alertsHeader.register({ id: 'alerts.bell', label: 'Alerts', permission: 'alerts.view', component: Dummy, order: 10 })
+assert.deepEqual(surface.appHeaderItems(header, { user: { username: 'alice' } }).map((row) => row.id).includes('alerts.bell'), true)
+halo.register({ id: 'halopsa.client-ticket', resource: 'client', label: 'Create ticket', placements: ['client.context-menu'], permission: 'tickets.create' }, async (ctx) => { executed = ctx; return 42 })
+rows = surface.resourceContextMenuActions(contextActions, 'client', client)
+assert.deepEqual(rows.map((row) => row.id), ['halopsa.client-ticket'])
+assert.equal(await surface.executeResourceContextMenuAction(contextActions, rows[0], 'client', client), 42)
+assert.equal(executed.client.id, 7)
 
 console.log('extension hooks F8-F10 0.12.62: PASS')

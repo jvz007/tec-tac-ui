@@ -9,6 +9,7 @@ import {
 } from '../api'
 import { copyTextWithFeedback } from '../copy-feedback'
 import { enrollmentSetupErrorMessage } from '../mfa-enrollment'
+import { loginSsoEntries, beginLoginSso } from '../extension-surface-workflows'
 
 const uiVersion = __TEC_TAC_UI_VERSION__
 const ssoProviders = inject('tecTacSsoProviders', null)
@@ -18,7 +19,7 @@ const password = ref('')
 const twofactor = ref('')
 const backupCode = ref('')
 const step = ref('credentials')
-const ssoEntries = computed(() => ssoProviders?.list?.({ location: window.location, step: step.value }) || [])
+const ssoEntries = computed(() => loginSsoEntries(ssoProviders, { location: window.location, step: step.value }))
 const busy = ref(false)
 const error = ref('')
 const setup = ref(null)
@@ -207,7 +208,7 @@ async function beginSso(entry) {
   error.value = ''
   ssoBusyId.value = entry.id
   try {
-    await ssoProviders.begin(entry.id, { return_to: window.location.href, location: window.location })
+    await beginLoginSso(ssoProviders, entry, { return_to: window.location.href, location: window.location })
   } catch (err) {
     error.value = err?.message || `Unable to start ${entry.label} sign-in.`
   } finally {
