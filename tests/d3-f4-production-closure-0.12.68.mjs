@@ -81,7 +81,7 @@ const backupView = fs.readFileSync(new URL('../src/views/BackupRestoreView.vue',
 assert.match(backupView, /Signer fingerprint/)
 assert.match(backupView, /signerSignedAt/)
 assert.match(backupView, /Trust this signer and re-validate/)
-assert.match(backupView, /await validateSelection\(\)/)
+assert.match(backupView, /trustRecoverySignerWorkflow/)
 assert.match(backupView, /item\.recovery_signer\?\.public_key_sha256/)
 
 // F4: update the existing runtime context in place. Modules already loaded by

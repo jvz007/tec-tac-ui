@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.73",
+  "version": "0.12.74",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.73.md",
-      "size": 346,
-      "sha256": "266a9fecc01e9bd28b8b0f41ea1d0f694f7e3eec6ef51be799ed2c65ee65d149"
+      "path": "RELEASE_NOTES_0.12.74.md",
+      "size": 595,
+      "sha256": "454c6ea9abf26e9c015b3eadbcc436251899c648c64914cb9f95de319dc78bd6"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "5cddbd887dbe8ed9860e2b735acd8883235b4c78cd362b41b940932e542020d4"
+      "sha256": "5b334ef96ed086ec089ab843061693bd8533472266d983d23e94e01617d365a0"
     },
     {
       "path": "docs/context-actions.md",
@@ -567,6 +567,11 @@
       "sha256": "01c77d2e78a48f99aed8ae092f57318d47710bc00ad97ab95f2a1cf99064aa60"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.73.md",
+      "size": 346,
+      "sha256": "266a9fecc01e9bd28b8b0f41ea1d0f694f7e3eec6ef51be799ed2c65ee65d149"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.8.md",
       "size": 779,
       "sha256": "45c5203e14c1dc705e1d758993a0f2c0474af39619af66c787af4b72d1445860"
@@ -729,12 +734,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "0919b2619cd7cfa547b46491b3006100d4ba79f962e907619f269d0208ffae98"
+      "sha256": "c2d7f6c2291379c1b876d2739847614d08430641fabe12403e34ba4453648d40"
     },
     {
       "path": "package.json",
-      "size": 2375,
-      "sha256": "db0db02ddebcbfc5dee1c2989b5601abbdd7dc0b0094cd2fc49bc96319242beb"
+      "size": 2421,
+      "sha256": "30d6968889eaafed2f1544eb7292c452fd08bcf35e041fe85414ef61881c1f96"
     },
     {
       "path": "public/modules/modules.json",
@@ -810,6 +815,11 @@
       "path": "src/backup-restore-state.js",
       "size": 2541,
       "sha256": "c58abb14ce9dc716491ae0f8fddbf3cc2c8926797aa78bda971730cacbe129f6"
+    },
+    {
+      "path": "src/backup-restore-trust-workflow.js",
+      "size": 941,
+      "sha256": "8bc2531dba3c07de219cc7af0c7a0546136482fb6ba02077403f1aeea3ec1c81"
     },
     {
       "path": "src/backup-restore-workflows.js",
@@ -1193,8 +1203,8 @@
     },
     {
       "path": "src/views/BackupRestoreView.vue",
-      "size": 13185,
-      "sha256": "8997d8940f5e169ae904913f1e50036d0cd40708fc95c3e0709838f2dcc4efb5"
+      "size": 13129,
+      "sha256": "99d7dd762821f676d0cb24676519fc88380b58ccb2576e87d657bcb9316f7cb6"
     },
     {
       "path": "src/views/ContractsView.vue",
@@ -1274,7 +1284,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "f1f321fff09483cbfa8e9fc48773631b75ee2af95de7d0d1445cd3cbdcd9afce"
+      "sha256": "ecf010e10be404afe95e632cc52b25a51ad8da669e6ba42dad12cf94ab5e15ca"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1329,7 +1339,12 @@
     {
       "path": "tests/d3-f4-production-closure-0.12.68.mjs",
       "size": 4723,
-      "sha256": "8c54add0e384106913e44bf3481c194c07682d27590da8d13fdf83a06092d83b"
+      "sha256": "452387e049e097b3454c290693dee4ff0b2e20ed2fc3413db862a9f55f84a29a"
+    },
+    {
+      "path": "tests/d3-seamless-restore-0.12.74.mjs",
+      "size": 2322,
+      "sha256": "1ec0256987001fe9720229e68ec59a82d61f9f42ae114a5f18b7ab29f8cbb2ff"
     },
     {
       "path": "tests/d5-scope-health-ui.sh",

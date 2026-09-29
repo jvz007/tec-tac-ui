@@ -11,6 +11,7 @@ import {
 } from '../api'
 import { restoreConfirmationState, restoreReviewRows, canStartRestore } from '../backup-restore-state'
 import { validateRestoreWorkflow, startRestoreWorkflow } from '../backup-restore-workflows'
+import { trustRecoverySignerWorkflow } from '../backup-restore-trust-workflow'
 
 const loading = ref(true)
 const busy = ref(false)
@@ -73,18 +74,18 @@ async function pollTrustJob(jobId) {
 async function trustSigner() {
   const signer = confirmationState.value.signer
   if (!selectedBackup.value || !selectedDestination.value || !signerNeedsTrust.value || !signer) return
-  const fingerprint = String(signer.public_key_sha256 || '')
-  if (!window.confirm(`Trust recovery signer ${signer.key_id || ''} with fingerprint ${fingerprint}?`)) return
   busy.value = true; error.value = ''
   try {
-    const queued = await startRecoverySignerTrust({
+    await trustRecoverySignerWorkflow({
       backupRef: selectedBackup.value.backup_ref,
       destinationId: selectedDestinationId.value,
       signer,
+    }, {
+      confirmTrust: ({ keyId, fingerprint }) => window.confirm(`Trust recovery signer ${keyId} with fingerprint ${fingerprint}?`),
+      startRecoverySignerTrust,
+      pollTrustJob,
+      revalidate: validateSelection,
     })
-    const job = await pollTrustJob(queued.job_id)
-    if (job?.status !== 'succeeded') throw new Error(job?.error || 'Recovery signer trust failed.')
-    await validateSelection()
   } catch (e) { error.value = e.message || 'Unable to trust recovery signer.' }
   finally { busy.value = false }
 }
