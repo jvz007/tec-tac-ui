@@ -9,6 +9,7 @@ import {
   tacticalToken,
   validateTacticalSession,
 } from './api'
+import { emptyRuntimeContext, normalizeBackendRuntimeContext } from './runtime-context'
 
 export const state = reactive({
   status: 'loading',
@@ -16,18 +17,8 @@ export const state = reactive({
   authProof: null,
   error: null,
   contextSource: 'none',
-  context: {
-    user: tacticalIdentityFromStorage(),
-    permissions: [],
-    extensions: [],
-    capabilities: null,
-    module_status: [],
-    modules: [],
-    preferences: null,
-    preferences_initialized: false,
-    preferences_updated_at: null,
-    notice_unread_count: 0,
-  },
+  context: emptyRuntimeContext(tacticalIdentityFromStorage()),
+
   moduleLoad: { loaded: [], failed: [], skipped: [] },
   publicModuleLoad: { loaded: [], failed: [] },
   publicModules: [],
@@ -62,18 +53,7 @@ function markUnauthenticated(error = null) {
   state.authProof = null
   state.status = 'unauthenticated'
   state.contextSource = 'tactical-auth'
-  state.context = {
-    user: tacticalIdentityFromStorage(),
-    permissions: [],
-    extensions: [],
-    capabilities: null,
-    module_status: [],
-    modules: [],
-    preferences: null,
-    preferences_initialized: false,
-    preferences_updated_at: null,
-    notice_unread_count: 0,
-  }
+  state.context = emptyRuntimeContext(tacticalIdentityFromStorage())
 }
 
 if (typeof window !== 'undefined' && !window.__tecTacSessionInvalidListener) {
@@ -93,18 +73,7 @@ export async function loadContext(staticModules = null) {
   state.authProof = null
   state.error = null
   state.contextSource = 'none'
-  state.context = {
-    user: tacticalIdentityFromStorage(),
-    permissions: [],
-    extensions: [],
-    capabilities: null,
-    module_status: [],
-    modules: [],
-    preferences: null,
-    preferences_initialized: false,
-    preferences_updated_at: null,
-    notice_unread_count: 0,
-  }
+  state.context = emptyRuntimeContext(tacticalIdentityFromStorage())
 
   if (!tacticalToken()) {
     markUnauthenticated()
@@ -158,28 +127,9 @@ export async function loadContext(staticModules = null) {
   }
 
   try {
-    const baseContext = richContext ? {
-      user: { ...browserUser, ...(richContext.user || {}) },
-      permissions: Array.isArray(richContext.permissions) ? richContext.permissions : [],
-      extensions: Array.isArray(richContext.extensions) ? richContext.extensions : [],
-      capabilities: richContext.capabilities && typeof richContext.capabilities === "object" ? richContext.capabilities : null,
-      module_status: Array.isArray(richContext.module_status) ? richContext.module_status : [],
-      modules: [],
-      preferences: richContext.preferences || null,
-      preferences_initialized: richContext.preferences_initialized === true,
-      preferences_updated_at: richContext.preferences_updated_at || null,
-      notice_unread_count: Number(richContext.notice_unread_count || 0),
-    } : {
-      user: browserUser,
-      permissions: [],
-      extensions: [],
-      capabilities: null,
-      modules: [],
-      preferences: null,
-      preferences_initialized: false,
-      preferences_updated_at: null,
-      notice_unread_count: 0,
-    }
+    const baseContext = richContext
+      ? normalizeBackendRuntimeContext(richContext, browserUser)
+      : emptyRuntimeContext(browserUser)
 
     const manifest = Array.isArray(staticModules) ? staticModules : await loadStaticModuleManifest()
     const modules = normalizeStaticModules(manifest, baseContext)

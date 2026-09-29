@@ -8,6 +8,7 @@ import {
   startServerRestore,
 } from '../api'
 import { restoreConfirmationState, restoreReviewRows, canStartRestore } from '../backup-restore-state'
+import { validateRestoreWorkflow, startRestoreWorkflow } from '../backup-restore-workflows'
 
 const loading = ref(true)
 const busy = ref(false)
@@ -82,11 +83,13 @@ async function validateSelection() {
   if (!selectedBackup.value) return
   busy.value = true; error.value = ''; clearValidation()
   try {
-    const queued = await startRestoreValidation({ backupRef: selectedBackup.value.backup_ref, destinationId: selectedDestinationId.value, restoreMode: restoreMode.value })
-    const job = await pollJob(queued.job_id)
-    if (job?.status !== 'succeeded') throw new Error(job?.error || 'Restore validation failed.')
-    validation.value = job.result || null
-    validationJobId.value = validation.value?.ok ? String(job.job_id || '') : ''
+    const result = await validateRestoreWorkflow({
+      backupRef: selectedBackup.value.backup_ref,
+      destinationId: selectedDestinationId.value,
+      restoreMode: restoreMode.value,
+    }, { startRestoreValidation, pollJob })
+    validation.value = result.validation
+    validationJobId.value = result.validationJobId
     if (!validation.value?.ok) error.value = 'Restore validation completed but the target is not ready. Review the checks below.'
   } catch (e) { error.value = e.message || 'Unable to validate restore.' }
   finally { busy.value = false }
@@ -96,10 +99,13 @@ async function restoreNow() {
   if (!canRestore.value) return
   busy.value = true; error.value = ''; confirmRestore.value = false
   try {
-    const queued = await startServerRestore({ backupRef: selectedBackup.value.backup_ref, destinationId: selectedDestinationId.value, restoreMode: restoreMode.value, validationJobId: validationJobId.value })
-    activeJob.value = { ...queued, stage_label: 'Restore queued' }
-    const job = await pollJob(queued.job_id)
-    if (job?.status !== 'succeeded') throw new Error(job?.error || 'Restore failed.')
+    const result = await startRestoreWorkflow({
+      backupRef: selectedBackup.value.backup_ref,
+      destinationId: selectedDestinationId.value,
+      restoreMode: restoreMode.value,
+      validationJobId: validationJobId.value,
+    }, { startServerRestore, pollJob })
+    activeJob.value = { ...result.job, stage_label: 'Restore completed' }
   } catch (e) { error.value = e.message || 'Restore failed.' }
   finally { busy.value = false }
 }

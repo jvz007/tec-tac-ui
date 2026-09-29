@@ -166,6 +166,7 @@ export async function loadUiModules(runtime, modules) {
       moduleHeader = runtime.header?.forModule(descriptor.id) || null
       await plugin.register({
         ...runtime,
+        context: runtime.state.context,
         router: moduleRouter,
         addNavigation,
         Vue,

@@ -2,6 +2,23 @@
 
 Tec-Tac authenticated UI modules receive Core-owned request helpers in `register(context)`. Modules must use these helpers instead of reading `localStorage.access_token`, constructing Tactical `Authorization` headers, or duplicating session-expiry handling.
 
+
+## Authenticated runtime context
+
+`register(context)` receives the current authenticated Core context directly as `context.context`. The same object remains available through `context.state.context` for compatibility. Treat both as read-only runtime state.
+
+The context includes the current user's Tactical UI preferences under:
+
+```js
+context.context.tactical_ui = {
+  agent_dblclick_action,
+  url_action_id,
+  can_run_url_actions,
+}
+```
+
+Modules should consume these values from the runtime context instead of calling Tactical account endpoints directly. Core/UI refresh the values from `/api/tfd/ui/context/`.
+
 ## Helpers
 
 ### `api(path, options)`

@@ -1,5 +1,7 @@
-# Fixing / review notes — UI 0.12.64
+# Fixing / review notes — UI 0.12.65
 
+
+Tracker acceptance closure: preserves `tactical_ui` in runtime context, exposes direct `register(context).context`, and exercises F1/F2/F4-F10 plus D2/D3 through the actual production API/workflow/module-loader boundaries. Regressions: `tests/tracker-final-closure-0.12.65.mjs`, `tests/backup-restore-final-closure-0.12.65.mjs`.
 
 Module-development readiness: Public Contracts now renders Core's static browser/UI runtime catalog separately from live provider registrations, with behavioral filtering coverage. Regression: `tests/browser-contract-catalog-0.12.64.mjs`.
 

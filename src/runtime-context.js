@@ -1,0 +1,32 @@
+export function emptyRuntimeContext(user = {}) {
+  return {
+    user: user || {},
+    permissions: [],
+    extensions: [],
+    capabilities: null,
+    module_status: [],
+    modules: [],
+    preferences: null,
+    tactical_ui: null,
+    preferences_initialized: false,
+    preferences_updated_at: null,
+    notice_unread_count: 0,
+  }
+}
+
+export function normalizeBackendRuntimeContext(richContext, browserUser = {}) {
+  const source = richContext && typeof richContext === 'object' ? richContext : {}
+  return {
+    user: { ...(browserUser || {}), ...(source.user || {}) },
+    permissions: Array.isArray(source.permissions) ? source.permissions : [],
+    extensions: Array.isArray(source.extensions) ? source.extensions : [],
+    capabilities: source.capabilities && typeof source.capabilities === 'object' ? source.capabilities : null,
+    module_status: Array.isArray(source.module_status) ? source.module_status : [],
+    modules: [],
+    preferences: source.preferences || null,
+    tactical_ui: source.tactical_ui && typeof source.tactical_ui === 'object' ? source.tactical_ui : null,
+    preferences_initialized: source.preferences_initialized === true,
+    preferences_updated_at: source.preferences_updated_at || null,
+    notice_unread_count: Number(source.notice_unread_count || 0),
+  }
+}
