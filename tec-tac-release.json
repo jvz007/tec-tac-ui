@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.65",
+  "version": "0.12.66",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -18,8 +18,8 @@
     },
     {
       "path": "FIXING.md",
-      "size": 1741,
-      "sha256": "fa309435fb02cb9d14296e8e334714c0bdca365dc956e91aaf4a49feeec84be4"
+      "size": 1901,
+      "sha256": "927e36ed582748388c042485ef75896ad18598089f3e61e9441752012fa1d6d9"
     },
     {
       "path": "LICENSE",
@@ -32,14 +32,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.65.md",
-      "size": 1401,
-      "sha256": "6c8cb0d97c8cf8f42bba31e3e32a4d7fe8826bcac69d7d2035bcda2ded886272"
+      "path": "RELEASE_NOTES_0.12.66.md",
+      "size": 1610,
+      "sha256": "de8876b6ff4a81aa63f8042137b009080bf1c2c7aa4c3b871f100bbfe793f7c0"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "17ecde49b7899a186ecd40e920da5296c759e13082409081ea877279c0908d2f"
+      "sha256": "cc36640cc0f552c72e1daf1afcd5aba11e66954982b044d3e2c1e9cdfbb64125"
     },
     {
       "path": "docs/context-actions.md",
@@ -522,6 +522,11 @@
       "sha256": "14a010cb513b311b69ad932df9e49afdcd685f3e8ac96cdd6c8ea4ec29529712"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.65.md",
+      "size": 1401,
+      "sha256": "6c8cb0d97c8cf8f42bba31e3e32a4d7fe8826bcac69d7d2035bcda2ded886272"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.7.md",
       "size": 578,
       "sha256": "cea6a69c99e8f715e8841a9787c7e486fe2d560b8fd9f39c4fbf0d42f9320093"
@@ -684,12 +689,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "30b80cd97f1fc4f53fab29d9965fe4d58611fee02b8bc73a97b604a1b4a37e0f"
+      "sha256": "33325a666167e55bbb45ecbda4639008a467c785bf9dcce017dea8c130834bd0"
     },
     {
       "path": "package.json",
-      "size": 1862,
-      "sha256": "18c2d4030ec82bce9887e4fa18cf54875deb8adf4d3486cd81772c3d8b943268"
+      "size": 2084,
+      "sha256": "81bef8efc7752854b71e9f0aef36e6c69aacc884cbd3ef5a35aea26d820a5f88"
     },
     {
       "path": "public/modules/modules.json",
@@ -1224,7 +1229,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "120efba9ae9ecd5973c14d8707089c1a8df1ff39586ddbdedee50bfb4d8b35d0"
+      "sha256": "8462f53333b6686de80b348fb0814515ff705cfdfbb012f6dc991cd938788e2e"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1290,6 +1295,26 @@
       "path": "tests/extension-hooks-0.12.62.mjs",
       "size": 5811,
       "sha256": "1d9374635d5671da16e22956c23b68d09d230c847d29af5f0dc0d53ebd9a3d20"
+    },
+    {
+      "path": "tests/f1-f2-my-account-done-when-0.12.66.mjs",
+      "size": 2511,
+      "sha256": "e85f8580bc287a4532b0a106cc7d165257d6a61ec4c00957d52565c73785d480"
+    },
+    {
+      "path": "tests/f4-runtime-context-done-when-0.12.66.mjs",
+      "size": 1577,
+      "sha256": "f02476c8c5dd82a5de35ce1d578b2fae6b99042110375e47d015a387fafcef15"
+    },
+    {
+      "path": "tests/f5-f7-resources-done-when-0.12.66.mjs",
+      "size": 2920,
+      "sha256": "d32f64e100fd2a91212535e25ca9aa0821a1899ec88b2e69e777cef55a8c591e"
+    },
+    {
+      "path": "tests/f8-f10-extension-surfaces-done-when-0.12.66.mjs",
+      "size": 4354,
+      "sha256": "3582b01a0d8c72503d680b5fdd495fef077649e697a44f965014708258a1212c"
     },
     {
       "path": "tests/feature-closure-0.12.63.mjs",

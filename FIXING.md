@@ -1,4 +1,6 @@
-# Fixing / review notes — UI 0.12.65
+# Fixing / review notes — UI 0.12.66
+
+Tracker done-when evidence: dedicated production-boundary regressions for F1/F2/F4-F10 while retaining the 0.12.65 D2/D3 production restore workflow coverage.
 
 
 Tracker acceptance closure: preserves `tactical_ui` in runtime context, exposes direct `register(context).context`, and exercises F1/F2/F4-F10 plus D2/D3 through the actual production API/workflow/module-loader boundaries. Regressions: `tests/tracker-final-closure-0.12.65.mjs`, `tests/backup-restore-final-closure-0.12.65.mjs`.
