@@ -19,6 +19,16 @@ context.context.tactical_ui = {
 
 Modules should consume these values from the runtime context instead of calling Tactical account endpoints directly. Core/UI refresh the values from `/api/tfd/ui/context/`.
 
+Core also publishes stable localization fields:
+
+```js
+context.context.locale          // Core/Django effective locale, e.g. "en-us"
+context.context.timeZone        // Tactical authoritative default time zone, e.g. "Africa/Johannesburg"
+context.context.dateTimeFormat  // Tactical configured date/time format string
+```
+
+Use `timeZone` for schedule defaults and module date/time display. Modules may fall back to `Intl.DateTimeFormat().resolvedOptions().timeZone` only when talking to an older Core that does not publish the field. Do not infer undocumented account or preference keys.
+
 ## Helpers
 
 ### `api(path, options)`

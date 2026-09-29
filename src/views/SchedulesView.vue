@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import StructuredObjectEditor from '../components/StructuredObjectEditor.vue'
 import { createSchedule, deleteSchedule, listScheduledActions, listScheduleRuns, listSchedules, runScheduleNow, updateSchedule } from '../scheduler'
 import { historyCountLabel } from '../scheduler-history-state'
+import { state } from '../state'
 import { loadScheduleHistoryPage, scheduleHistoryCommit } from '../scheduler-history-loader'
 
 const actions=ref([]), userSchedules=ref([]), moduleSchedules=ref([]), userRuns=ref([]), moduleRuns=ref([]), loading=ref(true), refreshing=ref(false), loaded=ref(false), historyLoading=ref(false), historyError=ref(''), error=ref(''), notice=ref(''), saving=ref(false), selectedId=ref(null), editing=ref(false), tab=ref('user'), query=ref('')
@@ -12,9 +13,10 @@ const runPageSize=50
 let historySearchTimer=null, historyRequestSeq=0
 const dangerousConfirm=ref(null), confirmText=ref(''), deleteConfirm=ref(null), deleteBusy=ref(false), forceDeleteRequired=ref(false), forceDeleteCount=ref(0), forceDeleteText=ref('')
 const browserTz=Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+const defaultTz=()=>state.context?.timeZone || browserTz
 const weekdays=[['Mon',0],['Tue',1],['Wed',2],['Thu',3],['Fri',4],['Sat',5],['Sun',6]]
 const draft=ref(blank())
-function blank(){return {name:'',action_id:'tec-tac.scheduler-test',target_mode:'snapshot',targets:{type:'none'},parameters:{message:'Tec-Tac scheduler test event executed.'},schedule_type:'once',timezone:browserTz,run_at:'',run_time:'09:00',weekdays:[0,1,2,3,4],day_of_month:1,enabled:true,missed_policy:'run_on_recovery',missed_grace_minutes:60,concurrency_policy:'skip',retry_count:0,retry_delay_seconds:60}}
+function blank(){return {name:'',action_id:'tec-tac.scheduler-test',target_mode:'snapshot',targets:{type:'none'},parameters:{message:'Tec-Tac scheduler test event executed.'},schedule_type:'once',timezone:defaultTz(),run_at:'',run_time:'09:00',weekdays:[0,1,2,3,4],day_of_month:1,enabled:true,missed_policy:'run_on_recovery',missed_grace_minutes:60,concurrency_policy:'skip',retry_count:0,retry_delay_seconds:60}}
 const schedules=computed(()=>tab.value==='module'?moduleSchedules.value:userSchedules.value)
 const runs=computed(()=>tab.value==='module-history'?moduleRuns.value:userRuns.value)
 const selected=computed(()=>userSchedules.value.find(x=>x.id===selectedId.value)||null)
