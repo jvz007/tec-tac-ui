@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
 import { applyTacticalUiPreferences, changePasswordWorkflow, resetTotpWorkflow, revokeOthersWorkflow, saveTacticalUiWorkflow } from '../my-account-workflows'
+import { passwordFailureMessage } from '../my-account-password'
 import { clearTacticalSession } from '../api'
 import { state } from '../state'
 import {
@@ -17,6 +18,7 @@ const error = ref('')
 const saved = ref('')
 const data = ref(null)
 const password = reactive({ current: '', next: '', confirm: '' })
+const passwordError = ref('')
 const mfa = reactive({ password: '', code: '' })
 const tactical = reactive({ agent_dblclick_action: '', url_action_id: null })
 
@@ -44,11 +46,15 @@ async function changePassword() {
   if (!password.current || !password.next) return
   busy.value = 'password'
   error.value = ''
+  passwordError.value = ''
   try {
     const result = await changePasswordWorkflow(password, { changeMyPassword })
     password.current = ''; password.next = ''; password.confirm = ''
     flash(result.message)
-  } catch (err) { fail(err, 'Unable to change password.') }
+  } catch (err) {
+    passwordError.value = passwordFailureMessage(err)
+    saved.value = ''
+  }
   finally { busy.value = '' }
 }
 
@@ -119,6 +125,7 @@ onMounted(load)
         <label class="field"><span>Current password</span><input v-model="password.current" type="password" autocomplete="current-password"></label>
         <label class="field"><span>New password</span><input v-model="password.next" type="password" autocomplete="new-password"></label>
         <label class="field"><span>Confirm new password</span><input v-model="password.confirm" type="password" autocomplete="new-password"></label>
+        <div v-if="passwordError" class="auth-error" role="alert">{{ passwordError }}</div>
         <div class="editor-actions"><button class="btn primary" :disabled="busy || !password.current || !password.next || password.next !== password.confirm" @click="changePassword">{{ busy === 'password' ? 'Changing…' : 'Change password' }}</button></div>
       </template>
       <p v-else class="muted">Your password is managed by your SSO provider.</p>
