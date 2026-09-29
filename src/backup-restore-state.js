@@ -8,6 +8,9 @@ export function restoreConfirmationState(validation) {
   const installationId = String(signer?.installation_id || '').trim()
   const signerKeyId = String(signer?.key_id || '').trim()
   const signerFingerprint = String(signer?.public_key_sha256 || '').trim()
+  const signerSignedAt = String(signer?.signed_at || '').trim()
+  const signerTrusted = signer?.trusted === true
+  const signerTrustRequired = signer?.trust_required === true && !signerTrusted
   const downgradeHeadline = downgrade
     ? `This puts Core back to ${restoredVersion || 'an older version'}.`
     : ''
@@ -26,6 +29,9 @@ export function restoreConfirmationState(validation) {
       installationId,
       signerKeyId,
       signerFingerprint,
+      signerSignedAt,
+      signerTrusted,
+      signerTrustRequired,
       downgradeHeadline,
       transitionLabel: transition
         ? `Core ${transition.current_core_version || 'current'} → ${transition.restored_core_version || 'backup version'}`

@@ -1,7 +1,8 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { changePasswordWorkflow, resetTotpWorkflow, revokeOthersWorkflow, saveTacticalUiWorkflow } from '../my-account-workflows'
+import { applyTacticalUiPreferences, changePasswordWorkflow, resetTotpWorkflow, revokeOthersWorkflow, saveTacticalUiWorkflow } from '../my-account-workflows'
 import { clearTacticalSession } from '../api'
+import { state } from '../state'
 import {
   changeMyPassword,
   getMyAccount,
@@ -84,7 +85,9 @@ async function saveTacticalUi() {
   error.value = ''
   try {
     const result = await saveTacticalUiWorkflow(tactical, { saveMyTacticalUiPreferences })
-    data.value = { ...data.value, tactical_ui: result.preferences || tacticalUi.value }
+    const preferences = result.preferences || tacticalUi.value
+    data.value = { ...data.value, tactical_ui: preferences }
+    applyTacticalUiPreferences(state.context, preferences)
     flash(result.message)
   } catch (err) { fail(err, 'Unable to save Tactical UI preferences.') }
   finally { busy.value = '' }

@@ -29,3 +29,14 @@ export async function saveTacticalUiWorkflow(tactical, { saveMyTacticalUiPrefere
   })
   return { preferences: response?.preferences || null, message: 'Tactical UI preferences saved.' }
 }
+
+export function applyTacticalUiPreferences(context, preferences) {
+  if (!context || typeof context !== 'object') return context
+  const next = preferences && typeof preferences === 'object' ? preferences : {}
+  if (context.tactical_ui && typeof context.tactical_ui === 'object') {
+    Object.assign(context.tactical_ui, next)
+  } else {
+    context.tactical_ui = { ...next }
+  }
+  return context
+}
