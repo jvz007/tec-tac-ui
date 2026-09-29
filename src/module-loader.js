@@ -79,13 +79,20 @@ export async function loadPublicUiModules(runtime, modules) {
         })
       }
 
-      await plugin.registerPublic({
-        Vue,
-        app: runtime.app,
-        descriptor,
-        addPublicRoute,
-        publicApi: runtime.publicApi,
-      })
+      const moduleSsoProviders = runtime.ssoProviders?.forModule(descriptor.id) || null
+      try {
+        await plugin.registerPublic({
+          Vue,
+          app: runtime.app,
+          descriptor,
+          addPublicRoute,
+          publicApi: runtime.publicApi,
+          ssoProviders: moduleSsoProviders,
+        })
+      } catch (error) {
+        try { moduleSsoProviders?.clear?.() } catch {}
+        throw error
+      }
       loaded.push(descriptor.id)
     } catch (error) {
       failed.push({ id: descriptor.id, message: error?.message || String(error) })
@@ -127,6 +134,7 @@ export async function loadUiModules(runtime, modules) {
     let moduleNotifications = null
     let moduleAudit = null
     let moduleHelp = null
+    let moduleHeader = null
     try {
       const imported = await import(/* @vite-ignore */ descriptor.entry)
       const plugin = imported.default || imported
@@ -155,6 +163,7 @@ export async function loadUiModules(runtime, modules) {
       moduleNotifications = runtime.notifications?.forModule(descriptor.id) || null
       moduleAudit = runtime.audit?.forModule(descriptor.id) || null
       moduleHelp = runtime.help?.forModule(descriptor.id, descriptor) || null
+      moduleHeader = runtime.header?.forModule(descriptor.id) || null
       await plugin.register({
         ...runtime,
         router: moduleRouter,
@@ -170,6 +179,7 @@ export async function loadUiModules(runtime, modules) {
         notifications: moduleNotifications,
         audit: moduleAudit,
         help: moduleHelp,
+        header: moduleHeader,
       })
       loaded.push(descriptor.id)
     } catch (error) {
@@ -181,6 +191,7 @@ export async function loadUiModules(runtime, modules) {
       try { moduleQuickActions?.clear?.() } catch {}
       try { moduleNotifications?.clear?.() } catch {}
       try { moduleHelp?.clear?.() } catch {}
+      try { moduleHeader?.clear?.() } catch {}
       failed.push({ id: descriptor.id, message: error?.message || String(error) })
     }
   }

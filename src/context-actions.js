@@ -136,9 +136,18 @@ export function createContextActionRegistry({ hasPermission } = {}) {
     })
   }
 
+  async function execute(id, context = {}) {
+    const action = actions.get(String(id || ''))
+    if (!action) throw new Error(`Context action ${id} is not registered.`)
+    const state = evaluate(action, context)
+    if (!state.visible || !state.enabled) throw new Error(state.reason || `Context action ${id} is unavailable.`)
+    return await action.execute(context)
+  }
+
   return Object.freeze({
     forModule,
     list,
+    execute,
     removeProvider,
     snapshot: () => [...actions.values()].map(({ execute, visible, enabled, ...row }) => ({ ...row })),
   })

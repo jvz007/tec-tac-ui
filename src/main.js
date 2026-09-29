@@ -15,6 +15,8 @@ import { createNotificationService } from './notifications'
 import { createModuleStatusService } from './module-status'
 import { createAuditService } from './audit'
 import { createHelpService } from './help'
+import { createSsoProviderRegistry } from './sso-providers'
+import { createHeaderContributionRegistry } from './header-contributions'
 import { registerCoreHelpArticles } from './help/core-articles'
 import { registerCoreDashboardWidgets } from './dashboard-core-widgets'
 import { initializeUserPreferences } from './preferences'
@@ -43,6 +45,8 @@ async function bootstrap() {
   const notifications = createNotificationService({ api: apiFetch, router })
   const audit = createAuditService(apiFetch)
   const help = createHelpService()
+  const ssoProviders = createSsoProviderRegistry()
+  const header = createHeaderContributionRegistry({ hasPermission })
   registerCoreDashboardWidgets(dashboardWidgets, state)
   registerCoreHelpArticles(help)
 
@@ -57,6 +61,8 @@ async function bootstrap() {
   app.provide('tecTacNotifications', notifications)
   app.provide('tecTacAudit', audit)
   app.provide('tecTacHelp', help)
+  app.provide('tecTacSsoProviders', ssoProviders)
+  app.provide('tecTacHeader', header)
   app.use(router)
   const initialHashTarget = window.location.hash.startsWith('#/')
     ? window.location.hash.slice(1)
@@ -69,7 +75,7 @@ async function bootstrap() {
     staticModules = await loadStaticModuleManifest()
     state.publicModules = staticModules.filter((item) => item?.public?.entry)
     state.publicModuleLoad = await loadPublicUiModules(
-      { app, router, publicApi: publicApiFetch },
+      { app, router, publicApi: publicApiFetch, ssoProviders },
       state.publicModules,
     )
   } catch (error) {
@@ -110,6 +116,7 @@ async function bootstrap() {
         notifications,
         audit,
         help,
+        header,
         modules,
       },
       state.context.modules || staticModules,

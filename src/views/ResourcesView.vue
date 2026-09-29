@@ -16,6 +16,7 @@ import { createResourceSiteSearchCoordinator } from '../resource-site-search-sta
 
 const PAGE_SIZE = 50
 const state = inject('tecTacState')
+const contextActions = inject('tecTacContextActions', null)
 const permissions = computed(() => new Set(state.context.permissions || []))
 const superuser = computed(() => state.context.user?.superuser === true)
 const canManageClients = computed(() => superuser.value || permissions.value.has('core.resources.clients.manage'))
@@ -44,9 +45,43 @@ const loadingSiteClientOptions = ref(false)
 const saving = ref(false)
 const deleteDialog = ref(null)
 const customFieldDialog = ref(null)
+const moduleActionBusyId = ref('')
 
 const selectedClient = computed(() => clients.value.find((x) => x.id === selectedClientId.value) || null)
 
+
+function moduleActionContext(resourceType, row) {
+  return {
+    resource_type: resourceType,
+    resource: row,
+    [resourceType]: row,
+    selection: [row],
+  }
+}
+
+function moduleActions(resourceType, row) {
+  if (!contextActions?.list) return []
+  return contextActions.list({
+    resource: resourceType,
+    placement: `${resourceType}.context-menu`,
+    context: moduleActionContext(resourceType, row),
+  })
+}
+
+async function runModuleAction(action, resourceType, row) {
+  if (!action || action.state?.enabled === false || moduleActionBusyId.value) return
+  if (action.dangerous && !window.confirm(`Run ${action.label} for ${row.name || resourceType}?`)) return
+  error.value = ''
+  notice.value = ''
+  moduleActionBusyId.value = action.id
+  try {
+    await contextActions.execute(action.id, moduleActionContext(resourceType, row))
+  } catch (e) {
+    error.value = message(e, `Unable to run ${action.label}.`)
+  } finally {
+    moduleActionBusyId.value = ''
+  }
+}
 function message(errorValue, fallback) {
   return errorValue?.message || fallback
 }
@@ -368,7 +403,7 @@ onBeforeUnmount(() => {
         <div v-if="loadingClients && !clients.length" class="state-inline">Loading clients…</div>
         <div v-else-if="!clients.length" class="empty">No clients match the current scope and search.</div>
         <div v-else class="tablewrap resource-table"><table><thead><tr><th>Client</th><th>ID</th><th></th></tr></thead><tbody>
-          <tr v-for="client in clients" :key="client.id" class="clickrow" :class="{selected:selectedClientId===client.id}" @click="chooseClient(client.id)"><td><b>{{client.name}}</b></td><td class="mono">{{client.id}}</td><td><div v-if="canManageClients" class="row resource-actions"><button class="btn sm" @click.stop="openEditClient(client)">Edit</button><button class="btn sm" @click.stop="openCustomFields('client', client)">Fields</button><button class="btn sm danger" @click.stop="openDeleteClient(client)">Delete</button></div></td></tr>
+          <tr v-for="client in clients" :key="client.id" class="clickrow" :class="{selected:selectedClientId===client.id}" @click="chooseClient(client.id)"><td><b>{{client.name}}</b></td><td class="mono">{{client.id}}</td><td><div class="row resource-actions"><template v-if="canManageClients"><button class="btn sm" @click.stop="openEditClient(client)">Edit</button><button class="btn sm" @click.stop="openCustomFields('client', client)">Fields</button><button class="btn sm danger" @click.stop="openDeleteClient(client)">Delete</button></template><details v-if="moduleActions('client', client).length" class="resource-context-menu" @click.stop><summary class="btn sm">Extensions</summary><div class="resource-context-popover"><button v-for="action in moduleActions('client', client)" :key="action.id" type="button" class="resource-context-action" :class="{danger:action.dangerous}" :disabled="action.state?.enabled===false || !!moduleActionBusyId" :title="action.state?.reason || action.label" @click.prevent="runModuleAction(action, 'client', client)">{{ moduleActionBusyId===action.id ? 'Working…' : action.label }}</button></div></details></div></td></tr>
         </tbody></table></div>
         <div v-if="clientPages>1" class="resource-pager"><span class="muted mono">Page {{clientPage}} / {{clientPages}}</span><div class="row"><button class="btn sm" :disabled="clientPage<=1||loadingClients" @click="changeClientPage(clientPage-1)">Previous</button><button class="btn sm" :disabled="clientPage>=clientPages||loadingClients" @click="changeClientPage(clientPage+1)">Next</button></div></div>
       </section>
@@ -380,7 +415,7 @@ onBeforeUnmount(() => {
         <div v-else-if="!selectedClient" class="empty">Select a client to inspect its sites.</div>
         <div v-else-if="!sites.length" class="empty">No sites match this client and search.</div>
         <div v-else class="tablewrap resource-table"><table><thead><tr><th>Site</th><th>ID</th><th></th></tr></thead><tbody>
-          <tr v-for="site in sites" :key="site.id"><td><b>{{site.name}}</b></td><td class="mono">{{site.id}}</td><td><div v-if="canManageSites" class="row resource-actions"><button class="btn sm" @click="openEditSite(site)">Edit</button><button class="btn sm" @click="openCustomFields('site', site)">Fields</button><button class="btn sm danger" @click="openDeleteSite(site)">Delete</button></div></td></tr>
+          <tr v-for="site in sites" :key="site.id"><td><b>{{site.name}}</b></td><td class="mono">{{site.id}}</td><td><div class="row resource-actions"><template v-if="canManageSites"><button class="btn sm" @click="openEditSite(site)">Edit</button><button class="btn sm" @click="openCustomFields('site', site)">Fields</button><button class="btn sm danger" @click="openDeleteSite(site)">Delete</button></template><details v-if="moduleActions('site', site).length" class="resource-context-menu" @click.stop><summary class="btn sm">Extensions</summary><div class="resource-context-popover"><button v-for="action in moduleActions('site', site)" :key="action.id" type="button" class="resource-context-action" :class="{danger:action.dangerous}" :disabled="action.state?.enabled===false || !!moduleActionBusyId" :title="action.state?.reason || action.label" @click.prevent="runModuleAction(action, 'site', site)">{{ moduleActionBusyId===action.id ? 'Working…' : action.label }}</button></div></details></div></td></tr>
         </tbody></table></div>
         <div v-if="sitePages>1" class="resource-pager"><span class="muted mono">Page {{sitePage}} / {{sitePages}}</span><div class="row"><button class="btn sm" :disabled="sitePage<=1||loadingSites" @click="changeSitePage(sitePage-1)">Previous</button><button class="btn sm" :disabled="sitePage>=sitePages||loadingSites" @click="changeSitePage(sitePage+1)">Next</button></div></div>
       </section>

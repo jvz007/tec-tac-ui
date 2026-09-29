@@ -19,6 +19,7 @@ const dynamicNav = inject('tecTacNavigation', [])
 const quickActions = inject('tecTacQuickActions', null)
 const notifications = inject('tecTacNotifications', null)
 const help = inject('tecTacHelp', null)
+const header = inject('tecTacHeader', null)
 const FONT_SIZES = [
   { value: 0.9, label: 'A−', title: 'Small text' },
   { value: 1, label: 'A', title: 'Default text size' },
@@ -130,6 +131,7 @@ const currentTitle = computed(() => route.meta.title || visibleNav.value.find((i
 const quickPins = computed(() => quickActions?.listPins?.() || [])
 const topQuickPins = computed(() => quickPins.value.slice(0, 6))
 const quickOverflowCount = computed(() => Math.max(0, quickPins.value.length - topQuickPins.value.length))
+const headerItems = computed(() => header?.list?.({ route, state, user: state.context.user || {} }) || [])
 
 const accountStatus = computed(() => {
   if (state.authStatus === 'verifying') return 'VERIFYING'
@@ -256,6 +258,9 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
       </div>
       <button v-if="!publicRoute" class="btn ghost sm" @click="backToTactical">↗ Tactical</button>
       <button v-else-if="state.status !== 'ready'" class="btn ghost sm" @click="navigate('/')">Sign in</button>
+      <div v-if="!publicRoute && state.status === 'ready' && headerItems.length" class="module-header-contributions" aria-label="Module header actions">
+        <component v-for="item in headerItems" :key="item.id" :is="item.component" v-bind="item.resolvedProps" />
+      </div>
       <button v-if="!publicRoute && state.status === 'ready'" class="iconbtn notice-topbar-button" type="button" title="Notification history" aria-label="Open notification history" @click="notifications?.openHistory?.()"><span aria-hidden="true">🔔</span><b v-if="notifications?.history?.unreadCount" class="notice-badge">{{ notifications.history.unreadCount > 99 ? '99+' : notifications.history.unreadCount }}</b></button>
       <button v-if="!publicRoute && state.status === 'ready'" class="iconbtn help-topbar-button" type="button" title="Help" aria-label="Open contextual help" @click="help?.open?.()">?</button>
       <div v-if="!publicRoute" class="who">

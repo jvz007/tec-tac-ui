@@ -10,4 +10,4 @@ Optional module integrations must degrade cleanly. The browser can use the modul
 
 ## Browser contracts
 
-Current browser contracts include context actions, interactions, resource views, code editor services, dashboard widgets, Quick Actions, notifications, module availability and Help article contributions.
+Current browser contracts include context actions, interactions, resource views, code editor services, dashboard widgets, Quick Actions, notifications, module availability, Help article contributions, public SSO sign-in providers, and authenticated module header contributions.

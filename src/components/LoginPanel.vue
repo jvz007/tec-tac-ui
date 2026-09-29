@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref } from 'vue'
+import { computed, inject, nextTick, ref } from 'vue'
 import {
   checkTacticalCredentials,
   clearTacticalSession,
@@ -11,11 +11,14 @@ import { copyTextWithFeedback } from '../copy-feedback'
 import { enrollmentSetupErrorMessage } from '../mfa-enrollment'
 
 const uiVersion = __TEC_TAC_UI_VERSION__
+const ssoProviders = inject('tecTacSsoProviders', null)
+const ssoBusyId = ref('')
 const username = ref('')
 const password = ref('')
 const twofactor = ref('')
 const backupCode = ref('')
 const step = ref('credentials')
+const ssoEntries = computed(() => ssoProviders?.list?.({ location: window.location, step: step.value }) || [])
 const busy = ref(false)
 const error = ref('')
 const setup = ref(null)
@@ -199,6 +202,19 @@ function finishLogin() {
   window.location.reload()
 }
 
+async function beginSso(entry) {
+  if (!entry || busy.value || ssoBusyId.value) return
+  error.value = ''
+  ssoBusyId.value = entry.id
+  try {
+    await ssoProviders.begin(entry.id, { return_to: window.location.href, location: window.location })
+  } catch (err) {
+    error.value = err?.message || `Unable to start ${entry.label} sign-in.`
+  } finally {
+    ssoBusyId.value = ''
+  }
+}
+
 function openTactical() {
   window.location.href = '/'
 }
@@ -225,8 +241,14 @@ function openTactical() {
       <div v-if="error" class="auth-error" role="alert">{{ error }}</div>
 
       <div class="login-actions">
-        <button class="btn primary" type="submit" :disabled="busy">{{ busy ? 'Checking…' : 'Continue' }}</button>
-        <button class="btn ghost" type="button" :disabled="busy" @click="openTactical">Open Tactical instead</button>
+        <button class="btn primary" type="submit" :disabled="busy || !!ssoBusyId">{{ busy ? 'Checking…' : 'Continue' }}</button>
+        <button class="btn ghost" type="button" :disabled="busy || !!ssoBusyId" @click="openTactical">Open Tactical instead</button>
+      </div>
+      <div v-if="ssoEntries.length" class="sso-provider-section">
+        <div class="section-divider">OR SIGN IN WITH SSO</div>
+        <div class="sso-provider-list">
+          <button v-for="entry in ssoEntries" :key="entry.id" class="btn sso-provider-button" type="button" :disabled="busy || !!ssoBusyId" :title="entry.description || entry.label" @click="beginSso(entry)"><span v-if="entry.icon" aria-hidden="true">{{ entry.icon }}</span><span>{{ ssoBusyId === entry.id ? 'Opening…' : entry.label }}</span></button>
+        </div>
       </div>
     </form>
 

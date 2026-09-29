@@ -81,11 +81,14 @@ Endpoints consumes:
 - `endpoint.context-menu`
 - `endpoint.detail-header`
 
+Clients & Sites also consumes:
+
+- `client.context-menu`
+- `site.context-menu`
+
 Future consumers may define additional placements, for example:
 
 - `endpoint.toolbar`
-- `client.context-menu`
-- `site.context-menu`
 - `alert.context-menu`
 - `patch.context-menu`
 
@@ -121,3 +124,8 @@ For multi-select, `selection` contains all selected public resource objects. Pro
 This file defines a stable UI contract and should be listed in the Developer Contract catalog alongside the backend capability/scheduler contracts. The catalog should describe the `contextActions.register`, `contextActions.list`, and `contextActions.execute` browser APIs and point module authors to this document.
 
 Registered browser actions are runtime UI state. If live enumeration is added to the Public Contracts page later, it should be populated from the browser registry rather than pretending backend capability registration owns UI contributions.
+
+
+## Clients & Sites contexts
+
+`client.context-menu` executes with `{ resource_type:'client', resource:client, client, selection:[client] }`. `site.context-menu` uses the same shape with `site`. The Clients & Sites screen owns placement and destructive confirmation for actions marked `dangerous`; providers still own backend authorization and the action implementation.
