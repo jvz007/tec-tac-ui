@@ -133,6 +133,8 @@ const quickPins = computed(() => quickActions?.listPins?.() || [])
 const topQuickPins = computed(() => quickPins.value.slice(0, 6))
 const quickOverflowCount = computed(() => Math.max(0, quickPins.value.length - topQuickPins.value.length))
 const headerItems = computed(() => appHeaderItems(header, { route, state, user: state.context.user || {} }))
+const tacticalWebUi = computed(() => state.context?.tactical_web_ui || { installed: false, url: null })
+const tacticalWebUiInstalled = computed(() => tacticalWebUi.value.installed === true && !!tacticalWebUi.value.url)
 
 const accountStatus = computed(() => {
   if (state.authStatus === 'verifying') return 'VERIFYING'
@@ -222,7 +224,10 @@ async function retry() {
   if (state.status === 'ready') window.location.reload()
 }
 function navigate(to) { closeNavContextMenu(); requestLeave(() => router.push(to)) }
-function backToTactical() { requestLeave(() => { window.location.href = '/' }) }
+function backToTactical() {
+  if (!tacticalWebUiInstalled.value) return
+  window.open(tacticalWebUi.value.url, '_blank', 'noopener,noreferrer')
+}
 async function doSignOut() {
   if (signingOut.value) return
   signingOut.value = true
@@ -257,7 +262,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
           <button v-for="size in FONT_SIZES" :key="size.value" type="button" class="font-size-button" :class="{ active: fontScale === size.value }" :title="size.title" :aria-label="size.title" :aria-pressed="fontScale === size.value" @click="fontScale=size.value">{{ size.label }}</button>
         </div>
       </div>
-      <button v-if="!publicRoute" class="btn ghost sm" @click="backToTactical">↗ Tactical</button>
+      <button v-if="!publicRoute && tacticalWebUiInstalled" class="btn ghost sm" type="button" title="Open Tactical in a new window" @click="backToTactical">↗ Tactical</button>
       <button v-else-if="state.status !== 'ready'" class="btn ghost sm" @click="navigate('/')">Sign in</button>
       <div v-if="!publicRoute && state.status === 'ready' && headerItems.length" class="module-header-contributions" aria-label="Module header actions">
         <component v-for="item in headerItems" :key="item.id" :is="item.component" v-bind="item.resolvedProps" />
@@ -322,7 +327,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
         </template>
       </div>
       <LoginPanel v-else-if="state.status === 'unauthenticated'" />
-      <div v-else-if="state.status === 'failed'" class="state-panel danger-panel"><span class="eyebrow">SESSION OR BACKEND CHECK FAILED</span><h2>Tec-Tac could not complete startup</h2><p class="mono">{{ state.error?.message }}</p><div class="row"><button class="btn" @click="retry">Retry</button><button class="btn ghost" @click="backToTactical">Open Tactical</button></div></div>
+      <div v-else-if="state.status === 'failed'" class="state-panel danger-panel"><span class="eyebrow">SESSION OR BACKEND CHECK FAILED</span><h2>Tec-Tac could not complete startup</h2><p class="mono">{{ state.error?.message }}</p><div class="row"><button class="btn" @click="retry">Retry</button><button v-if="tacticalWebUiInstalled" class="btn ghost" type="button" @click="backToTactical">Open Tactical</button></div></div>
       <router-view v-else-if="state.status === 'ready'" />
     </main>
     <div v-if="notifications?.toasts?.length" class="toast-stack" role="region" aria-label="Notifications" aria-live="polite">

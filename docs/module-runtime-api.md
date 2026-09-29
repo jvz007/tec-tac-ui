@@ -29,6 +29,17 @@ context.context.dateTimeFormat  // Tactical configured date/time format string
 
 Use `timeZone` for schedule defaults and module date/time display. Modules may fall back to `Intl.DateTimeFormat().resolvedOptions().timeZone` only when talking to an older Core that does not publish the field. Do not infer undocumented account or preference keys.
 
+Core also publishes whether Tactical's standard web UI is actually installed and routable:
+
+```js
+context.context.tactical_web_ui = {
+  installed, // true only when the Tactical UI files and nginx frontend are present
+  url,       // currently "/" when installed, otherwise null
+}
+```
+
+Use this capability instead of assuming that a Tactical UI exists on every Tec-Tac server.
+
 ## Helpers
 
 ### `api(path, options)`

@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.72",
+  "version": "0.12.73",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.72.md",
-      "size": 292,
-      "sha256": "f98fa4ffbc3095926b2eec31978c07da0e422dd8c4b73153fb544122ba71239e"
+      "path": "RELEASE_NOTES_0.12.73.md",
+      "size": 346,
+      "sha256": "266a9fecc01e9bd28b8b0f41ea1d0f694f7e3eec6ef51be799ed2c65ee65d149"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "5bdb78a9229198d77cea1efd3d561082d0d76a50db4d8370e3605056e4162f13"
+      "sha256": "5cddbd887dbe8ed9860e2b735acd8883235b4c78cd362b41b940932e542020d4"
     },
     {
       "path": "docs/context-actions.md",
@@ -93,8 +93,8 @@
     },
     {
       "path": "docs/module-runtime-api.md",
-      "size": 5686,
-      "sha256": "275b08c66a3319d371c295f0eead093b51069c7cbde422c7b020a66eeb06916f"
+      "size": 6064,
+      "sha256": "aeee16ba30d18850d584accc655f0a251b8ae7d7cbcf39c67047ccf0fa43cdc6"
     },
     {
       "path": "docs/module-sso.md",
@@ -729,12 +729,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "a3ebc30a17c94f4881fe16cd3343000430d45e3d9fdc168e41f27ff2965e386f"
+      "sha256": "0919b2619cd7cfa547b46491b3006100d4ba79f962e907619f269d0208ffae98"
     },
     {
       "path": "package.json",
       "size": 2375,
-      "sha256": "887ed673e9dfdae647916a809d40f982c8023784d967906fc36803de92e8a862"
+      "sha256": "db0db02ddebcbfc5dee1c2989b5601abbdd7dc0b0094cd2fc49bc96319242beb"
     },
     {
       "path": "public/modules/modules.json",
@@ -773,8 +773,8 @@
     },
     {
       "path": "src/App.vue",
-      "size": 21641,
-      "sha256": "638b6c46d2d20060909db13ea4702fbd5f45b530695a3fc2a3b6fc2c9f1c2d1f"
+      "size": 22047,
+      "sha256": "ea89dc30583ca29693c62a6442c76399392207ea48acae3c9ccbb911adfe9808"
     },
     {
       "path": "src/access.js",
@@ -1128,8 +1128,8 @@
     },
     {
       "path": "src/runtime-context.js",
-      "size": 1665,
-      "sha256": "eec8721b8f4c75f74fa8b7c53075d00876e17abbec88b90baee85269328c10b7"
+      "size": 2004,
+      "sha256": "ca5e1cb0c9e32f5c8d909383d52713e6c6a042aee0dad3328da83d48824078b3"
     },
     {
       "path": "src/scheduler-health.js",
@@ -1274,7 +1274,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "452f1281b9747fd262ba24c58288f2343ae12212802e57fad157c3f43ff803a8"
+      "sha256": "f1f321fff09483cbfa8e9fc48773631b75ee2af95de7d0d1445cd3cbdcd9afce"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1485,6 +1485,11 @@
       "path": "tests/system-update-trust-popover-focus.sh",
       "size": 1120,
       "sha256": "225dced06f773143afed8d1b55d06e4b1942c74e5926480ecad96ef29eaf5356"
+    },
+    {
+      "path": "tests/tactical-button-0.12.73.mjs",
+      "size": 1238,
+      "sha256": "e2aad2d82471cfe90dd9f218a60d94952b84b1217c982643794ce279ad3891d2"
     },
     {
       "path": "tests/tracker-acceptance-0.12.67.mjs",
