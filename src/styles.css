@@ -230,3 +230,5 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .security-list li{padding-left:2px}
 .table-actions{display:flex;gap:6px;flex-wrap:wrap}
 @media(max-width:720px){.backup-code-grid{grid-template-columns:1fr}}
+
+.account-avatar-button{padding:0;cursor:pointer;appearance:none}.account-avatar-button:hover{box-shadow:0 0 0 2px rgba(var(--accent-rgb),.16)}.account-avatar-button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}

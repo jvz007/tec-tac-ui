@@ -3,7 +3,11 @@ import assert from 'node:assert/strict'
 const api=fs.readFileSync(new URL('../src/api.js', import.meta.url),'utf8')
 const fixture=JSON.parse(fs.readFileSync(new URL('./fixtures/core-http-routes-1.15.162.json', import.meta.url),'utf8'))
 const manifest=JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url),'utf8'))
-assert.equal(manifest.requires['tec-tac-framework'], '>=1.15.162,<2.0.0')
+const frameworkRange=manifest.requires['tec-tac-framework']
+const minMatch=/^>=(\d+)\.(\d+)\.(\d+),<2\.0\.0$/.exec(frameworkRange)
+assert.ok(minMatch, `unexpected framework range: ${frameworkRange}`)
+const minVersion=minMatch.slice(1).map(Number)
+assert.ok(minVersion[0]>1 || (minVersion[0]===1 && (minVersion[1]>15 || (minVersion[1]===15 && minVersion[2]>=162))), `framework minimum regressed below 1.15.162: ${frameworkRange}`)
 const urls=[...api.matchAll(/["'`]\/api\/tfd\/[^"'`]+["'`]/g)].map(m=>m[0].slice(1,-1))
 const used=[...new Set(urls)]
 function cleanUsed(value){

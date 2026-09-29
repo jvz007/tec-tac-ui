@@ -259,7 +259,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
       <button v-if="!publicRoute && state.status === 'ready'" class="iconbtn notice-topbar-button" type="button" title="Notification history" aria-label="Open notification history" @click="notifications?.openHistory?.()"><span aria-hidden="true">🔔</span><b v-if="notifications?.history?.unreadCount" class="notice-badge">{{ notifications.history.unreadCount > 99 ? '99+' : notifications.history.unreadCount }}</b></button>
       <button v-if="!publicRoute && state.status === 'ready'" class="iconbtn help-topbar-button" type="button" title="Help" aria-label="Open contextual help" @click="help?.open?.()">?</button>
       <div v-if="!publicRoute" class="who">
-        <div class="av">{{ initials }}</div>
+        <button v-if="state.status === 'ready'" class="av account-avatar-button" type="button" title="My Account" aria-label="Open My Account" @click="navigate('/account')">{{ initials }}</button><div v-else class="av">{{ initials }}</div>
         <div class="n"><b>{{ state.context.user?.display_name || state.context.user?.username || 'No session' }}</b><span :class="{ 'status-ok': state.authStatus === 'verified', 'status-warn': state.authStatus === 'verifying', 'status-danger': state.authStatus === 'required' || state.authStatus === 'error' }">{{ accountStatus }}</span></div>
         <button v-if="state.status === 'ready'" class="iconbtn" title="User preferences" aria-label="User preferences" @click="navigate('/preferences')">⚙</button>
         <button v-if="state.status === 'ready'" class="iconbtn" title="Sign out" aria-label="Sign out" :disabled="signingOut" @click="signOut">⏻</button>

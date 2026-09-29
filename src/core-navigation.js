@@ -11,6 +11,7 @@ export function coreNavigation(context = {}) {
   const superuser = context.user?.superuser === true
   return [
     { label: 'Dashboards', icon: '⌂', to: '/dashboards', section: 'Workspace', visible: true, owner: 'core' },
+    { label: 'My Account', icon: '◎', to: '/account', section: 'Workspace', visible: true, owner: 'core' },
     { label: 'Schedules', icon: '◷', to: '/schedules', section: 'Operations', visible: capabilities.manage_schedules !== false, owner: 'core' },
     { label: 'Modules', icon: '▦', to: '/modules', section: 'Administration', visible: true, owner: 'core' },
     { label: 'Access', icon: '⛨', to: '/access', section: 'Administration', visible: capabilities.list_accounts !== false || capabilities.list_roles !== false, owner: 'core' },

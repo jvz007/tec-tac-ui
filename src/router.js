@@ -12,6 +12,7 @@ import SchedulerSettingsView from './views/SchedulerSettingsView.vue'
 import ContractsView from './views/ContractsView.vue'
 import PublicPendingView from './views/PublicPendingView.vue'
 import PreferencesView from './views/PreferencesView.vue'
+import MyAccountView from './views/MyAccountView.vue'
 import MenuLayoutView from './views/MenuLayoutView.vue'
 import HelpView from './views/HelpView.vue'
 import { requestLeave, unsavedState } from './unsaved'
@@ -32,6 +33,7 @@ export const router = createRouter({
     { path: '/system/diagnostics', name: 'system-diagnostics', component: DiagnosticsView, meta: { title: 'Troubleshooting & Diagnostics' } },
     { path: '/system/backups', name: 'system-backups', component: BackupRestoreView, meta: { title: 'Backup & Restore' } },
     { path: '/contracts', name: 'contracts', component: ContractsView, meta: { title: 'Public Contracts' } },
+    { path: '/account', name: 'my-account', component: MyAccountView, meta: { title: 'My Account' } },
     { path: '/preferences', name: 'preferences', component: PreferencesView, meta: { title: 'Preferences' } },
     { path: '/preferences/menu-layout', name: 'menu-layout', component: MenuLayoutView, meta: { title: 'Menu Layout' } },
     { path: '/help', name: 'help', component: HelpView, meta: { title: 'Help' } },
