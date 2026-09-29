@@ -11,6 +11,7 @@ import SchedulesView from './views/SchedulesView.vue'
 import SchedulerSettingsView from './views/SchedulerSettingsView.vue'
 import ContractsView from './views/ContractsView.vue'
 import PublicPendingView from './views/PublicPendingView.vue'
+import SsoCallbackView from './views/SsoCallbackView.vue'
 import PreferencesView from './views/PreferencesView.vue'
 import MyAccountView from './views/MyAccountView.vue'
 import MenuLayoutView from './views/MenuLayoutView.vue'
@@ -38,6 +39,7 @@ export const router = createRouter({
     { path: '/preferences/menu-layout', name: 'menu-layout', component: MenuLayoutView, meta: { title: 'Menu Layout' } },
     { path: '/help', name: 'help', component: HelpView, meta: { title: 'Help' } },
     { path: '/help/:articleId', name: 'help-article', component: HelpView, meta: { title: 'Help' } },
+    { path: '/sso/callback', name: 'sso-callback', component: SsoCallbackView, meta: { title: 'SSO sign-in', public: true } },
     { path: '/public/:pathMatch(.*)*', name: 'public-pending', component: PublicPendingView, meta: { title: 'Public', public: true } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],

@@ -84,7 +84,7 @@ async function bootstrap() {
 
   app.mount('#app')
   await router.isReady()
-  if (initialHashTarget?.startsWith('/public/')) await router.replace(initialHashTarget)
+  if (initialHashTarget?.startsWith('/public/') || initialHashTarget === '/sso/callback') await router.replace(initialHashTarget)
 
   // Authenticated context still loads normally. Public routes render regardless
   // of whether this resolves to ready, unauthenticated, or an auth error.
@@ -125,7 +125,7 @@ async function bootstrap() {
     // A fresh tab may target a dynamically registered authenticated route.
     // The core catch-all can resolve before modules are loaded, so replay the
     // original hash after module registration to restore the intended route.
-    if (initialHashTarget && !initialHashTarget.startsWith('/public/')) {
+    if (initialHashTarget && !initialHashTarget.startsWith('/public/') && initialHashTarget !== '/sso/callback') {
       await router.replace(initialHashTarget)
     }
   }

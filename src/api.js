@@ -162,6 +162,62 @@ async function tacticalAuthRequest(path, body) {
   return payload || {}
 }
 
+
+function browserCookie(name) {
+  if (typeof document === 'undefined') return ''
+  const prefix = `${encodeURIComponent(name)}=`
+  for (const part of String(document.cookie || '').split(';')) {
+    const item = part.trim()
+    if (item.startsWith(prefix)) return decodeURIComponent(item.slice(prefix.length))
+  }
+  return ''
+}
+
+export async function completeTacticalSso() {
+  const base = apiBase()
+  if (!base) throw Object.assign(new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.'), { status: 0 })
+  const csrf = browserCookie('csrftoken')
+  if (!csrf) throw Object.assign(new Error('The Tactical SSO session is missing its CSRF proof. Start SSO sign-in again.'), { status: 403 })
+
+  const response = await fetch(`${base}/accounts/ssoproviders/token/`, {
+    method: 'POST',
+    headers: {
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      'X-CSRFToken': csrf,
+    },
+    credentials: 'include',
+    cache: 'no-store',
+    body: '{}',
+  })
+  const payload = await parseResponsePayload(response)
+  if (!response.ok) {
+    clearTacticalSession()
+    const error = new Error(messageFromPayload(payload, `Tactical SSO completion failed: ${response.status} ${response.statusText}`))
+    error.status = response.status
+    error.payload = payload
+    throw error
+  }
+  if (!payload || typeof payload !== 'object' || !payload.token || !payload.username) {
+    clearTacticalSession()
+    throw Object.assign(new Error('Tactical SSO completion did not return a valid access token.'), { status: 502, payload })
+  }
+
+  storeTacticalSession({ token: payload.token, username: payload.username, name: payload.name || null })
+  try {
+    const verification = await validateTacticalSession()
+    if (!verification.authenticated) throw Object.assign(new Error('The Tactical SSO access token could not be verified.'), { status: verification.status || 401 })
+    // Crossing the Core UI-context boundary immediately creates/validates the
+    // normal Tec-Tac session-security trust row. SSO accounts remain subject to
+    // the external provider's MFA lifecycle, exactly like Tactical itself.
+    await apiFetch('/api/tfd/ui/context/')
+  } catch (error) {
+    clearTacticalSession()
+    throw error
+  }
+  return { authenticated: true, username: payload.username, provider: payload.provider || null }
+}
+
 export async function checkTacticalCredentials(username, password) {
   const data = await tacticalAuthRequest('/v2/checkcreds/', { username, password })
 

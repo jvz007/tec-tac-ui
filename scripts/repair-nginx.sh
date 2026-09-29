@@ -33,6 +33,13 @@ location = /tec-tac {
     return 301 /tec-tac/;
 }
 
+location = /account/provider/callback {
+    # Tactical allauth returns here after the identity provider. Keep the
+    # callback Core-owned: modules never see the pending Django session or the
+    # Knox token produced from it.
+    return 302 /tec-tac/#/sso/callback;
+}
+
 location = /tec-tac/index.html {
     root ${DEPLOY_BASE};
     add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0" always;

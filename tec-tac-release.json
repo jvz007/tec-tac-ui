@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.71",
+  "version": "0.12.72",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.71.md",
-      "size": 478,
-      "sha256": "f11499bb7abe758e4c9ec9f0d1358bba461d1304a9ac89e88f8987761eab023e"
+      "path": "RELEASE_NOTES_0.12.72.md",
+      "size": 292,
+      "sha256": "f98fa4ffbc3095926b2eec31978c07da0e422dd8c4b73153fb544122ba71239e"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "ab14e76489861280aa676d19a7ffe659ea19cf519ede6bfe0207e954f95205d4"
+      "sha256": "5bdb78a9229198d77cea1efd3d561082d0d76a50db4d8370e3605056e4162f13"
     },
     {
       "path": "docs/context-actions.md",
@@ -98,8 +98,8 @@
     },
     {
       "path": "docs/module-sso.md",
-      "size": 1856,
-      "sha256": "8823e1872d77b116bfbd007a4448154dd596ecbda166c7037a2a226c1d637e77"
+      "size": 2588,
+      "sha256": "391031a1db751527e58f59619d7486f53d4bfa13ecbd352b2c0e46799f57aac2"
     },
     {
       "path": "docs/module-status.md",
@@ -557,6 +557,16 @@
       "sha256": "c9cc3ce8cf8b385eb627ac14ca86cd48c10178f63da372ca230f2b1216775c82"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.71.md",
+      "size": 478,
+      "sha256": "f11499bb7abe758e4c9ec9f0d1358bba461d1304a9ac89e88f8987761eab023e"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.72.md",
+      "size": 530,
+      "sha256": "01c77d2e78a48f99aed8ae092f57318d47710bc00ad97ab95f2a1cf99064aa60"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.8.md",
       "size": 779,
       "sha256": "45c5203e14c1dc705e1d758993a0f2c0474af39619af66c787af4b72d1445860"
@@ -719,12 +729,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "d52c7f049c11c6c8ebfa568df5ca638222aad2aa413418cf4bfb7775610fc7da"
+      "sha256": "a3ebc30a17c94f4881fe16cd3343000430d45e3d9fdc168e41f27ff2965e386f"
     },
     {
       "path": "package.json",
-      "size": 2331,
-      "sha256": "0710f1448837fe914a7e111cfc3d22e524e65cb71b7fa632de1f944cf5412627"
+      "size": 2375,
+      "sha256": "887ed673e9dfdae647916a809d40f982c8023784d967906fc36803de92e8a862"
     },
     {
       "path": "public/modules/modules.json",
@@ -743,8 +753,8 @@
     },
     {
       "path": "scripts/repair-nginx.sh",
-      "size": 3970,
-      "sha256": "bd26b68ca43809aa5a70403196aaffaf9c188769aceee1fd8b08d4c06889c5bf"
+      "size": 4241,
+      "sha256": "4e2fb60e617913f8f5f1e7e4810e6abb31063abb5ab1adc0a57e58acb3a4aa9d"
     },
     {
       "path": "scripts/sync-modules.sh",
@@ -788,8 +798,8 @@
     },
     {
       "path": "src/api.js",
-      "size": 22069,
-      "sha256": "932a9c5d1f4006e77bc6c6aa430eee4e990bc6115c48e6f76f59404e139cad60"
+      "size": 24424,
+      "sha256": "70f1b8163b4b191e4b7821943c1af82f7478b76d7dbc436d32e0c95a5751643b"
     },
     {
       "path": "src/audit.js",
@@ -1038,8 +1048,8 @@
     },
     {
       "path": "src/main.js",
-      "size": 5681,
-      "sha256": "368c0616858716a3c58fd10ae005eb36c7fbf4a709f778a55e7f9a1adb42c2dd"
+      "size": 5763,
+      "sha256": "75ef4e7d863c58b5900de04c6e0da491118a86b18d71f5534849e059f24a76e0"
     },
     {
       "path": "src/mfa-enrollment.js",
@@ -1113,8 +1123,8 @@
     },
     {
       "path": "src/router.js",
-      "size": 3423,
-      "sha256": "52fa4d9f75a22f2c5735da72a5c0a60b3ba42edc2a297179333bd47ed770398f"
+      "size": 3608,
+      "sha256": "f5d1f0f5534d16264e7f46d15256e1ac8b1ff5e9503b753527d10521892b07c0"
     },
     {
       "path": "src/runtime-context.js",
@@ -1247,6 +1257,11 @@
       "sha256": "f5710cf102d36858bf8deed1af9b4d0039f5d2e768ba4b392687de19f4a185c5"
     },
     {
+      "path": "src/views/SsoCallbackView.vue",
+      "size": 1618,
+      "sha256": "2cf656808962918b66daaf151edd932129dfdcca76981417317e3bc964d30303"
+    },
+    {
       "path": "src/views/StorageView.vue",
       "size": 6701,
       "sha256": "1f093801d525fde4334d1b0fbbbb457137a84ae8461964cb07ea066519544ebf"
@@ -1259,7 +1274,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "da0f9d33c7d7236954f87a0bbedba1a3b7f8e21d372e6fc010fdffd385984e22"
+      "sha256": "452f1281b9747fd262ba24c58288f2343ae12212802e57fad157c3f43ff803a8"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1355,6 +1370,11 @@
       "path": "tests/f8-f10-extension-surfaces-done-when-0.12.66.mjs",
       "size": 4366,
       "sha256": "d8908b74ae9a900ff2c28fad85348b1edaec04135f549a9bdd2ef4dd763000fd"
+    },
+    {
+      "path": "tests/f8-sso-completion-0.12.72.mjs",
+      "size": 3151,
+      "sha256": "ad94c492d2fecb5fa3df60f8071b6644415138e48882c4af8d6eaa5baab6b8eb"
     },
     {
       "path": "tests/f9-f10-production-closure-0.12.69.mjs",
