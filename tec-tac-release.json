@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.69",
+  "version": "0.12.70",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.69.md",
-      "size": 1305,
-      "sha256": "14553ad7960085984d220f72f7df04cb49656793ebd8d2a2502d4edb2759e777"
+      "path": "RELEASE_NOTES_0.12.70.md",
+      "size": 707,
+      "sha256": "c9cc3ce8cf8b385eb627ac14ca86cd48c10178f63da372ca230f2b1216775c82"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "70c73ea1ffe89e4979e1d2f445522fd1cc5c2a6e872e957a1f8262c017a1e1e2"
+      "sha256": "b0b602de9ac25bf4b96a3343490aa7e2699c14cea405f4a6479abe75f6bb6dd4"
     },
     {
       "path": "docs/context-actions.md",
@@ -542,6 +542,11 @@
       "sha256": "147c7888b6c3cc6bda477ad484cc2fe9c1d7159a1dd91fc381d4f912e3dea85e"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.69.md",
+      "size": 1305,
+      "sha256": "14553ad7960085984d220f72f7df04cb49656793ebd8d2a2502d4edb2759e777"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.7.md",
       "size": 578,
       "sha256": "cea6a69c99e8f715e8841a9787c7e486fe2d560b8fd9f39c4fbf0d42f9320093"
@@ -709,12 +714,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "7f9a4ad23721891e69e87c09fd9786660505232ea5bf319f5244355eeaf61207"
+      "sha256": "a67baeeebb4d961d27b0896dde4acce38804799a24774daa5130c98f2d51f5b2"
     },
     {
       "path": "package.json",
-      "size": 2232,
-      "sha256": "e461a54f275e8e7a5baf967e9a2c8cf06b7f45863ecc046469a601cff3356ffa"
+      "size": 2276,
+      "sha256": "cee5ad0d5a97c2f5090bfb35330a9ccd97752cae5a8a3f0a287177117f9b1848"
     },
     {
       "path": "public/modules/modules.json",
@@ -1249,7 +1254,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "7c8d85d228dfd5e71b5031dcbfd8e6656d463ca67bcc03a610f6463b869dfa7e"
+      "sha256": "9aa277b237e8e5ef6fccca059edacf2ed5ab957749d2bb15c57a80e2695ae574"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1325,6 +1330,11 @@
       "path": "tests/f1-f2-my-account-done-when-0.12.66.mjs",
       "size": 2511,
       "sha256": "e85f8580bc287a4532b0a106cc7d165257d6a61ec4c00957d52565c73785d480"
+    },
+    {
+      "path": "tests/f1-password-error-0.12.70.mjs",
+      "size": 1576,
+      "sha256": "2647531ab37d4fea2dd90a72e9f47954e121f887a1d957e69a066b43d72e35e8"
     },
     {
       "path": "tests/f4-runtime-context-done-when-0.12.66.mjs",
