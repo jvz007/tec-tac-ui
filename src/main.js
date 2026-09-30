@@ -1,7 +1,7 @@
 import { reactive } from 'vue'
 import { createApp } from 'vue'
 import App from './App.vue'
-import { apiBlob, apiFetch, apiRaw, apiText, loadStaticModuleManifest, publicApiFetch } from './api'
+import { apiBlob, apiFetch, apiRaw, apiText, beginTacticalSso, loadStaticModuleManifest, publicApiFetch } from './api'
 import { router } from './router'
 import { state, loadContext } from './state'
 import { loadPublicUiModules, loadUiModules } from './module-loader'
@@ -45,7 +45,9 @@ async function bootstrap() {
   const notifications = createNotificationService({ api: apiFetch, router })
   const audit = createAuditService(apiFetch)
   const help = createHelpService()
-  const ssoProviders = createSsoProviderRegistry()
+  const ssoProviders = createSsoProviderRegistry({
+    beginProvider: (entry) => beginTacticalSso(entry.provider_id),
+  })
   const header = createHeaderContributionRegistry({ hasPermission, isTrustedContext: () => state.contextSource === 'backend' })
   registerCoreDashboardWidgets(dashboardWidgets, state)
   registerCoreHelpArticles(help)

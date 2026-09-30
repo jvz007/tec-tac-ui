@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.76",
+  "version": "0.12.77",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.76.md",
-      "size": 787,
-      "sha256": "e556b606af172311ac2caa786937c26c44e9788bff4ec1411202bf86673396a6"
+      "path": "RELEASE_NOTES_0.12.77.md",
+      "size": 1190,
+      "sha256": "b97cb6578fbdf3850742b7a6db7567117acfc40a6ed7bfa3f72e68e6cf97d16f"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "ed210073b70a75ecfede0b69075fe43d30e78266e50c8ec681011169742be16f"
+      "sha256": "445f44c08083c6aace01429b67c20c30e3286c6ad5f384901269a81d5fe07d79"
     },
     {
       "path": "docs/context-actions.md",
@@ -98,8 +98,8 @@
     },
     {
       "path": "docs/module-sso.md",
-      "size": 2661,
-      "sha256": "82dcb02fbe7fc123c4da4295b6aebe4ab9a25fa41d461faff17a2a583e125ea3"
+      "size": 3848,
+      "sha256": "eebf32a7b0c389831170be6ba7185b63a6b6b79876b679bba5e19ca6dd7a4642"
     },
     {
       "path": "docs/module-status.md",
@@ -582,6 +582,11 @@
       "sha256": "aad84b5baed5afca3a2976f46dbdd2669e41ddac0ba5777ba057e1cf7add2e43"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.76.md",
+      "size": 787,
+      "sha256": "e556b606af172311ac2caa786937c26c44e9788bff4ec1411202bf86673396a6"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.8.md",
       "size": 779,
       "sha256": "45c5203e14c1dc705e1d758993a0f2c0474af39619af66c787af4b72d1445860"
@@ -744,12 +749,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "8ad71e0b8f6487d4c63b34676e77d8e87bef072946dcfefd6bb899609a378782"
+      "sha256": "1106b43718e36b30d0261b6e45bc71cd85e38504f9d9f83e2333ff085348bb4f"
     },
     {
       "path": "package.json",
-      "size": 2513,
-      "sha256": "c1e87e8bf57e27212a04e0ae369cc187eb08123cbec94dc9969c0f25d0120331"
+      "size": 2562,
+      "sha256": "27deb58be0a498690d7c585575dcdd364c84d1e8c0bed682ba312c0118ce2a3e"
     },
     {
       "path": "public/modules/modules.json",
@@ -813,8 +818,8 @@
     },
     {
       "path": "src/api.js",
-      "size": 24424,
-      "sha256": "70f1b8163b4b191e4b7821943c1af82f7478b76d7dbc436d32e0c95a5751643b"
+      "size": 27433,
+      "sha256": "c4a876156c015f756b579ae35ee5b4969af5b72c33173f3a74eab17f47bf0a47"
     },
     {
       "path": "src/audit.js",
@@ -1068,8 +1073,8 @@
     },
     {
       "path": "src/main.js",
-      "size": 5763,
-      "sha256": "75ef4e7d863c58b5900de04c6e0da491118a86b18d71f5534849e059f24a76e0"
+      "size": 5853,
+      "sha256": "be840ce18da80549f251e74bc1d21fc6044452b170750166f74355254578174f"
     },
     {
       "path": "src/mfa-enrollment.js",
@@ -1183,8 +1188,8 @@
     },
     {
       "path": "src/sso-providers.js",
-      "size": 3615,
-      "sha256": "aa2b4162f868c2c70101095fdb4d6558949f541f84631e7376ea9fdca04b2bbb"
+      "size": 4720,
+      "sha256": "ae0f1049635196515627b8b05960528bba2dde0ceaefc5ffc7b5357ed2464cb3"
     },
     {
       "path": "src/state.js",
@@ -1299,7 +1304,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "bfbfe74386ddc909eaa2ee487c1e9dc0afe6a5dfbed37bf70ff03dce43a711cf"
+      "sha256": "15c02e44fe347a65a6eaeefa92ded8ba94faf87def8848befc84988c952daeae"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1415,6 +1420,11 @@
       "path": "tests/f8-sso-completion-0.12.72.mjs",
       "size": 3151,
       "sha256": "ad94c492d2fecb5fa3df60f8071b6644415138e48882c4af8d6eaa5baab6b8eb"
+    },
+    {
+      "path": "tests/f8-tactical-native-sso-0.12.77.mjs",
+      "size": 6323,
+      "sha256": "34893fa1a5312263825e7d68213b2f479c24bfcc2e78f18cc29a72ad48761fce"
     },
     {
       "path": "tests/f9-f10-production-closure-0.12.69.mjs",

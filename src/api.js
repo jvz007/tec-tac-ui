@@ -173,6 +173,76 @@ function browserCookie(name) {
   return ''
 }
 
+function tacticalApiUrl(path) {
+  const base = String(apiBase() || '').replace(/\/+$/, '')
+  if (!base) throw Object.assign(new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.'), { status: 0 })
+  return `${base}${path}`
+}
+
+function tacticalSsoProvidersFromConfig(payload) {
+  const providers = payload?.data?.socialaccount?.providers
+  return Array.isArray(providers) ? providers : []
+}
+
+function submitBrowserForm(action, fields) {
+  if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
+    throw Object.assign(new Error('Tactical SSO requires a browser document.'), { status: 0 })
+  }
+  const form = document.createElement('form')
+  form.method = 'POST'
+  form.action = action
+  form.style.display = 'none'
+  for (const [name, value] of Object.entries(fields)) {
+    const input = document.createElement('input')
+    input.type = 'hidden'
+    input.name = name
+    input.value = String(value ?? '')
+    form.appendChild(input)
+  }
+  document.body.appendChild(form)
+  form.submit()
+}
+
+// Mirror Tactical's native headless-allauth SSO handshake. A public Tec-Tac
+// module contributes only the Tactical provider id and display metadata; Core
+// UI owns the browser POST, callback address and every credential-bearing step.
+export async function beginTacticalSso(providerId) {
+  const id = String(providerId || '').trim()
+  if (!id) throw Object.assign(new Error('Tactical SSO provider id is missing.'), { status: 400 })
+
+  // Tactical's own LoginView loads this config before starting SSO. Besides
+  // checking that the provider is currently advertised, this request ensures
+  // the browser has the Django/allauth CSRF state required by the form POST.
+  const response = await fetch(tacticalApiUrl('/_allauth/browser/v1/config/'), {
+    method: 'GET',
+    headers: { Accept: 'application/json' },
+    credentials: 'include',
+    cache: 'no-store',
+  })
+  const payload = await parseResponsePayload(response)
+  if (!response.ok) {
+    const error = new Error(messageFromPayload(payload, `Tactical SSO configuration failed: ${response.status} ${response.statusText}`))
+    error.status = response.status
+    error.payload = payload
+    throw error
+  }
+
+  const provider = tacticalSsoProvidersFromConfig(payload).find((item) => String(item?.id || '') === id)
+  if (!provider) throw Object.assign(new Error(`Tactical SSO provider ${id} is not currently available.`), { status: 404, payload })
+
+  const csrf = browserCookie('csrftoken')
+  if (!csrf) throw Object.assign(new Error('Tactical SSO could not obtain CSRF proof. Reload the sign-in page and try again.'), { status: 403 })
+  const callbackUrl = new URL('/account/provider/callback', window.location.origin).toString()
+
+  submitBrowserForm(tacticalApiUrl('/_allauth/browser/v1/auth/provider/redirect/'), {
+    provider: id,
+    process: 'login',
+    callback_url: callbackUrl,
+    csrfmiddlewaretoken: csrf,
+  })
+  return { started: true, provider_id: id, callback_url: callbackUrl }
+}
+
 export async function completeTacticalSso() {
   const base = apiBase()
   if (!base) throw Object.assign(new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.'), { status: 0 })
