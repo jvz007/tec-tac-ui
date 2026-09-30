@@ -38,9 +38,10 @@ Tec-Tac deliberately mirrors Tactical's own SSO flow instead of inventing a para
 ## Contract
 
 - Provider IDs exposed to the UI must be namespaced to the module (`<module-id>.<provider>`).
-- `provider_id` is Tactical's django-allauth provider identifier and is required in production.
+- `provider_id` is Tactical's django-allauth provider identifier and is the preferred production registration path.
 - Core owns placement on the Tec-Tac login screen.
-- Public modules **must not supply a `begin()` handler** in production. They register provider identity/display metadata only.
+- The published pre-0.12.77 `begin()` registration remains supported for backward compatibility when `provider_id` is absent. It is deprecated and receives only the non-secret initiation context.
+- If a module supplies both `provider_id` and `begin()`, Core ignores the deprecated handler and uses Tactical's native allauth flow. A future public-contract major version may remove the legacy handler after module migration.
 - Public modules must not own `/account/provider/callback`, post to `/_allauth/browser/v1/auth/provider/redirect/`, exchange `/accounts/ssoproviders/token/`, receive a Tactical access token, or inspect Tactical/Django authentication storage.
 - Core validates the selected provider against Tactical's current allauth configuration immediately before starting the redirect.
 - The public module never receives Tactical credentials, authenticated Core context, CSRF values, Django session state or Knox tokens.

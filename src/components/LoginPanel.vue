@@ -10,6 +10,7 @@ import {
 import { copyTextWithFeedback } from '../copy-feedback'
 import { enrollmentSetupErrorMessage } from '../mfa-enrollment'
 import { loginSsoEntries, beginLoginSso } from '../extension-surface-workflows'
+import LoginSsoProviders from './LoginSsoProviders.js'
 
 const uiVersion = __TEC_TAC_UI_VERSION__
 const ssoProviders = inject('tecTacSsoProviders', null)
@@ -245,12 +246,12 @@ function openTactical() {
         <button class="btn primary" type="submit" :disabled="busy || !!ssoBusyId">{{ busy ? 'Checking…' : 'Continue' }}</button>
         <button class="btn ghost" type="button" :disabled="busy || !!ssoBusyId" @click="openTactical">Open Tactical instead</button>
       </div>
-      <div v-if="ssoEntries.length" class="sso-provider-section">
-        <div class="section-divider">OR SIGN IN WITH SSO</div>
-        <div class="sso-provider-list">
-          <button v-for="entry in ssoEntries" :key="entry.id" class="btn sso-provider-button" type="button" :disabled="busy || !!ssoBusyId" :title="entry.description || entry.label" @click="beginSso(entry)"><span v-if="entry.icon" aria-hidden="true">{{ entry.icon }}</span><span>{{ ssoBusyId === entry.id ? 'Opening…' : entry.label }}</span></button>
-        </div>
-      </div>
+      <LoginSsoProviders
+        :entries="ssoEntries"
+        :busy="busy"
+        :sso-busy-id="ssoBusyId"
+        @begin="beginSso"
+      />
     </form>
 
     <form v-else-if="step === 'totp'" class="login-form" @submit.prevent="submitTotp">

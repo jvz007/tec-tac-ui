@@ -10,14 +10,15 @@ function normalize(provider, source, legacyBegin, { allowModuleBegin }) {
 
   const providerId = String(source.provider_id || source.providerId || source.tactical_provider_id || '').trim()
   const moduleBegin = legacyBegin || source.begin
-  if (!allowModuleBegin && typeof moduleBegin === 'function') {
-    throw new Error(`SSO provider ${id} must not supply begin(); Core owns Tactical SSO initiation. Register provider_id instead.`)
-  }
-  if (!providerId && !allowModuleBegin) {
-    throw new Error(`SSO provider ${id} requires Tactical provider_id`)
-  }
   if (!providerId && typeof moduleBegin !== 'function') {
-    throw new Error(`SSO provider ${id} requires Tactical provider_id`)
+    throw new Error(`SSO provider ${id} requires Tactical provider_id or a legacy begin() handler`)
+  }
+  if (!allowModuleBegin && typeof moduleBegin === 'function') {
+    if (providerId) {
+      console.warn(`[TEC-TAC-UI] SSO provider ${id}: begin() is deprecated and ignored because provider_id is present; Core owns Tactical SSO initiation.`)
+    } else {
+      console.warn(`[TEC-TAC-UI] SSO provider ${id}: begin() compatibility is deprecated; migrate to Tactical provider_id.`)
+    }
   }
 
   return {
@@ -29,7 +30,7 @@ function normalize(provider, source, legacyBegin, { allowModuleBegin }) {
     icon: String(source.icon || '').trim(),
     order: Number.isFinite(Number(source.order)) ? Number(source.order) : 500,
     visible: typeof source.visible === 'function' ? source.visible : null,
-    begin: allowModuleBegin && typeof moduleBegin === 'function' ? moduleBegin : null,
+    begin: typeof moduleBegin === 'function' && (allowModuleBegin || !providerId) ? moduleBegin : null,
     metadata: source.metadata && typeof source.metadata === 'object' ? { ...source.metadata } : {},
   }
 }
@@ -52,11 +53,9 @@ export function createSsoProviderRegistry({ beginProvider = null, allowModuleBeg
   }
 
   async function start(entry, context = {}) {
-    if (typeof beginProvider === 'function') {
-      if (!entry.provider_id) throw new Error(`SSO provider ${entry.id} does not declare Tactical provider_id.`)
-      return await beginProvider(entry, context)
-    }
+    if (entry.provider_id && typeof beginProvider === 'function') return await beginProvider(entry, context)
     if (typeof entry.begin === 'function') return await entry.begin(context)
+    if (typeof beginProvider === 'function') throw new Error(`SSO provider ${entry.id} does not declare Tactical provider_id.`)
     throw new Error(`SSO provider ${entry.id} cannot be started.`)
   }
 

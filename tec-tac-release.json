@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.77",
+  "version": "0.12.78",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.77.md",
-      "size": 1190,
-      "sha256": "b97cb6578fbdf3850742b7a6db7567117acfc40a6ed7bfa3f72e68e6cf97d16f"
+      "path": "RELEASE_NOTES_0.12.78.md",
+      "size": 981,
+      "sha256": "e268c82d81e8f52902f0de53e22c1732c310a4e1247a432939ee4df51c076cfa"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "445f44c08083c6aace01429b67c20c30e3286c6ad5f384901269a81d5fe07d79"
+      "sha256": "dd597a520a0261881a79d6b637713250a4a5fe1853d386f24e7929958f2cce92"
     },
     {
       "path": "docs/context-actions.md",
@@ -98,8 +98,8 @@
     },
     {
       "path": "docs/module-sso.md",
-      "size": 3848,
-      "sha256": "eebf32a7b0c389831170be6ba7185b63a6b6b79876b679bba5e19ca6dd7a4642"
+      "size": 4164,
+      "sha256": "2453a58118ef2e9feddf6c550500fc20a54df1719f867c3af2aa3687c5f8cc96"
     },
     {
       "path": "docs/module-status.md",
@@ -587,6 +587,11 @@
       "sha256": "e556b606af172311ac2caa786937c26c44e9788bff4ec1411202bf86673396a6"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.77.md",
+      "size": 1190,
+      "sha256": "b97cb6578fbdf3850742b7a6db7567117acfc40a6ed7bfa3f72e68e6cf97d16f"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.8.md",
       "size": 779,
       "sha256": "45c5203e14c1dc705e1d758993a0f2c0474af39619af66c787af4b72d1445860"
@@ -749,12 +754,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "1106b43718e36b30d0261b6e45bc71cd85e38504f9d9f83e2333ff085348bb4f"
+      "sha256": "983f63f1970f37151d1f2805f7d3202c2da3e9996be1a340875be4e53e3fde56"
     },
     {
       "path": "package.json",
-      "size": 2562,
-      "sha256": "27deb58be0a498690d7c585575dcdd364c84d1e8c0bed682ba312c0118ce2a3e"
+      "size": 2615,
+      "sha256": "a55d66a4bc402b0da470abcadb3bba1f4fdb9d30897d5d9b576299b43ec9bee2"
     },
     {
       "path": "public/modules/modules.json",
@@ -858,8 +863,13 @@
     },
     {
       "path": "src/components/LoginPanel.vue",
-      "size": 14823,
-      "sha256": "e4de1f647664c1acd92302b9ee60f5657d6f31e1ebac23146f41414f399e0267"
+      "size": 14472,
+      "sha256": "748db69f0dcd49974f59ef9350627fd04e976085c074be5da78c886ca64bfc8b"
+    },
+    {
+      "path": "src/components/LoginSsoProviders.js",
+      "size": 1097,
+      "sha256": "1fc1895e30aa7da7d3375f6148a4b4e071868f746c2e87bfdeccece5266bece4"
     },
     {
       "path": "src/components/MarkdownContent.vue",
@@ -1188,8 +1198,8 @@
     },
     {
       "path": "src/sso-providers.js",
-      "size": 4720,
-      "sha256": "ae0f1049635196515627b8b05960528bba2dde0ceaefc5ffc7b5357ed2464cb3"
+      "size": 4859,
+      "sha256": "58c48d6ef5027dd76c6dc27cbc84c3e8c0ad48577985c077fb4fcfc4deed3808"
     },
     {
       "path": "src/state.js",
@@ -1304,7 +1314,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "15c02e44fe347a65a6eaeefa92ded8ba94faf87def8848befc84988c952daeae"
+      "sha256": "914d6f350720b71edcc1720269637ed1a65499c6ce4155d570be04c227a5b10d"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1417,14 +1427,19 @@
       "sha256": "35042e155cfb41c9c7afd1b1b104df10e817e9167e60cbbdf6893c0de77e4434"
     },
     {
+      "path": "tests/f8-public-module-login-e2e-0.12.78.mjs",
+      "size": 7566,
+      "sha256": "eed9ab98246d4d7e0f3a9fccdbea5fec22dabf4915bcdb0a38acbd0bf06bb1bd"
+    },
+    {
       "path": "tests/f8-sso-completion-0.12.72.mjs",
       "size": 3151,
       "sha256": "ad94c492d2fecb5fa3df60f8071b6644415138e48882c4af8d6eaa5baab6b8eb"
     },
     {
       "path": "tests/f8-tactical-native-sso-0.12.77.mjs",
-      "size": 6323,
-      "sha256": "34893fa1a5312263825e7d68213b2f479c24bfcc2e78f18cc29a72ad48761fce"
+      "size": 6536,
+      "sha256": "e4e96b5278af33e3bdb9a1d525b02aae262304adfebf50731f2b70d5ec7e43fc"
     },
     {
       "path": "tests/f9-f10-production-closure-0.12.69.mjs",
@@ -1445,6 +1460,11 @@
       "path": "tests/fixtures/core-http-routes-1.15.168.json",
       "size": 4329,
       "sha256": "9a6c4c9405eaa658e24f91e4b9b6a56f527e6047dad7d18cf27195433019cb40"
+    },
+    {
+      "path": "tests/fixtures/f8-public-sso-module.mjs",
+      "size": 278,
+      "sha256": "d45abf048462202438606f46e403882e89967ed053a897636f050d3069d2e3dd"
     },
     {
       "path": "tests/foundation.sh",

@@ -82,17 +82,23 @@ const api = await import('../src/api.js')
 const { createSsoProviderRegistry } = await dataModule('../src/sso-providers.js', [["import { reactive } from 'vue'", 'const reactive = (value) => value']])
 const { beginLoginSso } = await import('../src/extension-surface-workflows.js')
 
-// Production registry: Global Settings contributes only provider identity and
-// display metadata. Supplying a module-owned begin callback is rejected.
+// Production registry: provider_id is preferred. For backward compatibility,
+// a module that supplies both provider_id and the old begin() callback still
+// registers; Core ignores the deprecated callback and owns initiation.
 const registry = createSsoProviderRegistry({
   beginProvider: (entry) => api.beginTacticalSso(entry.provider_id),
 })
 const moduleSso = registry.forModule('global-settings')
-assert.throws(() => moduleSso.register({
+let deprecatedBeginCalls = 0
+const originalWarn = console.warn
+console.warn = () => {}
+moduleSso.register({
   id: 'global-settings.microsoft',
   label: 'Microsoft 365',
   provider_id: 'Microsoft-365',
-}, async () => 'module-owned'), /must not supply begin\(\)/)
+}, async () => { deprecatedBeginCalls += 1; return 'module-owned' })
+console.warn = originalWarn
+assert.equal(deprecatedBeginCalls, 0)
 
 moduleSso.register({
   id: 'global-settings.microsoft',
@@ -141,7 +147,7 @@ assert.match(main, /createSsoProviderRegistry\(\{[\s\S]*beginProvider:[\s\S]*beg
 const docs = fs.readFileSync(new URL('../docs/module-sso.md', import.meta.url), 'utf8')
 assert.match(docs, /provider_id/)
 assert.match(docs, /_allauth\/browser\/v1\/auth\/provider\/redirect/)
-assert.match(docs, /must not supply a `begin\(\)` handler/)
+assert.match(docs, /begin\(\).*backward compatibility/i)
 const nginx = fs.readFileSync(new URL('../scripts/repair-nginx.sh', import.meta.url), 'utf8')
 assert.match(nginx, /location = \/account\/provider\/callback/)
 assert.match(nginx, /return 302 \/tec-tac\/#\/sso\/callback;/)
