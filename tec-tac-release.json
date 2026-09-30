@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.78",
+  "version": "0.12.79",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
     },
     {
-      "path": "RELEASE_NOTES_0.12.78.md",
-      "size": 981,
-      "sha256": "e268c82d81e8f52902f0de53e22c1732c310a4e1247a432939ee4df51c076cfa"
+      "path": "RELEASE_NOTES_0.12.79.md",
+      "size": 572,
+      "sha256": "4c6872b4173012bbf8e245c0545b910a9b8add95df4941b138488664b5d09e06"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "dd597a520a0261881a79d6b637713250a4a5fe1853d386f24e7929958f2cce92"
+      "sha256": "f14a45d15f21faed5926f2edf914af9513c18de39696d1892702c6f7688d4936"
     },
     {
       "path": "docs/context-actions.md",
@@ -592,6 +592,11 @@
       "sha256": "b97cb6578fbdf3850742b7a6db7567117acfc40a6ed7bfa3f72e68e6cf97d16f"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.78.md",
+      "size": 981,
+      "sha256": "e268c82d81e8f52902f0de53e22c1732c310a4e1247a432939ee4df51c076cfa"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.8.md",
       "size": 779,
       "sha256": "45c5203e14c1dc705e1d758993a0f2c0474af39619af66c787af4b72d1445860"
@@ -754,12 +759,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "983f63f1970f37151d1f2805f7d3202c2da3e9996be1a340875be4e53e3fde56"
+      "sha256": "3d90d5c26f682e17ed3c486e04afc7c0027904b3c29c2fa491bd562aebc18cb6"
     },
     {
       "path": "package.json",
       "size": 2615,
-      "sha256": "a55d66a4bc402b0da470abcadb3bba1f4fdb9d30897d5d9b576299b43ec9bee2"
+      "sha256": "58a42fc34a3386860bc2c72e6ac7f346058faa6bbf888b6e5a1b3e8e5f7a5ab9"
     },
     {
       "path": "public/modules/modules.json",
@@ -1314,7 +1319,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "914d6f350720b71edcc1720269637ed1a65499c6ce4155d570be04c227a5b10d"
+      "sha256": "ed0f35f85cb139e945d0e1588a370a7758ac3d2e672f2d438838a0c002322901"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1418,8 +1423,8 @@
     },
     {
       "path": "tests/f8-f10-extension-surfaces-done-when-0.12.66.mjs",
-      "size": 4366,
-      "sha256": "d8908b74ae9a900ff2c28fad85348b1edaec04135f549a9bdd2ef4dd763000fd"
+      "size": 5397,
+      "sha256": "ed0585baf063c325e01a92f8fa8f70d77941dca2f85581ed6f934d4f8f1ee5e2"
     },
     {
       "path": "tests/f8-oidc-done-when-0.12.76.mjs",
@@ -1705,6 +1710,1721 @@
       "path": "tests/ui-tracker-open-closure-0.12.55.sh",
       "size": 152,
       "sha256": "f5a2f186c428e0bc8a61009c20a4270a565158f07c5ecb2e24a167fb20d5bc33"
+    },
+    {
+      "path": "uibuild-0.12.78-full/.github/workflows/release.yml",
+      "size": 3120,
+      "sha256": "9eae329a9b878fff757dfa2ef1ea093b7e4f646a60e30c9819d87a77fa775a8a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/.gitignore",
+      "size": 41,
+      "sha256": "ddb330d23c7a93957b039e36d68bd60363755bccb41fa32278bdb883670581a1"
+    },
+    {
+      "path": "uibuild-0.12.78-full/FIXING.md",
+      "size": 2019,
+      "sha256": "1f7b05b04bdf9cb692800cb440f7015bb842679ee396400320e37016edb3c96c"
+    },
+    {
+      "path": "uibuild-0.12.78-full/LICENSE",
+      "size": 1083,
+      "sha256": "e4ea128ef691aa4c08c4c930fb2fdd8faf2b15f6a4800750dccc382d90a585f7"
+    },
+    {
+      "path": "uibuild-0.12.78-full/README.md",
+      "size": 30155,
+      "sha256": "52d56e0844ecc46a83f8d025a680b5795b8bf22f4803fc7c68993b0a3a872e31"
+    },
+    {
+      "path": "uibuild-0.12.78-full/RELEASE_NOTES_0.12.76.md",
+      "size": 787,
+      "sha256": "e556b606af172311ac2caa786937c26c44e9788bff4ec1411202bf86673396a6"
+    },
+    {
+      "path": "uibuild-0.12.78-full/RELEASE_NOTES_0.12.77.md",
+      "size": 1190,
+      "sha256": "b97cb6578fbdf3850742b7a6db7567117acfc40a6ed7bfa3f72e68e6cf97d16f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/RELEASE_NOTES_0.12.78.md",
+      "size": 981,
+      "sha256": "e268c82d81e8f52902f0de53e22c1732c310a4e1247a432939ee4df51c076cfa"
+    },
+    {
+      "path": "uibuild-0.12.78-full/VERSION",
+      "size": 8,
+      "sha256": "dd597a520a0261881a79d6b637713250a4a5fe1853d386f24e7929958f2cce92"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/context-actions.md",
+      "size": 4610,
+      "sha256": "cb49f07c6d4766b578fa3871ca816825299c4d458041c146f17d0ae7af1db57c"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/context-interactions.md",
+      "size": 2296,
+      "sha256": "bf58e4a02d58e86ece183ab5fc1e9c195c09a8bec4b7ee856315e538737e70c1"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/module-audit.md",
+      "size": 1790,
+      "sha256": "747e35e33293b2d8062a5ba5bc45880196e07b8c9b15f96b89bfd3d78f0207df"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/module-code-editor.md",
+      "size": 9082,
+      "sha256": "7ac693c97c477e04531cc5d4859f10f7a101cb0761f8ff2e6ad90262a9118170"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/module-dashboard-widgets.md",
+      "size": 2889,
+      "sha256": "9fd9a0762f2422bcde75815b4a9e55773d24f088126370d4a4a009fff978cfe8"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/module-header.md",
+      "size": 1731,
+      "sha256": "0d6871faa04d3afad173defb9e28c6c2c870dc10a1ad14bf665ba1e1babafad3"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/module-help.md",
+      "size": 5488,
+      "sha256": "e7ecb1c0e0e559112a607b83fdb059d0921bb67e16d03b8ef2132aa661a9ff2d"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/module-notifications.md",
+      "size": 6193,
+      "sha256": "c86fd3b128472dc9ee8496317b435123e0d3fb118be588231082166fc7a7d819"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/module-quick-actions.md",
+      "size": 3469,
+      "sha256": "2d4aac9727a94eccc7411ff3efa2b8a959c86a77c245c014f1ef5edef8c0a7d9"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/module-resource-views.md",
+      "size": 4133,
+      "sha256": "f66d1aa2ba357e552f1c5adc9a8536f442ad2f65a1a6d374e7fe5873d2f08861"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/module-runtime-api.md",
+      "size": 6064,
+      "sha256": "aeee16ba30d18850d584accc655f0a251b8ae7d7cbcf39c67047ccf0fa43cdc6"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/module-sso.md",
+      "size": 4164,
+      "sha256": "2453a58118ef2e9feddf6c550500fc20a54df1719f867c3af2aa3687c5f8cc96"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/module-status.md",
+      "size": 1383,
+      "sha256": "dc7852ac2da6b099c6fe02de4610fa17e1120872db936059b2ab83011a64a89f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/README.md",
+      "size": 1250,
+      "sha256": "10ee5170eb6c6f8244b4370bda490d87c7f1edc1a336109894d7fc29e54c1b48"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.1.2.md",
+      "size": 1596,
+      "sha256": "a1b8b13b7d2c5f4e09f8ab2d41b5ed295ae8596a642e7392773629835765a9ea"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.1.3.md",
+      "size": 1501,
+      "sha256": "75e17c9599325300845ec23166946614745aef7c12c8aa261dc4569adee152d4"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.1.4.md",
+      "size": 1233,
+      "sha256": "56b84478b97f968fee0d026225618dbac3b0913550a65d81e095d231c7bb38af"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.0.md",
+      "size": 555,
+      "sha256": "30d20bdc50f01023a47aaec1ddf0ccbc7cf81a5df14e440a7a82a4a6b605028d"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.1.md",
+      "size": 527,
+      "sha256": "c5e5262982b16b93ee1a52db002688c35cebb027eba95113e1c7551947ff6e11"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.10.md",
+      "size": 699,
+      "sha256": "178ee6b8123aa832e4321572fda1e05b56945892e0877715cd82c10063918f29"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.11.md",
+      "size": 661,
+      "sha256": "896deb4c45791924d60ca7a9f861571d556d17aa734c584ed79b19a2621ce2b8"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.12.md",
+      "size": 963,
+      "sha256": "e1688283285257aa004e665b07b8a85afcc222813b6992210a92f82731b8e136"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.13.md",
+      "size": 519,
+      "sha256": "9ccf6995a7f47121172f818ddd2d21777fd6e840c0752d1e661760bac2d297de"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.14.md",
+      "size": 510,
+      "sha256": "32e57e8305b4b4fa02b9614872d8a3b45595fee5f67daabf718e615daf0c410a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.15.md",
+      "size": 415,
+      "sha256": "fa15098e5389054dfee8770b34840b33c5c9b86b13bb9010a0a622c7abd56957"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.16.md",
+      "size": 768,
+      "sha256": "6a7772b7f4c5f205879b5c7f140f2a8130d16e5b416af6406b992dcb1a27ab09"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.17.md",
+      "size": 1210,
+      "sha256": "201987eb54992618040c902949aa87643db86893ef1f3db395096f737c75fe48"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.2.md",
+      "size": 952,
+      "sha256": "2ad037a6da309e672db4a0df442858045378b3c9f7a9386e680a5d3f39120e5e"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.4.md",
+      "size": 488,
+      "sha256": "c643a33cd529f3cecbd3dc6bde28a706fdeb88883ee305993f3520ec396299f3"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.5.md",
+      "size": 393,
+      "sha256": "c33828385429fdf7406c24de9c3b18b75d79939337ad33ff47c5696fa0797b43"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.6.md",
+      "size": 891,
+      "sha256": "150f0dd0db30e8b1d000e67da93399211134f75cf8e1214e4b9b0e2f19d59a2e"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.10.9.md",
+      "size": 423,
+      "sha256": "0a7ef726958ca53e669ba3bdb4fc62cd00019a31d4531861d55930dfeb62ae23"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.11.0.md",
+      "size": 1216,
+      "sha256": "335258d7a31179fd60f4f6f136fbb9f347acd575116f6a037b16a2219cd8d73c"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.11.10.md",
+      "size": 716,
+      "sha256": "1e7e1f24c5459281383527d4467ac97a47e1d503b359524fed73170e19c15a0f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.11.11.md",
+      "size": 411,
+      "sha256": "52659eac10485c3297ba93a9bf055a91addaed255f44c782237dabbb03605605"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.11.12.md",
+      "size": 584,
+      "sha256": "197a2f17aef3936c4196c30943b4bd527b60b91834f816cf01e82ad306cab065"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.11.13.md",
+      "size": 989,
+      "sha256": "8f410a6e8a55dfe770f472401f1fc9e1e67f7b22544e66237cfd1901404cf522"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.11.14.md",
+      "size": 1191,
+      "sha256": "8779e99eaa4f80bd84ef03d68370403bcc2ba962996ae34c16420efc2553679b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.11.15.md",
+      "size": 805,
+      "sha256": "c7f95524fc386c4d811b7ff87874008738685305c796aeceaeab8c52c7e1171a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.11.16.md",
+      "size": 575,
+      "sha256": "9ba5e070a66973e117a245fb8c322833fc73faa0c8e39a530bf22a0529645dc5"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.11.17.md",
+      "size": 672,
+      "sha256": "e92c4203552ad3a00ed02b65456371fca8716f33d0fe2cf23059d201a9e0e1a1"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.11.18.md",
+      "size": 582,
+      "sha256": "7f4e88f27b4baf1c69eeed2908a646e6c388cee49b5b859accb62cc904dc192f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.11.8.md",
+      "size": 426,
+      "sha256": "67050c60dd56c8e3561307029c1017f7abc8d100d7a4013c87b17a89b570234b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.11.9.md",
+      "size": 848,
+      "sha256": "7ea3e8b8a2f5788aca7be219371fc2b3e5c949803d318b39259d4f0fc9fb3742"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.0.md",
+      "size": 737,
+      "sha256": "47b67bfd3c280cae6dc93b09dbc7d1cc5868582adcc1f646fd548ca231e7695b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.1.md",
+      "size": 1440,
+      "sha256": "28cd6a4c0cf439627d7bc1e40e1a4d673db56737e0491972fee296b6b2a80e3d"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.10.md",
+      "size": 1088,
+      "sha256": "e6a42a78164d1563fb20deaade582b6a896ce61d22fb1541528b7c9f6c492a53"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.11.md",
+      "size": 688,
+      "sha256": "50b5df3dd6876ea1a106324465459bcaff193021e612862868d13a0c7b4ecad8"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.14.md",
+      "size": 820,
+      "sha256": "03a73fdb5a49d71089aa44717a382340270728926ae6fded2cf697b01a5e527b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.16.md",
+      "size": 473,
+      "sha256": "7a07ba920bd56bde8987250da4cf735f1174592e6ea0568b1909fc366143427f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.17.md",
+      "size": 706,
+      "sha256": "13a3499f8c548c56086e814ea3335bd0bf244da64f6a927e4c1b20a011c40307"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.2.md",
+      "size": 511,
+      "sha256": "f9eab0faf59e5b323a5fc4a9eb30510d3d55c3568af3de8604eb952a99a3e2fe"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.24.md",
+      "size": 398,
+      "sha256": "d400a259676534590ce9f3cba80e37bacb5469fc5c5bf42c87a97e4249454d51"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.25.md",
+      "size": 823,
+      "sha256": "cd45d30547de30c5c36930a6cc5aa82eaf6a0e867825658f7cc911abdde5a015"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.27.md",
+      "size": 577,
+      "sha256": "d49c8d1bcf1555e962845f2263318bf1525b1705a679050a862c5b0de676e797"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.28.md",
+      "size": 1078,
+      "sha256": "84dada1ac836596ac42d731d392b7c3d95337073ad8820eb436dbacd824280d1"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.29.md",
+      "size": 938,
+      "sha256": "97a20525226c09b70e55f11e70f4ebe6a3af4bd649afc29383a84a8d8ac915ab"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.3.md",
+      "size": 1021,
+      "sha256": "70e5fa8c02489739b377a6b900b0ec5f6918b2cfbc7f387c8eed624e9c5a6614"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.30.md",
+      "size": 520,
+      "sha256": "024869552cd8055f780142b071c09c0d778b64548463485506d09f3bfa5ae297"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.31.md",
+      "size": 493,
+      "sha256": "6793555c8326696eb5d710142527ba1a26a8b3c2b02c8699a68b578ef2d7c991"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.32.md",
+      "size": 449,
+      "sha256": "ba9aa0681483907199c9e15b9fb4a89a55a4e977c45c33b3e315cf80c0d4f295"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.33.md",
+      "size": 490,
+      "sha256": "97f2e5c5e84ef07ec926216efc57d49bc0b21e96946a0c2dd4a7b993d3e378d0"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.34.md",
+      "size": 1044,
+      "sha256": "3a57acb1d482a360d57939bbad4c2490261ef5966db2e975893b28b60c3d35c1"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.35.md",
+      "size": 811,
+      "sha256": "fda2477b7e33894339910aed4c09ce2dcb2b6ee06fc7ddf8c14efe60e93c7f40"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.36.md",
+      "size": 708,
+      "sha256": "b8361a4c0846876b0034914d85a74f6ed1919816f841bd2ab20c4d0bcd33b794"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.37.md",
+      "size": 718,
+      "sha256": "e8f0f2e0cc9c3d76efc9b60873add770633c526692facb4e76dec49dde17d3c0"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.38.md",
+      "size": 866,
+      "sha256": "d398f3771d7276607cb7b517d3a9d682a8edb2cf30d9555a94adce54a2a9680f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.39.md",
+      "size": 500,
+      "sha256": "36f3434312cf13acdb6052923db08c452d393b5f448640707feba6fd0f06d481"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.4.md",
+      "size": 1363,
+      "sha256": "565212cb0172a00de43b3b824cc9a007b133ece23127c71298f94b06a0c3fc6d"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.40.md",
+      "size": 477,
+      "sha256": "44d28d9b0a4e41587482b1e32de8193a8d2cea761e8d103114189b8a98e5b597"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.41.md",
+      "size": 765,
+      "sha256": "2d43a8c4004a2c6e9e53b4d615ee4332880a06ccb11680877c619fc4a5775449"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.42.md",
+      "size": 464,
+      "sha256": "58b4bf4460419cad90d9feebebda15e09550d729f8f2de6274e6f2e6d7b00272"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.43.md",
+      "size": 491,
+      "sha256": "5589a93567ffb3f641222fd5d464e396c2f9d823576f89c3fd07b437ad15ca78"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.44.md",
+      "size": 900,
+      "sha256": "0268d82b32c3a53579d5604772ade51e367229b7ab53ceec4cf841bbf642d8bf"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.45.md",
+      "size": 1149,
+      "sha256": "3e8e37e6b30d857873e977346fb548f4c187d67667db8c334a10cb0bd146d51a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.46.md",
+      "size": 1439,
+      "sha256": "28c6c0e3bc7e782cc7c01a36ab9f8c315bbf043b875d2c94778616e1f7dc59d0"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.47.md",
+      "size": 935,
+      "sha256": "82589f821699781c9ba78e4ce912d2d7af21a6fd7fd77c0d6c0bf97fefd493d8"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.48.md",
+      "size": 839,
+      "sha256": "42658fe2b5e9b6d3c7a3dd30c4b7c33c3f1488f985c72313789bb61203392ab5"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.49.md",
+      "size": 866,
+      "sha256": "7d85d7e00fafd02dab23bc67498425025d2044692af6bb821b0a176df1e9e9f7"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.5.md",
+      "size": 825,
+      "sha256": "a5f5ad4430cd5e337625e1902ce7843f48b7d4a102ec97c8f70a03e106fa088a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.50.md",
+      "size": 530,
+      "sha256": "c16587ec984658c45fe0e77a2f70770a9a56285bee2ee31958efb094e779f338"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.51.md",
+      "size": 551,
+      "sha256": "4929ad1b0cb8e755ce7369e45615a2b14d2d596edb215330ea10b6a6f25cc2e2"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.52.md",
+      "size": 533,
+      "sha256": "9b4dca7d9cbf5f9656e04f06a5502d65b07c427ed831d5124fd6655d660e11ad"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.53.md",
+      "size": 705,
+      "sha256": "95cd005ce66bde3bb5d573b84b5d0ae9c7edd64f856084153593b5747577f162"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.54.md",
+      "size": 793,
+      "sha256": "532c8156b6ee5a2f90cdf0bdf7d36b44bdaa850855ceded0f2b9ae4989a5c3fb"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.55.md",
+      "size": 990,
+      "sha256": "41a849700b2de23b638ab5be78c4dbb8f759f278c0068f24c65075e8d2620d61"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.56.md",
+      "size": 504,
+      "sha256": "41d20e30d38253815cc72a1c328f88354de8243eb49e5a173b66f40b0fdd538a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.57.md",
+      "size": 744,
+      "sha256": "0d88856f8b9e09d1f5eb021be2ef3d903dfed5d10eb7463783883afa61eb0e71"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.58.md",
+      "size": 1018,
+      "sha256": "16143930a54bd7cf70f731e22b95af9102cd1c369895c97390b32b296901902a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.59.md",
+      "size": 613,
+      "sha256": "a51168a28ddc2c17396a040d6f59f8b58dc48bc7ba4143c08eb2348a274940df"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.6.md",
+      "size": 784,
+      "sha256": "28d39a76eeec9bacfd5a0e24f63cecaff46d0da776e84ef31a4def39ab8aecac"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.60.md",
+      "size": 677,
+      "sha256": "42a0e66599bfe070b0b2ba4d8d4b04a5c0004e99e2ccbc2d0cc8f6e07aecf74f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.61.md",
+      "size": 802,
+      "sha256": "bf57fc2198a1cbde3bf0270493ffb68529c929ebbad1f1a0752aaf32c14f89ed"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.62.md",
+      "size": 1724,
+      "sha256": "a937ada2b110fb7891bc4d5b29aa01919554957443e2bd5b2c0ac69c7be84325"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.63.md",
+      "size": 1233,
+      "sha256": "ad5e15e70502bea25c93c36401553c9ca79737580c77b1f7aac6848a6ec792c1"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.64.md",
+      "size": 1071,
+      "sha256": "14a010cb513b311b69ad932df9e49afdcd685f3e8ac96cdd6c8ea4ec29529712"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.65.md",
+      "size": 1401,
+      "sha256": "6c8cb0d97c8cf8f42bba31e3e32a4d7fe8826bcac69d7d2035bcda2ded886272"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.66.md",
+      "size": 1610,
+      "sha256": "de8876b6ff4a81aa63f8042137b009080bf1c2c7aa4c3b871f100bbfe793f7c0"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.67.md",
+      "size": 777,
+      "sha256": "28d91c017c6bcc10d683a97914bf8eb4aeb27a2a0a3fad76904ba5f9858bed5a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.68.md",
+      "size": 1075,
+      "sha256": "147c7888b6c3cc6bda477ad484cc2fe9c1d7159a1dd91fc381d4f912e3dea85e"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.69.md",
+      "size": 1305,
+      "sha256": "14553ad7960085984d220f72f7df04cb49656793ebd8d2a2502d4edb2759e777"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.7.md",
+      "size": 578,
+      "sha256": "cea6a69c99e8f715e8841a9787c7e486fe2d560b8fd9f39c4fbf0d42f9320093"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.70.md",
+      "size": 707,
+      "sha256": "c9cc3ce8cf8b385eb627ac14ca86cd48c10178f63da372ca230f2b1216775c82"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.71.md",
+      "size": 478,
+      "sha256": "f11499bb7abe758e4c9ec9f0d1358bba461d1304a9ac89e88f8987761eab023e"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.72.md",
+      "size": 530,
+      "sha256": "01c77d2e78a48f99aed8ae092f57318d47710bc00ad97ab95f2a1cf99064aa60"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.73.md",
+      "size": 346,
+      "sha256": "266a9fecc01e9bd28b8b0f41ea1d0f694f7e3eec6ef51be799ed2c65ee65d149"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.74.md",
+      "size": 595,
+      "sha256": "454c6ea9abf26e9c015b3eadbcc436251899c648c64914cb9f95de319dc78bd6"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.75.md",
+      "size": 554,
+      "sha256": "aad84b5baed5afca3a2976f46dbdd2669e41ddac0ba5777ba057e1cf7add2e43"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.76.md",
+      "size": 787,
+      "sha256": "e556b606af172311ac2caa786937c26c44e9788bff4ec1411202bf86673396a6"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.77.md",
+      "size": 1190,
+      "sha256": "b97cb6578fbdf3850742b7a6db7567117acfc40a6ed7bfa3f72e68e6cf97d16f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.8.md",
+      "size": 779,
+      "sha256": "45c5203e14c1dc705e1d758993a0f2c0474af39619af66c787af4b72d1445860"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.12.9.md",
+      "size": 430,
+      "sha256": "925771aff54cdee9e8ef7829d02c2c00aa206a3dede972b6697862e43668ae0c"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.2.0.md",
+      "size": 1284,
+      "sha256": "be54aadd04066e8034717e9733cafc4a56a734393cc300cd4ec0537615718c2d"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.2.1.md",
+      "size": 1132,
+      "sha256": "ff947dafbf2a1ee9b0f163a2f2ac42bb5257249c02ce184b7acde3c63786345b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.2.2.md",
+      "size": 1481,
+      "sha256": "ae86b46342aaa1d40ff4003391778914fb53ba26440f3226afb95924a2d92af3"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.2.3.md",
+      "size": 1344,
+      "sha256": "586542b178873f12333d86d9593e9910ff962b3ccecb0c41dfad85fce960dde8"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.2.4.md",
+      "size": 540,
+      "sha256": "48b9255e386d397a1d75228719a6d85f9314c7018ae8f24c22636a1b3be7f56a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.2.5.md",
+      "size": 614,
+      "sha256": "f0e267a369a3f063f4618617e2f11b1fec7ab5b1437e71954a9eb9faa81ea697"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.3.0.md",
+      "size": 1572,
+      "sha256": "bc67aee3c72f058e1c762686b4e046456f2964d38f13796c7e1df45ceea8de80"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.4.0.md",
+      "size": 1408,
+      "sha256": "9a6bdfb7654ac7ab7502596a3cf5ff86b07fb6c5a04dc5fe83241106538a7650"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.5.0.md",
+      "size": 880,
+      "sha256": "9bd520d0b4ce2462a95e4623186baad6dee83561a9f87f0bab8dd4435011ef29"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.6.0.md",
+      "size": 427,
+      "sha256": "2c232e1a4e6298f30189e7d3946ea28587f3d5e66e2352712a6c53df6af79530"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.6.1.md",
+      "size": 356,
+      "sha256": "52240350f5caa6e5baf489c6159c3e946bbc41ae3d179a86a83a3344ab0ca3ed"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.6.2.md",
+      "size": 576,
+      "sha256": "f84847761a2189f311a6c2b3dbede6dfe284573407d44663f7cff9f004eb02d2"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.6.3.md",
+      "size": 787,
+      "sha256": "fec30c3da081c2cb800d5f5a676fcb65563435db8316f6944ca79beba43c9a76"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.6.4.md",
+      "size": 695,
+      "sha256": "329949d2703de16cfe507e22fbaea63d35875f0bc971c6e92be7d0ba4d77e8de"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.7.0.md",
+      "size": 609,
+      "sha256": "0ebdcd1926e8a4dbf9b456320583ea8e0756ac2b8cab66f03e1e03ff8435b90a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.7.1.md",
+      "size": 495,
+      "sha256": "7af4fe65e9722bc40d7a09f1ad76cda86ea19ddfddf60bf2bb0d5554ea054443"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.8.0.md",
+      "size": 423,
+      "sha256": "8f15660e4ba6d09bb1a2919f2feb953cb948133d2d54461b6d29b9c2cc37be81"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.9.0.md",
+      "size": 573,
+      "sha256": "5fb0c463be27c7589f6017951ffce93e6fb38b207e4ab88ffd0575c9fc8a8770"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.9.1.md",
+      "size": 363,
+      "sha256": "db4c2c4c1711ac29916ad83a18ef577a2ef1b248df670d18621265cdebe33cca"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.9.2.md",
+      "size": 265,
+      "sha256": "871ea8d2bed2f9eff806f8cf13650d17080c756d2393f0d088a30bf3152fc27d"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/releases/RELEASE_NOTES_0.9.3.md",
+      "size": 1002,
+      "sha256": "bfb1586d8691f737f04cc90ccdc84e225ef4548a920008ecd5e056bd30e9bd93"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/tracker-acceptance-0.12.67.md",
+      "size": 1097,
+      "sha256": "4210f9969402fb5580dca7509d66b3c45f4cb48604769b51233655b46c20ae12"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/ui-design-standards.md",
+      "size": 13627,
+      "sha256": "86b24cf4c1ba11a439d92e689e7cd763c877a9f0f9e7827a838fe2176932029b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/docs/user-preferences.md",
+      "size": 2702,
+      "sha256": "89dc24cd16da00a514a8b213eb065bac6eb3223b70784c90b6212521d6887afb"
+    },
+    {
+      "path": "uibuild-0.12.78-full/examples/code-editor-reference/tec_tac_ui.json",
+      "size": 217,
+      "sha256": "52c59c9245018d3d32ace87a352302d32160f569a546f8021ed12eb50b2c933c"
+    },
+    {
+      "path": "uibuild-0.12.78-full/examples/code-editor-reference/ui/index.js",
+      "size": 3906,
+      "sha256": "ec4a461e678027e69bfae852a49bd1db4a89e42db300deceb7e17fd132d51be6"
+    },
+    {
+      "path": "uibuild-0.12.78-full/examples/reference-module/tec_tac_ui.json",
+      "size": 302,
+      "sha256": "1864aa7f2430911ec69c83c5b45f7eb499f9c408e2cb1d0e918d296a816f118b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/examples/reference-module/ui/index.js",
+      "size": 2354,
+      "sha256": "58cb24a02151144a234e78614ff501f040f31e435f85bc0450681ec39a4a94ec"
+    },
+    {
+      "path": "uibuild-0.12.78-full/examples/reference-module/ui/public.js",
+      "size": 310,
+      "sha256": "2e40fc234d14ea7c98a4bbc2dbfe58d8461993ce69b661e338180975de0e36c8"
+    },
+    {
+      "path": "uibuild-0.12.78-full/index.html",
+      "size": 385,
+      "sha256": "d3874f5e651993e863e6313ba03efedc86e838557cd41df8e3c7e75433dcdbd9"
+    },
+    {
+      "path": "uibuild-0.12.78-full/package-lock.json",
+      "size": 44095,
+      "sha256": "983f63f1970f37151d1f2805f7d3202c2da3e9996be1a340875be4e53e3fde56"
+    },
+    {
+      "path": "uibuild-0.12.78-full/package.json",
+      "size": 2615,
+      "sha256": "a55d66a4bc402b0da470abcadb3bba1f4fdb9d30897d5d9b576299b43ec9bee2"
+    },
+    {
+      "path": "uibuild-0.12.78-full/public/modules/modules.json",
+      "size": 3,
+      "sha256": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    },
+    {
+      "path": "uibuild-0.12.78-full/scripts/install.sh",
+      "size": 2468,
+      "sha256": "9e79b74ffc2bbd88911b4abc13df3b41765da967e1b57b7e9d74d2c618267a83"
+    },
+    {
+      "path": "uibuild-0.12.78-full/scripts/preflight-signing-tree.sh",
+      "size": 1138,
+      "sha256": "a1bc6b25c1c0a70d160122c03d46a25d876dc2cb0aa43d702880b677b8ebfff2"
+    },
+    {
+      "path": "uibuild-0.12.78-full/scripts/repair-nginx.sh",
+      "size": 4241,
+      "sha256": "4e2fb60e617913f8f5f1e7e4810e6abb31063abb5ab1adc0a57e58acb3a4aa9d"
+    },
+    {
+      "path": "uibuild-0.12.78-full/scripts/sync-modules.sh",
+      "size": 5702,
+      "sha256": "9ad2001f10326ba79083d53400a67a612bef74a114293afd94081801ed269ed7"
+    },
+    {
+      "path": "uibuild-0.12.78-full/scripts/tec-tac-config.sh",
+      "size": 503,
+      "sha256": "03545026c0594b4ed998fe1c1a8b79502fd926c0f2696efd921cff17396b67e3"
+    },
+    {
+      "path": "uibuild-0.12.78-full/scripts/uninstall.sh",
+      "size": 1260,
+      "sha256": "424c521b3f7546326e3caa516ee61be90c4916d87b5dcd9d7006aea224f9bc89"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/App.vue",
+      "size": 22047,
+      "sha256": "ea89dc30583ca29693c62a6442c76399392207ea48acae3c9ccbb911adfe9808"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/access.js",
+      "size": 6959,
+      "sha256": "89996c98217e366e47eb4d2ce8efc85388b183462b768a1e0dc54d8904d51fe6"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/account-security-policy-save.js",
+      "size": 219,
+      "sha256": "1829ae55be8339dcf7166e7005c06ea696fed715f662c1195e0d368065862c44"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/account.js",
+      "size": 946,
+      "sha256": "d33ca79286806dde235eb586406f2d5f3eab27be388237421307a0de0a97309e"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/admin-session-state.js",
+      "size": 1128,
+      "sha256": "93dda038c41f80281a704a627ecb0e458d975f3ab4226603fb788e436fa3e307"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/api.js",
+      "size": 27433,
+      "sha256": "c4a876156c015f756b579ae35ee5b4969af5b72c33173f3a74eab17f47bf0a47"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/audit.js",
+      "size": 1761,
+      "sha256": "07a5f14b18d16bd39acd4853571f2f57f7a18489e478d2e97c022f80a5db33ee"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/backup-restore-state.js",
+      "size": 2541,
+      "sha256": "c58abb14ce9dc716491ae0f8fddbf3cc2c8926797aa78bda971730cacbe129f6"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/backup-restore-trust-workflow.js",
+      "size": 941,
+      "sha256": "8bc2531dba3c07de219cc7af0c7a0546136482fb6ba02077403f1aeea3ec1c81"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/backup-restore-workflows.js",
+      "size": 1369,
+      "sha256": "bee747d9acb517af70ec4a6bf03e9476eee5c216727a7fef0701e7078b919105"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/clipboard.js",
+      "size": 484,
+      "sha256": "c4291c3b6dfcf03dab3f16732b8a69863794421d33f27078914a8c5f12f08eac"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/code-editor.js",
+      "size": 23997,
+      "sha256": "19dee7c0415f0d80ba5bbb048ef0341814b013c5f4deb6fb502f3a49f7c4a3cc"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/HelpDrawer.vue",
+      "size": 4200,
+      "sha256": "147672f2900bfde26c76946127d532fdb1cbad409794dd21f966a4ba7f547e4b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/LoginPanel.vue",
+      "size": 14472,
+      "sha256": "748db69f0dcd49974f59ef9350627fd04e976085c074be5da78c886ca64bfc8b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/LoginSsoProviders.js",
+      "size": 1097,
+      "sha256": "1fc1895e30aa7da7d3375f6148a4b4e071868f746c2e87bfdeccece5266bece4"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/MarkdownContent.vue",
+      "size": 326,
+      "sha256": "d00640aacfd2b2011d56d4089dde7e4e74a12c81bfc3aa3676b87d551f72bd21"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/NoticeDrawer.vue",
+      "size": 4370,
+      "sha256": "78a28a5f168571f2fdf3ec315af4328e43e0cc87aa2cc3b226fa8d7555de6d8a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/QuickActionsDialog.vue",
+      "size": 4188,
+      "sha256": "177f4b78106f70daac78d016642a0b11bb43a44c1cb044c2ef86543d35952aa0"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/StructuredObjectEditor.vue",
+      "size": 5552,
+      "sha256": "b1316d2a9c5e38be362e494f54357b7a385735a49ff4f85729a66fa756e1874e"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/UnsavedChangesDialog.vue",
+      "size": 1182,
+      "sha256": "a0f7250f5a51a9d723d9520895673cd378cb0ecedeceabb5466d28ddebf17bc7"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/access/AccountSecurityPanel.vue",
+      "size": 2609,
+      "sha256": "86cc6e6f5ed00f1200b0dc4f817d6e377b41e5da06b9c1a91db7175fb79a57b1"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/access/AdminSessionsPanel.vue",
+      "size": 5382,
+      "sha256": "e0c0b16a091baf38cd8982d07f63f53ea2daa9559ee958ec8c1074b8baa4077f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/access/MfaRecoveryPanel.vue",
+      "size": 7198,
+      "sha256": "ea604ebfa76b7a2adce1f7f340c29188f122a3889ac04b385e19c712f8377584"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/access/RolesPanel.vue",
+      "size": 22185,
+      "sha256": "04f3710e9bbc538504edd7445d20e52339f919e5ebf7e1555f13214f1f5efd6f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/access/SessionPanel.vue",
+      "size": 2274,
+      "sha256": "e81d7a3455a8de0f448c4d694ec60a1df78cd1dea2952eab1663c6248845f4a8"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/access/SessionSecurityPanel.vue",
+      "size": 21198,
+      "sha256": "392de1fbf89ba85a81fa61c4ef1b1ead40b26f6785193fc9669cf6c884ac5baf"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/components/access/UsersPanel.vue",
+      "size": 15851,
+      "sha256": "4477d5a6d144dce5aeb480bf738d6220064e33aa92a7ea6fbf240c89f3153295"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/context-actions.js",
+      "size": 6690,
+      "sha256": "3bf1fde70ad7342c9c9b3f02123af8ddf2fcf6d50b6146024c9c76aa4eadc62f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/context-interactions.js",
+      "size": 5956,
+      "sha256": "a3a4707d1f4663e434d4c6faf83e794898cf002325f71d62f2cdac053ec9fc46"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/contracts.js",
+      "size": 732,
+      "sha256": "a80f47393ec3fcf4775e937b2c3d5f5a2c544800587dea987773158a76408789"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/copy-feedback.js",
+      "size": 393,
+      "sha256": "99e0281529afe6b4eb06d7d04a4ee5bdb9c186a229c44e738b9f3546fbce50ed"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/core-navigation.js",
+      "size": 2161,
+      "sha256": "312394be878f8c7ae66a744c166f370ad042fe9a1e45f7de94d65e81fc4af042"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/dashboard-core-widgets.js",
+      "size": 2184,
+      "sha256": "1492fce2f05ddd3e0106bc7d5cb75fb49df66715dd2f220161747495b64e4da9"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/dashboard-widgets.js",
+      "size": 4046,
+      "sha256": "6d35f8423fe0cd8747a6f7fced761521cd4915a4a13ffea06a47d7bde8af8b31"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/dashboards.js",
+      "size": 679,
+      "sha256": "28cccebe287f3cb77d89f3e623a536d4b792738472d3c51c68f69f2693edb81f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/extension-surface-workflows.js",
+      "size": 1338,
+      "sha256": "e0e1d60cefeb7dc9053d1372f6dac9c05e1f97add3fd107e71918660466766d7"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/header-contributions.js",
+      "size": 4436,
+      "sha256": "14a636dca798bc06b460ab4ae8ec2fcc09ed0a829caf04178ac6a57f7ffbfa01"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help.js",
+      "size": 8255,
+      "sha256": "f0a971b0d75b2be8719432bd3e65e124ac0f4c807faef1bf7c479dc31b6ea938"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/access.md",
+      "size": 635,
+      "sha256": "cfb9a2157a9b3d5c91bf2ef39af848e16c49aea713a0e774db34acff915631fc"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/core-ui.md",
+      "size": 956,
+      "sha256": "617c0e19a142ad38d9de18b19c3dd4007a1973f15641a9f84ea180d855fb7fa9"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/dashboards.md",
+      "size": 677,
+      "sha256": "984ed53cf5dec27d2a0e036d71004f8617fee211e6559784e1fe8a94e71b1102"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/getting-started.md",
+      "size": 1059,
+      "sha256": "ada3826d40de41665a691666c309d888460e03e349b4350dcae65381e6d22865"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/help.md",
+      "size": 694,
+      "sha256": "e2ce7fb2673b3d7568c997e062b59432f9784ce5d9c56297effafbe2ed6168eb"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/modules.md",
+      "size": 975,
+      "sha256": "a2aeaae6125e37167eedc7ac0fc1a697e3bd69e62af898877f9b100a3ac387db"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/my-account.md",
+      "size": 1327,
+      "sha256": "888cb36bfb59280de4e2fec1ad266e5fc1fa64a94856256b518ef88551f8af41"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/preferences.md",
+      "size": 543,
+      "sha256": "1f448c5953aa48537ec2706e50e1f555997cb4047eb218226322371b12562404"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/public-contracts.md",
+      "size": 818,
+      "sha256": "879defd9fd846f68bd5e1a1cc0a0e1fd41cc098eeb37c410008a881523a73467"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/scheduler-configuration.md",
+      "size": 809,
+      "sha256": "a7eb3cb982ac05fd04a5672cd133cabb9a10fc1d99c26af40ba27fb823a4b74c"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/schedules.md",
+      "size": 2176,
+      "sha256": "04f541a6a030f201036c23ff5679817b60865ea091734bccf5d148075b31941e"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/storage.md",
+      "size": 357,
+      "sha256": "923bc259e4e0400e96f755699347895d8987e35fceff6d24a70837b5c29441be"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/system-updates.md",
+      "size": 1129,
+      "sha256": "7ebc73f052a85ab7f91ecc72602e5786e76c55c7da87fc25fa482d3f06eb52d5"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/troubleshooting-diagnostics.md",
+      "size": 914,
+      "sha256": "e859ee67c0ddb02f8315df4903c52401d1869108a4c1d3522175f1f37362dd7b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/troubleshooting-migrations.md",
+      "size": 856,
+      "sha256": "f99cec3f7584bed3e88c46c13cb1a3bba8a922dda459f3bddc4c8125a087d73b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/articles/trust-policy.md",
+      "size": 3123,
+      "sha256": "af766f89f2ba25c33e796855461ffadb1771365b94357e37e2bb20c3d4c42220"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/core-articles.js",
+      "size": 5818,
+      "sha256": "d24e97eff26154fae40083aa48ee6323ed8e08ad400088e38bc43a4844e7ce81"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/help/markdown.js",
+      "size": 3622,
+      "sha256": "9c9aeb69fb85c1e3ebc39d0647ab051f51e5eabf532b38ffbdb08015489563dc"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/latest-request-gate.js",
+      "size": 557,
+      "sha256": "5f2ab166c6278b8d1e7f6f0e15423f2a48b3b59deb1b1b03ad48438edd0a14aa"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/main.js",
+      "size": 5853,
+      "sha256": "be840ce18da80549f251e74bc1d21fc6044452b170750166f74355254578174f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/mfa-enrollment.js",
+      "size": 465,
+      "sha256": "940070feb76ad97597a5560b6c871288c861bbe75968889a592975ba9d28cf08"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/module-hotfix-loader.js",
+      "size": 566,
+      "sha256": "4ac585b8fddd82db2026ae38562dff0d5e7a787355cb52c4e4feb9368ec99625"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/module-loader.js",
+      "size": 7937,
+      "sha256": "1b7d48a4de838cf44dfe76be34bd1eb4eb6d754a09650d89e06492d47afd1ff1"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/module-status.js",
+      "size": 3043,
+      "sha256": "2167c56fc69d014c13a6524f5ffaf367ffac227bab8f90f1371bb546f395fd08"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/modules.js",
+      "size": 5381,
+      "sha256": "46e283c4cfb46e0f89c478651fba7312588c885de8a98215277d924ff84c9c5f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/my-account-password.js",
+      "size": 174,
+      "sha256": "5f0fdcc24b4303f745017039e3caf30288e33af34ff98d7e9a6dec1396799088"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/my-account-workflows.js",
+      "size": 1989,
+      "sha256": "96fef64cdda9c35cbe2a23596a98161225752193a3611df14ce017f44556d729"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/notifications.js",
+      "size": 11121,
+      "sha256": "2e470fca6669ceb39e08eded007ebf395663d1fa3058d1ab19f259f94f1179dd"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/preferences.js",
+      "size": 7766,
+      "sha256": "28aa1c877995338a9270dc2bf257a0f3313eee0b2ce9354a58ee62a14e3a9891"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/public-contract-browser.js",
+      "size": 491,
+      "sha256": "8f80de42a935575838f9cdb272840adf792706d0646dbfc86ee352e3c74f57ab"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/quick-actions.js",
+      "size": 9081,
+      "sha256": "3986831e3801337b25c26f7f7188a1cce54ae50cab18ea7e3ba5bf1ddb366518"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/resource-feature-workflows.js",
+      "size": 2031,
+      "sha256": "216e62a8d16c8e76ad4ad80fe640c38970cdecca850d35f43f3d287081f29527"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/resource-site-search-state.js",
+      "size": 1032,
+      "sha256": "83c628cf3bf0db74387de15f0bb4df1e141a1a32949d44c5af5cc4c1577c7400"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/resource-views.js",
+      "size": 4367,
+      "sha256": "f983782e3c8b26aa72238acdc7f499d1260966c0a22ee02198bc39511577a8c4"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/role-selection-loader.js",
+      "size": 721,
+      "sha256": "ae755ecad41cb802f758c54f660955df0a6ea141121d3b50bda63b1c7796dd52"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/router.js",
+      "size": 3608,
+      "sha256": "f5d1f0f5534d16264e7f46d15256e1ac8b1ff5e9503b753527d10521892b07c0"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/runtime-context.js",
+      "size": 2004,
+      "sha256": "ca5e1cb0c9e32f5c8d909383d52713e6c6a042aee0dad3328da83d48824078b3"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/scheduler-health.js",
+      "size": 398,
+      "sha256": "9b2cd8f85cf5d1a090829c6f01fb50e1486fe782a20ae926ab592d843100597b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/scheduler-history-loader.js",
+      "size": 1333,
+      "sha256": "cba51773c1f7598ca4a4f3bf518bda980a6805c2581e8fe33d7389e76ac6ed9a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/scheduler-history-state.js",
+      "size": 613,
+      "sha256": "5a40bc8e0f51a6281223cfdd5b858457e5164b72906ee074c4a017728ba2301f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/scheduler.js",
+      "size": 2032,
+      "sha256": "a3c6bcace8178813cc4d7abb68c20a3601123f59402791d9e614fe7490aba155"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/session-security.js",
+      "size": 3325,
+      "sha256": "216061dc95ae5ae1c49310cc1d5f1dfff36721dad8b73b4949081e5e9124b889"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/sso-providers.js",
+      "size": 4859,
+      "sha256": "58c48d6ef5027dd76c6dc27cbc84c3e8c0ad48577985c077fb4fcfc4deed3808"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/state.js",
+      "size": 4298,
+      "sha256": "65cf1159e02d5d132a763b78fc5f83cbd33f38c30a85ebc821d80c5dfd2c42cd"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/styles.css",
+      "size": 87893,
+      "sha256": "b6c50ae9a742045c8a26d10c6aaaaf50223a3d039007e01e3396a1844257c715"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/system-trust-popover-state.js",
+      "size": 605,
+      "sha256": "debdc240a4d8a1537a57e2fdaf4334eb933b14733d757df87c5afeb9853ee455"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/unsaved.js",
+      "size": 2092,
+      "sha256": "2b0ac41a187d04862bd4b4248557428cb26008ff4c833fd3f11bbb8becfec746"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/use-account-security-policy.js",
+      "size": 2904,
+      "sha256": "6f1000b20afc5763eddac8a9563eb17b0c2c5a629ed5baac7f1d9a11a4b42902"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/AccessView.vue",
+      "size": 2660,
+      "sha256": "3fe1dff4d10a012644895f59e768fb6de65a37bb223a516350e5b62c32199580"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/BackupRestoreView.vue",
+      "size": 13129,
+      "sha256": "99d7dd762821f676d0cb24676519fc88380b58ccb2576e87d657bcb9316f7cb6"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/ContractsView.vue",
+      "size": 22329,
+      "sha256": "03b4210038e9eb6fee84a21707b70aa287f20aafdca76f76e9e63a8bf0d12730"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/DashboardView.vue",
+      "size": 17170,
+      "sha256": "ec03c050cd356199c341dde8937230468e552b4af9d57b3a25a940764434f9fa"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/DiagnosticsView.vue",
+      "size": 8279,
+      "sha256": "9c609745c9588828f59387d452d41ceef00b8f43097adcb7013725e6e7015047"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/HelpView.vue",
+      "size": 5047,
+      "sha256": "6c0772a00e8a7ec3f216f3602e5e516990635ec792a42c97f6f5119b69e3dd63"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/MenuLayoutView.vue",
+      "size": 7894,
+      "sha256": "0bcb219aa4fdf92bbfba8141acfd28249bb33208e65a0da622dfe82574a7e191"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/ModulesView.vue",
+      "size": 68616,
+      "sha256": "a8f58c51c9b1e104382a3262fa27d071a8998497dd5df88457c32302aaa3b261"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/MyAccountView.vue",
+      "size": 9345,
+      "sha256": "b3bd858f259bb66503712a13e0dfc9309b44bde725efe5ec6969d3076bf75181"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/PreferencesView.vue",
+      "size": 6771,
+      "sha256": "6986664b8284080fe409c2f9219847d91e4e78d919586f6ff3e5673b719e800a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/PublicPendingView.vue",
+      "size": 251,
+      "sha256": "0313ffbe66dc89021d5a3b8dee18d96038d164d573bf1d6f32df377f4c9c313c"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/ResourcesView.vue",
+      "size": 25528,
+      "sha256": "ce35a2eefbd6b78406b87e4ed96bb26374d1bd4157b153d06be006a85dbabe19"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/SchedulerSettingsView.vue",
+      "size": 6848,
+      "sha256": "ef3c2662be022590225bcba17d73ac66fdf07bce643bfe56304fe6192167eacd"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/SchedulesView.vue",
+      "size": 22922,
+      "sha256": "f5710cf102d36858bf8deed1af9b4d0039f5d2e768ba4b392687de19f4a185c5"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/SsoCallbackView.vue",
+      "size": 1618,
+      "sha256": "2cf656808962918b66daaf151edd932129dfdcca76981417317e3bc964d30303"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/StorageView.vue",
+      "size": 6701,
+      "sha256": "1f093801d525fde4334d1b0fbbbb457137a84ae8461964cb07ea066519544ebf"
+    },
+    {
+      "path": "uibuild-0.12.78-full/src/views/SystemUpdatesView.vue",
+      "size": 34546,
+      "sha256": "f8d1f17420928a0e977ffda1c173e1eebe65ed9067ee81cf61567a652a4d99ba"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tec_tac_package.json",
+      "size": 139,
+      "sha256": "914d6f350720b71edcc1720269637ed1a65499c6ce4155d570be04c227a5b10d"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/account-security-policy-api.mjs",
+      "size": 1832,
+      "sha256": "367972099d1ac1beca912a2469a762e7ec2f28d35bf8203fd752dda5097a8321"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/account-security-policy-panel-lifecycle.mjs",
+      "size": 3051,
+      "sha256": "75046ff0abcc2236ed4ee1e3ca4c082a39912ed9d7403371e2af2e5352c26c74"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/account-security-policy-save-flow.mjs",
+      "size": 1414,
+      "sha256": "63644fbb988b71b19b24bfb8c061647a73ceb34954334447a90114cbaa03fb1e"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/account-security-policy-ui.sh",
+      "size": 1011,
+      "sha256": "2d0fa5caae6a45d489a0325656754d53b0b3b6987a2bc769f6fc1e7d2da83ea1"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/admin-sessions-l70.mjs",
+      "size": 1072,
+      "sha256": "7c63e1a4a55c67e41f5e1cb1331316c156a0a88afce9ddc376de25e6a472e014"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/api-contract-routes-0.12.58-1.mjs",
+      "size": 1632,
+      "sha256": "eaab6e0fa5f12110b60f8a555a340955e258566f2ec4f9c76889aef26a7a4692"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/api-raw.mjs",
+      "size": 1982,
+      "sha256": "fac1d9920a11c8834f9c706c0d11817f4eb726c811dafb3f45b551dcfe10be26"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/backup-restore-final-closure-0.12.65.mjs",
+      "size": 4180,
+      "sha256": "7d63311403eacd4c3ac05b9ad2d4dd56487dfd45415805bbd93e174568b2326d"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/browser-contract-catalog-0.12.64.mjs",
+      "size": 1769,
+      "sha256": "3740a831d228bd5b981dda6c519f31e7731a6076d5d9c00dd104046970c7ed60"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/core-navigation-resources.mjs",
+      "size": 627,
+      "sha256": "a7a8a6e1becac769ee0c064f920a53b8bbb823831ea46a16f27a605559dda9b9"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/d3-f4-production-closure-0.12.68.mjs",
+      "size": 4723,
+      "sha256": "452387e049e097b3454c290693dee4ff0b2e20ed2fc3413db862a9f55f84a29a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/d3-seamless-restore-0.12.74.mjs",
+      "size": 2322,
+      "sha256": "1ec0256987001fe9720229e68ec59a82d61f9f42ae114a5f18b7ab29f8cbb2ff"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/d5-scope-health-ui.sh",
+      "size": 673,
+      "sha256": "b10347d827dc9ae5054ffa22fac14646a14d4b4f4709cef268ad85748b3d2aeb"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/d5-scope-health.mjs",
+      "size": 981,
+      "sha256": "3feac6173d5290a4adb0cfc96d70d82234003cb3948214170860605726e1178a"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/extension-hooks-0.12.62.mjs",
+      "size": 5811,
+      "sha256": "1d9374635d5671da16e22956c23b68d09d230c847d29af5f0dc0d53ebd9a3d20"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/f1-f2-my-account-done-when-0.12.66.mjs",
+      "size": 2511,
+      "sha256": "e85f8580bc287a4532b0a106cc7d165257d6a61ec4c00957d52565c73785d480"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/f1-f8-tracker-closure-0.12.75.mjs",
+      "size": 4110,
+      "sha256": "d75b3d324a3ae77dfd7c71fba7bc78f50d97daaf802cd9b350e559e511939b98"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/f1-password-error-0.12.70.mjs",
+      "size": 1576,
+      "sha256": "2647531ab37d4fea2dd90a72e9f47954e121f887a1d957e69a066b43d72e35e8"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/f4-runtime-context-done-when-0.12.66.mjs",
+      "size": 1577,
+      "sha256": "f02476c8c5dd82a5de35ce1d578b2fae6b99042110375e47d015a387fafcef15"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/f5-f7-resources-done-when-0.12.66.mjs",
+      "size": 2920,
+      "sha256": "d32f64e100fd2a91212535e25ca9aa0821a1899ec88b2e69e777cef55a8c591e"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/f8-f10-extension-surfaces-done-when-0.12.66.mjs",
+      "size": 4366,
+      "sha256": "d8908b74ae9a900ff2c28fad85348b1edaec04135f549a9bdd2ef4dd763000fd"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/f8-oidc-done-when-0.12.76.mjs",
+      "size": 5200,
+      "sha256": "35042e155cfb41c9c7afd1b1b104df10e817e9167e60cbbdf6893c0de77e4434"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/f8-public-module-login-e2e-0.12.78.mjs",
+      "size": 7566,
+      "sha256": "eed9ab98246d4d7e0f3a9fccdbea5fec22dabf4915bcdb0a38acbd0bf06bb1bd"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/f8-sso-completion-0.12.72.mjs",
+      "size": 3151,
+      "sha256": "ad94c492d2fecb5fa3df60f8071b6644415138e48882c4af8d6eaa5baab6b8eb"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/f8-tactical-native-sso-0.12.77.mjs",
+      "size": 6536,
+      "sha256": "e4e96b5278af33e3bdb9a1d525b02aae262304adfebf50731f2b70d5ec7e43fc"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/f9-f10-production-closure-0.12.69.mjs",
+      "size": 3986,
+      "sha256": "807de16db180cc43effb04cc179813c85b744b3cb4311ba2c301de7384c90d8b"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/feature-closure-0.12.63.mjs",
+      "size": 4408,
+      "sha256": "01d761f38fdb8872a24216886f484605a155ed71379b989da41c75064c5b5207"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/fixtures/core-http-routes-1.15.162.json",
+      "size": 4065,
+      "sha256": "bc300ffdaa85b636342776036b3865716ddf1e964c05a3d91d78721dd6be7b34"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/fixtures/core-http-routes-1.15.168.json",
+      "size": 4329,
+      "sha256": "9a6c4c9405eaa658e24f91e4b9b6a56f527e6047dad7d18cf27195433019cb40"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/fixtures/f8-public-sso-module.mjs",
+      "size": 278,
+      "sha256": "d45abf048462202438606f46e403882e89967ed053a897636f050d3069d2e3dd"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/foundation.sh",
+      "size": 65980,
+      "sha256": "9e9a64d37c625ef8dd4f6f87b10014f2626f18c782939892ff16fddfd125d1a5"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/history-pagination-ui.sh",
+      "size": 1222,
+      "sha256": "e0af7894327e3809ba5fea152b13bac497c7322cd5ecf7d1e34292c78c37b2f6"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/install-lockfile-u1.mjs",
+      "size": 1186,
+      "sha256": "59bae5432363555bf1a1f5d32a9fe5cece4935217a8d3a226ed47a190e79d3a4"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/latest-request-gate.mjs",
+      "size": 709,
+      "sha256": "b6a89c07c0597e14b40a79cb8531e871152a57cdfea8242b2db87a5eb040ee5c"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/login-session-pagination-ui.sh",
+      "size": 1105,
+      "sha256": "7a3ac2a111bd8f178e31ca902182e90097c578ec26c2f0dddc8494af5f80126e"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/mfa-admin-recovery-ui.sh",
+      "size": 1478,
+      "sha256": "8e0001a370806d01b23e50623e245642e2a164e2782131e34738fc11e2f7a899"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/mfa-enrollment-hardening.mjs",
+      "size": 885,
+      "sha256": "9d66a577dcf943370849b584b0e03bd25bc50c500ffecbce05ea235d42729e80"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/my-account-0.12.60.mjs",
+      "size": 2040,
+      "sha256": "c9e53920432be5c88259cee5965d8cc88ddbe539a8ff76695d30d14a3eb78832"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/networkprobe-runtime-context-0.12.71.mjs",
+      "size": 634,
+      "sha256": "2ccb196a0193eca3be11fb2e1777f8457ce029ea970b0f5caa75f6c962c94544"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/release-integrity.sh",
+      "size": 1936,
+      "sha256": "0bf67e8f27126514b97c7f20c5828e294ede315df74fcb5c0f23e7f645685e4f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/release-notes-l74.mjs",
+      "size": 1312,
+      "sha256": "5155b793692315e050172f67babfb6d9ad3edd3e0e13009642f18efbd8d6a926"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/release-workflow-lockfile.sh",
+      "size": 2061,
+      "sha256": "876d71a4c8fad5f9122d1f54c1fd3777a8f8494ad74873b984cf1eb01f1d9847"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/resource-features-0.12.61.mjs",
+      "size": 1930,
+      "sha256": "d9b30ff205ac3875e65db15cc371029b48148a2184ba8825c03c7083938b2663"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/scheduler-history-pagination-ui.sh",
+      "size": 1399,
+      "sha256": "b55ce892bb2ea865fefe3127f6400df06ab1a5ce484133c23c63e9edcc258bb7"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/scheduler-history-state.mjs",
+      "size": 814,
+      "sha256": "90b13ff090b20a5335dd05f91b66b05b96397adfae419a6afcd85d791ba37b89"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/session-expiry.mjs",
+      "size": 2842,
+      "sha256": "8e89ab53e90c1bffc507643ebb8b604f6e7a7b9370f45525f288cab3929982ae"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/session-security-ui.sh",
+      "size": 2436,
+      "sha256": "39ded3c96e17682a76cecabc57f62deac2a15c38c5e6eab976b157a503157a5e"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/system-update-trust-popover-focus.sh",
+      "size": 1120,
+      "sha256": "225dced06f773143afed8d1b55d06e4b1942c74e5926480ecad96ef29eaf5356"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/tactical-button-0.12.73.mjs",
+      "size": 1238,
+      "sha256": "e2aad2d82471cfe90dd9f218a60d94952b84b1217c982643794ce279ad3891d2"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/tracker-acceptance-0.12.67.mjs",
+      "size": 975,
+      "sha256": "66d4cabd1501c4a391a89fe32fe3640d95b8373440f8ff5f0750125853d6ea92"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/tracker-final-closure-0.12.65.mjs",
+      "size": 10489,
+      "sha256": "cdc593b1bce66ddbecaa223f89878ad9036ee3534546961788a89d293f22aaa9"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.46.sh",
+      "size": 521,
+      "sha256": "0b5841235af76a1fb5874018470c229cef279f032eb5309d1e830edcafce4b2f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.49.sh",
+      "size": 542,
+      "sha256": "3b63ec10116a7895d360693c2a3fa28b656b79bff1509026f27896a504030f6c"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.50.mjs",
+      "size": 1103,
+      "sha256": "d3fea1083a2f5cebac0555810081e42d2d9511703f334ba4bcec7a56f7013089"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.50.sh",
+      "size": 200,
+      "sha256": "abf0f5951deb087b56c15270a1ab70043fd74f43b697eee7f6564c30de85d8ed"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.51.mjs",
+      "size": 1523,
+      "sha256": "8887eaf0d322cdf7c9121d77a8e9c622e9e519312a7ccde5c7291c08115f76bd"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.51.sh",
+      "size": 158,
+      "sha256": "6f27221bbc84b453f6056905afae78a3a04d7bc90d80e72297219ef87418d5df"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.52.mjs",
+      "size": 1174,
+      "sha256": "c822c3aeae33cfe34119bda6e451ff5998cb7a796e10bb1b7557cb28cd1d0904"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.52.sh",
+      "size": 130,
+      "sha256": "af9a13d34d88b87c097f38ae81f851ddd37a12016e4e751c304ae1188ea36525"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.53.mjs",
+      "size": 2154,
+      "sha256": "64ec8ad952b2d85da1ecb863f6502beeb960d9701b7cf2da11d5265a2c323f58"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.53.sh",
+      "size": 88,
+      "sha256": "d84135189ec1e733b8731f23db9f28d2bd5f4898fe76dbb1137ebd3c9c98d678"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.54.mjs",
+      "size": 2122,
+      "sha256": "e2f590af938ec0d234cdbb8ecef01ec5da3423d0826342f12df539ccec287673"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.54.sh",
+      "size": 88,
+      "sha256": "f8ca4103756609260d084adf7e25f6446605cdab55e07b99d3f0f5bd91ddd189"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.56.sh",
+      "size": 188,
+      "sha256": "b327d6332f49955bd602ebe48e09f9df1197f44fee157e806c9388fd9db2105c"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.57-1.mjs",
+      "size": 1715,
+      "sha256": "d1056035deac177b4b0a0bdae430a7ea2e233e5a65cc6b7158d09e1a19dd6766"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-0.12.57-2.mjs",
+      "size": 649,
+      "sha256": "7057ef9700a70df1e1d8d6c4f2026953a0eedc62fe17b4e6d4d29791ae76e8bf"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-backup-restore-d2-d3-0.12.58.mjs",
+      "size": 2177,
+      "sha256": "7ff8625408a777092485aac67461a44888a7187d9ee50d596f66a50858fa7f81"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-backup-restore-d2-d3-0.12.58.sh",
+      "size": 134,
+      "sha256": "1c7dd7953c5755f402ab26ce1d6d2f73ca408cf719798399507073e11a46fbb3"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-backup-restore-d2-d3-0.12.59.mjs",
+      "size": 2071,
+      "sha256": "2f86b31971b5ee128882843ffbed0f2b0626df27588b37e03a9110671b743c56"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-hygiene-0.12.45.mjs",
+      "size": 2372,
+      "sha256": "6ebfe6a7cb06ea03a70f9637a3307dd5a5ec1096c8ceffcdc9957cfb3551f230"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-hygiene-0.12.45.sh",
+      "size": 2029,
+      "sha256": "0cbb15dd41ad864abaf4bab5e2507287a8849176347a9eacf4a13ae82e632497"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-l69-resource-search-0.12.57.mjs",
+      "size": 1651,
+      "sha256": "773cd92b4bd5f37ba3c4dbe2f2bba0e937ee0ca617312cb6f62112307c20336c"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-partial-closure-0.12.47.mjs",
+      "size": 3394,
+      "sha256": "f0af0b71ebc5c23b30441851f509786d610cb194ab1dfc12bb8e82dad2753917"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-partial-closure-0.12.47.sh",
+      "size": 1852,
+      "sha256": "c62130f0683f48a67d918ba5bbc6a2f23b9adc85cb3b9e403dec9263595fc826"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-tracker-closure-0.12.48.mjs",
+      "size": 5063,
+      "sha256": "47c1a787f0b3d2413ed86789fbaa3d260a4c81f7224c5bac970ce1f56418438f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-tracker-closure-0.12.48.sh",
+      "size": 146,
+      "sha256": "172d08778d80d980a21780afd1f1262027652ee336679fa02469f17e1101e72f"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-tracker-open-closure-0.12.55.mjs",
+      "size": 3972,
+      "sha256": "7ba5f3cfbdd238667ef17c6244b7fa987f75db7966e2f7ff7f7eac466c2306c7"
+    },
+    {
+      "path": "uibuild-0.12.78-full/tests/ui-tracker-open-closure-0.12.55.sh",
+      "size": 152,
+      "sha256": "f5a2f186c428e0bc8a61009c20a4270a565158f07c5ecb2e24a167fb20d5bc33"
+    },
+    {
+      "path": "uibuild-0.12.78-full/vite.config.js",
+      "size": 402,
+      "sha256": "1663d2746671ff6640c5dff219820ccb96ed25ada5eec8f634838daacfbb08d4"
     },
     {
       "path": "vite.config.js",

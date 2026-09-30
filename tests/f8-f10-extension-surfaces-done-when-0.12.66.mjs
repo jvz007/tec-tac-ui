@@ -29,7 +29,26 @@ assert.deepEqual(loaded.failed,[])
 const client={id:5,name:'Acme'}; const menu=surface.resourceContextMenuActions(actions,'client',client); assert.deepEqual(menu.map(x=>x.id),['halo.client']); assert.equal(await surface.executeResourceContextMenuAction(actions,menu[0],'client',client),42); assert.equal(globalThis.__ctx.client.id,5)
 assert.deepEqual(surface.resourceContextMenuActions(actions,'site',{id:8}).map(x=>x.id),['halo.site'])
 
-const login=fs.readFileSync(new URL('../src/components/LoginPanel.vue',import.meta.url),'utf8'); assert.match(login,/loginSsoEntries\(/); assert.match(login,/@click="beginSso\(entry\)"/)
+const login=fs.readFileSync(new URL('../src/components/LoginPanel.vue',import.meta.url),'utf8')
+assert.match(login,/loginSsoEntries\(/)
+assert.match(login,/<LoginSsoProviders[\s\S]*@begin="beginSso"/)
+
+// Behavioural replacement for the old inline-markup assertion: execute the
+// production LoginSsoProviders setup/render function with a tiny Vue h() shim,
+// then click the generated button and prove the exact entry is emitted.
+const ssoComponentModule=await dataModule('../src/components/LoginSsoProviders.js',[["import { defineComponent, h } from 'vue'","const defineComponent = (value) => value\nconst h = (type, props, children) => ({ type, props: props || {}, children })"]])
+const LoginSsoProviders=ssoComponentModule.default
+let emitted=null
+const clickedEntry={id:'globalsettings.entra',label:'Entra'}
+const renderSso=LoginSsoProviders.setup({entries:[clickedEntry],busy:false,ssoBusyId:''},{emit:(name,entry)=>{if(name==='begin')emitted=entry}})
+const section=renderSso()
+const list=section.children[1]
+const ssoButton=list.children[0]
+assert.equal(ssoButton.type,'button')
+assert.equal(typeof ssoButton.props.onClick,'function')
+ssoButton.props.onClick({type:'click'})
+assert.equal(emitted,clickedEntry)
+
 const app=fs.readFileSync(new URL('../src/App.vue',import.meta.url),'utf8'); assert.match(app,/appHeaderItems\(/); assert.match(app,/module-header-contributions/)
 const resources=fs.readFileSync(new URL('../src/views/ResourcesView.vue',import.meta.url),'utf8'); assert.match(resources,/resourceContextMenuActions\(contextActions, resourceType, row(?:,|\))/); assert.match(resources,/executeResourceContextMenuAction\(contextActions, action, resourceType, row(?:,|\))/)
 console.log('F8/F9/F10 extension surfaces done-when 0.12.66: PASS')
