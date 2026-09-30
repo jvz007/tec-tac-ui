@@ -709,23 +709,6 @@ export async function startServerRestore({ backupRef, destinationId, restoreMode
   })
 }
 
-export async function startRecoverySignerTrust({ backupRef, destinationId, signer }) {
-  return apiFetch('/api/tfd/system/recovery/trust/', {
-    method: 'POST',
-    body: JSON.stringify({
-      backup_ref: backupRef,
-      destination_id: destinationId,
-      expected_key_id: signer?.key_id,
-      expected_fingerprint: signer?.public_key_sha256,
-      expected_server_name: signer?.server_name,
-      expected_installation_id: signer?.installation_id,
-    }),
-  })
-}
-
-export async function getRecoveryTrustJob(jobId) {
-  return apiFetch(`/api/tfd/system/recovery/trust/?job_id=${encodeURIComponent(jobId)}`, { rejectErrorPayload: false })
-}
 
 export async function getBackupRestoreJob(jobId) {
   return apiFetch(`/api/tfd/system/backups/restore/jobs/${jobId}/`, { rejectErrorPayload: false })

@@ -3,15 +3,12 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   getBackupRestoreDestinations,
   getBackupRestoreJob,
-  getRecoveryTrustJob,
   startBackupInventory,
   startRestoreValidation,
   startServerRestore,
-  startRecoverySignerTrust,
 } from '../api'
 import { restoreConfirmationState, restoreReviewRows, canStartRestore } from '../backup-restore-state'
 import { validateRestoreWorkflow, startRestoreWorkflow } from '../backup-restore-workflows'
-import { trustRecoverySignerWorkflow } from '../backup-restore-trust-workflow'
 
 const loading = ref(true)
 const busy = ref(false)
@@ -36,7 +33,6 @@ const reviewRows = computed(() => restoreReviewRows(confirmationState.value))
 const canRestore = computed(() => canStartRestore({ confirmationState: confirmationState.value, selectedBackup: selectedBackup.value, selectedDestination: selectedDestination.value, busy: busy.value, validationJobId: validationJobId.value }))
 const downgradeNotice = computed(() => confirmationState.value.downgradeNotice)
 const review = computed(() => confirmationState.value.review)
-const signerNeedsTrust = computed(() => review.value.signerTrustRequired === true)
 
 function fmtBytes(value) {
   let n = Number(value || 0); const units = ['B','KB','MB','GB','TB']; let i = 0
@@ -59,36 +55,6 @@ async function pollJob(jobId) {
   })
 }
 
-async function pollTrustJob(jobId) {
-  if (pollTimer) clearTimeout(pollTimer)
-  const response = await getRecoveryTrustJob(jobId)
-  if (stopped) return null
-  const job = response?.job || null
-  activeJob.value = job
-  if (!job || ['succeeded', 'failed', 'dispatch_failed'].includes(job.status)) return job
-  return new Promise((resolve, reject) => {
-    pollTimer = setTimeout(() => pollTrustJob(jobId).then(resolve, reject), 900)
-  })
-}
-
-async function trustSigner() {
-  const signer = confirmationState.value.signer
-  if (!selectedBackup.value || !selectedDestination.value || !signerNeedsTrust.value || !signer) return
-  busy.value = true; error.value = ''
-  try {
-    await trustRecoverySignerWorkflow({
-      backupRef: selectedBackup.value.backup_ref,
-      destinationId: selectedDestinationId.value,
-      signer,
-    }, {
-      confirmTrust: ({ keyId, fingerprint }) => window.confirm(`Trust recovery signer ${keyId} with fingerprint ${fingerprint}?`),
-      startRecoverySignerTrust,
-      pollTrustJob,
-      revalidate: validateSelection,
-    })
-  } catch (e) { error.value = e.message || 'Unable to trust recovery signer.' }
-  finally { busy.value = false }
-}
 
 async function loadDestinations() {
   loading.value = true; error.value = ''
@@ -168,13 +134,13 @@ onBeforeUnmount(() => { stopped = true; if (pollTimer) clearTimeout(pollTimer) }
     <section class="card mb">
       <div class="cardhead"><div><span class="eyebrow">RECOVERY BUNDLES</span><h3>Available backups</h3></div><span class="pill">{{ backups.length }}</span></div>
       <div v-if="!backups.length" class="state-inline">Choose a registered destination and load its backups.</div>
-      <div v-else class="tablewrap"><table><thead><tr><th></th><th>Backup</th><th>Created</th><th>Size</th><th>Source</th><th>Signer fingerprint</th><th>Format</th></tr></thead><tbody>
+      <div v-else class="tablewrap"><table><thead><tr><th></th><th>Backup</th><th>Created</th><th>Size</th><th>Source</th><th>Core</th><th>Format</th></tr></thead><tbody>
         <tr v-for="item in backups" :key="item.backup_ref">
           <td><input type="radio" name="backup" :checked="selectedBackupRef===item.backup_ref" @change="selectBackup(item.backup_ref)"></td>
           <td><b class="mono">{{ item.archive_name }}</b><span class="sub">{{ item.backup_class }}</span></td>
           <td>{{ fmtDate(item.created_at || item.modified_at) }}</td><td class="mono">{{ fmtBytes(item.size_bytes) }}</td>
           <td><b>{{ item.server_name || 'Unknown server' }}</b><span class="sub mono">{{ item.installation_id || 'No installation ID' }}</span></td>
-          <td class="mono">{{ item.recovery_signer?.public_key_sha256 || '—' }}</td>
+          <td class="mono">{{ item.core_version || '—' }}</td>
           <td><span class="pill" :class="item.legacy ? 'warn' : 'ok'">v{{ item.format_version }}</span></td>
         </tr>
       </tbody></table></div>
@@ -189,13 +155,8 @@ onBeforeUnmount(() => { stopped = true; if (pollTimer) clearTimeout(pollTimer) }
       <div v-if="versionTransition" class="state-inline" :class="versionTransition.is_core_downgrade ? 'warning' : ''"><b>Core {{ versionTransition.current_core_version || 'current' }} → {{ versionTransition.restored_core_version || 'backup version' }}</b><span v-if="versionTransition.notice">{{ versionTransition.notice }}</span></div>
       <div v-if="downgradeNotice" class="state-inline warning" role="alert"><b>Downgrade warning:</b> {{ downgradeNotice }}</div>
       <div v-if="validation.warnings?.length" class="state-inline warning"><b>Warnings</b><span v-for="item in validation.warnings" :key="item">{{ item }}</span></div>
-      <div v-if="signerNeedsTrust" class="state-inline warning recovery-signer-card" role="alert">
-        <b>Recovery signer is valid but not trusted on this server.</b>
-        <span>{{ review.sourceServerName || 'Unknown server' }} · {{ review.signerKeyId || 'Unknown key' }}</span>
-        <span class="mono">{{ review.signerFingerprint || 'Unknown fingerprint' }}</span>
-        <span>Signed {{ fmtDate(review.signerSignedAt) }}</span>
-        <button class="btn" :disabled="busy" @click="trustSigner">Trust this signer and re-validate</button>
-      </div>
+      <div v-if="review.integrityNotVerified" class="state-inline warning" role="status"><b>Archive not externally verified.</b><span>This older backup has no adjacent SHA-256 companion. Restore remains available under AD-3.</span></div>
+      <div v-else-if="review.integrityVerified" class="state-inline"><b>Archive SHA-256 verified.</b><span>The adjacent hash companion matches the selected recovery archive.</span></div>
       <div class="queue-footer"><button class="btn danger" :disabled="!canRestore" @click="confirmRestore=true">Restore this backup</button></div>
     </section>
 
@@ -204,7 +165,8 @@ onBeforeUnmount(() => { stopped = true; if (pollTimer) clearTimeout(pollTimer) }
 
   <div v-if="confirmRestore" class="modal-backdrop" @click.self="confirmRestore=false"><section class="modal-panel"><div class="cardhead"><div><span class="eyebrow">CONFIRM RESTORE</span><h3>Restore this recovery bundle?</h3></div><span class="pill warn">DESTRUCTIVE</span></div>
     <p><b>{{ review.sourceServerName || 'Unknown server' }}</b> · <span class="mono">{{ review.installationId || 'No installation ID' }}</span></p>
-    <p>Recovery signer fingerprint: <span class="mono">{{ review.signerFingerprint || 'Unknown' }}</span></p>
+    <p>Backup date: <span class="mono">{{ review.createdAt ? fmtDate(review.createdAt) : 'Unknown' }}</span> · Core <span class="mono">{{ review.sourceCoreVersion || 'Unknown' }}</span></p>
+    <p>Integrity: <b>{{ review.integrityLabel }}</b></p>
     <div v-if="downgradeNotice" class="state-inline warning"><b>{{ review.downgradeHeadline }}</b><span>{{ downgradeNotice }}</span></div>
     <p v-else-if="versionTransition">Core transition: <b>{{ versionTransition.current_core_version || 'current' }} → {{ versionTransition.restored_core_version || 'backup version' }}</b>.</p>
     <p>The restore will only start after this confirmation. Validation must remain successful.</p>

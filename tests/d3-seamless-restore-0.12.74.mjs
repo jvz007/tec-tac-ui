@@ -1,53 +1,26 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { restoreConfirmationState } from '../src/backup-restore-state.js'
-import { trustRecoverySignerWorkflow } from '../src/backup-restore-trust-workflow.js'
 
-const signer = {
-  key_id: 'source-key',
-  public_key_sha256: 'ab'.repeat(32),
-  server_name: 'source-rmm',
-  installation_id: 'source-installation',
-  signed_at: '2026-09-29T10:00:00Z',
-  trusted: false,
-  trust_required: true,
-}
-const state = restoreConfirmationState({ ok: false, recovery_signer: signer })
-assert.equal(state.review.signerTrustRequired, true)
-assert.equal(state.review.signerFingerprint, signer.public_key_sha256)
-assert.equal(state.review.signerSignedAt, signer.signed_at)
-
-const events = []
-const result = await trustRecoverySignerWorkflow({
-  backupRef: 'destination:local:backup.tgz', destinationId: 'local', signer,
-}, {
-  confirmTrust: ({ keyId, fingerprint }) => {
-    events.push(['confirm', keyId, fingerprint]); return true
-  },
-  startRecoverySignerTrust: async (payload) => {
-    events.push(['start', payload]); return { job_id: 'job-1' }
-  },
-  pollTrustJob: async (jobId) => {
-    events.push(['poll', jobId]); return { status: 'succeeded' }
-  },
-  revalidate: async () => { events.push(['revalidate']) },
+const verified = restoreConfirmationState({
+  ok: true,
+  source_identity: { installation_id:'source-installation', server_name:'source-rmm', created_at:'2026-09-29T10:00:00Z', core_version:'1.15.83' },
+  archive_verification: { status:'verified', sha256:'ab'.repeat(32) },
 })
-assert.equal(result.cancelled, false)
-assert.deepEqual(events[0], ['confirm', 'source-key', signer.public_key_sha256])
-assert.deepEqual(events[1][1], { backupRef:'destination:local:backup.tgz', destinationId:'local', signer })
-assert.deepEqual(events.at(-1), ['revalidate'])
+assert.equal(verified.review.integrityVerified, true)
+assert.equal(verified.review.integrityLabel, 'SHA-256 verified')
 
-let revalidated = false
-await assert.rejects(() => trustRecoverySignerWorkflow({ backupRef:'x', destinationId:'local', signer }, {
-  confirmTrust: () => true,
-  startRecoverySignerTrust: async () => ({ job_id:'job-2' }),
-  pollTrustJob: async () => ({ status:'failed', error:'fingerprint changed since confirmation' }),
-  revalidate: async () => { revalidated = true },
-}), /fingerprint changed since confirmation/)
-assert.equal(revalidated, false)
+const legacy = restoreConfirmationState({
+  ok: true,
+  source_identity: { installation_id:'source-installation', server_name:'source-rmm', created_at:'2026-09-29T10:00:00Z', core_version:'1.15.83' },
+  archive_verification: { status:'not_verified', reason:'sha256 companion missing' },
+})
+assert.equal(legacy.ready, true)
+assert.equal(legacy.review.integrityNotVerified, true)
+assert.equal(legacy.review.integrityLabel, 'Not verified')
 
 const view = fs.readFileSync(new URL('../src/views/BackupRestoreView.vue', import.meta.url), 'utf8')
-assert.match(view, /Signer fingerprint/)
-assert.match(view, /Signed \{\{ fmtDate\(review\.signerSignedAt\) \}\}/)
-assert.match(view, /trustRecoverySignerWorkflow/)
+assert.match(view, /Archive SHA-256 verified/)
+assert.match(view, /older backup has no adjacent SHA-256 companion/)
+assert.doesNotMatch(view, /Trust this signer|Signer fingerprint|trustRecoverySignerWorkflow/)
 console.log('D3 seamless restore UI workflow 0.12.74: PASS')
