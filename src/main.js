@@ -3,7 +3,7 @@ import { createApp } from 'vue'
 import App from './App.vue'
 import { apiBlob, apiFetch, apiRaw, apiText, beginTacticalSso, loadStaticModuleManifest, publicApiFetch } from './api'
 import { router } from './router'
-import { state, loadContext } from './state'
+import { state, loadContext, recordModuleRuntimeError } from './state'
 import { loadPublicUiModules, loadUiModules } from './module-loader'
 import { createContextActionRegistry } from './context-actions'
 import { createContextInteractionRegistry } from './context-interactions'
@@ -31,6 +31,27 @@ async function bootstrap() {
     if (!item?.to || !item?.label) return
     if (navigation.some((existing) => existing.to === item.to)) return
     navigation.push(item)
+  }
+
+  // Removes every navigation item a module contributed. Used when a module's
+  // register() fails or times out after it already added entries.
+  function removeNavigation(moduleId) {
+    for (let index = navigation.length - 1; index >= 0; index -= 1) {
+      if (navigation[index]?.moduleId === moduleId) navigation.splice(index, 1)
+    }
+  }
+
+  // Last resort for an error no error boundary caught. Failure containment
+  // normally happens in module-error-boundary.js.
+  app.config.errorHandler = (error, instance, info) => {
+    console.error('[TEC-TAC-UI] Unhandled component error.', error, info)
+    const meta = router.currentRoute?.value?.meta || {}
+    recordModuleRuntimeError({
+      provider: meta.dynamicModule || meta.publicModule || 'Core',
+      variant: 'app',
+      error,
+      info,
+    })
   }
 
   const hasPermission = (code) => (
@@ -104,6 +125,7 @@ async function bootstrap() {
         router,
         state,
         addNavigation,
+        removeNavigation,
         api: apiFetch,
         apiRaw,
         apiBlob,

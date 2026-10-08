@@ -4,6 +4,8 @@ import { useRoute, useRouter } from 'vue-router'
 import { createDashboard, deleteDashboard, listDashboards, updateDashboard } from '../dashboards'
 import { preferenceState, updateUserPreferences } from '../preferences'
 import { createKeyedLatestRequestGate } from '../latest-request-gate'
+import ModuleErrorBoundary from '../components/module-error-boundary.js'
+import { recordModuleRuntimeError } from '../state'
 
 const route = useRoute()
 const router = useRouter()
@@ -377,7 +379,9 @@ onBeforeUnmount(() => dashboardLoadGate.invalidate('dashboards'))
               </div>
             </div>
             <div v-if="widgetDefinition(instance)" class="dashboard-widget-body">
-              <component :is="widgetDefinition(instance).component" :settings="instance.settings" :dashboard="working" :editable="editMode" @update:settings="updateWidgetSettings(instance, $event)" />
+              <ModuleErrorBoundary :provider="widgetDefinition(instance).provider" :label="widgetDefinition(instance).title" variant="widget" :recorder="recordModuleRuntimeError">
+                <component :is="widgetDefinition(instance).component" :settings="instance.settings" :dashboard="working" :editable="editMode" @update:settings="updateWidgetSettings(instance, $event)" />
+              </ModuleErrorBoundary>
             </div>
             <div v-else class="dashboard-widget-unavailable">
               <b>Widget unavailable</b>

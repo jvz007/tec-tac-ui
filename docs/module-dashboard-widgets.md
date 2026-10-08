@@ -46,6 +46,10 @@ A widget owns its data retrieval and presentation. It should use the authenticat
 
 If `permission` is supplied, Core filters the widget from the catalogue and from runtime resolution when the current user does not have that permission. A shared dashboard can therefore contain a saved widget instance that another viewer cannot resolve. Core preserves that saved instance but does not render the provider component for the unauthorized viewer.
 
+## Failure containment
+
+Every widget renders inside a Core error boundary labelled with the provider and the widget title. A throw in the widget's setup, render, a lifecycle hook, a watcher or an event handler is caught: that widget shows a "could not load" state with a Retry button, and the dashboard and the other widgets keep working. The failure is recorded against the provider so Modules reports it as a runtime error.
+
 ## Layout
 
 Core stores per-instance:

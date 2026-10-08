@@ -52,7 +52,7 @@ Rules:
 - `id` must be namespaced with the provider module ID.
 - `resource` and `placement` are consumer-owned stable names.
 - `component` is required.
-- `permission` is optional; Core hides the contribution if the current user lacks it.
+- `permission` is optional; Core hides the contribution if the current user lacks it (AD-12: hidden when denied, everywhere).
 - `visible(context)` is optional and must be cheap. Do not perform API calls in it.
 - `props` may be a static object or a cheap function of the consumer context.
 - `order` defaults to `500`.

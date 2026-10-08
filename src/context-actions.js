@@ -59,7 +59,9 @@ export function createContextActionRegistry({ hasPermission } = {}) {
   function evaluate(action, context = {}) {
     const selection = Array.isArray(context.selection) ? context.selection : (context.resource ? [context.resource] : [])
     if (action.permission && typeof hasPermission === 'function' && !hasPermission(action.permission)) {
-      return { visible: true, enabled: false, reason: `Permission required: ${action.permission}` }
+      // AD-12: an action the user lacks the permission for is hidden, not
+      // disabled. The reason stays in state for diagnostics and for execute().
+      return { visible: false, enabled: false, reason: `Permission required: ${action.permission}` }
     }
     if (selection.length < action.selection.min) {
       return { visible: true, enabled: false, reason: `Select at least ${action.selection.min} item${action.selection.min === 1 ? '' : 's'}.` }

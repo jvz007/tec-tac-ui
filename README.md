@@ -225,6 +225,13 @@ The installer builds the Vue application and deploys it to:
 
 It installs `/etc/nginx/snippets/tec-tac.conf` and adds one include to Tactical's frontend nginx server block so `/tec-tac/` is served from this persistent path. It does not edit Tactical tracked source files or the Tec-Tac backend repo. After a Tactical update, `sudo bash scripts/repair-nginx.sh` restores the nginx include if necessary without rebuilding the UI.
 
+The snippet also sends a `Content-Security-Policy` header for `/tec-tac/` (0.12.81). `scripts/tec-tac-csp.sh` builds it from the Tactical API origin, which `repair-nginx.sh` reads from `PROD_URL` in `${TACTICAL_FRONTEND_ROOT:-/var/www/rmm/dist}/env-config.js`. If that value cannot be read, the script logs a warning and writes no policy, because a policy without the API origin would break every API call. Set these in `/opt/tec-tac/etc/tec-tac.conf`, then run `sudo bash scripts/repair-nginx.sh`:
+
+- `TEC_TAC_CSP_MODE`: `enforce` (default), `report-only` or `off`.
+- `TEC_TAC_CSP_CONNECT_EXTRA`, `TEC_TAC_CSP_FRAME_EXTRA`, `TEC_TAC_CSP_IMG_EXTRA`: space-separated hosts that widen `connect-src`, `frame-src` and `img-src`.
+
+The policy stops injected inline scripts and scripts from other sites. Module scripts are same-origin, so they can still read `localStorage`: a CSP is not a wall between modules and the token storage.
+
 ## Session verification
 
 On startup Tec-Tac first validates any existing Tactical token. The shell does not trust stale browser identity values by themselves.

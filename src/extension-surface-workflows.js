@@ -5,6 +5,22 @@ export async function beginLoginSso(ssoProviders, entry, context = {}) {
   if (!entry?.id || !ssoProviders?.begin) throw new Error('SSO provider is unavailable.')
   return ssoProviders.begin(entry.id, context)
 }
+function navPermissionList(value) {
+  const values = Array.isArray(value) ? value : (value == null || value === '' ? [] : [value])
+  return values.map((item) => String(item || '').trim()).filter(Boolean)
+}
+// AD-12 for module navigation: an item with `permission` / `permissions` is
+// hidden when the user lacks them. Superusers always pass; an item with no
+// permission field is shown. Outside a backend context there are no
+// permissions, so a gated item is hidden. The backend still refuses.
+export function navItemPermitted(item, context = {}) {
+  const required = [...navPermissionList(item?.permission), ...navPermissionList(item?.permissions)]
+  if (!required.length) return true
+  if (context.user?.superuser) return true
+  if (context.source !== 'backend') return false
+  const granted = new Set(context.permissions || [])
+  return required.every((code) => granted.has(code))
+}
 export function appHeaderItems(header, context = {}) {
   return header?.list?.(context) || []
 }

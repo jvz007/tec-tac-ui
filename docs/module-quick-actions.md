@@ -33,7 +33,7 @@ Action IDs must begin with the provider module ID (`<module-id>.`). Registered d
 - `icon` — compact top-bar glyph;
 - `description` — operator-facing purpose;
 - `group` and `order` — catalogue organization;
-- `permission` — Tec-Tac extension permission required for use;
+- `permission` — Tec-Tac extension permission required for use. When the user lacks it the action is hidden: it leaves the catalogue and the top bar, and `pinAction()` and `executePin()` refuse it with the permission reason;
 - `dangerous` — Core asks for confirmation before running a pinned action;
 - `directPin` — when false, the generic manager does not offer an unconfigured pin;
 - `defaultParams` — small JSON-serializable defaults for directly pinned actions;
@@ -73,5 +73,6 @@ Core currently permits module-specific/dynamic data below `extensions`; no separ
 - maximum 24 pinned shortcuts per user;
 - action parameters are limited to 8 KiB JSON per pin;
 - if a provider module is disabled, removed or not loaded, its saved shortcut remains visible in the manager but is disabled;
+- a pin whose action is hidden because the user lacks its permission is not listed and not deleted. It returns if the permission returns. `movePin()` moves relative to the pins the user can see;
 - removing a provider does not execute or rewrite its saved parameters;
 - module cleanup unregisters the runtime action; the user's pin can be removed normally from the manager.

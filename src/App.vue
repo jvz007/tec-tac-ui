@@ -4,15 +4,16 @@ import { useRoute, useRouter } from 'vue-router'
 import LoginPanel from './components/LoginPanel.vue'
 import UnsavedChangesDialog from './components/UnsavedChangesDialog.vue'
 import QuickActionsDialog from './components/QuickActionsDialog.vue'
+import ModuleErrorBoundary from './components/module-error-boundary.js'
 import HelpDrawer from './components/HelpDrawer.vue'
 import NoticeDrawer from './components/NoticeDrawer.vue'
 import { logoutTacticalSession } from './api'
-import { state, loadContext } from './state'
+import { state, loadContext, recordModuleRuntimeError } from './state'
 import { requestLeave } from './unsaved'
 import { preferenceState, updateUserPreferences } from './preferences'
 import { startSessionActivityTracking, stopSessionActivityTracking } from './session-security'
 import { coreNavigation, DEFAULT_SECTION_ORDER } from './core-navigation'
-import { appHeaderItems } from './extension-surface-workflows'
+import { appHeaderItems, navItemPermitted } from './extension-surface-workflows'
 
 const route = useRoute()
 const router = useRouter()
@@ -74,7 +75,10 @@ if (newWindowLaunch.value) {
 const publicRoute = computed(() => route.meta?.public === true || route.path.startsWith('/public/'))
 const coreNav = computed(() => coreNavigation(state.context))
 
-const visibleNav = computed(() => [...coreNav.value, ...dynamicNav].filter((item) => item.visible !== false && item?.to && item?.label))
+// The shell labels a failure by the module that owns the current route.
+const routeProvider = computed(() => route.meta?.dynamicModule || route.meta?.publicModule || 'Core')
+const navContext = computed(() => ({ user: state.context.user || {}, permissions: state.context.permissions || [], source: state.contextSource }))
+const visibleNav = computed(() => [...coreNav.value, ...dynamicNav].filter((item) => item.visible !== false && item?.to && item?.label && navItemPermitted(item, navContext.value)))
 const allNav = computed(() => visibleNav.value.filter((item) => {
   if (!query.value.trim()) return true
   return item.label.toLowerCase().includes(query.value.toLowerCase())
@@ -129,7 +133,7 @@ const initials = computed(() => {
 })
 
 const currentTitle = computed(() => route.meta.title || visibleNav.value.find((item) => item.to === route.path)?.label || 'Tec-Tac')
-const quickPins = computed(() => quickActions?.listPins?.() || [])
+const quickPins = computed(() => (quickActions?.listPins?.() || []).filter((pin) => pin.state?.visible !== false))
 const topQuickPins = computed(() => quickPins.value.slice(0, 6))
 const quickOverflowCount = computed(() => Math.max(0, quickPins.value.length - topQuickPins.value.length))
 const headerItems = computed(() => appHeaderItems(header, { route, state, user: state.context.user || {} }))
@@ -265,7 +269,9 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
       <button v-if="!publicRoute && tacticalWebUiInstalled" class="btn ghost sm" type="button" title="Open Tactical in a new window" @click="backToTactical">↗ Tactical</button>
       <button v-else-if="state.status !== 'ready'" class="btn ghost sm" @click="navigate('/')">Sign in</button>
       <div v-if="!publicRoute && state.status === 'ready' && headerItems.length" class="module-header-contributions" aria-label="Module header actions">
-        <component v-for="item in headerItems" :key="item.id" :is="item.component" v-bind="item.resolvedProps" />
+        <ModuleErrorBoundary v-for="item in headerItems" :key="item.id" :provider="item.provider" :label="item.label" variant="header" :recorder="recordModuleRuntimeError">
+          <component :is="item.component" v-bind="item.resolvedProps" />
+        </ModuleErrorBoundary>
       </div>
       <button v-if="!publicRoute && state.status === 'ready'" class="iconbtn notice-topbar-button" type="button" title="Notification history" aria-label="Open notification history" @click="notifications?.openHistory?.()"><span aria-hidden="true">🔔</span><b v-if="notifications?.history?.unreadCount" class="notice-badge">{{ notifications.history.unreadCount > 99 ? '99+' : notifications.history.unreadCount }}</b></button>
       <button v-if="!publicRoute && state.status === 'ready'" class="iconbtn help-topbar-button" type="button" title="Help" aria-label="Open contextual help" @click="help?.open?.()">?</button>
@@ -317,7 +323,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
     </div>
 
     <main class="main">
-      <router-view v-if="publicRoute" />
+      <ModuleErrorBoundary v-if="publicRoute" :provider="routeProvider" label="page" variant="page" :reset-key="route.fullPath" :recorder="recordModuleRuntimeError"><router-view /></ModuleErrorBoundary>
       <div v-else-if="state.status === 'loading'" class="state-panel verify-panel">
         <template v-if="newWindowLaunch">
           <span class="eyebrow">WINDOW STARTUP</span><h2>Opening new window…</h2><p>Tec-Tac is securely preparing the requested page and loading its operational modules.</p><div class="verify-line"><span class="spinner" aria-hidden="true"></span><span class="mono">Opening requested Tec-Tac page…</span></div>
@@ -328,7 +334,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
       </div>
       <LoginPanel v-else-if="state.status === 'unauthenticated'" />
       <div v-else-if="state.status === 'failed'" class="state-panel danger-panel"><span class="eyebrow">SESSION OR BACKEND CHECK FAILED</span><h2>Tec-Tac could not complete startup</h2><p class="mono">{{ state.error?.message }}</p><div class="row"><button class="btn" @click="retry">Retry</button><button v-if="tacticalWebUiInstalled" class="btn ghost" type="button" @click="backToTactical">Open Tactical</button></div></div>
-      <router-view v-else-if="state.status === 'ready'" />
+      <ModuleErrorBoundary v-else-if="state.status === 'ready'" :provider="routeProvider" label="page" variant="page" :reset-key="route.fullPath" :recorder="recordModuleRuntimeError"><router-view /></ModuleErrorBoundary>
     </main>
     <div v-if="notifications?.toasts?.length" class="toast-stack" role="region" aria-label="Notifications" aria-live="polite">
       <article v-for="toast in notifications.toasts" :key="toast.id" class="toast-card" :class="`toast-${toast.level}`" role="status">

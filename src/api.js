@@ -2,6 +2,19 @@ export function apiBase() {
   return window._env_?.PROD_URL || ''
 }
 
+// The Tactical API base for display and module use: apiBase() without a
+// trailing slash, or '' when unset or not http(s).
+export function tacticalServerUrl() {
+  const value = String(apiBase() || '').trim()
+  try {
+    const url = new URL(value)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return ''
+  } catch {
+    return ''
+  }
+  return value.replace(/\/+$/, '')
+}
+
 export function tecTacUiBaseUrl() {
   const basePath = import.meta.env?.BASE_URL || '/tec-tac/'
   return new URL(basePath, window.location.origin).toString()
@@ -91,6 +104,42 @@ export function invalidateTacticalSession(message = 'Your Tactical session is no
   }
 }
 
+// Every failure thrown by this module carries the same documented shape:
+//   .status   0 when no HTTP response arrived, 401 without a token, otherwise
+//             the HTTP status (the 2xx status for the error-key rejection)
+//   .payload  the parsed body: object for JSON, string for text, null for 204,
+//             empty or unparseable bodies and for status 0
+//   .code     payload.code when it is a string, else null
+// The original Error object is decorated so its name and message are unchanged.
+function decorateFailure(error, status, payload = null) {
+  const target = error instanceof Error ? error : new Error(typeof error === 'string' ? error : (error?.message || String(error)))
+  const body = payload === undefined ? null : payload
+  const fields = {
+    status: Number.isFinite(Number(status)) ? Number(status) : 0,
+    payload: body,
+    code: body && typeof body === 'object' && typeof body.code === 'string' ? body.code : null,
+  }
+  for (const [key, value] of Object.entries(fields)) {
+    try { target[key] = value } catch { try { Object.defineProperty(target, key, { value, configurable: true, writable: true }) } catch {} }
+  }
+  return target
+}
+
+function failure(message, status, payload = null) {
+  return decorateFailure(new Error(message), status, payload)
+}
+
+// fetch() rejects with a TypeError (or an AbortError) when no response arrives.
+async function fetchOrFail(url, init) {
+  try {
+    return await fetch(url, init)
+  } catch (error) {
+    throw decorateFailure(error, 0, null)
+  }
+}
+
+const NO_API_URL_MESSAGE = 'Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.'
+
 function buildHeaders(options = {}, { accept = 'application/json', jsonContentType = true } = {}) {
   const token = tacticalToken()
   const headers = new Headers(options.headers || {})
@@ -106,7 +155,10 @@ async function parseResponsePayload(response) {
   if (contentType.includes('application/json')) {
     try { return await response.json() } catch { return null }
   }
-  try { return await response.text() } catch { return null }
+  try {
+    const text = await response.text()
+    return text === '' ? null : text
+  } catch { return null }
 }
 
 function messageFromPayload(payload, fallback) {
@@ -122,12 +174,10 @@ function messageFromPayload(payload, fallback) {
 async function tacticalAuthRequest(path, body) {
   const base = apiBase()
   if (!base) {
-    const error = new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.')
-    error.status = 0
-    throw error
+    throw failure(NO_API_URL_MESSAGE, 0)
   }
 
-  const response = await fetch(`${base}${path}`, {
+  const response = await fetchOrFail(`${base}${path}`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -140,10 +190,7 @@ async function tacticalAuthRequest(path, body) {
 
   const payload = await parseResponsePayload(response)
   if (!response.ok) {
-    const error = new Error(messageFromPayload(payload, `Tactical authentication failed: ${response.status} ${response.statusText}`))
-    error.status = response.status
-    error.payload = payload
-    throw error
+    throw failure(messageFromPayload(payload, `Tactical authentication failed: ${response.status} ${response.statusText}`), response.status, payload)
   }
 
   // Some Tactical helper responses may be HTTP 200 while still describing an
@@ -152,10 +199,7 @@ async function tacticalAuthRequest(path, body) {
   if (payload && typeof payload === 'object' && !('token' in payload) && !('totp' in payload)) {
     const explicitError = payload.error || payload.detail
     if (explicitError) {
-      const error = new Error(messageFromPayload(payload, 'Tactical authentication failed.'))
-      error.status = response.status
-      error.payload = payload
-      throw error
+      throw failure(messageFromPayload(payload, 'Tactical authentication failed.'), response.status, payload)
     }
   }
 
@@ -175,7 +219,7 @@ function browserCookie(name) {
 
 function tacticalApiUrl(path) {
   const base = String(apiBase() || '').replace(/\/+$/, '')
-  if (!base) throw Object.assign(new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.'), { status: 0 })
+  if (!base) throw failure(NO_API_URL_MESSAGE, 0)
   return `${base}${path}`
 }
 
@@ -186,7 +230,7 @@ function tacticalSsoProvidersFromConfig(payload) {
 
 function submitBrowserForm(action, fields) {
   if (typeof document === 'undefined' || typeof document.createElement !== 'function') {
-    throw Object.assign(new Error('Tactical SSO requires a browser document.'), { status: 0 })
+    throw failure('Tactical SSO requires a browser document.', 0)
   }
   const form = document.createElement('form')
   form.method = 'POST'
@@ -208,12 +252,12 @@ function submitBrowserForm(action, fields) {
 // UI owns the browser POST, callback address and every credential-bearing step.
 export async function beginTacticalSso(providerId) {
   const id = String(providerId || '').trim()
-  if (!id) throw Object.assign(new Error('Tactical SSO provider id is missing.'), { status: 400 })
+  if (!id) throw failure('Tactical SSO provider id is missing.', 400)
 
   // Tactical's own LoginView loads this config before starting SSO. Besides
   // checking that the provider is currently advertised, this request ensures
   // the browser has the Django/allauth CSRF state required by the form POST.
-  const response = await fetch(tacticalApiUrl('/_allauth/browser/v1/config/'), {
+  const response = await fetchOrFail(tacticalApiUrl('/_allauth/browser/v1/config/'), {
     method: 'GET',
     headers: { Accept: 'application/json' },
     credentials: 'include',
@@ -221,17 +265,14 @@ export async function beginTacticalSso(providerId) {
   })
   const payload = await parseResponsePayload(response)
   if (!response.ok) {
-    const error = new Error(messageFromPayload(payload, `Tactical SSO configuration failed: ${response.status} ${response.statusText}`))
-    error.status = response.status
-    error.payload = payload
-    throw error
+    throw failure(messageFromPayload(payload, `Tactical SSO configuration failed: ${response.status} ${response.statusText}`), response.status, payload)
   }
 
   const provider = tacticalSsoProvidersFromConfig(payload).find((item) => String(item?.id || '') === id)
-  if (!provider) throw Object.assign(new Error(`Tactical SSO provider ${id} is not currently available.`), { status: 404, payload })
+  if (!provider) throw failure(`Tactical SSO provider ${id} is not currently available.`, 404, payload)
 
   const csrf = browserCookie('csrftoken')
-  if (!csrf) throw Object.assign(new Error('Tactical SSO could not obtain CSRF proof. Reload the sign-in page and try again.'), { status: 403 })
+  if (!csrf) throw failure('Tactical SSO could not obtain CSRF proof. Reload the sign-in page and try again.', 403)
   const callbackUrl = new URL('/account/provider/callback', window.location.origin).toString()
 
   submitBrowserForm(tacticalApiUrl('/_allauth/browser/v1/auth/provider/redirect/'), {
@@ -245,11 +286,11 @@ export async function beginTacticalSso(providerId) {
 
 export async function completeTacticalSso() {
   const base = apiBase()
-  if (!base) throw Object.assign(new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.'), { status: 0 })
+  if (!base) throw failure(NO_API_URL_MESSAGE, 0)
   const csrf = browserCookie('csrftoken')
-  if (!csrf) throw Object.assign(new Error('The Tactical SSO session is missing its CSRF proof. Start SSO sign-in again.'), { status: 403 })
+  if (!csrf) throw failure('The Tactical SSO session is missing its CSRF proof. Start SSO sign-in again.', 403)
 
-  const response = await fetch(`${base}/accounts/ssoproviders/token/`, {
+  const response = await fetchOrFail(`${base}/accounts/ssoproviders/token/`, {
     method: 'POST',
     headers: {
       Accept: 'application/json',
@@ -263,20 +304,17 @@ export async function completeTacticalSso() {
   const payload = await parseResponsePayload(response)
   if (!response.ok) {
     clearTacticalSession()
-    const error = new Error(messageFromPayload(payload, `Tactical SSO completion failed: ${response.status} ${response.statusText}`))
-    error.status = response.status
-    error.payload = payload
-    throw error
+    throw failure(messageFromPayload(payload, `Tactical SSO completion failed: ${response.status} ${response.statusText}`), response.status, payload)
   }
   if (!payload || typeof payload !== 'object' || !payload.token || !payload.username) {
     clearTacticalSession()
-    throw Object.assign(new Error('Tactical SSO completion did not return a valid access token.'), { status: 502, payload })
+    throw failure('Tactical SSO completion did not return a valid access token.', 502, payload)
   }
 
   storeTacticalSession({ token: payload.token, username: payload.username, name: payload.name || null })
   try {
     const verification = await validateTacticalSession()
-    if (!verification.authenticated) throw Object.assign(new Error('The Tactical SSO access token could not be verified.'), { status: verification.status || 401 })
+    if (!verification.authenticated) throw failure('The Tactical SSO access token could not be verified.', verification.status || 401)
     // Crossing the Core UI-context boundary immediately creates/validates the
     // normal Tec-Tac session-security trust row. SSO accounts remain subject to
     // the external provider's MFA lifecycle, exactly like Tactical itself.
@@ -308,17 +346,13 @@ export async function checkTacticalCredentials(username, password) {
     return { requiresTotp: false, requiresTotpSetup: true, authenticated: false }
   }
 
-  const error = new Error('Tactical did not return a valid authentication decision.')
-  error.status = 502
-  throw error
+  throw failure('Tactical did not return a valid authentication decision.', 502, data)
 }
 
 export async function loginTacticalWithTotp(username, password, twofactor) {
   const data = await tacticalAuthRequest('/v2/login/', { username, password, twofactor })
   if (!data.token) {
-    const error = new Error('Tactical accepted the request but did not return an access token.')
-    error.status = 502
-    throw error
+    throw failure('Tactical accepted the request but did not return an access token.', 502, data)
   }
 
   storeTacticalSession({
@@ -338,9 +372,7 @@ export async function loginTacticalWithBackupCode(username, password, backupCode
     backup_code: backupCode,
   })
   if (!data.token) {
-    const error = new Error('Tec-Tac accepted the recovery request but did not return a Tactical access token.')
-    error.status = 502
-    throw error
+    throw failure('Tec-Tac accepted the recovery request but did not return a Tactical access token.', 502, data)
   }
   storeTacticalSession({
     token: data.token,
@@ -358,10 +390,7 @@ export async function setupTacticalTotp(password) {
     body: JSON.stringify({ password: String(password || '') }),
   })
   if (!data || typeof data !== 'object' || !data.totp_key || !data.qr_url || !data.qr_svg) {
-    const error = new Error('Tec-Tac did not return one-time TOTP enrollment details.')
-    error.status = 502
-    error.payload = data
-    throw error
+    throw failure('Tec-Tac did not return one-time TOTP enrollment details.', 502, data)
   }
 
   // Core destroys Tactical's short-lived setup Knox token before returning the
@@ -377,9 +406,7 @@ export async function validateTacticalSession() {
   const token = tacticalToken()
 
   if (!base) {
-    const error = new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.')
-    error.status = 0
-    throw error
+    throw failure(NO_API_URL_MESSAGE, 0)
   }
 
   if (!token) {
@@ -390,7 +417,7 @@ export async function validateTacticalSession() {
   // IsAuthenticated + AccountsPerms. A 200 proves authentication and access;
   // a 403 still proves authentication but means this role lacks AccountsPerms.
   // A 401 means the browser token is missing, expired, or otherwise invalid.
-  const response = await fetch(`${base}/accounts/users/`, {
+  const response = await fetchOrFail(`${base}/accounts/users/`, {
     method: 'GET',
     headers: buildHeaders(),
     credentials: 'include',
@@ -405,23 +432,20 @@ export async function validateTacticalSession() {
     return { authenticated: true, status: response.status }
   }
 
-  const error = new Error(`Tactical session verification failed: ${response.status} ${response.statusText}`)
-  error.status = response.status
-  throw error
+  throw failure(`Tactical session verification failed: ${response.status} ${response.statusText}`, response.status)
 }
 
 async function authenticatedRawRequest(path, options = {}) {
   const base = apiBase()
   const token = tacticalToken()
-  if (!base) throw new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.')
+  if (!base) throw failure(NO_API_URL_MESSAGE, 0)
   if (!token) {
-    const error = new Error('No Tactical access token is present in this browser session.')
-    error.status = 401
+    const error = failure('No Tactical access token is present in this browser session.', 401)
     invalidateTacticalSession(error.message)
     throw error
   }
 
-  const response = await fetch(`${base}${path}`, {
+  const response = await fetchOrFail(`${base}${path}`, {
     ...options,
     headers: buildHeaders(options, { accept: '*/*', jsonContentType: false }),
     credentials: 'include',
@@ -437,10 +461,7 @@ async function authenticatedRawRequest(path, options = {}) {
         { code: sessionCode },
       )
     }
-    const error = new Error(messageFromPayload(payload, `API request failed: ${response.status} ${response.statusText}`))
-    error.status = response.status
-    error.payload = payload
-    throw error
+    throw failure(messageFromPayload(payload, `API request failed: ${response.status} ${response.statusText}`), response.status, payload)
   }
 
   return response
@@ -468,12 +489,12 @@ export async function apiFetch(path, options = {}) {
   const payload = response.status === 204 ? null : await parseResponsePayload(response)
 
   // Tactical's notify_error helper can return a JSON error payload in a 2xx
-  // response. Do not allow account/role actions to look successful in that case.
+  // response. apiFetch (and only apiFetch) throws when a 2xx JSON object has a
+  // truthy `error` or `detail` key, with .status set to that 2xx status, unless
+  // the caller passes rejectErrorPayload: false. apiRaw, apiBlob and apiText
+  // never inspect the body this way.
   if (options.rejectErrorPayload !== false && payload && typeof payload === 'object' && (payload.error || payload.detail)) {
-    const error = new Error(messageFromPayload(payload, 'Tactical rejected the request.'))
-    error.status = response.status
-    error.payload = payload
-    throw error
+    throw failure(messageFromPayload(payload, 'Tactical rejected the request.'), response.status, payload)
   }
 
   return payload
@@ -495,8 +516,8 @@ export async function logoutTacticalSession() {
 
 export async function publicApiFetch(path, options = {}) {
   const base = apiBase()
-  if (!base) throw new Error('Tactical API URL is unavailable. /env-config.js did not provide PROD_URL.')
-  if (typeof path !== 'string' || !path.startsWith('/')) throw new Error('Public API path must be relative to the Tactical API root.')
+  if (!base) throw failure(NO_API_URL_MESSAGE, 0)
+  if (typeof path !== 'string' || !path.startsWith('/')) throw failure('Public API path must be relative to the Tactical API root.', 0)
 
   const headers = new Headers(options.headers || {})
   headers.set('Accept', 'application/json')
@@ -506,7 +527,7 @@ export async function publicApiFetch(path, options = {}) {
   // must explicitly opt into anonymous access server-side (for example AllowAny).
   headers.delete('Authorization')
 
-  const response = await fetch(`${base}${path}`, {
+  const response = await fetchOrFail(`${base}${path}`, {
     ...options,
     headers,
     credentials: 'omit',
@@ -514,17 +535,14 @@ export async function publicApiFetch(path, options = {}) {
   })
   const payload = response.status === 204 ? null : await parseResponsePayload(response)
   if (!response.ok) {
-    const error = new Error(messageFromPayload(payload, `Public API request failed: ${response.status} ${response.statusText}`))
-    error.status = response.status
-    error.payload = payload
-    throw error
+    throw failure(messageFromPayload(payload, `Public API request failed: ${response.status} ${response.statusText}`), response.status, payload)
   }
   return payload
 }
 
 export async function loadStaticModuleManifest() {
   const response = await fetch('/tec-tac/modules/modules.json', { cache: 'no-store' })
-  if (!response.ok) throw new Error(`Module manifest failed: ${response.status} ${response.statusText}`)
+  if (!response.ok) throw failure(`Module manifest failed: ${response.status} ${response.statusText}`, response.status)
   const modules = await response.json()
   if (!Array.isArray(modules)) throw new Error('Module manifest must contain a JSON array.')
   return modules

@@ -7,8 +7,8 @@ const quickActions = inject('tecTacQuickActions', null)
 const query = ref('')
 const error = ref('')
 
-const pins = computed(() => quickActions?.listPins?.() || [])
-const catalog = computed(() => quickActions?.listCatalog?.() || [])
+const pins = computed(() => (quickActions?.listPins?.() || []).filter((pin) => pin.state?.visible !== false))
+const catalog = computed(() => (quickActions?.listCatalog?.() || []).filter((item) => item.state?.visible !== false))
 const q = computed(() => query.value.trim().toLowerCase())
 const availableActions = computed(() => catalog.value
   .filter((item) => !quickActions?.isActionPinned?.(item.id))

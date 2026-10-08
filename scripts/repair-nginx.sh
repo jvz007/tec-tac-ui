@@ -4,12 +4,15 @@ set -euo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=/dev/null
 source "${HERE}/tec-tac-config.sh"
+# shellcheck source=/dev/null
+source "${HERE}/tec-tac-csp.sh"
 DEPLOY_BASE="${TEC_TAC_UI_DEPLOY_BASE}"
 UI_ROOT="${TEC_TAC_UI_ROOT:-${TEC_TAC_UI_DEPLOY_ROOT}}"
 FRONTEND_CONF="${TACTICAL_FRONTEND_NGINX_CONF:-/etc/nginx/sites-available/frontend.conf}"
 SNIPPET_DIR="${TEC_TAC_NGINX_SNIPPET_DIR:-/etc/nginx/snippets}"
 SNIPPET_FILE="${SNIPPET_DIR}/tec-tac.conf"
 INCLUDE_LINE="    include ${SNIPPET_FILE};"
+FRONTEND_ROOT="${TACTICAL_FRONTEND_ROOT:-/var/www/rmm/dist}"
 
 log() { printf '[TEC-TAC-UI] %s\n' "$*"; }
 fail() { printf '[TEC-TAC-UI] ERROR: %s\n' "$*" >&2; exit 1; }
@@ -24,6 +27,14 @@ if [[ ! -f "${FRONTEND_CONF}" ]]; then
   candidate="$(grep -RIl --include='*.conf' -E 'root[[:space:]]+/var/www/rmm/dist[[:space:]]*;' /etc/nginx/sites-enabled 2>/dev/null | head -n1 || true)"
   [[ -n "${candidate}" ]] || fail "Could not locate Tactical frontend nginx server block. Set TACTICAL_FRONTEND_NGINX_CONF explicitly."
   FRONTEND_CONF="$(readlink -f "${candidate}")"
+fi
+
+# Content-Security-Policy. The API origin comes from PROD_URL in Tactical's
+# env-config.js. When it cannot be read, no policy is written: a policy without
+# the API origin would break every API call.
+CSP_LINE="$(tec_tac_csp_from_env_config "${TEC_TAC_CSP_MODE}" "${FRONTEND_ROOT}/env-config.js")"
+if [[ -n "${CSP_LINE}" ]]; then
+  log "Content-Security-Policy mode: ${TEC_TAC_CSP_MODE}."
 fi
 
 mkdir -p "${SNIPPET_DIR}"
@@ -45,6 +56,7 @@ location = /tec-tac/index.html {
     add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0" always;
     add_header Pragma "no-cache" always;
     add_header Expires "0" always;
+    ${CSP_LINE}
 }
 
 location = /tec-tac/modules/modules.json {
@@ -56,6 +68,7 @@ location = /tec-tac/modules/modules.json {
 
 location ^~ /tec-tac/ {
     root ${DEPLOY_BASE};
+    ${CSP_LINE}
     try_files \$uri \$uri/ /tec-tac/index.html;
 }
 EOF_SNIPPET

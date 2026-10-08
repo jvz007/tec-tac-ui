@@ -53,7 +53,8 @@ export function createContextInteractionRegistry({ hasPermission } = {}) {
     const target = context.target || null
 
     if (interaction.permission && typeof hasPermission === 'function' && !hasPermission(interaction.permission)) {
-      return { visible: true, enabled: false, reason: `Permission required: ${interaction.permission}` }
+      // AD-12: hidden when denied; the reason stays in state for diagnostics.
+      return { visible: false, enabled: false, reason: `Permission required: ${interaction.permission}` }
     }
 
     if (source && !interaction.sourceTypes.includes(String(source.type || ''))) {

@@ -140,3 +140,52 @@ See `docs/module-dashboard-widgets.md` for registration, permission, sizing and 
 
 Authenticated modules receive the Core-owned `codeEditor` capability. In addition to editors, models, completion and hover providers, modules may register parser/linter results through `codeEditor.registerDiagnosticsProvider(language, provider)`. Modules must return plain diagnostic objects and must not import Monaco or manipulate Monaco markers directly. See `docs/module-code-editor.md`.
 
+
+## Errors thrown by the request helpers
+
+`api()` (`apiFetch`), `apiRaw`, `apiBlob`, `apiText` and `publicApi()` throw one documented shape. Core's own sign-in and SSO requests use it too.
+
+| Field | Meaning |
+|---|---|
+| `error.status` | `0` when no HTTP response arrived (the network failed, the request was aborted, or the Tactical API address is missing). `401` when there is no browser token. Otherwise the HTTP status. For the error-key rejection below it is the `2xx` status. |
+| `error.payload` | The parsed response body. An object for JSON, a string for text. `null` for a `204`, an empty body, an unparseable body, and whenever `status` is `0`. |
+| `error.code` | `payload.code` when it is a string, otherwise `null`. |
+| `error.message` | Core's message, built from the payload (`detail`, `error` or `message`) or a fallback. |
+
+Core decorates the original error object. A network failure is still the `TypeError` and an abort is still the `AbortError`, with the same name and message. The field is `payload`; there is no `body` alias.
+
+```js
+try {
+  await api('/api/tfd/example/')
+} catch (error) {
+  if (error.status === 0) showOffline()          // nothing reached the server
+  else if (error.code === 'example_locked') ...  // a machine-readable reason
+  else showMessage(error.message)
+}
+```
+
+**The error-key rule.** Tactical sometimes answers `200` with a body such as `{ "error": "..." }`. `api()` throws on any `2xx` JSON object with a truthy `error` or `detail` key, with `status` set to that `2xx` status and the body in `payload`. Pass `rejectErrorPayload: false` to get the body back instead. `apiRaw`, `apiBlob` and `apiText` never look at the body this way. A `401` ends the session first, then throws.
+
+## Server URL
+
+`context.context.server_url` is the Tactical API base without a trailing slash, the same value Core itself uses for requests. It is `''` when the address is not set or is not an `http(s)` URL. It is read-only. Use it instead of reading `window._env_`.
+
+## Module start-up time limit
+
+`context.context.module_register_timeout_seconds` is how long Core waits for a module to start. The value comes from Core (whole seconds from 5 to 300, default 30; an administrator changes it in Modules). The limit covers loading the module's entry file and running `register(context)` together. It does not cover work a module starts after `register()` returns.
+
+A module that takes longer, or throws, is marked failed and Core carries on with the next module:
+
+- `moduleLoad.failed` gets `{ id, message }`. For a timeout it also has `timedOut: true`, and the message reads `register() did not finish within N seconds`.
+- Everything the module contributed is removed: its registry entries (context actions, interactions, resource views, code editor, dashboard widgets, quick actions, notifications, audit, help, header), its navigation items and its routes. This also applies to a module that threw after it had already added navigation or a route.
+- JavaScript cannot cancel a hung `register()`, so the module is marked abandoned. A later call to `addNavigation`, `router.addRoute` or a registry method throws, and Core runs the cleanup again if the promise settles late.
+
+Keep `register()` short. Register your pages, actions and widgets, and load data inside the components when they mount. Public modules (`registerPublic`) run before sign-in, so they use the fixed 30 second limit.
+
+## Failure containment
+
+Core renders every module-supplied component inside an error boundary: each routed page, each header item and each dashboard widget. A throw in setup, render, a lifecycle hook, a watcher or an event handler shows a "could not load" state with a Retry button for that component only. The rest of Tec-Tac keeps working. The state clears when the route changes. Core records each capture (newest last, at most 50) in `state.moduleRuntimeErrors`, and Modules shows the provider as a runtime error. Core also sets a last-resort application error handler that logs with the `[TEC-TAC-UI]` prefix.
+
+## Navigation permissions
+
+`addNavigation(item)` accepts an optional `permission` (one code) or `permissions` (a list). The shell hides an item when the user lacks any of them. Superusers always see it, and an item with neither field is shown as before. Without a backend-supplied context there are no permissions, so a gated item is hidden. This is a display rule only. The backend still refuses the request.

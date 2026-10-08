@@ -67,7 +67,7 @@ Optional:
 - `icon`
 - `group` — grouping label; defaults to `integrations`.
 - `order` — numeric sort order inside the group.
-- `permission` — Tec-Tac permission code used for UI availability only. Backend authorization remains authoritative.
+- `permission` — Tec-Tac permission code used for UI availability only. An action the user lacks the permission for is hidden: it is not listed and its `state.visible` is `false` (the reason text stays in `state.reason`). `execute()` still refuses it with that reason. Superusers always pass. Backend authorization remains authoritative.
 - `dangerous` — UI hint for destructive operations.
 - `selection: { min, max }`
 - `visible(context)` — synchronous visibility predicate.

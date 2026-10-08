@@ -8,3 +8,10 @@ TEC_TAC_ROOT="${TEC_TAC_ROOT:-/opt/tec-tac}"
 TEC_TAC_EXTENSIONS_ROOT="${TEC_TAC_EXTENSIONS_ROOT:-${TEC_TAC_ROOT}/extensions}"
 TEC_TAC_UI_DEPLOY_ROOT="${TEC_TAC_UI_DEPLOY_ROOT:-/var/lib/tec-tac/ui/tec-tac}"
 TEC_TAC_UI_DEPLOY_BASE="${TEC_TAC_UI_DEPLOY_BASE:-$(dirname "${TEC_TAC_UI_DEPLOY_ROOT}")}"
+# Content-Security-Policy for /tec-tac/: enforce (default), report-only or off.
+# The EXTRA settings are space-separated hosts that widen connect-src, frame-src
+# and img-src, for example TEC_TAC_CSP_FRAME_EXTRA="https://mesh.example.com".
+TEC_TAC_CSP_MODE="${TEC_TAC_CSP_MODE:-enforce}"
+TEC_TAC_CSP_CONNECT_EXTRA="${TEC_TAC_CSP_CONNECT_EXTRA:-}"
+TEC_TAC_CSP_FRAME_EXTRA="${TEC_TAC_CSP_FRAME_EXTRA:-}"
+TEC_TAC_CSP_IMG_EXTRA="${TEC_TAC_CSP_IMG_EXTRA:-}"

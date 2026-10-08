@@ -31,6 +31,8 @@ export default {
 - Core owns top-bar placement and layout.
 - A module cannot unregister another module's contribution.
 - Failed module registration clears partial header contributions from that module.
+- A contribution the user lacks the permission for is hidden (AD-12): it is not listed.
+- Each header item renders inside a Core error boundary. If the component throws in setup, render, a hook, a watcher or an event handler, the top bar shows a small warning marker (with the provider and message in its tooltip) in place of that item and nothing else changes. The failure is recorded against the provider so Modules reports it as a runtime error.
 - When the module is disabled/unloaded, it contributes nothing.
 
 Header components should be compact, keyboard accessible, and must not perform heavy startup data loading during registration.

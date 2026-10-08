@@ -29,7 +29,7 @@ Descriptor fields:
 - `surface` - required shared UI surface.
 - `sourceTypes` / `sourceType` - one or more accepted drag source types.
 - `targetTypes` / `targetType` - one or more accepted drop target types.
-- `permission` - optional Core permission gate.
+- `permission` - optional Core permission gate. An interaction the user lacks the permission for is hidden: it is not listed and its `state.visible` is `false`. `execute()` still refuses it.
 - `order` - optional ordering hint, default `500`.
 - `canDrop(context)` - optional fail-closed availability test.
 - `drop(context)` / second argument to `register()` - required execution handler.
@@ -55,6 +55,6 @@ await contextInteractions.execute(matches[0].id, { source, target })
 - Providers own execution.
 - Consumers must not import provider UI internals.
 - One module cannot unregister another module's interactions.
-- Permission checks are enforced by Core when declared.
+- Permission checks are enforced by Core when declared. A denied interaction is hidden, not disabled (AD-12). The backend still refuses the operation.
 - `canDrop()` errors fail closed and surface as a disabled interaction reason.
 - If module registration fails, Core clears interactions registered by that module during startup.

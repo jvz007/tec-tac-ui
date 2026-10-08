@@ -76,7 +76,8 @@ export function createQuickActionRegistry({ hasPermission } = {}) {
 
   function evaluate(action, context = {}) {
     if (action.permission && typeof hasPermission === 'function' && !hasPermission(action.permission)) {
-      return { visible: true, enabled: false, reason: `Permission required: ${action.permission}` }
+      // AD-12: hidden when denied; the reason stays in state for diagnostics.
+      return { visible: false, enabled: false, reason: `Permission required: ${action.permission}` }
     }
     if (action.visible) {
       try {
@@ -108,19 +109,24 @@ export function createQuickActionRegistry({ hasPermission } = {}) {
       .sort((a, b) => a.group.localeCompare(b.group) || a.order - b.order || a.label.localeCompare(b.label))
   }
 
+  function describePin(pin) {
+    const action = findAction(pin.action_id)
+    if (!action) return { ...pin, missing: true, state: { visible: true, enabled: false, reason: 'Provider action is not registered.' } }
+    const context = { params: safeParams(pin.params), pin, source: 'quick-action-bar' }
+    return {
+      ...pin,
+      provider: action.provider,
+      dangerous: action.dangerous,
+      description: action.description,
+      state: evaluate(action, context),
+    }
+  }
+
+  // Pins whose action is hidden (permission denied, or the action's own
+  // visible() says no) are not listed. They are not deleted: they come back
+  // when the permission returns.
   function listPins() {
-    return readPins().map((pin) => {
-      const action = findAction(pin.action_id)
-      if (!action) return { ...pin, missing: true, state: { visible: true, enabled: false, reason: 'Provider action is not registered.' } }
-      const context = { params: safeParams(pin.params), pin, source: 'quick-action-bar' }
-      return {
-        ...pin,
-        provider: action.provider,
-        dangerous: action.dangerous,
-        description: action.description,
-        state: evaluate(action, context),
-      }
-    })
+    return readPins().map(describePin).filter((pin) => pin.state.visible)
   }
 
   function pinAction(actionId, options = {}) {
@@ -143,11 +149,15 @@ export function createQuickActionRegistry({ hasPermission } = {}) {
 
   function removePin(id) { return writePins(readPins().filter((pin) => pin.id !== String(id || ''))) }
 
+  // Moves relative to the pins the user can see; hidden pins keep their place.
   function movePin(id, offset) {
     const pins = readPins()
-    const from = pins.findIndex((pin) => pin.id === String(id || ''))
-    const to = from + Number(offset || 0)
-    if (from < 0 || to < 0 || to >= pins.length || from === to) return pins
+    const visible = pins.map((pin, index) => (describePin(pin).state.visible ? index : -1)).filter((index) => index >= 0)
+    const fromVisible = visible.findIndex((index) => pins[index].id === String(id || ''))
+    const toVisible = fromVisible + Number(offset || 0)
+    if (fromVisible < 0 || toVisible < 0 || toVisible >= visible.length || fromVisible === toVisible) return pins
+    const from = visible[fromVisible]
+    const to = visible[toVisible]
     const [row] = pins.splice(from, 1)
     pins.splice(to, 0, row)
     return writePins(pins)

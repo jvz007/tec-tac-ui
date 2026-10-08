@@ -6,6 +6,7 @@ import {
   TACTICAL_SESSION_INVALID_EVENT,
   tacticalAuthStage,
   tacticalIdentityFromStorage,
+  tacticalServerUrl,
   tacticalToken,
   validateTacticalSession,
 } from './api'
@@ -22,7 +23,32 @@ export const state = reactive({
   moduleLoad: { loaded: [], failed: [], skipped: [] },
   publicModuleLoad: { loaded: [], failed: [] },
   publicModules: [],
+  // Failures captured by Core's error boundaries and the app error handler.
+  // Newest last, capped at MODULE_RUNTIME_ERROR_LIMIT.
+  moduleRuntimeErrors: [],
 })
+
+export const MODULE_RUNTIME_ERROR_LIMIT = 50
+
+// Record a contained runtime failure so Modules can report the provider as
+// unhealthy. Never throws.
+export function recordModuleRuntimeError({ provider = 'Core', variant = '', label = '', error = null, message = '', info = '' } = {}) {
+  try {
+    const entry = {
+      provider: String(provider || 'Core'),
+      variant: String(variant || ''),
+      label: String(label || ''),
+      message: String(message || error?.message || error || 'Unknown error'),
+      info: String(info || ''),
+      at: new Date().toISOString(),
+    }
+    state.moduleRuntimeErrors.push(entry)
+    while (state.moduleRuntimeErrors.length > MODULE_RUNTIME_ERROR_LIMIT) state.moduleRuntimeErrors.shift()
+    return entry
+  } catch {
+    return null
+  }
+}
 
 function normalizeStaticModules(modules, context = state.context) {
   const permissionSet = new Set(context.permissions || [])
@@ -133,7 +159,7 @@ export async function loadContext(staticModules = null) {
 
     const manifest = Array.isArray(staticModules) ? staticModules : await loadStaticModuleManifest()
     const modules = normalizeStaticModules(manifest, baseContext)
-    state.context = { ...baseContext, modules }
+    state.context = { ...baseContext, modules, server_url: tacticalServerUrl() }
     state.contextSource = richContext ? 'backend' : 'local-manifest'
     state.status = 'ready'
   } catch (error) {

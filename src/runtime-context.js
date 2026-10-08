@@ -1,3 +1,17 @@
+export const DEFAULT_MODULE_REGISTER_TIMEOUT_SECONDS = 30
+export const MIN_MODULE_REGISTER_TIMEOUT_SECONDS = 5
+export const MAX_MODULE_REGISTER_TIMEOUT_SECONDS = 300
+
+// A whole number from 5 to 300, otherwise the default. Strings and booleans are
+// not coerced: an unexpected type from the backend falls back to the default.
+export function normalizeRegisterTimeoutSeconds(value) {
+  return Number.isInteger(value)
+    && value >= MIN_MODULE_REGISTER_TIMEOUT_SECONDS
+    && value <= MAX_MODULE_REGISTER_TIMEOUT_SECONDS
+    ? value
+    : DEFAULT_MODULE_REGISTER_TIMEOUT_SECONDS
+}
+
 export function emptyRuntimeContext(user = {}) {
   return {
     user: user || {},
@@ -15,6 +29,9 @@ export function emptyRuntimeContext(user = {}) {
     preferences_initialized: false,
     preferences_updated_at: null,
     notice_unread_count: 0,
+    module_register_timeout_seconds: DEFAULT_MODULE_REGISTER_TIMEOUT_SECONDS,
+    // Set by state.js after normalizing; this file stays import-free.
+    server_url: '',
   }
 }
 
@@ -38,5 +55,7 @@ export function normalizeBackendRuntimeContext(richContext, browserUser = {}) {
     preferences_initialized: source.preferences_initialized === true,
     preferences_updated_at: source.preferences_updated_at || null,
     notice_unread_count: Number(source.notice_unread_count || 0),
+    module_register_timeout_seconds: normalizeRegisterTimeoutSeconds(source.module_register_timeout_seconds),
+    server_url: '',
   }
 }
