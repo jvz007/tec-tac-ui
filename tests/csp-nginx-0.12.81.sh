@@ -53,7 +53,7 @@ grep -Fq "wss://mesh.example.test;" <<<"${WIDE}" || fail "connect extra not appl
 grep -Fq "unsafe-inline" <<<"$(grep -o "frame-src [^;]*;" <<<"${WIDE}")" && fail "an extra source smuggled in unsafe-inline"
 
 # The defaults and the nginx snippet.
-grep -q 'TEC_TAC_CSP_MODE="${TEC_TAC_CSP_MODE:-enforce}"' "${ROOT}/scripts/tec-tac-config.sh" || fail "CSP mode default missing"
+grep -q 'TEC_TAC_CSP_MODE="${TEC_TAC_CSP_MODE:-report-only}"' "${ROOT}/scripts/tec-tac-config.sh" || fail "CSP mode default missing (report-only since 0.12.83)"
 REPAIR="${ROOT}/scripts/repair-nginx.sh"
 grep -q 'tec-tac-csp.sh' "${REPAIR}" || fail "repair-nginx.sh does not load the CSP builder"
 grep -q 'TACTICAL_FRONTEND_ROOT:-/var/www/rmm/dist' "${REPAIR}" || fail "env-config.js location not configurable"

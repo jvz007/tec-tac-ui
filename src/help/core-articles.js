@@ -5,6 +5,7 @@ import schedules from './articles/schedules.md?raw'
 import schedulerConfiguration from './articles/scheduler-configuration.md?raw'
 import modules from './articles/modules.md?raw'
 import access from './articles/access.md?raw'
+import systemSettings from './articles/system-settings.md?raw'
 import systemUpdates from './articles/system-updates.md?raw'
 import trustPolicy from './articles/trust-policy.md?raw'
 import storage from './articles/storage.md?raw'
@@ -23,6 +24,7 @@ const CORE_ARTICLES = [
   { id: 'core.scheduler-configuration', title: 'Scheduler Configuration', category: 'Core Administration', summary: 'Scheduler retention, runtime health and self-tests.', order: 10, keywords: ['scheduler', 'health', 'self-test', 'retention'], routes: ['/system/scheduler'], content: schedulerConfiguration },
   { id: 'core.modules', title: 'Modules', category: 'Core Administration', summary: 'Module lifecycle, bundles, dependencies, visibility and package inspection.', order: 20, keywords: ['modules', 'install', 'bundle', 'update', 'visibility'], routes: ['/modules'], content: modules },
   { id: 'core.access', title: 'Access', category: 'Core Administration', summary: 'Tactical identities, Tec-Tac permissions and role editing safeguards.', order: 30, keywords: ['access', 'roles', 'permissions', 'users'], routes: ['/access'], content: access },
+  { id: 'core.system-settings', title: 'System Configuration', category: 'Core Administration', summary: 'The module start-up time limit and who can change it.', order: 35, keywords: ['runtime', 'time limit', 'start-up', 'settings'], routes: ['/system/settings'], content: systemSettings },
   { id: 'core.system-updates', title: 'System Updates', category: 'Core Administration', summary: 'Framework/UI release discovery and controlled update lifecycle.', order: 40, keywords: ['updates', 'release', 'framework', 'ui'], routes: ['/system/updates'], content: systemUpdates },
   { id: 'core.trust-policy', title: 'Changing the trust level', category: 'Core Administration', summary: 'What trust levels mean, and how to lower one temporarily from the server console.', order: 45, keywords: ['trust', 'signing', 'unsigned', 'downgrade', 'console'], routes: ['/system/updates'], content: trustPolicy },
   { id: 'core.storage', title: 'Storage & Housekeeping', category: 'Core Administration', summary: 'Storage visibility, retention and cleanup controls.', order: 50, keywords: ['storage', 'housekeeping', 'retention', 'cleanup'], routes: ['/system/storage'], content: storage },

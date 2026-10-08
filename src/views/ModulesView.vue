@@ -1,7 +1,6 @@
 <script setup>
 import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import RuntimeSettingsCard from '../components/RuntimeSettingsCard.vue'
 import { createLatestRequestGate } from '../admin-session-state'
 import { loadLatestHotfixRows } from '../module-hotfix-loader'
 import {
@@ -731,7 +730,6 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
     <b>{{ failedModuleLoads.length }} module UI load failure{{ failedModuleLoads.length === 1 ? '' : 's' }}.</b>
     Open the affected module in the table for the browser-side import/register error.
   </div>
-  <RuntimeSettingsCard v-if="activeTab === 'installed'" />
   <div v-if="!canManage && !loading" class="state-inline warning"><b>Read-only module catalog.</b> Tactical <span class="mono">can_do_server_maint</span> is required.</div>
 
   <div class="subtabs module-tabs mb" role="tablist" aria-label="Module management views">

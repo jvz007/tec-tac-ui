@@ -105,3 +105,48 @@ export function branchComparison(branch) {
   if (state === 'differs') return { ...view, label: 'DIFFERS', pillClass: 'warn', text: 'The installed commit differs from the branch head. That does not mean the branch is newer.' }
   return { ...view, label: 'UNKNOWN', pillClass: '', text: 'Stage and install once with Core 1.17.2 or later to compare against the branch head.' }
 }
+
+// First 7 characters of a hex commit id, or '' when there is none.
+export function shortCommit(commit) {
+  return typeof commit === 'string' && /^[0-9a-f]{7,64}$/i.test(commit.trim()) ? commit.trim().slice(0, 7).toLowerCase() : ''
+}
+
+// Label for the Source cell of a staged package, from preview.source:
+// "branch dev · 1a2b3c4", "release v0.12.82 · 9f8e7d6", or "offline".
+export function describeStageSource(source) {
+  if (!source || typeof source !== 'object' || !source.type) return 'offline'
+  const head = [String(source.type)]
+  if (typeof source.ref === 'string' && source.ref) head.push(source.ref)
+  const commit = shortCommit(source.commit)
+  return commit ? `${head.join(' ')} · ${commit}` : head.join(' ')
+}
+
+// Compares the source the page asked Core to stage with the source Core says the
+// package came from. requested: { type, ref, oneOff } or null (an offline file).
+// A release matches on type alone: its preview ref is the tag, not a name we sent.
+// Only a mismatch blocks Install. A one-off Advanced stage is allowed with a warning.
+export function stageSourceCheck({ requested, preview, saved } = {}) {
+  const source = preview && typeof preview === 'object' ? preview.source : null
+  if (!requested) {
+    return source && source.type
+      ? { state: 'unchecked', blocked: false, message: '' }
+      : { state: 'offline', blocked: false, message: '' }
+  }
+  if (!source || !source.type) {
+    return { state: 'unchecked', blocked: false, message: 'Core did not report where this package came from.' }
+  }
+  const asked = requested.type === 'branch' ? { type: 'branch', ref: requested.ref || '' } : { type: 'release', ref: null }
+  const sameSource = (a, b) => a.type === b.type && (a.type !== 'branch' || a.ref === b.ref)
+  const got = source.type === 'branch' ? { type: 'branch', ref: typeof source.ref === 'string' ? source.ref : '' } : { type: String(source.type), ref: null }
+  if (!sameSource(asked, got)) {
+    return {
+      state: 'mismatch',
+      blocked: true,
+      message: `This package came from ${describeStageSource(source)}, not the ${describeUpdateSource(asked).toLowerCase()} source this page asked for. Discard it and stage again.`,
+    }
+  }
+  if (requested.oneOff && !sameSource(asked, normalizeSource(saved))) {
+    return { state: 'oneoff', blocked: false, message: `One-off source: not saved. Saved source is ${describeUpdateSource(saved)}.` }
+  }
+  return { state: 'match', blocked: false, message: '' }
+}

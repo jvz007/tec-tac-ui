@@ -11,8 +11,10 @@
 # API origin comes from PROD_URL in Tactical's env-config.js.
 
 # Bracket expressions put ']' first so IPv6 hosts like [::1] are accepted.
-_TEC_TAC_CSP_URL_RE='^https?://[]A-Za-z0-9._:@[-]+(/[A-Za-z0-9._~/%-]*)?$'
-_TEC_TAC_CSP_ORIGIN_RE='^(https?)://([]A-Za-z0-9._:@[-]+)(/.*)?$'
+# Matched against the lower-cased value, so HTTPS://API.X.test is accepted. A
+# query string or fragment is allowed and later dropped; only safe characters pass.
+_TEC_TAC_CSP_URL_RE='^https?://[]a-z0-9._:@[-]+(/[a-z0-9._~/%-]*)?([?][a-z0-9._~/%=&+,:@-]*)?(#[a-z0-9._~/%=&+,:@?-]*)?$'
+_TEC_TAC_CSP_ORIGIN_RE='^(https?)://([]a-z0-9._:@[-]+)(/.*)?$'
 
 _tec_tac_csp_warn() { printf '[TEC-TAC-UI] CSP: %s\n' "$*" >&2; }
 
@@ -23,16 +25,27 @@ tec_tac_csp_read_prod_url() {
   local file="${1:-}" value
   [[ -n "${file}" && -r "${file}" ]] || return 1
   value="$(sed -nE "s/.*PROD_URL[\"']?[[:space:]]*[:=][[:space:]]*[\"']([^\"']*)[\"'].*/\\1/p" "${file}" | head -n1 | tr -d '[:space:]')"
-  [[ "${value}" =~ ${_TEC_TAC_CSP_URL_RE} ]] || return 1
+  [[ "${value,,}" =~ ${_TEC_TAC_CSP_URL_RE} ]] || return 1
   printf '%s\n' "${value}"
 }
 
-# Reduce a URL to scheme://host[:port]. Prints nothing for anything that is not http(s).
+# Reduce a URL to scheme://host[:port]. Scheme and host are lower-cased, a query
+# or fragment and the path are dropped, and the default port (:443 on https, :80
+# on http) is dropped, as a browser's own origin would be. Prints nothing for
+# anything that is not http(s).
 tec_tac_csp_origin() {
   local url="${1:-}"
+  url="${url%%#*}"
+  url="${url%%\?*}"
+  url="${url,,}"
   [[ "${url}" =~ ${_TEC_TAC_CSP_ORIGIN_RE} ]] || return 1
   local scheme="${BASH_REMATCH[1]}" authority="${BASH_REMATCH[2]}"
   authority="${authority##*@}"
+  [[ -n "${authority}" ]] || return 1
+  case "${scheme}:${authority}" in
+    https:*:443) authority="${authority%:443}" ;;
+    http:*:80) authority="${authority%:80}" ;;
+  esac
   [[ -n "${authority}" ]] || return 1
   printf '%s://%s\n' "${scheme}" "${authority}"
 }
@@ -89,7 +102,7 @@ tec_tac_csp_policy() {
 
 # The header name for a mode: enforce, report-only. Prints nothing for off.
 tec_tac_csp_header_name() {
-  case "${1:-enforce}" in
+  case "${1:-report-only}" in
     enforce) printf 'Content-Security-Policy\n' ;;
     report-only) printf 'Content-Security-Policy-Report-Only\n' ;;
     *) return 1 ;;
@@ -97,13 +110,13 @@ tec_tac_csp_header_name() {
 }
 
 # One nginx directive for a mode and API origin, or nothing (mode off, unknown
-# API origin). An unknown mode falls back to enforce, with a warning.
+# API origin). An unknown mode falls back to report-only (the safe header), with a warning.
 tec_tac_csp_nginx_line() {
-  local mode="${1:-enforce}" api_origin="${2:-}" name policy
+  local mode="${1:-report-only}" api_origin="${2:-}" name policy
   case "${mode}" in
     off) return 0 ;;
     enforce|report-only) ;;
-    *) _tec_tac_csp_warn "TEC_TAC_CSP_MODE '${mode}' is not enforce, report-only or off; using enforce."; mode=enforce ;;
+    *) _tec_tac_csp_warn "TEC_TAC_CSP_MODE '${mode}' is not report-only, enforce or off; using report-only."; mode=report-only ;;
   esac
   [[ -n "${api_origin}" ]] || return 0
   name="$(tec_tac_csp_header_name "${mode}")" || return 0
@@ -115,7 +128,7 @@ tec_tac_csp_nginx_line() {
 # the directive. When the API origin cannot be read it warns and prints nothing,
 # because a policy built without it would break every API call.
 tec_tac_csp_from_env_config() {
-  local mode="${1:-enforce}" env_config="${2:-}" url origin
+  local mode="${1:-report-only}" env_config="${2:-}" url origin
   if [[ "${mode}" == "off" ]]; then
     _tec_tac_csp_warn "TEC_TAC_CSP_MODE=off; no Content-Security-Policy written."
     return 0

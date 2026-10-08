@@ -2,6 +2,8 @@
 
 Module Manager controls installed Tec-Tac extensions, package intake, updates, runtime state, visibility, repositories and managed hotfixes.
 
+The module start-up time limit now lives on **System Configuration** (Administration menu).
+
 ## Enabled and visible are different
 
 **Enabled** controls whether a module is active. **Visible** controls whether its normal navigation entry appears. An enabled hidden module can still provide capabilities or be opened directly when it has a usable route.

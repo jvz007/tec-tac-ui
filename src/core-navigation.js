@@ -1,3 +1,5 @@
+import { canEditRuntimeSettings } from './runtime-settings.js'
+
 export const DEFAULT_SECTION_ORDER = Object.freeze([
   'Workspace',
   'Operations',
@@ -17,6 +19,7 @@ export function coreNavigation(context = {}) {
     { label: 'Access', icon: '⛨', to: '/access', section: 'Administration', visible: capabilities.list_accounts !== false || capabilities.list_roles !== false, owner: 'core' },
     { label: 'Clients & Sites', icon: '▤', to: '/resources', section: 'Administration', visible: capabilities.list_clients === true || superuser, owner: 'core' },
     { label: 'Scheduler Configuration', icon: '◷', to: '/system/scheduler', section: 'Administration', visible: capabilities.manage_schedules === true || superuser, owner: 'core' },
+    { label: 'System Configuration', icon: '⚙', to: '/system/settings', section: 'Administration', visible: canEditRuntimeSettings(context), owner: 'core' },
     { label: 'System Updates', icon: '⇧', to: '/system/updates', section: 'Administration', visible: capabilities.manage_modules === true || superuser, owner: 'core' },
     { label: 'Storage & Housekeeping', icon: '⌫', to: '/system/storage', section: 'Administration', visible: capabilities.manage_modules === true || superuser, owner: 'core' },
     { label: 'Backup & Restore', icon: '↺', to: '/system/backups', section: 'Administration', visible: superuser, owner: 'core' },

@@ -168,7 +168,9 @@ assert.match(template, /@click="stageOnline\(component\.id\)"/)
 assert.doesNotMatch(template, /stageOnline\(component\.id, 'release'\)/)
 assert.match(template, /stageOnline\(component\.id, 'branch'\)/, 'the Advanced one-off still sends an explicit branch')
 // Older Core: keep sending explicit release.
-assert.match(script, /sourcesSupported\.value \? null : 'release'/)
+// 0.12.83: the saved source is sent explicitly when supported; only an older Core falls back to release.
+assert.match(script, /else if \(sourcesSupported\.value\)/)
+assert.match(script, /let type = 'release'/)
 // A text input takes over when the branch list fails.
 assert.match(template, /v-if="branchListFailed\[component\.id\]"[^>]*type="text"/)
 // Save replaces the entry, invalidates the gate and forces a re-check.

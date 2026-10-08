@@ -20,7 +20,11 @@ import { createHeaderContributionRegistry } from './header-contributions'
 import { registerCoreHelpArticles } from './help/core-articles'
 import { registerCoreDashboardWidgets } from './dashboard-core-widgets'
 import { initializeUserPreferences } from './preferences'
+import { installCspViolationRecorder } from './csp-violations'
 import './styles.css'
+
+// Installed before anything mounts so an early violation is not missed.
+installCspViolationRecorder()
 
 async function bootstrap() {
   const app = createApp(App)

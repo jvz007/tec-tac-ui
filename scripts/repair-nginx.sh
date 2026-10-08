@@ -35,6 +35,11 @@ fi
 CSP_LINE="$(tec_tac_csp_from_env_config "${TEC_TAC_CSP_MODE}" "${FRONTEND_ROOT}/env-config.js")"
 if [[ -n "${CSP_LINE}" ]]; then
   log "Content-Security-Policy mode: ${TEC_TAC_CSP_MODE}."
+  if [[ "${TEC_TAC_CSP_MODE}" == "enforce" ]]; then
+    log "enforce blocks anything the policy does not allow. Set TEC_TAC_CSP_MODE=report-only to log without blocking."
+  else
+    log "report-only blocks nothing; the browser console logs what enforce would block. Switch on enforcement with TEC_TAC_CSP_MODE=enforce, then sudo bash scripts/repair-nginx.sh."
+  fi
 fi
 
 # nginx inherits server-level add_header directives only into a location that

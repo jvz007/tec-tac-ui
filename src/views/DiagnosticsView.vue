@@ -1,6 +1,8 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { getSystemDiagnostics } from '../api'
+import { cspViolations } from '../csp-violations'
+import { copyTextToClipboard } from '../clipboard'
 
 const loading = ref(true)
 const liveLoading = ref(false)
@@ -8,6 +10,18 @@ const error = ref('')
 const report = ref(null)
 const expanded = ref(new Set())
 const copied = ref(false)
+const policyBlocks = ref(cspViolations.list())
+const policyCopied = ref(false)
+let stopPolicyWatch = null
+async function copyPolicyBlocks() {
+  try {
+    await copyTextToClipboard(cspViolations.summary())
+    policyCopied.value = true
+    setTimeout(() => { policyCopied.value = false }, 1800)
+  } catch (copyError) {
+    error.value = copyError?.message || 'The browser could not copy the policy blocks.'
+  }
+}
 
 const sections = computed(() => report.value?.sections || [])
 const checks = computed(() => sections.value.flatMap(section => section.checks || []))
@@ -102,7 +116,11 @@ function downloadReport() {
   URL.revokeObjectURL(url)
 }
 
-onMounted(() => load())
+onMounted(() => {
+  stopPolicyWatch = cspViolations.subscribe(() => { policyBlocks.value = cspViolations.list() })
+  load()
+})
+onUnmounted(() => { if (stopPolicyWatch) stopPolicyWatch() })
 </script>
 
 <template>
@@ -122,6 +140,19 @@ onMounted(() => load())
   </div>
 
   <div v-if="error" class="auth-error">{{ error }}</div>
+  <section class="card mb" aria-labelledby="policy-blocks-title">
+    <div class="cardhead">
+      <div><span class="eyebrow">BROWSER</span><h3 id="policy-blocks-title">Recent browser policy blocks</h3></div>
+      <button class="btn sm" :disabled="!policyBlocks.length" @click="copyPolicyBlocks">{{ policyCopied ? 'Copied' : 'Copy' }}</button>
+    </div>
+    <p v-if="!policyBlocks.length" class="smalltext muted">Nothing blocked or flagged since this page loaded. This list is kept in memory only and clears on reload.</p>
+    <div v-for="item in policyBlocks" :key="item.key" class="listrow">
+      <span class="pill" :class="item.disposition === 'enforce' ? 'danger' : 'warn'">{{ item.disposition === 'enforce' ? 'BLOCKED' : 'WOULD BLOCK' }}</span>
+      <code>{{ item.directive || 'unknown' }}</code>
+      <span class="mono">{{ item.blocked || '(unknown)' }}</span>
+      <span class="smalltext muted">on {{ item.route || '/' }}<template v-if="item.count > 1"> · {{ item.count }}×</template></span>
+    </div>
+  </section>
   <div v-if="loading && !report" class="callout mono">Running read-only Core diagnostics…</div>
 
   <template v-if="report">

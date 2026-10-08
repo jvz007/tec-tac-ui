@@ -16,10 +16,12 @@ import { copyTextWithFeedback } from '../copy-feedback'
 import { canEditRuntimeSettings } from '../runtime-settings'
 import {
   branchComparison,
+  describeStageSource,
   describeUpdateSource,
   normalizeUpdateSources,
   saveUpdateSource,
   sourceDraftState,
+  stageSourceCheck,
   supportsUpdateSource,
 } from '../update-source'
 import { createKeyedLatestRequestGate } from '../latest-request-gate'
@@ -48,6 +50,13 @@ const canEditSource = computed(() => canEditRuntimeSettings(appState?.context))
 const sourcesSupported = computed(() => supportsUpdateSource(status.value))
 const savedSources = computed(() => normalizeUpdateSources(status.value))
 const stage = ref(null)
+// What the page asked Core to stage: { component, type, ref, oneOff }. Null for an offline file.
+const stageRequest = ref(null)
+const stageCheck = computed(() => stageSourceCheck({
+  requested: stageRequest.value,
+  preview: stage.value?.preview,
+  saved: stageRequest.value ? savedSources.value[stageRequest.value.component] : null,
+}))
 const stageBusy = ref(false)
 const offlineInput = ref(null)
 const offlineFile = ref(null)
@@ -429,21 +438,29 @@ async function loadBranches(component, { quiet = false } = {}) {
   }
 }
 
-// No sourceType: Core stages the saved update source. 'branch' is the one-off
-// Advanced stage and is never saved. An older Core without saved sources only
-// knows the explicit source, so it still gets 'release'.
+// No sourceType: stage the saved update source the page displays, sent
+// explicitly (release sends a null ref). 'branch' is the one-off Advanced stage
+// and is never saved. An older Core without saved sources only knows the
+// explicit source, so it still gets 'release'.
 async function stageOnline(component, sourceType = null) {
-  const explicit = sourceType || (sourcesSupported.value ? null : 'release')
+  const oneOff = Boolean(sourceType)
+  const saved = savedSources.value[component]
+  let type = 'release'
+  let ref = null
+  if (oneOff) {
+    type = sourceType
+    ref = sourceType === 'branch' ? selectedBranch.value[component] : null
+  } else if (sourcesSupported.value) {
+    type = saved.type
+    ref = saved.type === 'branch' ? saved.ref : null
+  }
   offlineFile.value = null
   offlineDropActive.value = false
   stageBusy.value = true
   error.value = ''
   try {
-    stage.value = await stageOnlineSystemUpdate(
-      component,
-      explicit,
-      explicit === 'branch' ? selectedBranch.value[component] : null,
-    )
+    stage.value = await stageOnlineSystemUpdate(component, type, ref)
+    stageRequest.value = { component, type, ref, oneOff }
     allowDowngrade.value = false
   } catch (err) {
     error.value = err?.message || 'Unable to stage online update.'
@@ -497,6 +514,7 @@ async function inspectOfflinePackage() {
   error.value = ''
   try {
     stage.value = await inspectSystemUpdatePackage(offlineFile.value)
+    stageRequest.value = null
     offlineFile.value = null
     allowDowngrade.value = false
   } catch (err) {
@@ -510,11 +528,12 @@ async function clearStage() {
   if (!stage.value?.upload_id) return
   try { await discardSystemUpdatePackage(stage.value.upload_id) } catch { /* consumed/expired is harmless */ }
   stage.value = null
+  stageRequest.value = null
   allowDowngrade.value = false
 }
 
 async function installStage() {
-  if (!stage.value?.upload_id || stageBusy.value) return
+  if (!stage.value?.upload_id || stageBusy.value || stageCheck.value.blocked) return
   const preview = stage.value.preview || {}
   if (preview.operation === 'downgrade' && !allowDowngrade.value) return
   stageBusy.value = true
@@ -522,6 +541,7 @@ async function installStage() {
   try {
     job.value = await installSystemUpdatePackage(stage.value.upload_id, allowDowngrade.value)
     stage.value = null
+    stageRequest.value = null
     startPolling()
   } catch (err) {
     error.value = err?.message || 'Unable to start system update.'
@@ -802,17 +822,19 @@ onBeforeUnmount(() => {
       <div class="package-summary system-package-summary">
         <div><span>Installed</span><b class="mono">{{ stage.preview.installed_version || 'none' }}</b></div>
         <div><span>Package</span><b class="mono">{{ stage.preview.version }}</b></div>
-        <div><span>Source</span><b>{{ stage.preview.source?.type || 'offline' }}</b></div>
+        <div><span>Source</span><b class="mono" data-test="stage-source">{{ describeStageSource(stage.preview.source) }}</b></div>
         <div><span>Trust</span><span class="system-trust-badge"><span class="pill system-trust-trigger" tabindex="0" :class="systemTrustClass(stage.preview.release_trust)" @mouseenter="setTrustPopover('hover', trustPopoverKey('stage'))" @mouseleave="setTrustPopover('hover', null)" @focus="setTrustPopover('focus', trustPopoverKey('stage'))" @blur="setTrustPopover('focus', null)" @click="closeTrustPopover($event)" @keydown.esc.stop.prevent="closeTrustPopover($event)" :aria-describedby="isTrustPopoverOpen(trustPopoverKey('stage')) ? trustPopoverId(trustPopoverKey('stage')) : undefined">{{ systemTrustLabel(stage.preview.release_trust) }}</span><span :id="trustPopoverId(trustPopoverKey('stage'))" v-if="isTrustPopoverOpen(trustPopoverKey('stage'))" class="system-trust-popover" role="tooltip"><b>{{ stage.preview.release_trust?.publisher_display_name || (stage.preview.release_trust?.legacy ? 'Legacy unsigned release' : 'Unsigned source') }}</b><span v-if="stage.preview.release_trust?.publisher_id">Publisher ID: <span class="mono">{{ stage.preview.release_trust.publisher_id }}</span></span><span v-if="stage.preview.release_trust?.key_id">Key ID: <span class="mono">{{ stage.preview.release_trust.key_id }}</span></span><span v-if="stage.preview.release_trust?.algorithm">Algorithm: {{ stage.preview.release_trust.algorithm }}</span><span v-if="stage.preview.release_trust?.file_count">Verified files: {{ stage.preview.release_trust.file_count }}</span><span v-if="stage.preview.release_trust?.details">{{ stage.preview.release_trust.details }}</span></span></span></div>
         <div><span>SHA256</span><b class="mono hash-short">{{ stage.sha256 }}</b></div>
       </div>
+      <div v-if="stageCheck.state === 'mismatch'" class="state-inline denied" data-test="stage-source-mismatch" role="alert">{{ stageCheck.message }}</div>
+      <div v-else-if="stageCheck.state === 'oneoff'" class="state-inline warning" data-test="stage-source-oneoff">{{ stageCheck.message }}</div>
       <div v-if="!stage.preview.installable" class="state-inline denied">{{ stage.preview.install_block_reason }}</div>
       <label v-if="stage.preview.operation === 'downgrade'" class="warning-check checkline">
         <input v-model="allowDowngrade" type="checkbox" />
         <span>I understand this installs an older system component and may be incompatible with installed modules.</span>
       </label>
       <div class="module-actions">
-        <button class="btn primary" :disabled="stageBusy || !stage.preview.installable || (stage.preview.operation === 'downgrade' && !allowDowngrade)" @click="installStage">{{ stageBusy ? 'Starting…' : 'Install package' }}</button>
+        <button class="btn primary" :disabled="stageBusy || stageCheck.blocked || !stage.preview.installable || (stage.preview.operation === 'downgrade' && !allowDowngrade)" @click="installStage">{{ stageBusy ? 'Starting…' : 'Install package' }}</button>
         <button class="btn" :disabled="stageBusy" @click="clearStage">Discard</button>
       </div>
     </article>

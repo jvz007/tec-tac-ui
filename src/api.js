@@ -1,5 +1,6 @@
+// PROD_URL without trailing slashes, so base + '/api/...' never builds '//api'.
 export function apiBase() {
-  return window._env_?.PROD_URL || ''
+  return String(window._env_?.PROD_URL || '').replace(/\/+$/, '')
 }
 
 // The Tactical API base for display and module use: apiBase() without a

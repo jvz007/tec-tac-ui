@@ -77,7 +77,8 @@ await assert.rejects(() => saveRegisterTimeout(60), (error) => error.status === 
 
 // Source checks.
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
-assert.match(read('../src/views/ModulesView.vue'), /<RuntimeSettingsCard v-if="activeTab === 'installed'" \/>/)
+assert.doesNotMatch(read('../src/views/ModulesView.vue'), /RuntimeSettingsCard/, 'the card moved to System Configuration in 0.12.83')
+assert.match(read('../src/views/SystemSettingsView.vue'), /<RuntimeSettingsCard v-if="allowed" \/>/)
 const card = read('../src/components/RuntimeSettingsCard.vue')
 assert.match(card, /<form v-if="canEdit"/)
 assert.match(card, /core.privileged_operations or core.runtime_settings.manage/)
