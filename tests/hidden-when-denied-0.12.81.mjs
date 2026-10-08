@@ -120,6 +120,78 @@ const hasPermission = (code) => superuser || granted.has(code)
   granted = new Set()
 }
 
+// --- Resource views (0.12.82) ------------------------------------------------
+{
+  const { createResourceViewRegistry } = await dataModule('../src/resource-views.js', [["import { reactive } from 'vue'", vueStub]])
+  const registry = createResourceViewRegistry({ hasPermission })
+  const owner = registry.forModule('tickets')
+  owner.register({ id: 'tickets.panel', resource: 'client', placement: 'client.tab', label: 'Tickets', component: {}, permission: 'tickets.view' })
+  owner.register({ id: 'tickets.open', resource: 'client', placement: 'client.tab', label: 'Open', component: {} })
+  const ids = () => registry.list({ resource: 'client', placement: 'client.tab' }).map((row) => row.id)
+  assert.deepEqual(ids(), ['tickets.open'], 'denied resource view is absent from list()')
+  assert.deepEqual(owner.list({ resource: 'client' }).map((row) => row.id), ['tickets.open'])
+  granted = new Set(['tickets.view'])
+  assert.deepEqual(ids().sort(), ['tickets.open', 'tickets.panel'])
+  granted = new Set()
+  superuser = true
+  assert.equal(ids().includes('tickets.panel'), true, 'superuser sees it')
+  superuser = false
+  granted = new Set()
+}
+
+// --- Header items (0.12.82) --------------------------------------------------
+{
+  const { createHeaderContributionRegistry } = await dataModule('../src/header-contributions.js', [
+    ["import { markRaw, reactive } from 'vue'", 'const reactive = (value) => value; const markRaw = (value) => value'],
+  ])
+  let trusted = true
+  const registry = createHeaderContributionRegistry({ hasPermission, isTrustedContext: () => trusted })
+  const owner = registry.forModule('alerts')
+  owner.register({ id: 'alerts.single', label: 'Single', component: {}, permission: 'alerts.view' })
+  owner.register({ id: 'alerts.both', label: 'Both', component: {}, permissions: ['alerts.view', 'alerts.edit'] })
+  owner.register({ id: 'alerts.free', label: 'Free', component: {} })
+  const ids = () => registry.list({}).map((row) => row.id).sort()
+  assert.deepEqual(ids(), ['alerts.free'], 'denied header items are absent')
+  granted = new Set(['alerts.view'])
+  assert.deepEqual(ids(), ['alerts.free', 'alerts.single'], 'every code must be held')
+  granted = new Set(['alerts.view', 'alerts.edit'])
+  assert.deepEqual(ids(), ['alerts.both', 'alerts.free', 'alerts.single'])
+  trusted = false
+  assert.deepEqual(ids(), [], 'nothing shows without a backend context')
+  trusted = true
+  granted = new Set()
+  superuser = true
+  assert.deepEqual(ids(), ['alerts.both', 'alerts.free', 'alerts.single'], 'superuser sees all')
+  superuser = false
+  granted = new Set()
+}
+
+// --- Dashboard widgets (0.12.82) ---------------------------------------------
+{
+  const { createDashboardWidgetRegistry } = await dataModule('../src/dashboard-widgets.js', [
+    ["import { reactive, markRaw } from 'vue'", 'const reactive = (value) => value; const markRaw = (value) => value'],
+  ])
+  const registry = createDashboardWidgetRegistry({ hasPermission })
+  const owner = registry.forModule('audit')
+  owner.register({ id: 'audit.recent', title: 'Recent audit', component: {}, permission: 'audit.view' })
+  owner.register({ id: 'audit.free', title: 'Free widget', component: {} })
+  const listIds = () => registry.list().map((row) => row.id)
+  const snapIds = () => registry.snapshot().map((row) => row.id)
+  assert.deepEqual(listIds(), ['audit.free'])
+  assert.deepEqual(snapIds(), ['audit.free'])
+  assert.equal(registry.get('audit.recent'), null, 'get(id) hides a denied widget')
+  assert.deepEqual(owner.list().map((row) => row.id), ['audit.free'])
+  granted = new Set(['audit.view'])
+  assert.deepEqual(listIds().sort(), ['audit.free', 'audit.recent'])
+  assert.deepEqual(snapIds().sort(), ['audit.free', 'audit.recent'])
+  assert.equal(registry.get('audit.recent')?.id, 'audit.recent')
+  granted = new Set()
+  superuser = true
+  assert.equal(registry.get('audit.recent')?.id, 'audit.recent', 'superuser sees it')
+  superuser = false
+  granted = new Set()
+}
+
 // --- Navigation filter -----------------------------------------------------
 {
   const { navItemPermitted } = await dataModule('../src/extension-surface-workflows.js')

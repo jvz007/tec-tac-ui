@@ -18,12 +18,15 @@ export function validateRegisterTimeout(value, { minimum = REGISTER_TIMEOUT_MIN,
   return { valid: true, message: '' }
 }
 
-// Superusers and holders of core.privileged_operations may change it, which is
-// what Core 1.17.1 enforces. This only decides whether the form is shown; the
-// backend refuses everyone else.
+// Superusers and holders of core.privileged_operations or
+// core.runtime_settings.manage see the edit forms (Core 1.17.2). The permission
+// list is the effective set Core puts in context.permissions. This only decides
+// whether a form is shown; the backend refuses everyone else.
+export const RUNTIME_SETTINGS_PERMISSIONS = Object.freeze(['core.privileged_operations', 'core.runtime_settings.manage'])
 export function canEditRuntimeSettings(context = {}) {
   if (context?.user?.superuser === true) return true
-  return Array.isArray(context?.permissions) && context.permissions.includes('core.privileged_operations')
+  const held = Array.isArray(context?.permissions) ? context.permissions : []
+  return RUNTIME_SETTINGS_PERMISSIONS.some((code) => held.includes(code))
 }
 
 export function normalizeRuntimeSettings(payload) {

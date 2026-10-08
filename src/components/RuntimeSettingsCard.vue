@@ -81,7 +81,7 @@ onMounted(load)
         <div v-if="saveError" class="auth-error" role="alert">{{ saveError }}</div>
         <div v-if="saved" class="state-inline" role="status">Saved. The new limit applies the next time the page is loaded.</div>
       </form>
-      <p v-else class="compact-copy muted">Only an administrator with the privileged operations permission can change this limit.</p>
+      <p v-else class="compact-copy muted">Only a superuser, or an administrator with the core.privileged_operations or core.runtime_settings.manage permission, can change this limit.</p>
     </template>
   </section>
 </template>

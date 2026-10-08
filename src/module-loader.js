@@ -281,8 +281,11 @@ export async function loadUiModules(runtime, modules, options = {}) {
       moduleAudit = guardAbandoned(runtime.audit?.forModule(descriptor.id) || null, isAbandoned, descriptor.id)
       moduleHelp = guardAbandoned(runtime.help?.forModule(descriptor.id, descriptor) || null, isAbandoned, descriptor.id)
       moduleHeader = guardAbandoned(runtime.header?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null, isAbandoned, descriptor.id)
+      // removeNavigation is Core's: the loader calls it when a module fails. A
+      // module can add navigation but never remove another module's items.
+      const { removeNavigation: _coreOnly, ...moduleRuntime } = runtime
       await plugin.register({
-        ...runtime,
+        ...moduleRuntime,
         context: runtime.state.context,
         router: moduleRouter,
         addNavigation,

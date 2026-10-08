@@ -20,6 +20,8 @@ Core currently supports these public language IDs:
 - `shell`
 - `typescript`
 
+The same list is available at run time as `context.codeEditor.languages` (see [module-runtime-api.md](module-runtime-api.md#codeeditorlanguages)).
+
 YAML syntax highlighting is registered by Core. Jinja remains module-owned content layered into HTML, Markdown or plain text; Report Manager may add Jinja completions and commands without importing Monaco.
 
 ## Create an editor

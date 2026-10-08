@@ -58,9 +58,10 @@ assert.equal(await getRuntimeSettings({ api: async () => { throw Object.assign(n
 // Other errors surface.
 await assert.rejects(() => getRuntimeSettings({ api: async () => { throw Object.assign(new Error('down'), { status: 500 }) } }), /down/)
 
-// The editor is shown only for a superuser or core.privileged_operations.
+// The editor is shown for a superuser, core.privileged_operations or core.runtime_settings.manage.
 assert.equal(canEditRuntimeSettings({ user: { superuser: true }, permissions: [] }), true)
 assert.equal(canEditRuntimeSettings({ user: {}, permissions: ['core.privileged_operations'] }), true)
+assert.equal(canEditRuntimeSettings({ user: {}, permissions: ['core.runtime_settings.manage'] }), true)
 assert.equal(canEditRuntimeSettings({ user: {}, permissions: ['core.view'] }), false)
 assert.equal(canEditRuntimeSettings({ user: {}, permissions: [] }), false)
 assert.equal(canEditRuntimeSettings({}), false)
@@ -79,8 +80,9 @@ const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
 assert.match(read('../src/views/ModulesView.vue'), /<RuntimeSettingsCard v-if="activeTab === 'installed'" \/>/)
 const card = read('../src/components/RuntimeSettingsCard.vue')
 assert.match(card, /<form v-if="canEdit"/)
+assert.match(card, /core.privileged_operations or core.runtime_settings.manage/)
 assert.match(card, /applies the next time the page is loaded/)
-assert.match(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], /^>=1\.17\.1,<2\.0\.0$/)
+assert.match(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], /^>=1\.17.2,<2\.0\.0$/)
 
 // --- server_url ------------------------------------------------------------
 const { emptyRuntimeContext, normalizeBackendRuntimeContext } = await import('../src/runtime-context.js')

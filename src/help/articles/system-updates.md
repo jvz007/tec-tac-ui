@@ -4,7 +4,11 @@ System Updates manages Framework and UI release discovery and controlled update 
 
 ## Release discovery
 
-Tec-Tac caches the last known stable release information so the page can show current release state without querying GitHub on every visit. Manual refresh forces a new release lookup.
+Tec-Tac caches the last known stable release information so the page can show current release state without querying GitHub on every visit. Check for updates forces a new lookup.
+
+## Remembered update source
+
+Each component remembers where its updates come from: the stable release, or a branch such as `dev`. The page shows the saved source when it loads. A superuser, or an administrator with the privileged operations or runtime settings permission, can change it and press Save. Check for updates and Download & inspect then use the saved source, so a change you have not saved blocks both buttons. For a branch, the page shows the branch head against the installed commit. DIFFERS means the commits differ. It does not mean the branch is newer. UNKNOWN means the component has not been installed yet with Core 1.17.2 or later: stage and install once to compare. Advanced source still stages a different branch once, without saving it.
 
 ## Before updating
 

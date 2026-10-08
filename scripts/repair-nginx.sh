@@ -37,6 +37,11 @@ if [[ -n "${CSP_LINE}" ]]; then
   log "Content-Security-Policy mode: ${TEC_TAC_CSP_MODE}."
 fi
 
+# nginx inherits server-level add_header directives only into a location that
+# has none of its own. Tactical's frontend server block sets nosniff, so every
+# Tec-Tac location that adds a header repeats it.
+NOSNIFF_LINE='add_header X-Content-Type-Options nosniff always;'
+
 mkdir -p "${SNIPPET_DIR}"
 cat > "${SNIPPET_FILE}" <<EOF_SNIPPET
 # Managed by Tec-Tac UI. Safe to recreate after a Tactical RMM update.
@@ -56,6 +61,7 @@ location = /tec-tac/index.html {
     add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0" always;
     add_header Pragma "no-cache" always;
     add_header Expires "0" always;
+    ${NOSNIFF_LINE}
     ${CSP_LINE}
 }
 
@@ -64,10 +70,12 @@ location = /tec-tac/modules/modules.json {
     add_header Cache-Control "no-store, no-cache, must-revalidate, max-age=0" always;
     add_header Pragma "no-cache" always;
     add_header Expires "0" always;
+    ${NOSNIFF_LINE}
 }
 
 location ^~ /tec-tac/ {
     root ${DEPLOY_BASE};
+    ${NOSNIFF_LINE}
     ${CSP_LINE}
     try_files \$uri \$uri/ /tec-tac/index.html;
 }

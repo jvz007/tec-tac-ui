@@ -2,6 +2,8 @@
 
 Tec-Tac authenticated UI modules receive Core-owned request helpers in `register(context)`. Modules must use these helpers instead of reading `localStorage.access_token`, constructing Tactical `Authorization` headers, or duplicating session-expiry handling.
 
+This page also covers [the module router](#module-router), [`hasPermission(code)`](#haspermissioncode), [navigation](#navigation-permissions) and [`codeEditor.languages`](#codeeditorlanguages).
+
 
 ## Authenticated runtime context
 
@@ -189,3 +191,42 @@ Core renders every module-supplied component inside an error boundary: each rout
 ## Navigation permissions
 
 `addNavigation(item)` accepts an optional `permission` (one code) or `permissions` (a list). The shell hides an item when the user lacks any of them. Superusers always see it, and an item with neither field is shown as before. Without a backend-supplied context there are no permissions, so a gated item is hidden. This is a display rule only. The backend still refuses the request.
+
+Modules cannot remove navigation. `register(context)` has `addNavigation` but no `removeNavigation`, so one module cannot remove another module's items. Core removes the items of a module whose `register()` failed or timed out.
+
+## Module router
+
+`context.router` is a guarded proxy of the Core vue-router instance. It is not the raw router.
+
+- `addRoute(route)` and `addRoute(parentName, route)` are both guarded.
+- A path or a name that is already owned is refused. The error names the owner: another module, or "core shell / previously registered route".
+- Core sets `meta.dynamicModule` to your module id on every route you add. Do not set it yourself.
+- `addRoute` returns the remover, as vue-router does. Core runs the removers when your module is abandoned or fails.
+- `addRoute` throws after the module was abandoned (a failed or timed-out `register()`).
+- Every other member passes through unchanged: `push`, `replace`, `resolve`, `currentRoute`, `getRoutes` and the rest.
+
+## hasPermission(code)
+
+`context.hasPermission(code)` answers whether the signed-in user holds a Tec-Tac permission code.
+
+- It returns `true` for a superuser, or when the code is in the effective permission set that Core read from `/api/tfd/ui/context/` when the shell loaded. A role change shows after a reload.
+- It returns `false` for everyone else, and when no backend context exists.
+- This is a display rule only. Use it to hide a button. The backend still refuses the request.
+
+## codeEditor.languages
+
+`context.codeEditor.languages` is the frozen list of language ids that `create` and `createModel` accept:
+
+- `html`
+- `markdown`
+- `plaintext`
+- `css`
+- `yaml`
+- `json`
+- `powershell`
+- `bat`
+- `python`
+- `shell`
+- `typescript`
+
+Any other id throws `Unsupported Tec-Tac editor language`. See [module-code-editor.md](module-code-editor.md) for the editor itself.

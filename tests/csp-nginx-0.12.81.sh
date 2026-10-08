@@ -67,4 +67,40 @@ for location in 'location = /tec-tac/index.html' 'location ^~ /tec-tac/'; do
 done
 grep -q 'add_header Content-Security-Policy' "${REPAIR}" && fail "the directive must come from tec-tac-csp.sh, not be hard coded"
 
+
+# 0.12.82: nginx only inherits the server-level add_header (Tactical's nosniff)
+# into a location that has none, so every Tec-Tac location that adds a header
+# must repeat nosniff, in every CSP mode.
+grep -Fq "NOSNIFF_LINE='add_header X-Content-Type-Options nosniff always;'" "${REPAIR}" || fail "NOSNIFF_LINE not defined"
+for location in 'location = /tec-tac/index.html' 'location = /tec-tac/modules/modules.json' 'location ^~ /tec-tac/'; do
+  block="$(awk -v loc="${location}" 'index($0, loc) == 1 { on = 1 } on { print } on && /^}/ { exit }' "${REPAIR}")"
+  [[ -n "${block}" ]] || fail "${location} block not found"
+  grep -Fq '${NOSNIFF_LINE}' <<<"${block}" || fail "${location} lacks nosniff"
+done
+grep -Fq 'nosniff' "${ROOT}/scripts/tec-tac-csp.sh" && fail "nosniff belongs in repair-nginx.sh, not the CSP builder"
+
+# Render the snippet for real, with and without a CSP line.
+awk '/<<EOF_SNIPPET$/ { on = 1; next } /^EOF_SNIPPET$/ { on = 0 } on { print }' "${REPAIR}" > "${TMP}/snippet.tpl"
+[[ -s "${TMP}/snippet.tpl" ]] || fail "snippet template not found"
+render_snippet() {
+  local DEPLOY_BASE=/opt/x CSP_LINE="$1" NOSNIFF_LINE
+  NOSNIFF_LINE="$(sed -n "s/^NOSNIFF_LINE='\(.*\)'\$/\1/p" "${REPAIR}")"
+  eval "cat <<EOF_RENDER
+$(cat "${TMP}/snippet.tpl")
+EOF_RENDER"
+}
+check_rendered() {
+  awk '
+    /^location / { hdr = 0; nos = 0; name = $0 }
+    /add_header/ { hdr = 1 }
+    /add_header X-Content-Type-Options nosniff always;/ { nos = 1 }
+    /^}/ { if (hdr) { n++; if (!nos) { print "missing nosniff: " name; bad = 1 } } }
+    END { if (n != 3) { print "expected 3 header locations, saw " n; bad = 1 } exit bad }' <<<"$2" || fail "$1: a location with add_header lacks nosniff"
+}
+WITH_CSP="$(render_snippet 'add_header Content-Security-Policy "default-src self" always;')"
+NO_CSP="$(render_snippet '')"
+check_rendered "csp on" "${WITH_CSP}"
+check_rendered "csp off" "${NO_CSP}"
+grep -q 'Content-Security-Policy' <<<"${NO_CSP}" && fail "no CSP line expected when none is built"
+[[ "$(grep -c 'X-Content-Type-Options nosniff always;' <<<"${NO_CSP}")" == 3 ]] || fail "nosniff must be in all three locations without a CSP line"
 echo "[TEST] PASS Content-Security-Policy nginx snippet"

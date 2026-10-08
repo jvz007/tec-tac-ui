@@ -13,10 +13,20 @@ import {
   stageOnlineSystemUpdate,
 } from '../api'
 import { copyTextWithFeedback } from '../copy-feedback'
+import { canEditRuntimeSettings } from '../runtime-settings'
+import {
+  branchComparison,
+  describeUpdateSource,
+  normalizeUpdateSources,
+  saveUpdateSource,
+  sourceDraftState,
+  supportsUpdateSource,
+} from '../update-source'
 import { createKeyedLatestRequestGate } from '../latest-request-gate'
 import { trustPopoverDomId, trustPopoverOpen, trustPopoverTransition } from '../system-trust-popover-state'
 
 const help = inject('tecTacHelp', null)
+const appState = inject('tecTacState', null)
 const status = ref(null)
 const loading = ref(true)
 const error = ref('')
@@ -28,6 +38,15 @@ const selectedBranch = ref({ framework: 'main', ui: 'main' })
 const branchBusy = ref({ framework: false, ui: false })
 const onlineRequestGate = createKeyedLatestRequestGate(['framework', 'ui'])
 const branchRequestGate = createKeyedLatestRequestGate(['framework', 'ui'])
+// Remembered update source (Core 1.17.2): the draft is what the control shows,
+// status.update_sources is what Core saved.
+const sourceDraft = ref({ framework: { type: 'release', ref: '' }, ui: { type: 'release', ref: '' } })
+const sourceSaving = ref({ framework: false, ui: false })
+const sourceError = ref({ framework: '', ui: '' })
+const branchListFailed = ref({ framework: false, ui: false })
+const canEditSource = computed(() => canEditRuntimeSettings(appState?.context))
+const sourcesSupported = computed(() => supportsUpdateSource(status.value))
+const savedSources = computed(() => normalizeUpdateSources(status.value))
 const stage = ref(null)
 const stageBusy = ref(false)
 const offlineInput = ref(null)
@@ -156,6 +175,9 @@ async function loadStatus() {
     status.value = await getSystemUpdateStatus()
     trustPolicy.value = status.value?.update_trust_policy || trustPolicy.value
     for (const component of ['framework', 'ui']) {
+      syncSourceDraft(component)
+      // The release cache has no branch data. It only fills the release rows
+      // until the first online check returns.
       const cached = status.value?.release_cache?.[component]
       if (cached?.latest_release) online.value[component] = cached
     }
@@ -202,7 +224,7 @@ async function saveTrustPolicy() {
     trustPolicy.value = result
     if (status.value) status.value.update_trust_policy = trustPolicy.value
     trustPolicyOpen.value = false
-    await refreshStableReleases()
+    await refreshOnline()
   } catch (err) {
     trustPolicyError.value = err?.message || 'Unable to save update trust policy.'
   } finally {
@@ -248,6 +270,108 @@ function handleKeydown(event) {
   if (trustPolicyOpen.value) closeTrustPolicy()
 }
 
+function syncSourceDraft(component) {
+  const saved = savedSources.value[component]
+  sourceDraft.value[component] = { type: saved.type, ref: saved.ref || '' }
+  sourceError.value[component] = ''
+}
+
+function draftState(component) {
+  return sourceDraftState({ saved: savedSources.value[component], draft: sourceDraft.value[component] })
+}
+
+function savedSourceLabel(component) {
+  return describeUpdateSource(savedSources.value[component])
+}
+
+function savedBranchRef(component) {
+  const saved = savedSources.value[component]
+  return saved.type === 'branch' ? saved.ref : ''
+}
+
+// The branch list plus the saved branch, so a branch that vanished from the
+// list stays selectable and is flagged instead of silently replaced.
+function branchOptions(component) {
+  const names = (branches.value[component] || []).map((item) => item.name)
+  const saved = savedBranchRef(component)
+  if (saved && !names.includes(saved)) names.unshift(saved)
+  return names
+}
+
+function savedBranchMissing(component) {
+  const saved = savedBranchRef(component)
+  if (!saved || branchListFailed.value[component] || branchBusy.value[component]) return false
+  if (!(branches.value[component] || []).length) return false
+  return !(branches.value[component] || []).some((item) => item.name === saved)
+}
+
+function onSourceTypeChange(component) {
+  const draft = sourceDraft.value[component]
+  sourceError.value[component] = ''
+  if (draft.type === 'branch' && !draft.ref) {
+    draft.ref = savedBranchRef(component) || (branches.value[component] || [])[0]?.name || ''
+  }
+}
+
+// With a saved source (Core 1.17.2) an unsaved draft blocks Check and Download.
+function sourceBlocked(component) {
+  return sourcesSupported.value && canEditSource.value && draftState(component).dirty
+}
+
+function savedIsBranch(component) {
+  return sourcesSupported.value && Boolean(savedBranchRef(component))
+}
+
+function stageShown(component) {
+  return savedIsBranch(component) || Boolean(online.value[component]?.latest_release)
+}
+
+function stageAllowed(component) {
+  return savedIsBranch(component) || releaseAccepted(component)
+}
+
+// The branch the online check reports on, only when it is the saved branch.
+// A stale answer for another branch, or the release cache, is never shown as a
+// finished branch check.
+function branchCheck(component) {
+  const result = online.value[component]
+  const saved = savedBranchRef(component)
+  if (!saved || !result || result.source?.type !== 'branch' || result.source?.ref !== saved) return null
+  return result
+}
+
+function branchView(component) {
+  return branchComparison(branchCheck(component)?.branch)
+}
+
+function stageLabel(component) {
+  if (savedIsBranch(component)) {
+    const head = branchView(component)?.headShort
+    return `Download & inspect branch ${savedBranchRef(component)}${head ? ` (${head})` : ''}`
+  }
+  return `Download & inspect ${online.value[component]?.latest_release?.tag || ''}`.trim()
+}
+
+async function saveSource(component) {
+  const state = draftState(component)
+  if (!state.valid || !state.dirty || sourceSaving.value[component]) return
+  const draft = sourceDraft.value[component]
+  sourceSaving.value[component] = true
+  sourceError.value[component] = ''
+  try {
+    const result = await saveUpdateSource(component, draft.type, draft.type === 'branch' ? draft.ref : null)
+    status.value = { ...status.value, update_sources: { ...status.value.update_sources, [component]: result.update_sources[component] } }
+    syncSourceDraft(component)
+    // Anything still in flight was for the old source.
+    onlineRequestGate.invalidate(component)
+    await checkOnline(component, { force: true })
+  } catch (err) {
+    sourceError.value[component] = err?.message || 'Unable to save the update source.'
+  } finally {
+    sourceSaving.value[component] = false
+  }
+}
+
 async function checkOnline(component, { force = false, background = false } = {}) {
   const requestId = onlineRequestGate.begin(component)
   onlineBusy.value[component] = !background
@@ -265,7 +389,7 @@ async function checkOnline(component, { force = false, background = false } = {}
   }
 }
 
-async function refreshStableReleases() {
+async function refreshOnline() {
   await Promise.allSettled(['framework', 'ui'].map((component) => checkOnline(component, { background: true })))
 }
 
@@ -277,29 +401,39 @@ function formatCheckedAt(value) {
 
 async function unlockAdvanced() {
   advancedUnlocked.value = true
-  await Promise.all(['framework', 'ui'].map(loadBranches))
+  await Promise.all(['framework', 'ui'].map((component) => (
+    branches.value[component].length ? Promise.resolve() : loadBranches(component)
+  )))
 }
 
-async function loadBranches(component) {
+// quiet: the remembered-source control loads the list on its own. A failure
+// (403, offline) only switches that control to a typed branch name.
+async function loadBranches(component, { quiet = false } = {}) {
   const requestId = branchRequestGate.begin(component)
   branchBusy.value[component] = true
   try {
     const result = await getSystemUpdateBranches(component)
     if (!branchRequestGate.isCurrent(component, requestId)) return
     branches.value[component] = result.branches || []
+    branchListFailed.value[component] = false
     if (!branches.value[component].some((item) => item.name === selectedBranch.value[component])) {
       selectedBranch.value[component] = branches.value[component][0]?.name || ''
     }
   } catch (err) {
     if (branchRequestGate.isCurrent(component, requestId)) {
-      error.value = err?.message || 'Unable to list repository branches.'
+      branchListFailed.value[component] = true
+      if (!quiet) error.value = err?.message || 'Unable to list repository branches.'
     }
   } finally {
     if (branchRequestGate.isCurrent(component, requestId)) branchBusy.value[component] = false
   }
 }
 
-async function stageOnline(component, sourceType) {
+// No sourceType: Core stages the saved update source. 'branch' is the one-off
+// Advanced stage and is never saved. An older Core without saved sources only
+// knows the explicit source, so it still gets 'release'.
+async function stageOnline(component, sourceType = null) {
+  const explicit = sourceType || (sourcesSupported.value ? null : 'release')
   offlineFile.value = null
   offlineDropActive.value = false
   stageBusy.value = true
@@ -307,8 +441,8 @@ async function stageOnline(component, sourceType) {
   try {
     stage.value = await stageOnlineSystemUpdate(
       component,
-      sourceType,
-      sourceType === 'branch' ? selectedBranch.value[component] : null,
+      explicit,
+      explicit === 'branch' ? selectedBranch.value[component] : null,
     )
     allowDowngrade.value = false
   } catch (err) {
@@ -452,10 +586,13 @@ function reloadUi() {
 onMounted(async () => {
   window.addEventListener('keydown', handleKeydown)
   await loadStatus()
-  await refreshStableReleases()
+  const lists = sourcesSupported.value && canEditSource.value
+    ? Promise.allSettled(['framework', 'ui'].map((component) => loadBranches(component, { quiet: true })))
+    : Promise.resolve()
+  await Promise.all([refreshOnline(), lists])
   // The backend cache makes this cheap: GitHub is contacted only when the
   // persisted release lookup is at least 24 hours old.
-  releaseRefreshTimer.value = window.setInterval(refreshStableReleases, 60 * 60 * 1000)
+  releaseRefreshTimer.value = window.setInterval(refreshOnline, 60 * 60 * 1000)
 })
 onBeforeUnmount(() => {
   for (const component of ['framework', 'ui']) { onlineRequestGate.invalidate(component); branchRequestGate.invalidate(component) }
@@ -541,6 +678,8 @@ onBeforeUnmount(() => {
 
         <dl class="kvlist system-update-kv">
           <dt>Repository</dt><dd class="mono">{{ component.repository }}</dd>
+          <dt v-if="sourcesSupported">Update source</dt>
+          <dd v-if="sourcesSupported" data-test="saved-update-source"><span class="pill" :class="savedSources[component.id].type === 'branch' ? 'warn' : 'ok'">{{ savedSourceLabel(component.id) }}</span><span class="sub">Saved. Check and Download use this source.</span></dd>
           <dt>Stable release</dt>
           <dd>
             <span v-if="online[component.id]?.latest_release" class="mono">{{ online[component.id].latest_release.tag }}</span>
@@ -581,26 +720,65 @@ onBeforeUnmount(() => {
 
         <div v-if="online[component.id]?.release_error" class="state-inline warning mt">{{ online[component.id].release_error }}</div>
 
+        <div v-if="sourcesSupported" class="update-source-control mt">
+          <div class="section-divider">Update source</div>
+          <form v-if="canEditSource" class="update-source-form" @submit.prevent="saveSource(component.id)">
+            <label class="field compact-field">
+              <span>Source</span>
+              <select v-model="sourceDraft[component.id].type" :disabled="sourceSaving[component.id]" @change="onSourceTypeChange(component.id)">
+                <option value="release">Release</option>
+                <option value="branch">Branch</option>
+              </select>
+            </label>
+            <label v-if="sourceDraft[component.id].type === 'branch'" class="field compact-field">
+              <span>Branch</span>
+              <input v-if="branchListFailed[component.id]" v-model.trim="sourceDraft[component.id].ref" class="mono" type="text" maxlength="200" spellcheck="false" autocomplete="off" :disabled="sourceSaving[component.id]" />
+              <select v-else v-model="sourceDraft[component.id].ref" :disabled="sourceSaving[component.id] || branchBusy[component.id]">
+                <option v-for="name in branchOptions(component.id)" :key="name" :value="name">{{ name }}{{ name === savedBranchRef(component.id) && savedBranchMissing(component.id) ? ' (not in the branch list)' : '' }}</option>
+              </select>
+            </label>
+            <button class="btn primary" type="submit" :disabled="sourceSaving[component.id] || !draftState(component.id).valid || !draftState(component.id).dirty">{{ sourceSaving[component.id] ? 'Saving…' : 'Save' }}</button>
+          </form>
+          <p v-else class="compact-copy muted">Only a superuser, or an administrator with the core.privileged_operations or core.runtime_settings.manage permission, can change the update source.</p>
+          <p v-if="canEditSource && branchListFailed[component.id] && sourceDraft[component.id].type === 'branch'" class="compact-copy muted">The branch list is not available. Type the branch name.</p>
+          <p v-if="savedBranchMissing(component.id)" class="compact-copy update-source-warn">The saved branch {{ savedBranchRef(component.id) }} is not in the repository's branch list. It may have been deleted.</p>
+          <p v-if="canEditSource && draftState(component.id).message" class="compact-copy" :class="draftState(component.id).valid ? 'muted' : 'update-source-warn'">{{ draftState(component.id).message }}</p>
+          <div v-if="sourceError[component.id]" class="state-inline denied mt">{{ sourceError[component.id] }}</div>
+        </div>
+
+        <div v-if="sourcesSupported && savedBranchRef(component.id)" class="branch-check mt" data-test="branch-check">
+          <dl v-if="branchView(component.id)" class="kvlist system-update-kv">
+            <dt>Branch head</dt>
+            <dd><span class="mono">{{ branchView(component.id).headShort || 'Unknown' }}</span><span v-if="branchView(component.id).headDate" class="sub">{{ formatCheckedAt(branchView(component.id).headDate) }}</span></dd>
+            <dt>Installed</dt>
+            <dd><span class="mono">{{ branchView(component.id).installedShort }}</span></dd>
+            <dt>Comparison</dt>
+            <dd><span class="pill" :class="branchView(component.id).pillClass">{{ branchView(component.id).label }}</span><span class="sub">{{ branchView(component.id).text }}</span></dd>
+          </dl>
+          <p v-else-if="!branchCheck(component.id)?.branch_error" class="compact-copy muted">{{ onlineBusy[component.id] ? 'Checking the branch…' : 'The branch has not been checked yet. Use Check for updates.' }}</p>
+          <div v-if="branchCheck(component.id)?.branch_error" class="state-inline warning mt">{{ branchCheck(component.id).branch_error }}</div>
+        </div>
+
         <div class="system-update-actions">
-          <button class="btn" :disabled="onlineBusy[component.id] || stageBusy" @click="checkOnline(component.id, { force: true })">
-            {{ onlineBusy[component.id] ? 'Checking…' : 'Refresh stable release' }}
+          <button class="btn" :disabled="onlineBusy[component.id] || stageBusy || sourceBlocked(component.id)" :title="sourceBlocked(component.id) ? 'Save to use this source.' : ''" @click="checkOnline(component.id, { force: true })">
+            {{ onlineBusy[component.id] ? 'Checking…' : 'Check for updates' }}
           </button>
           <button
-            v-if="online[component.id]?.latest_release"
+            v-if="stageShown(component.id)"
             class="btn primary"
-            :disabled="stageBusy || !releaseAccepted(component.id)"
-            :title="!releaseAccepted(component.id) ? 'Release is below the configured trust acceptance level.' : ''"
-            @click="stageOnline(component.id, 'release')"
+            :disabled="stageBusy || sourceBlocked(component.id) || !stageAllowed(component.id)"
+            :title="sourceBlocked(component.id) ? 'Save to use this source.' : (!stageAllowed(component.id) ? 'Release is below the configured trust acceptance level.' : '')"
+            @click="stageOnline(component.id)"
           >
-            Download & inspect {{ online[component.id].latest_release.tag }}
+            {{ stageLabel(component.id) }}
           </button>
         </div>
 
-        <div class="section-divider">Advanced source</div>
+        <div class="section-divider">Advanced source (one-off)</div>
         <div v-if="!advancedUnlocked" class="advanced-lock">
           <div>
             <span class="pill warn">LOCKED</span>
-            <p>Branch builds may be untagged, custom, or incompatible. Unlocking applies only to this browser session.</p>
+            <p>Stage a different branch once. It is not saved. Branch builds may be untagged, custom, or incompatible. Unlocking applies only to this browser session.</p>
           </div>
           <button class="btn warnbtn" :disabled="stageBusy" @click="unlockAdvanced">Unlock branch sources</button>
         </div>
@@ -611,7 +789,7 @@ onBeforeUnmount(() => {
               <option v-for="branch in branches[component.id]" :key="branch.sha" :value="branch.name">{{ branch.name }} · {{ branch.sha.slice(0, 8) }}</option>
             </select>
           </label>
-          <button class="btn" :disabled="!selectedBranch[component.id] || stageBusy" @click="stageOnline(component.id, 'branch')">Download & inspect branch</button>
+          <button class="btn" :disabled="!selectedBranch[component.id] || stageBusy" @click="stageOnline(component.id, 'branch')">Download & inspect this branch once</button>
         </div>
       </article>
     </div>

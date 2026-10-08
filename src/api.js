@@ -575,10 +575,18 @@ export async function getSystemUpdateBranches(component) {
   return apiFetch(`/api/tfd/system/updates/branches/?${query.toString()}`)
 }
 
-export async function stageOnlineSystemUpdate(component, sourceType = 'release', ref = null) {
+// With no sourceType the body carries only the component and Core stages the
+// saved update source. An explicit sourceType (one-off branch, or an older Core
+// without saved sources) wins.
+export async function stageOnlineSystemUpdate(component, sourceType = null, ref = null) {
+  const body = { component }
+  if (sourceType !== null && sourceType !== undefined) {
+    body.source_type = sourceType
+    body.ref = ref
+  }
   return apiFetch('/api/tfd/system/updates/online/stage/', {
     method: 'POST',
-    body: JSON.stringify({ component, source_type: sourceType, ref }),
+    body: JSON.stringify(body),
   })
 }
 
