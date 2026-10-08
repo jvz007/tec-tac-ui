@@ -157,6 +157,35 @@ export function discoveredVersion({ saved, online, sourcesSupported } = {}) {
   return { kind: 'none', error: result?.release_error || '' }
 }
 
+// The secondary "Stable release" line under a branch source (Core 1.17.4). It
+// reads online.stable_release when the online result carries the key, else the
+// cached release_cache row for the same saved branch. null means draw nothing:
+// a release source, an older Core without the key, or a cached row for another
+// branch. { none: true } means Core knows no release yet. A release failure is
+// release_error only, so it never touches branch_error or the headline.
+export function stableRelease({ saved, online, cached, sourcesSupported } = {}) {
+  if (!sourcesSupported) return null
+  const source = normalizeSource(saved)
+  if (source.type !== 'branch') return null
+  const hasKey = (value) => Boolean(value && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, 'stable_release'))
+  let from = null
+  if (hasKey(online)) from = online
+  else if (hasKey(cached) && cached.source?.type === 'branch' && cached.source?.ref === source.ref) from = cached
+  if (!from) return null
+  const error = typeof from.release_error === 'string' ? from.release_error : ''
+  const row = from.stable_release
+  if (!row || typeof row !== 'object' || !row.tag) return { none: true, error }
+  return {
+    tag: row.tag,
+    date: row.published_at || '',
+    trust: row.release_trust || null,
+    acceptance: row.release_trust?.acceptance_policy || null,
+    operation: row.operation || '',
+    stale: from.cache?.stale === true,
+    error,
+  }
+}
+
 // First 7 characters of a hex commit id, or '' when there is none.
 export function shortCommit(commit) {
   return typeof commit === 'string' && /^[0-9a-f]{7,64}$/i.test(commit.trim()) ? commit.trim().slice(0, 7).toLowerCase() : ''

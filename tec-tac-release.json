@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.84",
+  "version": "0.12.85",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "1612e28a90a20fc2a7bb107b4c803f2feb0914c1150862bb169ce4d9c2a81a2c"
     },
     {
-      "path": "RELEASE_NOTES_0.12.84.md",
-      "size": 2109,
-      "sha256": "32fa12d711d1841383d18cbb238674e0d2ed70a6a17f920fee668fbbba9f479e"
+      "path": "RELEASE_NOTES_0.12.85.md",
+      "size": 2485,
+      "sha256": "2f214bc10d84e50ba4fb10aed68a51c16b85acd6a458f7bb0464fee84cf93071"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "afa0cd69d31dc04fa624e2af4068ae151c52532c13e2eed62ac65d41a7b552db"
+      "sha256": "6f5e6e3ae9f84e2656bda10be0f003238dd053114141ae8d5fb658c00de2290c"
     },
     {
       "path": "docs/context-actions.md",
@@ -627,6 +627,11 @@
       "sha256": "7bf54468bd4572ccf759cbe1c90eb1ab791033f6cd0673be56e0d8fd85f083ad"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.84.md",
+      "size": 2109,
+      "sha256": "32fa12d711d1841383d18cbb238674e0d2ed70a6a17f920fee668fbbba9f479e"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.9.md",
       "size": 430,
       "sha256": "925771aff54cdee9e8ef7829d02c2c00aa206a3dede972b6697862e43668ae0c"
@@ -743,8 +748,8 @@
     },
     {
       "path": "docs/ui-design-standards.md",
-      "size": 13627,
-      "sha256": "86b24cf4c1ba11a439d92e689e7cd763c877a9f0f9e7827a838fe2176932029b"
+      "size": 14712,
+      "sha256": "d30d1074d2c622f05a375b57ed88ff5685cc903aebdbb983a9cf17a16cc1ffcc"
     },
     {
       "path": "docs/user-preferences.md",
@@ -784,12 +789,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "d9a447471ac0cb172e09e88a26f4e14913b7cbb3a56092b9927114078db7d9f3"
+      "sha256": "89d3edeff549a0902422a344f66132101037c3de93499da2a56434ae9720a34b"
     },
     {
       "path": "package.json",
-      "size": 3343,
-      "sha256": "7b717b80a7da434ad1d0b8e7422167253feaac87a485de75bc2c573f76874dc0"
+      "size": 3384,
+      "sha256": "f72e3e93c2952067bc61b0a87779e0aef018a22d42d38ef8256e265de75259e4"
     },
     {
       "path": "public/modules/modules.json",
@@ -915,6 +920,11 @@
       "path": "src/components/QuickActionsDialog.vue",
       "size": 4286,
       "sha256": "cf94e1b80300453a374255af4c34ff40d40be8544539e7ee82041bfcdf312009"
+    },
+    {
+      "path": "src/components/ReleaseTrustBadge.vue",
+      "size": 1681,
+      "sha256": "6bb514df0dc922ea533b31126c61efb811b2faf15ef5e4e27e90ce7bcea6d84b"
     },
     {
       "path": "src/components/RuntimeSettingsCard.vue",
@@ -1098,8 +1108,8 @@
     },
     {
       "path": "src/help/articles/system-updates.md",
-      "size": 2448,
-      "sha256": "927fd52fcd162865feeb0c6bf7d85252438b51e5372658c04857077a881249c7"
+      "size": 2743,
+      "sha256": "8b41e9d419309a93a6437c0dccea5727c04626ab698a901b570231f857e7b731"
     },
     {
       "path": "src/help/articles/troubleshooting-diagnostics.md",
@@ -1278,8 +1288,8 @@
     },
     {
       "path": "src/update-source.js",
-      "size": 10506,
-      "sha256": "37baee4af9f86a7ff5efb64d784606f941cbfc20c8bd09cf98595c3757cea392"
+      "size": 11962,
+      "sha256": "34b3d0257560fd59d54a021fa2c161b1c4151045268dbb8aff88cb68db306f39"
     },
     {
       "path": "src/use-account-security-policy.js",
@@ -1373,13 +1383,13 @@
     },
     {
       "path": "src/views/SystemUpdatesView.vue",
-      "size": 47312,
-      "sha256": "e6238d42b67f17dd8953682c8847892d966fe10b6a095f2d1dd56cee70c21fd0"
+      "size": 49615,
+      "sha256": "f1ce334325724ab50ee6183a399e623636e23b5ed7f562b1c93f341cf434d445"
     },
     {
       "path": "tec_tac_package.json",
       "size": 137,
-      "sha256": "a0f2ef8719c07ec8b92a8ce05f85d9149997dbd8125c3346e7307b8ad0f3ccd5"
+      "sha256": "a7dc6fc84ea65d16ef5c13442c31cf898e4b31d598490f445843f184e86b2093"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1668,8 +1678,8 @@
     },
     {
       "path": "tests/runtime-settings-control-0.12.81.mjs",
-      "size": 7894,
-      "sha256": "e045db46fb5bbaeec9c3572c516647a61d98744c934a33ca4535ae30eb91fba8"
+      "size": 7897,
+      "sha256": "042d8809673c98eb82fccb7f8b150d08613d347249d159212161f848eb6e6d8d"
     },
     {
       "path": "tests/scheduler-history-pagination-ui.sh",
@@ -1692,14 +1702,19 @@
       "sha256": "39ded3c96e17682a76cecabc57f62deac2a15c38c5e6eab976b157a503157a5e"
     },
     {
+      "path": "tests/stable-release-0.12.85.mjs",
+      "size": 13559,
+      "sha256": "ae6d94a70d01c2d20beb28265084f641aeafd82b7d43731b6983810bd49f1681"
+    },
+    {
       "path": "tests/system-settings-page-0.12.83.mjs",
       "size": 3482,
       "sha256": "4ed386fbe5d57518f4016c40cb085b1038df70369e3686856ca01a425c215bf9"
     },
     {
       "path": "tests/system-update-trust-popover-focus.sh",
-      "size": 1120,
-      "sha256": "225dced06f773143afed8d1b55d06e4b1942c74e5926480ecad96ef29eaf5356"
+      "size": 1217,
+      "sha256": "21f1821ef903d986015e394f45cb1fdec88e727af6922bb6683e325cd4a6fa56"
     },
     {
       "path": "tests/tactical-button-0.12.73.mjs",
@@ -1813,8 +1828,8 @@
     },
     {
       "path": "tests/ui-hygiene-0.12.45.sh",
-      "size": 2029,
-      "sha256": "0cbb15dd41ad864abaf4bab5e2507287a8849176347a9eacf4a13ae82e632497"
+      "size": 2325,
+      "sha256": "f9fb2236bee3822e03d82b987714e80fe3efb67cb094244f16f5f70af6d1302f"
     },
     {
       "path": "tests/ui-l69-resource-search-0.12.57.mjs",
@@ -1853,8 +1868,8 @@
     },
     {
       "path": "tests/update-source-0.12.82.mjs",
-      "size": 11779,
-      "sha256": "4b72f5b2d8ffc871b5b5d9b218f21169b444e63619c068c9e3c25b50f9d5aa83"
+      "size": 11781,
+      "sha256": "3d8c7c35dd8993294bc3aabc10b6a4c539184a72994b1e5d5b4e34e7bda344c8"
     },
     {
       "path": "tests/update-source-stage-0.12.83.mjs",

@@ -16,13 +16,15 @@ grep -q "copyTextWithFeedback" "$MFA" || fail "MFA recovery clipboard helper mis
 grep -q "copyTextWithFeedback" "$UPDATES" || fail "System Updates clipboard helper missing"
 
 # L68: both trust triggers describe their tooltip and explicitly close on click/Escape.
-COUNT_DESC="$(grep -o 'aria-describedby=' "$UPDATES" | wc -l)"
+# 0.12.85: the release badge moved into the shared ReleaseTrustBadge block; count both files.
+TRUST_FILES=("$UPDATES" "$ROOT/src/components/ReleaseTrustBadge.vue")
+COUNT_DESC="$(cat "${TRUST_FILES[@]}" | grep -o 'aria-describedby=' | wc -l)"
 [[ "$COUNT_DESC" -ge 2 ]] || fail "trust triggers missing aria-describedby"
-COUNT_CLICK="$(grep -o '@click="closeTrustPopover(\$event)"' "$UPDATES" | wc -l)"
+COUNT_CLICK="$(cat "${TRUST_FILES[@]}" | grep -oE '@click="(closeTrustPopover\(\$event\)|emit\(.trust-close., \$event\))"' | wc -l)"
 [[ "$COUNT_CLICK" -ge 2 ]] || fail "trust popovers do not close on mouse click"
-COUNT_ESC="$(grep -o '@keydown\.esc\.stop\.prevent="closeTrustPopover(\$event)"' "$UPDATES" | wc -l)"
+COUNT_ESC="$(cat "${TRUST_FILES[@]}" | grep -oE '@keydown\.esc\.stop\.prevent="(closeTrustPopover\(\$event\)|emit\(.trust-close., \$event\))"' | wc -l)"
 [[ "$COUNT_ESC" -ge 2 ]] || fail "trust popovers do not close with Escape"
-grep -q 'role="tooltip"' "$UPDATES" || fail "trust tooltip role missing"
+cat "${TRUST_FILES[@]}" | grep -q 'role="tooltip"' || fail "trust tooltip role missing"
 
 # L69: a client switch clears any pending site debounce, suppresses the watcher caused by clearing search,
 # and performs the one immediate fetch itself.

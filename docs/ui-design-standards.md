@@ -246,6 +246,10 @@ Cards should have a `.cardhead` when they have a title. Do not nest multiple bor
 
 Use summary tiles sparingly. They should answer immediate operational questions, not repeat table content verbatim.
 
+### 9.1 Stable release under a branch (System Updates)
+
+When a System Updates card has a branch as its saved source, the branch stays the headline (Discovered version, Installed, Comparison). Core 1.17.4 adds `stable_release`, and the card shows it as one secondary row, "Stable release", directly beneath the branch rows. The row shows the tag, the published date, a muted STALE pill when Core served a cached copy, the signed or unsigned badge with acceptance, and the operation. A release lookup error (`release_error`) shows as a muted line inside that row and never in the branch error area. With nothing known yet it says "Not checked yet". A Core older than 1.17.4 sends no `stable_release` key, so no row is drawn. People with `core.runtime_settings.manage` (the same rule as the Update source control) also get a "Use stable release" button that saves the Release source and checks again. It stages and installs nothing. Core still enforces the permission. The badge and its popover are one shared block (`ReleaseTrustBadge.vue`), used by both the release rows and this row.
+
 ## 10. Notices, errors and toasts
 
 For transient user feedback from a module, use the Core `notifications` runtime service. Do not implement module-specific toast markup.

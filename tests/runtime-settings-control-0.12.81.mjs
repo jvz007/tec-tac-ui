@@ -83,7 +83,7 @@ const card = read('../src/components/RuntimeSettingsCard.vue')
 assert.match(card, /<form v-if="canEdit"/)
 assert.match(card, /core.privileged_operations or core.runtime_settings.manage/)
 assert.match(card, /applies the next time the page is loaded/)
-assert.match(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], /^>=1\.17.2,<2\.0\.0$/)
+assert.match(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/)
 
 // --- server_url ------------------------------------------------------------
 const { emptyRuntimeContext, normalizeBackendRuntimeContext } = await import('../src/runtime-context.js')

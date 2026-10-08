@@ -12,6 +12,7 @@ import {
   setUpdateTrustPolicy,
   stageOnlineSystemUpdate,
 } from '../api'
+import ReleaseTrustBadge from '../components/ReleaseTrustBadge.vue'
 import { copyTextWithFeedback } from '../copy-feedback'
 import { canEditRuntimeSettings } from '../runtime-settings'
 import {
@@ -22,6 +23,7 @@ import {
   normalizeUpdateSources,
   saveUpdateSource,
   sourceDraftState,
+  stableRelease,
   stageSourceCheck,
   supportsUpdateSource,
 } from '../update-source'
@@ -34,6 +36,8 @@ const status = ref(null)
 const loading = ref(true)
 const error = ref('')
 const online = ref({ framework: null, ui: null })
+// Core 1.17.4: the release_cache row for a branch source, so the Stable release line shows before the first check.
+const cachedStable = ref({ framework: null, ui: null })
 const checkedAtLocal = ref({ framework: null, ui: null })
 const onlineBusy = ref({ framework: false, ui: false })
 const advancedUnlocked = ref(false)
@@ -191,6 +195,7 @@ async function loadStatus() {
       // until the first online check returns, and only for a release source.
       const cached = status.value?.release_cache?.[component]
       if (cached?.latest_release && !savedIsBranch(component)) online.value[component] = cached
+      cachedStable.value[component] = savedIsBranch(component) && cached && typeof cached === 'object' ? cached : null
     }
   } catch (err) {
     error.value = err?.message || 'Unable to load system update status.'
@@ -380,10 +385,16 @@ async function saveSource(component) {
   const state = draftState(component)
   if (!state.valid || !state.dirty || sourceSaving.value[component]) return
   const draft = sourceDraft.value[component]
+  await applySource(component, draft.type, draft.type === 'branch' ? draft.ref : null)
+}
+
+// Saves one source for a component, then drops anything in flight for the old
+// source and checks again. Shared by the Save button and the stable-release switch.
+async function applySource(component, type, ref) {
   sourceSaving.value[component] = true
   sourceError.value[component] = ''
   try {
-    const result = await saveUpdateSource(component, draft.type, draft.type === 'branch' ? draft.ref : null)
+    const result = await saveUpdateSource(component, type, ref)
     status.value = { ...status.value, update_sources: { ...status.value.update_sources, [component]: result.update_sources[component] } }
     syncSourceDraft(component)
     // Anything still in flight was for the old source.
@@ -394,6 +405,23 @@ async function saveSource(component) {
   } finally {
     sourceSaving.value[component] = false
   }
+}
+
+// One click from a branch back to the release source. It stages and installs
+// nothing. Core still checks core.runtime_settings.manage.
+async function switchToRelease(component) {
+  if (!canEditSource.value || !savedIsBranch(component) || sourceSaving.value[component]) return
+  await applySource(component, 'release', null)
+}
+
+// The secondary Stable release line under a branch source. Null draws nothing.
+function stable(component) {
+  return stableRelease({
+    saved: savedSources.value[component],
+    online: online.value[component],
+    cached: cachedStable.value[component],
+    sourcesSupported: sourcesSupported.value,
+  })
 }
 
 async function checkOnline(component, { force = false, background = false } = {}) {
@@ -729,6 +757,33 @@ onBeforeUnmount(() => {
               <dt>Comparison</dt>
               <dd><span class="pill" :class="discovered(component.id).comparison.pillClass">{{ discovered(component.id).comparison.label }}</span><span class="sub">{{ discovered(component.id).comparison.text }}</span></dd>
             </template>
+            <template v-if="stable(component.id)">
+              <dt data-test="stable-release-label">Stable release</dt>
+              <dd data-test="stable-release">
+                <template v-if="stable(component.id).none"><span class="muted">Not checked yet</span></template>
+                <template v-else>
+                  <span class="mono">{{ stable(component.id).tag }}</span>
+                  <span v-if="stable(component.id).date" class="sub">{{ formatCheckedAt(stable(component.id).date) }}</span>
+                  <span v-if="stable(component.id).stale" class="pill muted ml">STALE</span>
+                  <ReleaseTrustBadge
+                    :trust="stable(component.id).trust"
+                    :label="systemTrustLabel(stable(component.id).trust)"
+                    :tone="systemTrustClass(stable(component.id).trust)"
+                    :open="isTrustPopoverOpen(trustPopoverKey('stable', component.id))"
+                    :popover-id="trustPopoverId(trustPopoverKey('stable', component.id))"
+                    @trust-hover="setTrustPopover('hover', trustPopoverKey('stable', component.id))"
+                    @trust-leave="setTrustPopover('hover', null)"
+                    @trust-focus="setTrustPopover('focus', trustPopoverKey('stable', component.id))"
+                    @trust-blur="setTrustPopover('focus', null)"
+                    @trust-close="closeTrustPopover($event)"
+                  />
+                  <span v-if="stable(component.id).acceptance" class="sub"><span class="pill" :class="stable(component.id).acceptance.accepted ? 'ok' : 'danger'">{{ stable(component.id).acceptance.accepted ? 'ACCEPTED' : 'BLOCKED' }}</span> {{ stable(component.id).acceptance.actual_label || 'Unknown' }} · minimum {{ stable(component.id).acceptance.minimum_label }}</span>
+                  <span v-if="stable(component.id).operation" class="sub">{{ humanOperation(stable(component.id).operation) }}</span>
+                </template>
+                <span v-if="stable(component.id).error" class="sub muted" data-test="stable-release-error">{{ stable(component.id).error }}</span>
+                <button v-if="canEditSource && savedIsBranch(component.id)" class="btn sm" type="button" data-test="use-stable-release" :disabled="sourceSaving[component.id]" @click="switchToRelease(component.id)">{{ sourceSaving[component.id] ? 'Switching…' : 'Use stable release' }}</button>
+              </dd>
+            </template>
           </template>
           <template v-else-if="discovered(component.id).kind === 'none'">
             <dt>Discovered version</dt>
@@ -742,28 +797,19 @@ onBeforeUnmount(() => {
           </dd>
           <dt>Release trust</dt>
           <dd>
-            <span v-if="online[component.id]?.latest_release" class="system-trust-badge">
-              <span
-                class="pill system-trust-trigger"
-                tabindex="0"
-                :class="systemTrustClass(online[component.id].latest_release.release_trust)"
-                @mouseenter="setTrustPopover('hover', trustPopoverKey('release', component.id))"
-                @mouseleave="setTrustPopover('hover', null)"
-                @focus="setTrustPopover('focus', trustPopoverKey('release', component.id))"
-                @blur="setTrustPopover('focus', null)"
-                @click="closeTrustPopover($event)"
-                @keydown.esc.stop.prevent="closeTrustPopover($event)"
-                :aria-describedby="isTrustPopoverOpen(trustPopoverKey('release', component.id)) ? trustPopoverId(trustPopoverKey('release', component.id)) : undefined"
-              >{{ systemTrustLabel(online[component.id].latest_release.release_trust) }}</span>
-              <span :id="trustPopoverId(trustPopoverKey('release', component.id))" v-if="isTrustPopoverOpen(trustPopoverKey('release', component.id))" class="system-trust-popover" role="tooltip">
-                <b>{{ online[component.id].latest_release.release_trust?.publisher_display_name || (online[component.id].latest_release.release_trust?.signed ? 'Signed release' : 'Unsigned release') }}</b>
-                <span v-if="online[component.id].latest_release.release_trust?.publisher_id">Publisher ID: <span class="mono">{{ online[component.id].latest_release.release_trust.publisher_id }}</span></span>
-                <span v-if="online[component.id].latest_release.release_trust?.key_id">Key ID: <span class="mono">{{ online[component.id].latest_release.release_trust.key_id }}</span></span>
-                <span v-if="online[component.id].latest_release.release_trust?.algorithm">Algorithm: {{ online[component.id].latest_release.release_trust.algorithm }}</span>
-                <span v-if="online[component.id].latest_release.release_trust?.file_count">Manifest files: {{ online[component.id].latest_release.release_trust.file_count }}</span>
-                <span v-if="online[component.id].latest_release.release_trust?.details">{{ online[component.id].latest_release.release_trust.details }}</span>
-              </span>
-            </span>
+            <ReleaseTrustBadge
+              v-if="online[component.id]?.latest_release"
+              :trust="online[component.id].latest_release.release_trust"
+              :label="systemTrustLabel(online[component.id].latest_release.release_trust)"
+              :tone="systemTrustClass(online[component.id].latest_release.release_trust)"
+              :open="isTrustPopoverOpen(trustPopoverKey('release', component.id))"
+              :popover-id="trustPopoverId(trustPopoverKey('release', component.id))"
+              @trust-hover="setTrustPopover('hover', trustPopoverKey('release', component.id))"
+              @trust-leave="setTrustPopover('hover', null)"
+              @trust-focus="setTrustPopover('focus', trustPopoverKey('release', component.id))"
+              @trust-blur="setTrustPopover('focus', null)"
+              @trust-close="closeTrustPopover($event)"
+            />
             <span v-else class="muted">Not checked</span>
           </dd>
           <template v-if="online[component.id]?.latest_release?.release_trust?.acceptance_policy">

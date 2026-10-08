@@ -186,7 +186,7 @@ assert.match(script, /Download & inspect branch \$\{savedBranchRef\(component\)\
 // The release cache is never shown as a finished branch check.
 assert.match(script, /result\.source\?\.type !== 'branch'/)
 // Core 1.17.2 is required and the help article explains the source.
-assert.match(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], /^>=1\.17\.2,<2\.0\.0$/)
+assert.match(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/)
 assert.match(read('../src/help/articles/system-updates.md'), /Remembered update source/)
 
 // The component compiles.

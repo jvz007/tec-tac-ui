@@ -11,7 +11,8 @@ grep -q "setTrustPopover('hover', trustPopoverKey" "$VIEW"
 grep -q "setTrustPopover('hover', null)" "$VIEW"
 grep -q "setTrustPopover('focus', trustPopoverKey" "$VIEW"
 grep -q "setTrustPopover('focus', null)" "$VIEW"
-grep -q 'v-if="isTrustPopoverOpen(trustPopoverKey' "$VIEW"
+grep -q ':open="isTrustPopoverOpen(trustPopoverKey' "$VIEW"
+grep -q 'v-if="open" class="system-trust-popover"' "$ROOT/src/components/ReleaseTrustBadge.vue"
 grep -q 'system-trust-popover{pointer-events:none' "$CSS"
 if grep -Eq 'system-trust-(trigger|badge):(hover|focus|focus-visible|focus-within).*system-trust-popover' "$CSS"; then
   echo '[TEST] FAIL System Updates trust popover visibility still depends on CSS pseudo-state' >&2
