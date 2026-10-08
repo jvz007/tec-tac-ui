@@ -87,23 +87,74 @@ export function describeUpdateSource(source) {
   return normalized.type === 'branch' ? `BRANCH ${normalized.ref}` : 'RELEASE'
 }
 
+export const NOT_RECORDED_TEXT = 'Installed commit not recorded. The next install from a branch records it.'
+
 // Turns online.branch into labels for the card. Differs means the commits
-// differ. It does not mean the branch is newer.
+// differ. It does not mean the branch is newer. Core 1.17.3 adds basis
+// ('commit' | 'version' | null), head_version and installed_version.
 export function branchComparison(branch) {
   if (!branch || typeof branch !== 'object') return null
   let state = branch.state
   if (!['same', 'differs', 'unknown'].includes(state)) {
     state = branch.differs === true ? 'differs' : (branch.differs === false ? 'same' : 'unknown')
   }
+  const basis = branch.basis === 'commit' || branch.basis === 'version' ? branch.basis : null
+  const headVersion = branch.head_version || ''
+  const installedVersion = branch.installed_version || ''
+  const installedRecorded = Boolean(branch.installed_short || branch.installed_commit)
   const view = {
     state,
+    basis,
     headShort: branch.head_short || '',
     headDate: branch.head_date || '',
+    headVersion,
+    installedVersion,
+    installedRecorded,
     installedShort: branch.installed_short || 'Not recorded',
+    installedNote: installedRecorded ? '' : NOT_RECORDED_TEXT,
   }
-  if (state === 'same') return { ...view, label: 'SAME', pillClass: 'ok', text: 'The installed build is the current head of this branch.' }
-  if (state === 'differs') return { ...view, label: 'DIFFERS', pillClass: 'warn', text: 'The installed commit differs from the branch head. That does not mean the branch is newer.' }
-  return { ...view, label: 'UNKNOWN', pillClass: '', text: 'Stage and install once with Core 1.17.2 or later to compare against the branch head.' }
+  if (state === 'same' || state === 'differs') {
+    const same = state === 'same'
+    const label = same ? 'SAME' : 'DIFFERS'
+    const pillClass = same ? 'ok' : 'warn'
+    if (basis === 'version') {
+      return { ...view, label, pillClass, text: `Compared by VERSION (branch head ${headVersion || 'unknown'}, installed ${installedVersion || 'unknown'}). A VERSION match does not prove the commits are equal.` }
+    }
+    return {
+      ...view, label, pillClass,
+      text: same ? 'The installed build is the current head of this branch.' : 'The installed commit differs from the branch head. That does not mean the branch is newer.',
+    }
+  }
+  const text = !installedRecorded && 'basis' in branch && basis === null
+    ? `${NOT_RECORDED_TEXT} The branch VERSION could not be compared.`
+    : NOT_RECORDED_TEXT
+  return { ...view, label: 'UNKNOWN', pillClass: '', text }
+}
+
+// What the card headlines. It follows the SAVED source, never the shape of the
+// online payload: a branch source ignores latest_release entirely.
+export function discoveredVersion({ saved, online, sourcesSupported } = {}) {
+  const source = sourcesSupported ? normalizeSource(saved) : { ...RELEASE }
+  const result = online && typeof online === 'object' ? online : null
+  if (source.type === 'branch') {
+    const same = result && result.source?.type === 'branch' && result.source?.ref === source.ref
+    const checked = same ? result : null
+    const comparison = branchComparison(checked?.branch)
+    return {
+      kind: 'branch',
+      ref: source.ref,
+      checked: Boolean(comparison),
+      headShort: comparison?.headShort || '',
+      headDate: comparison?.headDate || '',
+      comparison,
+      branchError: checked?.branch_error || '',
+    }
+  }
+  const latest = result?.latest_release
+  if (latest && typeof latest === 'object' && latest.tag) {
+    return { kind: 'release', tag: latest.tag, trust: latest.release_trust || null, acceptance: latest.release_trust?.acceptance_policy || null, error: result.release_error || '' }
+  }
+  return { kind: 'none', error: result?.release_error || '' }
 }
 
 // First 7 characters of a hex commit id, or '' when there is none.

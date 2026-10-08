@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.83",
+  "version": "0.12.84",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "1612e28a90a20fc2a7bb107b4c803f2feb0914c1150862bb169ce4d9c2a81a2c"
     },
     {
-      "path": "RELEASE_NOTES_0.12.83.md",
-      "size": 4006,
-      "sha256": "7bf54468bd4572ccf759cbe1c90eb1ab791033f6cd0673be56e0d8fd85f083ad"
+      "path": "RELEASE_NOTES_0.12.84.md",
+      "size": 2109,
+      "sha256": "32fa12d711d1841383d18cbb238674e0d2ed70a6a17f920fee668fbbba9f479e"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "b6faafeceb03e1a666fc99db3f916c709ca8196beb84e8788e94880ba55959d3"
+      "sha256": "afa0cd69d31dc04fa624e2af4068ae151c52532c13e2eed62ac65d41a7b552db"
     },
     {
       "path": "docs/context-actions.md",
@@ -622,6 +622,11 @@
       "sha256": "c6efccc883708976bf929d4512a6feee9f0a3269134590c47343a3714054f28a"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.83.md",
+      "size": 4006,
+      "sha256": "7bf54468bd4572ccf759cbe1c90eb1ab791033f6cd0673be56e0d8fd85f083ad"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.12.9.md",
       "size": 430,
       "sha256": "925771aff54cdee9e8ef7829d02c2c00aa206a3dede972b6697862e43668ae0c"
@@ -779,12 +784,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "2a7fd203843afe6ce9f1431eb5e81b9695ef6eb8aaa683831b9f8d77bbd09973"
+      "sha256": "d9a447471ac0cb172e09e88a26f4e14913b7cbb3a56092b9927114078db7d9f3"
     },
     {
       "path": "package.json",
-      "size": 3298,
-      "sha256": "ffe7763f57c0ccceef1667bb9d9581d72b2f30e7708ff3d107a9b3cd70dd54c7"
+      "size": 3343,
+      "sha256": "7b717b80a7da434ad1d0b8e7422167253feaac87a485de75bc2c573f76874dc0"
     },
     {
       "path": "public/modules/modules.json",
@@ -1093,8 +1098,8 @@
     },
     {
       "path": "src/help/articles/system-updates.md",
-      "size": 2178,
-      "sha256": "507cb0dc9194a3b934c8243469d03e4441d9ad36bb6636c800496818d0c996d9"
+      "size": 2448,
+      "sha256": "927fd52fcd162865feeb0c6bf7d85252438b51e5372658c04857077a881249c7"
     },
     {
       "path": "src/help/articles/troubleshooting-diagnostics.md",
@@ -1273,8 +1278,8 @@
     },
     {
       "path": "src/update-source.js",
-      "size": 8263,
-      "sha256": "e138c427cd5dbc3c7e7604c2661521bf52f09b707b83b6072cc93d72953a676d"
+      "size": 10506,
+      "sha256": "37baee4af9f86a7ff5efb64d784606f941cbfc20c8bd09cf98595c3757cea392"
     },
     {
       "path": "src/use-account-security-policy.js",
@@ -1368,13 +1373,13 @@
     },
     {
       "path": "src/views/SystemUpdatesView.vue",
-      "size": 45727,
-      "sha256": "46764a90e30dfa27c64b1415b9e3fb5b0ef2644d840a3f8afbcafe13bb6f0874"
+      "size": 47312,
+      "sha256": "e6238d42b67f17dd8953682c8847892d966fe10b6a095f2d1dd56cee70c21fd0"
     },
     {
       "path": "tec_tac_package.json",
       "size": 137,
-      "sha256": "682100fdcf81adc21c6a9d81e098a9582428387cb8a99b10ff5d94eebb7b0115"
+      "sha256": "a0f2ef8719c07ec8b92a8ce05f85d9149997dbd8125c3346e7307b8ad0f3ccd5"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1480,6 +1485,11 @@
       "path": "tests/d5-scope-health.mjs",
       "size": 981,
       "sha256": "3feac6173d5290a4adb0cfc96d70d82234003cb3948214170860605726e1178a"
+    },
+    {
+      "path": "tests/discovered-version-0.12.84.mjs",
+      "size": 5850,
+      "sha256": "90786f0038e03dfa7aa51df5249a0bda1a8c3f01e960e0553077a51e41eca109"
     },
     {
       "path": "tests/extension-hooks-0.12.62.mjs",
@@ -1843,8 +1853,8 @@
     },
     {
       "path": "tests/update-source-0.12.82.mjs",
-      "size": 11767,
-      "sha256": "a4e95a5caabbc70b467edb1a158c268a9c3065bb6d30f5cff48226808bb55b71"
+      "size": 11779,
+      "sha256": "4b72f5b2d8ffc871b5b5d9b218f21169b444e63619c068c9e3c25b50f9d5aa83"
     },
     {
       "path": "tests/update-source-stage-0.12.83.mjs",

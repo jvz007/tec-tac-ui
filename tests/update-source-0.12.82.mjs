@@ -116,7 +116,7 @@ for (const bad of ['', ' ', 'a b', 'a..b', 'a//b', '-x', '/x', 'x/', 'x.', 'x.lo
   const unknown = branchComparison({ state: 'unknown', head_short: 'abc1234', installed_short: null, differs: null })
   assert.equal(unknown.label, 'UNKNOWN')
   assert.equal(unknown.installedShort, 'Not recorded')
-  assert.match(unknown.text, /1\.17\.2 or later/)
+  assert.match(unknown.text, /Installed commit not recorded/)
   assert.equal(branchComparison({ head_short: 'a', differs: true }).state, 'differs')
   assert.equal(branchComparison({ head_short: 'a' }).state, 'unknown')
   assert.equal(branchComparison(undefined), null)

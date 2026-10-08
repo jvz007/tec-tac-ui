@@ -16,6 +16,7 @@ import { copyTextWithFeedback } from '../copy-feedback'
 import { canEditRuntimeSettings } from '../runtime-settings'
 import {
   branchComparison,
+  discoveredVersion,
   describeStageSource,
   describeUpdateSource,
   normalizeUpdateSources,
@@ -33,6 +34,7 @@ const status = ref(null)
 const loading = ref(true)
 const error = ref('')
 const online = ref({ framework: null, ui: null })
+const checkedAtLocal = ref({ framework: null, ui: null })
 const onlineBusy = ref({ framework: false, ui: false })
 const advancedUnlocked = ref(false)
 const branches = ref({ framework: [], ui: [] })
@@ -186,9 +188,9 @@ async function loadStatus() {
     for (const component of ['framework', 'ui']) {
       syncSourceDraft(component)
       // The release cache has no branch data. It only fills the release rows
-      // until the first online check returns.
+      // until the first online check returns, and only for a release source.
       const cached = status.value?.release_cache?.[component]
-      if (cached?.latest_release) online.value[component] = cached
+      if (cached?.latest_release && !savedIsBranch(component)) online.value[component] = cached
     }
   } catch (err) {
     error.value = err?.message || 'Unable to load system update status.'
@@ -331,6 +333,19 @@ function savedIsBranch(component) {
   return sourcesSupported.value && Boolean(savedBranchRef(component))
 }
 
+function discovered(component) {
+  return discoveredVersion({ saved: savedSources.value[component], online: online.value[component], sourcesSupported: sourcesSupported.value })
+}
+
+// Core 1.17.3 returns no checked_at for a branch source, so show when this page
+// received the check. cache.stale means nothing for a branch.
+function lastCheckedText(component) {
+  if (discovered(component).kind === 'branch') {
+    return checkedAtLocal.value[component] ? `${formatCheckedAt(checkedAtLocal.value[component])} (this session)` : 'Never'
+  }
+  return formatCheckedAt(online.value[component]?.checked_at)
+}
+
 function stageShown(component) {
   return savedIsBranch(component) || Boolean(online.value[component]?.latest_release)
 }
@@ -389,6 +404,7 @@ async function checkOnline(component, { force = false, background = false } = {}
     const result = await checkOnlineSystemUpdate(component, { force })
     if (!onlineRequestGate.isCurrent(component, requestId)) return
     online.value[component] = result
+    checkedAtLocal.value[component] = new Date().toISOString()
   } catch (err) {
     if (onlineRequestGate.isCurrent(component, requestId) && !background) {
       error.value = err?.message || 'Unable to check repository release.'
@@ -700,6 +716,25 @@ onBeforeUnmount(() => {
           <dt>Repository</dt><dd class="mono">{{ component.repository }}</dd>
           <dt v-if="sourcesSupported">Update source</dt>
           <dd v-if="sourcesSupported" data-test="saved-update-source"><span class="pill" :class="savedSources[component.id].type === 'branch' ? 'warn' : 'ok'">{{ savedSourceLabel(component.id) }}</span><span class="sub">Saved. Check and Download use this source.</span></dd>
+          <template v-if="discovered(component.id).kind === 'branch'">
+            <dt>Discovered version</dt>
+            <dd data-test="discovered-version">
+              <template v-if="discovered(component.id).checked"><span class="mono">{{ discovered(component.id).ref }} {{ discovered(component.id).headShort || 'unknown' }}</span><span v-if="discovered(component.id).headDate" class="sub">{{ formatCheckedAt(discovered(component.id).headDate) }}</span></template>
+              <span v-else-if="!discovered(component.id).branchError" class="muted">{{ onlineBusy[component.id] ? 'Checking the branch…' : 'Not checked yet. Use Check for updates.' }}</span>
+              <span v-else class="muted">Not available</span>
+            </dd>
+            <template v-if="discovered(component.id).checked">
+              <dt>Installed</dt>
+              <dd><span class="mono">{{ discovered(component.id).comparison.installedShort }}</span><span v-if="discovered(component.id).comparison.installedNote" class="sub">{{ discovered(component.id).comparison.installedNote }}</span></dd>
+              <dt>Comparison</dt>
+              <dd><span class="pill" :class="discovered(component.id).comparison.pillClass">{{ discovered(component.id).comparison.label }}</span><span class="sub">{{ discovered(component.id).comparison.text }}</span></dd>
+            </template>
+          </template>
+          <template v-else-if="discovered(component.id).kind === 'none'">
+            <dt>Discovered version</dt>
+            <dd class="muted">Not checked yet. Use Check for updates.</dd>
+          </template>
+          <template v-if="discovered(component.id).kind === 'release'">
           <dt>Stable release</dt>
           <dd>
             <span v-if="online[component.id]?.latest_release" class="mono">{{ online[component.id].latest_release.tag }}</span>
@@ -735,10 +770,11 @@ onBeforeUnmount(() => {
             <dt>Acceptance</dt>
             <dd><span class="pill" :class="online[component.id].latest_release.release_trust.acceptance_policy.accepted ? 'ok' : 'danger'">{{ online[component.id].latest_release.release_trust.acceptance_policy.accepted ? 'ACCEPTED' : 'BLOCKED' }}</span><span class="sub">{{ online[component.id].latest_release.release_trust.acceptance_policy.actual_label || 'Unknown' }} · minimum {{ online[component.id].latest_release.release_trust.acceptance_policy.minimum_label }}</span></dd>
           </template>
-          <dt>Last checked</dt><dd class="smalltext">{{ formatCheckedAt(online[component.id]?.checked_at) }}<span v-if="online[component.id]?.cache?.stale" class="pill warn ml">STALE</span></dd>
+          </template>
+          <dt>Last checked</dt><dd class="smalltext">{{ lastCheckedText(component.id) }}<span v-if="discovered(component.id).kind !== 'branch' && online[component.id]?.cache?.stale" class="pill warn ml">STALE</span></dd>
         </dl>
 
-        <div v-if="online[component.id]?.release_error" class="state-inline warning mt">{{ online[component.id].release_error }}</div>
+        <div v-if="discovered(component.id).kind !== 'branch' && online[component.id]?.release_error" class="state-inline warning mt">{{ online[component.id].release_error }}</div>
 
         <div v-if="sourcesSupported" class="update-source-control mt">
           <div class="section-divider">Update source</div>
@@ -766,18 +802,7 @@ onBeforeUnmount(() => {
           <div v-if="sourceError[component.id]" class="state-inline denied mt">{{ sourceError[component.id] }}</div>
         </div>
 
-        <div v-if="sourcesSupported && savedBranchRef(component.id)" class="branch-check mt" data-test="branch-check">
-          <dl v-if="branchView(component.id)" class="kvlist system-update-kv">
-            <dt>Branch head</dt>
-            <dd><span class="mono">{{ branchView(component.id).headShort || 'Unknown' }}</span><span v-if="branchView(component.id).headDate" class="sub">{{ formatCheckedAt(branchView(component.id).headDate) }}</span></dd>
-            <dt>Installed</dt>
-            <dd><span class="mono">{{ branchView(component.id).installedShort }}</span></dd>
-            <dt>Comparison</dt>
-            <dd><span class="pill" :class="branchView(component.id).pillClass">{{ branchView(component.id).label }}</span><span class="sub">{{ branchView(component.id).text }}</span></dd>
-          </dl>
-          <p v-else-if="!branchCheck(component.id)?.branch_error" class="compact-copy muted">{{ onlineBusy[component.id] ? 'Checking the branch…' : 'The branch has not been checked yet. Use Check for updates.' }}</p>
-          <div v-if="branchCheck(component.id)?.branch_error" class="state-inline warning mt">{{ branchCheck(component.id).branch_error }}</div>
-        </div>
+        <div v-if="discovered(component.id).kind === 'branch' && discovered(component.id).branchError" class="state-inline warning mt" data-test="branch-check">{{ discovered(component.id).branchError }}</div>
 
         <div class="system-update-actions">
           <button class="btn" :disabled="onlineBusy[component.id] || stageBusy || sourceBlocked(component.id)" :title="sourceBlocked(component.id) ? 'Save to use this source.' : ''" @click="checkOnline(component.id, { force: true })">
