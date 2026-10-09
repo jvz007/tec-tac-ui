@@ -107,7 +107,7 @@ assert.ok(!template.slice(0, template.indexOf('<span>Trust</span>')).includes('s
 assert.match(read('../src/components/ReleaseTrustBadge.vue'), /class="system-trust-popover"/)
 // loadStatus: the release seeding is unchanged and the cache row is kept apart.
 assert.match(script, /latest_release && !savedIsBranch\(component\)\) online\.value\[component\] = cached/)
-assert.match(script, /cachedStable\.value\[component\] = savedIsBranch\(component\)/)
+assert.match(script, /cachedStable\.value\[component\] = cached && typeof cached === 'object' \? cached : null/) // 0.12.89: any source type
 assert.match(script, /cached: cachedStable\.value\[component\]/)
 // Shared save helper, no copy.
 assert.equal(script.split('await saveUpdateSource(').length, 2)
@@ -148,7 +148,7 @@ assert.match(script, /stageSourceCheck\(/)
   await make(d1).switchToRelease('ui')
   assert.deepEqual(calls, [['save', 'ui', 'release', null], ['sync', 'ui'], ['invalidate', 'ui'], ['check', 'ui', { force: true }]])
   assert.deepEqual(d1.status.value.update_sources.ui, { type: 'release', ref: null })
-  assert.equal(d1.cachedStable.value.ui, null, 'a first-load row for the old source is dropped after a save (0.12.87)')
+  assert.deepEqual(d1.cachedStable.value.ui, { source: branchDev }, 'the saved first-load row survives a save (0.12.89)')
   assert.equal(d1.status.value.update_sources.framework, branchDev, 'the other component is untouched')
   assert.equal(d1.sourceSaving.value.ui, false)
   // not allowed: no edit permission, not a branch, or already saving

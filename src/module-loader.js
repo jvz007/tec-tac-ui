@@ -66,7 +66,8 @@ function refuseOperation(message) {
 
 // The id a module replaces under AD-20: descriptor.replaces, else the
 // `replaces` of its module_status row. Anything but a non-empty string means
-// the module replaces nothing, so the helper fails closed to its own id.
+// the module replaces nothing. loadUiModules reads this once for every module
+// before any register() runs, so a module cannot change it afterwards.
 function replacedModuleId(descriptor, runtime) {
   const direct = descriptor?.replaces
   if (typeof direct === 'string' && direct) return direct
@@ -76,6 +77,75 @@ function replacedModuleId(descriptor, runtime) {
     if (row && typeof row.replaces === 'string' && row.replaces) return row.replaces
   }
   return ''
+}
+
+// Decodes %XX sequences until nothing changes (bounded). Never throws, so a
+// malformed sequence cannot hide a segment. Returns null when the bound is hit.
+function decodeToFixedPoint(text) {
+  let current = text
+  for (let i = 0; i < 8; i += 1) {
+    const next = current.replace(/%([0-9a-f]{2})/gi, (_m, hex) => String.fromCharCode(parseInt(hex, 16)))
+    if (next === current) return current
+    current = next
+  }
+  return null
+}
+
+// The module ids named by a tactical-operations path, or null when the path
+// cannot be read safely (callers treat null as a refusal).
+function operationTargets(text) {
+  const decoded = decodeToFixedPoint(text.replace(/[\t\r\n]/g, ''))
+  if (decoded === null) return null
+  const found = []
+  const candidates = [decoded, decoded.split(/[?#]/)[0]]
+  for (const candidate of candidates) {
+    const out = []
+    for (const part of candidate.replace(/[\\]/g, '/').split('/')) {
+      if (part === '.' || part === '') continue
+      if (part === '..') { out.pop(); continue }
+      out.push(part.toLowerCase())
+    }
+    for (let i = 0; i + 2 < out.length; i += 1) {
+      if (out[i] === 'tfd' && out[i + 1] === 'tactical-operations') found.push(out[i + 2].split(';')[0])
+    }
+  }
+  return found
+}
+
+// Refuses a path that reaches /api/tfd/tactical-operations/<id>/... for an id
+// other than the module's own or the one it replaces. Fails closed.
+export function guardTacticalOperationPath(path, moduleId, replacedId) {
+  if (path === undefined || path === null) return
+  let text
+  try { text = typeof path === 'string' ? path : String(path) } catch { text = '' }
+  const raw = text.toLowerCase()
+  const mentions = raw.includes('tactical') || raw.includes('%') || raw.includes('\\')
+  if (!mentions) return
+  const own = String(moduleId).toLowerCase()
+  const replaced = typeof replacedId === 'string' ? replacedId.toLowerCase() : ''
+  const targets = operationTargets(text)
+  if (targets === null) {
+    throw refuseOperation(`Module "${moduleId}" used a path the shell cannot read safely. The call is refused.`)
+  }
+  for (const id of [...targets, ...(operationTargets(text.split(/[?#]/)[0]) || [])]) {
+    if (id !== own && id !== replaced) {
+      const allowed = replacedId ? `"${moduleId}" or "${replacedId}"` : `"${moduleId}"`
+      throw refuseOperation(`Module "${moduleId}" cannot run Tactical operations for "${id}". It may use only ${allowed}.`)
+    }
+  }
+}
+
+function guardTransport(runtime, moduleId, replacedId) {
+  const out = {}
+  for (const key of ['api', 'apiRaw', 'apiBlob', 'apiText']) {
+    const fn = runtime[key]
+    if (typeof fn !== 'function') continue
+    out[key] = function guardedTransport(path, ...rest) {
+      try { guardTacticalOperationPath(path, moduleId, replacedId) } catch (error) { return Promise.reject(error) }
+      return fn(path, ...rest)
+    }
+  }
+  return out
 }
 
 // Binds context.tacticalOperation to the module that receives it. Core checks
@@ -239,6 +309,11 @@ export async function loadUiModules(runtime, modules, options = {}) {
   const routeOwners = new Map()
   const permissionSet = new Set(runtime.state.context.permissions || [])
   const budget = registerBudgetMs(runtime, options)
+  // Taken before any register() runs: an earlier module can edit a later
+  // module's descriptor or its module_status row, so nothing reads them again.
+  const replacedSnapshot = new Map()
+  for (const item of modules) replacedSnapshot.set(item?.id, replacedModuleId(item, runtime))
+  Object.freeze(replacedSnapshot)
 
   for (const descriptor of modules) {
     if (!descriptor.entry) continue
@@ -334,12 +409,13 @@ export async function loadUiModules(runtime, modules, options = {}) {
       const boundTacticalOperation = typeof sharedTacticalOperation === 'function'
         ? { tacticalOperation: bindTacticalOperation(sharedTacticalOperation, {
           moduleId: descriptor.id,
-          replaces: () => replacedModuleId(descriptor, runtime),
+          replaces: replacedSnapshot.get(descriptor.id) || '',
           isAbandoned,
         }) }
         : {}
       await plugin.register({
         ...moduleRuntime,
+        ...guardTransport(runtime, descriptor.id, replacedSnapshot.get(descriptor.id) || ''),
         ...boundTacticalOperation,
         context: runtime.state.context,
         router: moduleRouter,

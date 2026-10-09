@@ -195,7 +195,8 @@ async function loadStatus() {
       // until the first online check returns, and only for a release source.
       const cached = status.value?.release_cache?.[component]
       if (cached?.latest_release && !savedIsBranch(component)) online.value[component] = cached
-      cachedStable.value[component] = savedIsBranch(component) && cached && typeof cached === 'object' ? cached : null
+      // The Stable release is not tied to a branch, so the saved row stays for any source.
+      cachedStable.value[component] = cached && typeof cached === 'object' ? cached : null
     }
   } catch (err) {
     error.value = err?.message || 'Unable to load system update status.'
@@ -397,8 +398,6 @@ async function applySource(component, type, ref) {
     const result = await saveUpdateSource(component, type, ref)
     status.value = { ...status.value, update_sources: { ...status.value.update_sources, [component]: result.update_sources[component] } }
     syncSourceDraft(component)
-    // A first-load row for the old branch is not current for the new source.
-    cachedStable.value[component] = null
     // Anything still in flight was for the old source.
     onlineRequestGate.invalidate(component)
     await checkOnline(component, { force: true })

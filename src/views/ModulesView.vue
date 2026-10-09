@@ -3,7 +3,7 @@ import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createLatestRequestGate } from '../admin-session-state'
 import { loadLatestHotfixRows } from '../module-hotfix-loader'
-import { isReplacementProblem, replacedByLabel, replacementProblemText, replacementSummary, replacesLabel } from '../module-replacement'
+import { confirmationRequired, installConfirmSummary, isReplacementProblem, replacedByLabel, replacementConfirmLines, replacementListChangedText, replacementProblemText, replacementSummary, replacesLabel, satisfiedByLine, willDisableIds } from '../module-replacement'
 import {
   addModuleRepository,
   checkModuleRemoval,
@@ -82,6 +82,13 @@ const confirmMode = ref('')
 const confirmText = ref('')
 const cascade = ref(false)
 const reinstallTarget = ref(null)
+const installConfirm = ref(null)
+const listChanged = ref('')
+const enableNotice = computed(() => (confirmMode.value === 'enable' && confirmTarget.value ? replacementConfirmLines(confirmTarget.value.id, confirmTarget.value.will_disable) : []))
+function satisfiedFor(row, id) {
+  const dependency = (Array.isArray(row?.dependency_status) ? row.dependency_status : []).find((item) => item && item.id === id)
+  return satisfiedByLine(dependency)
+}
 let pollTimer = null
 let reloadTimer = null
 const reloadCountdown = ref(0)
@@ -549,28 +556,54 @@ async function install() {
     queueWarning.value = `Required sequence enforced: ${violation}`
     return
   }
+  // A replacement switches another module off. Ask first, naming each module.
+  const summary = installConfirmSummary(plan.value)
+  if (summary.ids.length) {
+    installConfirm.value = { ids: summary.ids, lines: summary.lines, changed: '' }
+    return
+  }
+  await runInstall([])
+}
+
+function closeInstallConfirm() { installConfirm.value = null }
+async function confirmInstall() {
+  if (!installConfirm.value) return
+  await runInstall(installConfirm.value.ids)
+}
+async function runInstall(disableReplaced) {
+  if (!staged.value?.upload_id) return
   try {
     const job = await installModuleArtifact(
       staged.value.upload_id,
       artifactKind.value === 'batch' ? 'batch' : 'artifact',
       installOrder.value,
+      disableReplaced,
     )
+    installConfirm.value = null
     staged.value = null
     installOrder.value = []
     beginPoll(job)
   } catch (e) {
-    error.value = e.message
+    // The list the user saw is out of date: show the fresh one and ask again.
+    const fresh = confirmationRequired(e)
+    if (fresh !== null) {
+      const summary = installConfirmSummary({ will_disable: fresh })
+      installConfirm.value = { ids: summary.ids, lines: summary.lines, changed: replacementListChangedText(fresh) }
+    } else {
+      installConfirm.value = null
+      error.value = e.message
+    }
   }
 }
 
-function ask(item, mode) { confirmTarget.value = item; confirmMode.value = mode; confirmText.value = ''; cascade.value = false }
-function closeConfirm() { confirmTarget.value = null; confirmMode.value = ''; confirmText.value = ''; cascade.value = false }
+function ask(item, mode) { confirmTarget.value = item; confirmMode.value = mode; confirmText.value = ''; cascade.value = false; listChanged.value = '' }
+function closeConfirm() { confirmTarget.value = null; confirmMode.value = ''; confirmText.value = ''; cascade.value = false; listChanged.value = '' }
 async function confirmAction() {
   const item = confirmTarget.value
   if (!item || confirmText.value !== item.id) return
   try {
     let job
-    if (confirmMode.value === 'enable') job = await setModuleEnabled(item.id, true)
+    if (confirmMode.value === 'enable') job = await setModuleEnabled(item.id, true, false, willDisableIds(item.will_disable))
     else if (confirmMode.value === 'disable') job = await setModuleEnabled(item.id, false, cascade.value)
     else {
       const check = await checkModuleRemoval(item.id)
@@ -579,7 +612,14 @@ async function confirmAction() {
     }
     closeConfirm()
     beginPoll(job)
-  } catch (e) { error.value = e.message }
+  } catch (e) {
+    // The list the user saw is out of date: show the fresh one and ask again.
+    const fresh = confirmationRequired(e)
+    if (fresh !== null && confirmMode.value === 'enable') {
+      confirmTarget.value = { ...item, will_disable: fresh }
+      listChanged.value = replacementListChangedText(fresh)
+    } else error.value = e.message
+  }
 }
 
 
@@ -874,7 +914,7 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
 
   <div v-if="loading" class="callout mono">Loading Module Management v2 catalog…</div>
   <div v-else class="module-layout"><div><div class="toolbar"><label class="compact-input"><input v-model="query" placeholder="Search modules…"></label><span class="muted mono">{{ filtered.length }} shown</span><span class="spacer"></span><button class="btn sm" @click="refresh(selectedId)">Refresh</button></div><div class="tablewrap"><table><thead><tr><th>Module</th><th>Version</th><th>Runtime</th><th>Visibility</th><th>Dependencies</th><th>Dependants</th><th>UI Load</th><th>Status</th></tr></thead><tbody><tr v-for="item in filtered" :key="item.id" class="clickrow" :class="{selected:selectedId===item.id}" @click="selectedId=item.id"><td><b>{{ item.id }}</b><span v-if="item.protected" class="sub">protected</span><span v-if="replacesLabel(item)" class="sub">{{ replacesLabel(item) }}</span><span v-if="replacedByLabel(item)" class="sub">{{ replacedByLabel(item) }}</span></td><td class="mono">{{ item.extension_version||'—' }}</td><td><span class="pill" :class="item.enabled?'ok':'warn'">{{ item.enabled?'enabled':'disabled' }}</span></td><td><span class="pill" :class="item.visible!==false?'ok':''">{{ item.visible!==false?'visible':'hidden' }}</span></td><td class="mono">{{ Object.keys(item.dependencies||{}).length }}</td><td class="mono">{{ item.dependants?.length||0 }}</td><td><span class="pill" :class="{ok:moduleLoadDiagnostic(item).state==='loaded',warn:['skipped','unknown'].includes(moduleLoadDiagnostic(item).state),danger:['failed','runtime-error'].includes(moduleLoadDiagnostic(item).state)}">{{ moduleLoadDiagnostic(item).label }}</span></td><td><span class="pill" :class="item.status==='enabled'?'ok':'warn'">{{ item.status }}</span></td></tr></tbody></table></div></div>
-    <aside v-if="selected" class="module-detail card"><div class="cardhead"><div><span class="eyebrow">MODULE DETAIL</span><h3>{{ selected.id }}</h3></div><div class="module-detail-head-actions"><span class="pill" :class="selected.enabled?'ok':'warn'">{{ selected.enabled?'ENABLED':'DISABLED' }}</span><button v-if="canOpenSelected" class="btn primary sm module-open-btn" type="button" @click="openSelectedModule">Open</button></div></div><dl class="kvlist module-kv"><dt>Extension</dt><dd class="mono">v{{ selected.extension_version }}</dd><dt>ReportSet</dt><dd class="mono">v{{ selected.reportset_version }}</dd><dt>Managed</dt><dd>{{ selected.managed?'yes':'no' }}</dd><dt>Navigation</dt><dd>{{ selected.visible!==false?'visible':'hidden' }}</dd><dt>UI load</dt><dd><span class="pill" :class="{ok:selectedLoad.state==='loaded',warn:['skipped','unknown'].includes(selectedLoad.state),danger:['failed','runtime-error'].includes(selectedLoad.state)}">{{ selectedLoad.label }}</span></dd><dt>Source</dt><dd class="module-source">{{ selected.source?.repository_name || selected.source?.repository_id || 'local / offline' }}</dd><dt>SHA256</dt><dd class="mono module-source">{{ selected.source?.package_sha256 ? selected.source.package_sha256.slice(0,16)+'…' : '—' }}</dd><dt>Permissions</dt><dd>{{ selected.permission_count||0 }}</dd><template v-if="selected.publisher_trust"><dt>Package trust</dt><dd><span class="pill" :class="selected.publisher_trust.verified&&selected.publisher_trust.trusted?'ok':(selected.publisher_trust.state==='unsigned'?'':'danger')">{{ selected.publisher_trust.verified&&selected.publisher_trust.trusted?'verified':(selected.publisher_trust.state||'unknown') }}</span></dd><dt>Signed by</dt><dd>{{ selected.publisher_trust.publisher_display_name || selected.publisher_trust.publisher_id || '—' }}</dd><dt>Signing key</dt><dd class="mono">{{ selected.publisher_trust.key_id || '—' }}</dd></template></dl><div v-if="selectedLoad.state==='failed'" class="state-inline denied module-load-error"><b>Authenticated UI failed to load.</b><code>{{ selectedLoad.detail }}</code><span>Runtime and visibility state are unchanged; fix the module UI package and reload Tec-Tac.</span></div><div v-else-if="selectedLoad.state==='runtime-error'" class="state-inline denied module-load-error"><b>Authenticated UI raised a runtime error.</b><code>{{ selectedLoad.detail }}</code><span>Core contained the failure; the rest of Tec-Tac is unaffected. Reload Tec-Tac or fix the module UI.</span></div><div v-else-if="selectedLoad.state==='skipped' || selectedLoad.state==='unknown'" class="state-inline warning module-load-error"><b>Authenticated UI {{ selectedLoad.label }}.</b><code>{{ selectedLoad.detail }}</code></div><template v-if="replacementSummary(selected).lines.length"><div class="section-divider">Replacement <span v-if="replacementSummary(selected).badge" class="pill" :class="replacementSummary(selected).tone">{{ replacementSummary(selected).badge }}</span></div><div v-for="(line,index) in replacementSummary(selected).lines" :key="index" class="muted smalltext">{{ line }}</div></template><div class="section-divider">Hard dependencies</div><div v-if="!Object.keys(selected.dependencies||{}).length" class="muted smalltext">None</div><div v-for="(constraint,id) in selected.dependencies" :key="id" class="module-meta"><b>{{ id }}</b><span class="mono">{{ constraint }}</span></div><div class="section-divider">Required by</div><div v-if="!selected.dependants?.length" class="muted smalltext">No installed dependants</div><div v-for="d in selected.dependants" :key="d.id" class="module-meta"><b>{{ d.id }}</b><span class="mono">{{ d.constraint }}</span></div><div v-if="selected.runtime_requirements?.length" class="section-divider">Runtime requirements</div><div v-for="r in selected.runtime_requirements" :key="r.component" class="module-meta"><b>{{ r.component }}</b><span class="mono">{{ r.current||'unknown' }} / {{ r.constraint }} {{ r.satisfied?'✓':'✕' }}</span></div><div v-if="selected.managed" class="module-actions"><button v-if="selected.visible!==false" class="btn" :disabled="!canManage||jobRunning" title="Keep the module active but remove its top-level navigation entry" @click="setVisibility(selected,false)">Hide</button><button v-else class="btn" :disabled="!canManage||jobRunning" title="Restore the module's top-level navigation entry" @click="setVisibility(selected,true)">Show</button><button v-if="selected.enabled" class="btn warnbtn" :disabled="!canManage||jobRunning" @click="ask(selected,'disable')">Disable</button><button v-else class="btn primary" :disabled="!canManage||jobRunning" @click="ask(selected,'enable')">Enable</button><button class="btn danger" :disabled="!canManage||jobRunning" @click="ask(selected,'remove')">Remove</button></div></aside>
+    <aside v-if="selected" class="module-detail card"><div class="cardhead"><div><span class="eyebrow">MODULE DETAIL</span><h3>{{ selected.id }}</h3></div><div class="module-detail-head-actions"><span class="pill" :class="selected.enabled?'ok':'warn'">{{ selected.enabled?'ENABLED':'DISABLED' }}</span><button v-if="canOpenSelected" class="btn primary sm module-open-btn" type="button" @click="openSelectedModule">Open</button></div></div><dl class="kvlist module-kv"><dt>Extension</dt><dd class="mono">v{{ selected.extension_version }}</dd><dt>ReportSet</dt><dd class="mono">v{{ selected.reportset_version }}</dd><dt>Managed</dt><dd>{{ selected.managed?'yes':'no' }}</dd><dt>Navigation</dt><dd>{{ selected.visible!==false?'visible':'hidden' }}</dd><dt>UI load</dt><dd><span class="pill" :class="{ok:selectedLoad.state==='loaded',warn:['skipped','unknown'].includes(selectedLoad.state),danger:['failed','runtime-error'].includes(selectedLoad.state)}">{{ selectedLoad.label }}</span></dd><dt>Source</dt><dd class="module-source">{{ selected.source?.repository_name || selected.source?.repository_id || 'local / offline' }}</dd><dt>SHA256</dt><dd class="mono module-source">{{ selected.source?.package_sha256 ? selected.source.package_sha256.slice(0,16)+'…' : '—' }}</dd><dt>Permissions</dt><dd>{{ selected.permission_count||0 }}</dd><template v-if="selected.publisher_trust"><dt>Package trust</dt><dd><span class="pill" :class="selected.publisher_trust.verified&&selected.publisher_trust.trusted?'ok':(selected.publisher_trust.state==='unsigned'?'':'danger')">{{ selected.publisher_trust.verified&&selected.publisher_trust.trusted?'verified':(selected.publisher_trust.state||'unknown') }}</span></dd><dt>Signed by</dt><dd>{{ selected.publisher_trust.publisher_display_name || selected.publisher_trust.publisher_id || '—' }}</dd><dt>Signing key</dt><dd class="mono">{{ selected.publisher_trust.key_id || '—' }}</dd></template></dl><div v-if="selectedLoad.state==='failed'" class="state-inline denied module-load-error"><b>Authenticated UI failed to load.</b><code>{{ selectedLoad.detail }}</code><span>Runtime and visibility state are unchanged; fix the module UI package and reload Tec-Tac.</span></div><div v-else-if="selectedLoad.state==='runtime-error'" class="state-inline denied module-load-error"><b>Authenticated UI raised a runtime error.</b><code>{{ selectedLoad.detail }}</code><span>Core contained the failure; the rest of Tec-Tac is unaffected. Reload Tec-Tac or fix the module UI.</span></div><div v-else-if="selectedLoad.state==='skipped' || selectedLoad.state==='unknown'" class="state-inline warning module-load-error"><b>Authenticated UI {{ selectedLoad.label }}.</b><code>{{ selectedLoad.detail }}</code></div><template v-if="replacementSummary(selected).lines.length"><div class="section-divider">Replacement <span v-if="replacementSummary(selected).badge" class="pill" :class="replacementSummary(selected).tone">{{ replacementSummary(selected).badge }}</span></div><div v-for="(line,index) in replacementSummary(selected).lines" :key="index" class="muted smalltext">{{ line }}</div></template><div class="section-divider">Hard dependencies</div><div v-if="!Object.keys(selected.dependencies||{}).length" class="muted smalltext">None</div><div v-for="(constraint,id) in selected.dependencies" :key="id" class="module-meta"><b>{{ id }}</b><span class="mono">{{ constraint }}</span><span v-if="satisfiedFor(selected,id)" class="muted smalltext">{{ satisfiedFor(selected,id) }}</span></div><div class="section-divider">Required by</div><div v-if="!selected.dependants?.length" class="muted smalltext">No installed dependants</div><div v-for="d in selected.dependants" :key="d.id" class="module-meta"><b>{{ d.id }}</b><span class="mono">{{ d.constraint }}</span></div><div v-if="selected.runtime_requirements?.length" class="section-divider">Runtime requirements</div><div v-for="r in selected.runtime_requirements" :key="r.component" class="module-meta"><b>{{ r.component }}</b><span class="mono">{{ r.current||'unknown' }} / {{ r.constraint }} {{ r.satisfied?'✓':'✕' }}</span></div><div v-if="selected.managed" class="module-actions"><button v-if="selected.visible!==false" class="btn" :disabled="!canManage||jobRunning" title="Keep the module active but remove its top-level navigation entry" @click="setVisibility(selected,false)">Hide</button><button v-else class="btn" :disabled="!canManage||jobRunning" title="Restore the module's top-level navigation entry" @click="setVisibility(selected,true)">Show</button><button v-if="selected.enabled" class="btn warnbtn" :disabled="!canManage||jobRunning" @click="ask(selected,'disable')">Disable</button><button v-else class="btn primary" :disabled="!canManage||jobRunning" @click="ask(selected,'enable')">Enable</button><button class="btn danger" :disabled="!canManage||jobRunning" @click="ask(selected,'remove')">Remove</button></div></aside>
   </div>
 
   </template>
@@ -967,6 +1007,7 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
 
   <div v-if="reinstallTarget" class="modal-backdrop" @click.self="closeReinstallConfirm"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="module-reinstall-title"><div class="cardhead"><div><span class="eyebrow">REINSTALL MODULE</span><h3 id="module-reinstall-title">{{ reinstallTarget.name || reinstallTarget.id }}</h3></div><span class="pill warn">SAME VERSION</span></div><p class="compact-copy">Installed version and repository version are both <span class="mono">{{ reinstallTarget.latest_version }}</span>. Continuing will download and inspect the same version for reinstall. The replacement still requires confirmation from the package inspection step.</p><div class="state-inline warning mt"><b>Existing module files will be replaced when the install job runs.</b> Configuration and data remain subject to the module's normal upgrade/reinstall lifecycle.</div><div class="modal-actions"><button class="btn primary" :disabled="inspecting || jobRunning" @click="confirmReinstall">Continue to reinstall</button><button class="btn" @click="closeReinstallConfirm">Cancel</button></div></section></div>
 
-  <div v-if="confirmTarget" class="modal-backdrop" @click.self="closeConfirm"><section class="modal-panel"><div class="cardhead"><div><span class="eyebrow">{{ confirmMode.toUpperCase() }} MODULE</span><h3>{{ confirmTarget.id }}</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><p v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="compact-copy">Enabled dependants may block this action. Select cascade to disable dependent modules first.</p><label v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="checkline warning-check"><input v-model="cascade" type="checkbox"> Disable enabled dependants as part of this job</label><label class="field"><span>Type {{ confirmTarget.id }} to confirm</span><input v-model="confirmText" autocomplete="off"></label><div class="modal-actions"><button class="btn" :class="confirmMode==='enable'?'primary':'danger'" :disabled="confirmText!==confirmTarget.id" @click="confirmAction">{{ confirmMode }} module</button><button class="btn" @click="closeConfirm">Cancel</button></div></section></div>
+  <div v-if="installConfirm" class="modal-backdrop" @click.self="closeInstallConfirm"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="module-install-confirm-title"><div class="cardhead"><div><span class="eyebrow">INSTALL MODULES</span><h3 id="module-install-confirm-title">Switch off replaced modules?</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="installConfirm.changed" class="state-inline warning mt"><b>{{ installConfirm.changed }}</b></div><div v-if="installConfirm.lines.length" class="state-inline warning mt"><div v-for="(line,index) in installConfirm.lines" :key="index">{{ line }}</div></div><div class="modal-actions"><button class="btn primary" :disabled="jobRunning" @click="confirmInstall">{{ installConfirm.ids.length ? 'Install and switch off' : 'Install' }}</button><button class="btn" @click="closeInstallConfirm">Cancel</button></div></section></div>
+  <div v-if="confirmTarget" class="modal-backdrop" @click.self="closeConfirm"><section class="modal-panel"><div class="cardhead"><div><span class="eyebrow">{{ confirmMode.toUpperCase() }} MODULE</span><h3>{{ confirmTarget.id }}</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="enableNotice.length || listChanged" class="state-inline warning mt"><b v-if="listChanged">{{ listChanged }}</b><div v-for="(line,index) in enableNotice" :key="index">{{ line }}</div></div><p v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="compact-copy">Enabled dependants may block this action. Select cascade to disable dependent modules first.</p><label v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="checkline warning-check"><input v-model="cascade" type="checkbox"> Disable enabled dependants as part of this job</label><label class="field"><span>Type {{ confirmTarget.id }} to confirm</span><input v-model="confirmText" autocomplete="off"></label><div class="modal-actions"><button class="btn" :class="confirmMode==='enable'?'primary':'danger'" :disabled="confirmText!==confirmTarget.id" @click="confirmAction">{{ confirmMode }} module</button><button class="btn" @click="closeConfirm">Cancel</button></div></section></div>
 </section>
 </template>

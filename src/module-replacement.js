@@ -5,8 +5,8 @@
 const REASON_TEXT = {
   'replacement-disabled': 'The replacement is switched off, so the core module keeps its routes and contracts.',
   'target-missing': 'The core module it replaces is not installed.',
-  'target-not-core': 'The module it points at is not a core module, so it cannot be replaced.',
-  'target-enabled': 'The core module is still enabled. Core never runs both, so disable the core module first.',
+  'target-not-core': 'The module it points at is not a core or server module, so it cannot be replaced.',
+  'target-enabled': 'Both modules are enabled. Core never runs both, so it keeps the module being replaced and does not run the replacement.',
   'competing-replacement': 'Another enabled module also replaces this core module. Only one can be active.',
   'capabilities-undeclared': 'The core module does not list its capabilities, so Core cannot check that the replacement covers them.',
   'capability-missing': 'The replacement does not offer every capability of the core module.',
@@ -29,6 +29,92 @@ const text = (value) => (typeof value === 'string' && value.trim() ? value.trim(
 const list = (value) => (Array.isArray(value) ? value : [])
 const object = (value) => (value && typeof value === 'object' && !Array.isArray(value) ? value : null)
 const ids = (value) => list(value).map(text).filter(Boolean)
+
+// Both modules were enabled (Core 1.17.11): Core keeps the replaced module and switches the replacement off.
+export function conflictLine(row) {
+  const replacement = text(row?.id) || 'the replacement'
+  const replaced = text(row?.replaces) || 'the other module'
+  return `Both were enabled. Core kept ${replaced} and is switching ${replacement} off.`
+}
+
+// A hard dependency that an honoured replacement stands in for (Core 1.17.11).
+export function satisfiedByLine(dependency) {
+  const by = text(dependency?.satisfied_by)
+  if (!by) return ''
+  const id = text(dependency?.id)
+  return id ? `met by ${by} (it replaces ${id})` : `met by ${by}`
+}
+
+// The module ids a row or plan says it will switch off. Anything but an array
+// of non-empty strings shows nothing, so an older Core changes nothing.
+export function willDisableIds(value) {
+  const out = []
+  for (const item of list(value)) {
+    const id = text(item)
+    if (id && !out.includes(id)) out.push(id)
+  }
+  return out
+}
+
+function nameList(names) {
+  if (names.length <= 1) return names.join('')
+  return `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`
+}
+
+// The notice shown before enabling `moduleId` switches other modules off.
+export function replacementConfirmLines(moduleId, willDisable) {
+  const names = willDisableIds(willDisable)
+  const who = text(moduleId) || 'This module'
+  if (!names.length) return []
+  const many = names.length > 1
+  return [
+    `Enabling ${who} will switch off ${nameList(names)}.`,
+    `${many ? 'They stay' : `${names[0]} stays`} installed.`,
+    `${who} takes over ${many ? 'their' : 'its'} routes and contracts.`,
+    `You can switch ${many ? 'them' : names[0]} back on later by disabling ${who} first.`,
+  ]
+}
+
+// What an inspected install plan will switch off: the plan's list, plus which
+// package switches off which module. { ids, lines }
+export function installConfirmSummary(plan) {
+  const ids = willDisableIds(plan?.will_disable)
+  const perAction = []
+  for (const action of list(plan?.actions)) {
+    const names = willDisableIds(action?.will_disable)
+    for (const name of names) if (!ids.includes(name)) ids.push(name)
+    const id = text(action?.id)
+    if (names.length) perAction.push({ id, names })
+  }
+  const lines = []
+  if (ids.length) {
+    lines.push(`This install will switch off ${nameList(ids)}.`)
+    for (const item of perAction) {
+      lines.push(item.id ? `${item.id} switches off ${nameList(item.names)}.` : `A package switches off ${nameList(item.names)}.`)
+    }
+    lines.push(`${ids.length > 1 ? 'They stay' : `${ids[0]} stays`} installed. The new module takes over ${ids.length > 1 ? 'their' : 'its'} routes and contracts.`)
+    lines.push('You can switch the old modules back on later by disabling the new ones first.')
+  }
+  return { ids, lines }
+}
+
+// For a failed request: the fresh list when Core refused because the list the
+// user saw is out of date (HTTP 400, code replacement_confirmation_required),
+// else null so the ordinary error path keeps handling it.
+export function confirmationRequired(error) {
+  if (!error || error.status !== 400) return null
+  const payload = object(error.payload)
+  const code = text(payload?.code) || text(error.code)
+  if (code !== 'replacement_confirmation_required') return null
+  return willDisableIds(payload?.will_disable)
+}
+
+export function replacementListChangedText(fresh) {
+  const names = willDisableIds(fresh)
+  return names.length
+    ? `The list changed while you were reading it. It now switches off ${nameList(names)}. Check it and confirm again.`
+    : 'The list changed while you were reading it. Nothing needs switching off now. You can confirm without a list.'
+}
 
 export function replacesLabel(row) {
   const id = text(row?.replaces)
@@ -82,6 +168,7 @@ export function replacementSummary(row) {
         const own = text(status.message)
         lines.push(`Not active. ${own || known || 'Core has not said why.'}`)
         if (known && own && own !== known) lines.push(known)
+        if (status.conflict === true) lines.push(conflictLine(row))
         const failed = list(object(status.capabilities)?.failed).map(failedCapabilityLine).filter(Boolean)
         if (failed.length) {
           lines.push('Capabilities that do not match:')

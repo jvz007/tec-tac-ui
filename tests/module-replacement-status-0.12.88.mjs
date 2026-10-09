@@ -119,10 +119,11 @@ assert.match(view, /replacedByLabel\(item\)/)
 assert.match(view, /v-for="\(problem,index\) in plan\.problems"[^\n]*replacementProblemText\(problem\)/)
 assert.match(view, /v-for="\(line,index\) in replacementSummary\(selected\)\.lines"[^\n]*\{\{ line \}\}/)
 assert.ok(!/v-html/.test(view.split('Replacement <')[1].slice(0, 400)), 'no v-html in the replacement section')
-assert.match(view, /catch \(e\) \{ error\.value = e\.message \}\n\}/, 'confirmAction shows the error message as is')
+// 0.12.89: only a replacement_confirmation_required refusal is handled apart; every other error shows its message as is.
+assert.match(view, /\} else error\.value = e\.message\n  \}\n\}/, 'confirmAction shows the error message as is')
 const helper = fs.readFileSync(new URL('../src/module-replacement.js', import.meta.url), 'utf8')
 assert.ok(!/^import /m.test(helper), 'module-replacement.js stays import-free')
 assert.ok(!/fetch|localStorage|sessionStorage|Authorization/.test(helper))
 const pkg = JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url), 'utf8'))
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.10,<2.0.0')
+assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.11,<2.0.0') // raised in 0.12.89
 console.log('module-replacement-status-0.12.88: ok')

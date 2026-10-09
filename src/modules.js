@@ -14,9 +14,15 @@ export function inspectModulePackages(files){
   if(metadata) body.append('metadata',metadata)
   return apiFetch('/api/tfd/modules/v2/packages/inspect/',{method:'POST',body})
 }
-export function installModuleArtifact(uploadId,kind='artifact',order=[]){ return apiFetch(`/api/tfd/modules/v2/packages/${encodeURIComponent(uploadId)}/install/`,{method:'POST',body:JSON.stringify({kind,order})}) }
+// disable_replaced is added only when it names modules, so an older Core and a plain install see the old body.
+function withDisableReplaced(body,disableReplaced){
+  const ids=Array.isArray(disableReplaced)?disableReplaced.filter((id)=>typeof id==='string'&&id):[]
+  if(ids.length) body.disable_replaced=ids
+  return body
+}
+export function installModuleArtifact(uploadId,kind='artifact',order=[],disableReplaced=[]){ return apiFetch(`/api/tfd/modules/v2/packages/${encodeURIComponent(uploadId)}/install/`,{method:'POST',body:JSON.stringify(withDisableReplaced({kind,order},disableReplaced))}) }
 export function discardModuleArtifact(uploadId){ return apiFetch(`/api/tfd/modules/v2/packages/${encodeURIComponent(uploadId)}/`,{method:'DELETE'}) }
-export function setModuleEnabled(moduleId,enabled,cascade=false){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/state/`,{method:'POST',body:JSON.stringify({enabled:!!enabled,cascade:!!cascade})}) }
+export function setModuleEnabled(moduleId,enabled,cascade=false,disableReplaced=[]){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/state/`,{method:'POST',body:JSON.stringify(withDisableReplaced({enabled:!!enabled,cascade:!!cascade},disableReplaced))}) }
 export function setModuleVisible(moduleId,visible){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/visibility/`,{method:'POST',body:JSON.stringify({visible:!!visible})}) }
 export function checkModuleRemoval(moduleId){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/remove-check/`) }
 export function removeModule(moduleId){ return apiFetch(`/api/tfd/modules/${encodeURIComponent(moduleId)}/remove/`,{method:'POST',body:JSON.stringify({})}) }

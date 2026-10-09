@@ -43,6 +43,7 @@ assert.equal(stableRelease({ saved: B, online: { source: A, stable_release: null
 
 const view = fs.readFileSync(new URL('../src/views/SystemUpdatesView.vue', import.meta.url), 'utf8')
 assert.match(view, /Last known stable release, not refreshed/)
-assert.match(view, /syncSourceDraft\(component\)\s*\n\s*\/\/ A first-load row[^\n]*\n\s*cachedStable\.value\[component\] = null/)
+// 0.12.89: the saved first-load row survives a Save (see stable-release-cached-0.12.89.mjs).
+assert.ok(!/cachedStable\.value\[component\] = null/.test(view))
 assert.match(view, /v-if="canEditSource && savedIsBranch\(component\.id\)"[^>]*data-test="use-stable-release"/)
 console.log('stable-release-not-refreshed-0.12.87 ok')
