@@ -215,7 +215,7 @@ Modules cannot remove navigation. `register(context)` has `addNavigation` but no
 
 ## tacticalOperation(moduleId, operationId, options)
 
-`context.tacticalOperation(moduleId, operationId, { params, body, signal })` runs one Tactical operation through Core. Core makes the Tactical call on the server, checks that your module owns the operation, and writes the audit row itself (AD-19). Use it instead of calling Tactical routes from the browser. It needs Core 1.17.7 or later and UI 0.12.87 or later. Public modules (`registerPublic`) do not get it.
+`context.tacticalOperation(moduleId, operationId, { params, body, signal })` runs one Tactical operation through Core. Core makes the Tactical call on the server and writes the audit row itself (AD-19). Core checks that the module id in the URL declares the operation, that the user holds the Tactical permission and role scope, and that the route is owned. Core cannot tell which module's browser code made the call. The browser shell therefore binds the helper to the calling module: it refuses another module's id, except the core module yours replaces under AD-20, and it refuses every call after a failed or timed-out `register()`. Use it instead of calling Tactical routes from the browser. It needs Core 1.17.7 or later and UI 0.12.87 or later. Public modules (`registerPublic`) do not get it.
 
 ```js
 const result = await context.tacticalOperation('checks', 'run-checks', { params: { agent_id: id }, body: {} })
@@ -223,6 +223,8 @@ if (result.auditRecorded === false) notify('The action ran. Core could not recor
 ```
 
 - It sends `POST /api/tfd/tactical-operations/<moduleId>/<operationId>/` with `{ params, body }`, through `apiRaw`. You never build a token or an auth header.
+- Pass your own module id. A module that replaces a core module under AD-20 may also pass that core module's id. Advanced Patch Management (`patchmanagement`), for example, may call `context.tacticalOperation('patching', 'list-updates', ...)` as well as its own id. The shell reads the replaced id from `descriptor.replaces`, else from the `replaces` field of your row in `context.context.module_status`. If neither carries it, only your own id works.
+- Any other id is refused before any request, with an error whose `status` is 0 and a message that names your module and the ids it may use.
 - Both ids must match `^[A-Za-z0-9][A-Za-z0-9_-]*$`. The helper never accepts a path, a slash, a dot or a percent sign.
 - `params` is a plain object of string or number values. `body` is a plain object (default `{}`). Anything else is refused before any request, with an error whose `status` is 0.
 - It accepts no headers and no audit field, so it never sends an audit outcome. Core decides what the audit row says.

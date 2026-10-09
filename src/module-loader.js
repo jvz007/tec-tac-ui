@@ -56,6 +56,51 @@ function guardAbandoned(scoped, isAbandoned, moduleId) {
   return Object.freeze(guarded)
 }
 
+// Same id rule as src/tactical-operations.js. Repeated here because this file
+// is loaded by older tests as a data: URL and must not gain relative imports.
+const OPERATION_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]*$/
+
+function refuseOperation(message) {
+  return Object.assign(new Error(message), { status: 0, payload: null, code: null })
+}
+
+// The id a module replaces under AD-20: descriptor.replaces, else the
+// `replaces` of its module_status row. Anything but a non-empty string means
+// the module replaces nothing, so the helper fails closed to its own id.
+function replacedModuleId(descriptor, runtime) {
+  const direct = descriptor?.replaces
+  if (typeof direct === 'string' && direct) return direct
+  const rows = runtime?.state?.context?.module_status
+  if (Array.isArray(rows)) {
+    const row = rows.find((item) => item && item.id === descriptor?.id)
+    if (row && typeof row.replaces === 'string' && row.replaces) return row.replaces
+  }
+  return ''
+}
+
+// Binds context.tacticalOperation to the module that receives it. Core checks
+// the module id in the URL, not which module's code made the call, so the shell
+// enforces it here: a module may use its own id, plus the one core module it
+// replaces. Order: id syntax, then scope, then params and body, then request.
+export function bindTacticalOperation(operation, { moduleId, replaces, isAbandoned } = {}) {
+  return async function tacticalOperation(targetModuleId, operationId, options) {
+    if (typeof isAbandoned === 'function' && isAbandoned()) {
+      throw new Error(`module ${moduleId} was abandoned after a failed or timed-out register(); tacticalOperation() is refused`)
+    }
+    const syntaxOk = typeof targetModuleId === 'string' && OPERATION_ID_PATTERN.test(targetModuleId)
+      && typeof operationId === 'string' && OPERATION_ID_PATTERN.test(operationId)
+    if (syntaxOk) {
+      const replacedId = typeof replaces === 'function' ? replaces() : replaces
+      const replaced = typeof replacedId === 'string' && replacedId ? replacedId : ''
+      if (targetModuleId !== moduleId && targetModuleId !== replaced) {
+        const allowed = replaced ? `"${moduleId}" or "${replaced}"` : `"${moduleId}"`
+        throw refuseOperation(`Module "${moduleId}" cannot run Tactical operations for "${targetModuleId}". It may use only ${allowed}.`)
+      }
+    }
+    return operation(targetModuleId, operationId, options)
+  }
+}
+
 function guardedModuleRouter(router, descriptor, routeOwners, hooks = {}) {
   return new Proxy(router, {
     get(target, prop, receiver) {
@@ -283,9 +328,19 @@ export async function loadUiModules(runtime, modules, options = {}) {
       moduleHeader = guardAbandoned(runtime.header?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null, isAbandoned, descriptor.id)
       // removeNavigation is Core's: the loader calls it when a module fails. A
       // module can add navigation but never remove another module's items.
-      const { removeNavigation: _coreOnly, ...moduleRuntime } = runtime
+      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, ...moduleRuntime } = runtime
+      // Bound to this module: another module's id is refused, and so is any
+      // call after a failed or timed-out register().
+      const boundTacticalOperation = typeof sharedTacticalOperation === 'function'
+        ? { tacticalOperation: bindTacticalOperation(sharedTacticalOperation, {
+          moduleId: descriptor.id,
+          replaces: () => replacedModuleId(descriptor, runtime),
+          isAbandoned,
+        }) }
+        : {}
       await plugin.register({
         ...moduleRuntime,
+        ...boundTacticalOperation,
         context: runtime.state.context,
         router: moduleRouter,
         addNavigation,

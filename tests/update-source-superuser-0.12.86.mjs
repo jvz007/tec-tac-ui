@@ -95,7 +95,7 @@ globalThis.fetch = async (url, options) => { seen.push({ url, options }); return
 }
 
 // (6) Requirement, notes, test wiring.
-assert.equal(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], '>=1.17.7,<2.0.0')
+assert.equal(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], '>=1.17.10,<2.0.0')
 assert.match(read('../package.json'), /stable-release-0\.12\.85\.mjs && node tests\/update-source-superuser-0\.12\.86\.mjs/)
 assert.ok(fs.existsSync(new URL('../docs/releases/RELEASE_NOTES_0.12.86.md', import.meta.url)))
 // (7) Help article.
