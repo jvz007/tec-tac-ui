@@ -44,6 +44,40 @@ function isTextual(contentType) {
   return type.startsWith('text/') || type === 'application/json' || type.endsWith('+json') || type === 'application/xml' || type.endsWith('+xml')
 }
 
+const CONTROL = /[\u0000-\u001f\u007f-\u009f]/
+const MAX_QUERY_KEYS = 16
+const MAX_QUERY_VALUE = 512
+const MAX_FILE_NAME = 255
+const RESERVED_PARTS = ['params', 'body', 'query']
+
+// query: a flat object of at most 16 keys; each value a string or a finite whole number, as text of at most 512 characters.
+function checkQuery(query) {
+  if (!isPlainObject(query)) throw refuse('Tactical operation query must be a plain object.')
+  const entries = Object.entries(query)
+  if (entries.length > MAX_QUERY_KEYS) throw refuse(`Tactical operation query may have at most ${MAX_QUERY_KEYS} names.`)
+  for (const [key, value] of entries) {
+    if (!ID_PATTERN.test(key)) throw refuse(`Tactical operation query name "${key}" must be letters, digits, "_" or "-" only, and start with a letter or digit.`)
+    const ok = typeof value === 'string' || (typeof value === 'number' && Number.isInteger(value))
+    if (!ok) throw refuse(`Tactical operation query "${key}" must be a string or a whole number.`)
+    const rendered = String(value)
+    if (rendered.length > MAX_QUERY_VALUE) throw refuse(`Tactical operation query "${key}" must be at most ${MAX_QUERY_VALUE} characters.`)
+    if (CONTROL.test(rendered)) throw refuse(`Tactical operation query "${key}" must not contain control characters.`)
+  }
+  return query
+}
+
+// file: a File, or a Blob with a non-empty name. Anything else is refused.
+function checkFile(file) {
+  const isBlob = typeof Blob !== 'undefined' && file instanceof Blob
+  const name = isBlob ? file.name : undefined
+  if (!isBlob || typeof name !== 'string' || !name) throw refuse('Tactical operation file must be a File or a Blob with a name.')
+  if (name.length > MAX_FILE_NAME) throw refuse(`Tactical operation file name must be at most ${MAX_FILE_NAME} characters.`)
+  if (CONTROL.test(name)) throw refuse('Tactical operation file name must not contain control characters.')
+  // The text parts use these names; a file named like one would be read as that part.
+  if (RESERVED_PARTS.includes(name)) throw refuse(`Tactical operation file name must not be "${name}", which is the name of a text part. Rename the file.`)
+  return file
+}
+
 function auditValue(raw) {
   return raw === 'recorded' || raw === 'not-recorded' ? raw : ''
 }
@@ -54,19 +88,33 @@ export function createTacticalOperation({ apiRaw } = {}) {
     checkId('operation id', operationId)
     const opts = options === undefined || options === null ? {} : options
     if (!isPlainObject(opts)) throw refuse('Tactical operation options must be an object.')
-    const { params = {}, body = {}, signal } = opts
+    const { params = {}, body = {}, query, file, signal } = opts
     if (!isPlainObject(params)) throw refuse('Tactical operation params must be a plain object.')
     for (const [key, value] of Object.entries(params)) {
       const ok = typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value))
       if (!ok) throw refuse(`Tactical operation param "${key}" must be a string or a number.`)
     }
     if (!isPlainObject(body)) throw refuse('Tactical operation body must be a plain object.')
+    if (query !== undefined) checkQuery(query)
+    if (file !== undefined) checkFile(file)
 
     const path = `/api/tfd/tactical-operations/${encodeURIComponent(moduleId)}/${encodeURIComponent(operationId)}/`
-    const init = {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ params, body }),
+    let init
+    if (file !== undefined) {
+      // multipart/form-data: no Content-Type header, so the browser writes the boundary.
+      // The part is named after the file and carries the same filename.
+      const form = new FormData()
+      form.append('params', JSON.stringify(params))
+      form.append('body', JSON.stringify(body))
+      if (query !== undefined) form.append('query', JSON.stringify(query))
+      form.append(file.name, file, file.name)
+      init = { method: 'POST', body: form }
+    } else {
+      init = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(query === undefined ? { params, body } : { params, body, query }),
+      }
     }
     if (signal) init.signal = signal
     const response = await apiRaw(path, init)

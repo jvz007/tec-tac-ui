@@ -120,6 +120,12 @@ export function secondConfirmationRequiredPayload(error) {
   return { willDisable: willDisableIds(payload?.will_disable), detail: text(payload?.detail), module: text(payload?.module) }
 }
 
+// Core asked for a second confirmation but named nothing to switch off. The page shows this text,
+// closes the dialog and reloads. Core's own detail wins; else a plain sentence.
+export function emptySecondConfirmationText(second) {
+  return text(second?.detail) || 'Core asked for a second confirmation but did not name a module to switch off. Nothing was changed. The list has been reloaded, so check it and try again.'
+}
+
 // The module ids an enabled replacement hands back to (Core 1.17.12).
 export function willEnableIds(value) {
   return willDisableIds(value)

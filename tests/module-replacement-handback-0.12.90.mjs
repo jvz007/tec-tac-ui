@@ -131,7 +131,7 @@ assert.ok(!view.includes('confirm_replacement_switch'), 'the page never names th
 const refusalHandler = view.slice(view.indexOf('function handleEnableRefusal'), view.indexOf('async function setVisibility'))
 assert.match(refusalHandler, /secondConfirmationRequiredPayload\(e\)/)
 assert.match(refusalHandler, /confirmationRequired\(e\)/)
-assert.match(refusalHandler, /confirmStep\.value = second\.willDisable\.length \? 2 : 1/)
+assert.match(refusalHandler, /confirmStep\.value = 2/) // 0.12.91: an empty list no longer goes back to step one (module-replacement-second-empty-0.12.91.mjs)
 assert.match(refusalHandler, /confirmStep\.value = 1/)
 // The disable dialog shows will_enable and sends no confirm flag.
 assert.match(view, /handBackDisableLines\(confirmTarget\.value\.id, confirmTarget\.value\.will_enable\)/)
@@ -145,12 +145,12 @@ assert.match(view, /const canManage = computed\(\(\) => managerAllowed\.value/)
 
 // (8) versions and the Core requirement
 const version = read('../VERSION').trim()
-assert.equal(version, '0.12.90')
+assert.match(version, /^0\.12\.\d+/) // 0.12.91: pinned versions live in the newest test
 assert.equal(JSON.parse(read('../package.json')).version, version)
 const pkg = JSON.parse(read('../tec_tac_package.json'))
 assert.equal(pkg.version, version)
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.12,<2.0.0')
-const notes = read('../RELEASE_NOTES_0.12.90.md')
+assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.13,<2.0.0')
+const notes = read('../docs/releases/RELEASE_NOTES_0.12.90.md')
 assert.match(notes, /Core 1\.17\.12/)
 assert.match(notes, /contract export/)
 
