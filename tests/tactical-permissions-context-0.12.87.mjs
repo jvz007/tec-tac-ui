@@ -44,5 +44,5 @@ assert.match(main, /hasTacticalPermission,\s*\n\s*tacticalOperation,/)
 assert.match(main, /const hasPermission = \(code\) => \(\s*\n\s*state\.context\.user\?\.superuser \|\| permissionSet\.has\(code\)\s*\n\s*\)/)
 
 const pkg = JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url), 'utf8'))
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.11,<2.0.0')
+assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.12,<2.0.0')
 console.log('tactical-permissions-context-0.12.87 ok')

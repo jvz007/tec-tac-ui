@@ -119,6 +119,49 @@ assert.equal(calls.length, 1)
 assert.equal(calls[0].url, 'https://rmm.example.test/api/tfd/tactical-operations/checks/run-checks/')
 await refusedWith(got.checks.tacticalOperation('agents', 'x'))
 
+// (2b) held Medium of the 0.12.89 review (fixed in 0.12.90): hidden characters cannot skip the guard
+const junkChars = ['\t', '\r', '\n', '\u0000', '\u0007', '\u001f', '\u007f', '\u0085', '\u009f', '​', '‍', '‏', ' ', ' ', '﻿']
+const junkPaths = []
+for (const j of junkChars) {
+  junkPaths.push(
+    `/api/tfd/tac${j}tical-operations/agents/list/`,
+    `/api/tfd/tactical${j}-operations/agents/list/`,
+    `/api/tfd/tactical-operations/ag${j}ents/list/`,
+    `/api/tfd/tactical-operations/${j}agents/list/`,
+    `/api/tfd/tactical-operations/agents/${j}list/`,
+    `/api/tfd/${j}tactical-operations/agents/list/`,
+    `/api/tfd/tactical-operations/%61g${j}ents/list/`,
+    `/api/tfd/tactical-operations/checks/..${j}/agents/list/`,
+    `/api/tfd/tactical-operations/checks/%2e${j}%2e/agents/list/`,
+    `/api/tfd/tactic%61l-operations/ag${j}ents/list/?x=1`,
+    `/api/tfd/tactical-operations/ag${j}ents/list/#frag`,
+    `/api/t${j}fd/tactical-operations/agents/list/`,
+  )
+}
+for (const path of junkPaths) refused(() => guardTacticalOperationPath(path, 'checks', ''), /cannot run Tactical operations/)
+// Allowed, with and without junk and a query string.
+for (const j of ['', ...junkChars]) {
+  guardTacticalOperationPath(`/api/tfd/tactical-operations/ch${j}ecks/run/`, 'checks', '')
+  guardTacticalOperationPath(`/api/tfd/tactical-operations/checks/run/?q=1${j}`, 'checks', '')
+  guardTacticalOperationPath(`/api/tfd/tactical-operations/pat${j}ching/list/?q=a%20b`, 'pm', 'patching')
+  guardTacticalOperationPath(`/api/tfd/ag${j}ents/list/`, 'checks', '')
+}
+guardTacticalOperationPath('/agents/', 'checks', '')
+guardTacticalOperationPath('/api/tfd/a%20b/tactical/', 'checks', '')
+guardTacticalOperationPath('/api/tfd/modules/v2/?q=%20x', 'checks', '')
+{
+  const rtJunk = runtimeFixture()
+  await loadUiModules(rtJunk, [good('checks')], { timeoutMs: 200 })
+  for (const name of ['api', 'apiRaw', 'apiBlob', 'apiText']) {
+    rtJunk.seen.length = 0
+    for (const path of junkPaths.slice(0, 60)) await refusedWith(got.checks[name](path), /cannot run Tactical operations/)
+    assert.equal(rtJunk.seen.length, 0, 'refused calls never reach the transport')
+    assert.equal(await got.checks[name]('/agents/'), `${name}:ok`)
+    assert.equal(await got.checks[name](base + 'checks/run/?q=1'), `${name}:ok`)
+    assert.equal(await got.checks[name]('/api/tfd/a%20b/'), `${name}:ok`)
+  }
+}
+
 // (3) the replaced id is a snapshot taken before any register() runs
 const editor = { id: 'editor', entry: entry(`export default { register(c) {
   const rows = c.context.module_status
@@ -155,7 +198,7 @@ const doc = fs.readFileSync(new URL('../docs/module-runtime-api.md', import.meta
 assert.match(doc, /not a sandbox/)
 assert.match(doc, /snapshot/)
 assert.match(doc, /apiRaw.*apiBlob.*apiText|apiBlob.*apiText/s)
-const notes = fs.readFileSync(new URL('../RELEASE_NOTES_0.12.89.md', import.meta.url), 'utf8')
+const notes = fs.readFileSync(new URL('../docs/releases/RELEASE_NOTES_0.12.89.md', import.meta.url), 'utf8')
 assert.match(notes, /not a sandbox/)
 assert.match(notes, /1\.17\.11/)
 console.log('tactical-operation-binding-0.12.89: ok')

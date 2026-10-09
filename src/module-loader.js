@@ -91,10 +91,16 @@ function decodeToFixedPoint(text) {
   return null
 }
 
+// One definition of junk: C0 controls, DEL, C1 controls, zero-width and
+// line-separator characters. Wider than what the URL parser drops (tab, CR, LF),
+// so no hidden character can matter.
+const JUNK_PATTERN = /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028\u2029\ufeff]/g
+function stripJunk(text) { return text.replace(JUNK_PATTERN, '') }
+
 // The module ids named by a tactical-operations path, or null when the path
 // cannot be read safely (callers treat null as a refusal).
 function operationTargets(text) {
-  const decoded = decodeToFixedPoint(text.replace(/[\t\r\n]/g, ''))
+  const decoded = decodeToFixedPoint(stripJunk(text))
   if (decoded === null) return null
   const found = []
   const candidates = [decoded, decoded.split(/[?#]/)[0]]
@@ -118,16 +124,17 @@ export function guardTacticalOperationPath(path, moduleId, replacedId) {
   if (path === undefined || path === null) return
   let text
   try { text = typeof path === 'string' ? path : String(path) } catch { text = '' }
-  const raw = text.toLowerCase()
-  const mentions = raw.includes('tactical') || raw.includes('%') || raw.includes('\\')
+  const cleaned = stripJunk(text)
+  const raw = cleaned.toLowerCase()
+  const mentions = cleaned.length !== text.length || raw.includes('tfd') || raw.includes('tactical') || raw.includes('%') || raw.includes('\\')
   if (!mentions) return
   const own = String(moduleId).toLowerCase()
   const replaced = typeof replacedId === 'string' ? replacedId.toLowerCase() : ''
-  const targets = operationTargets(text)
+  const targets = operationTargets(cleaned)
   if (targets === null) {
     throw refuseOperation(`Module "${moduleId}" used a path the shell cannot read safely. The call is refused.`)
   }
-  for (const id of [...targets, ...(operationTargets(text.split(/[?#]/)[0]) || [])]) {
+  for (const id of [...targets, ...(operationTargets(cleaned.split(/[?#]/)[0]) || [])]) {
     if (id !== own && id !== replaced) {
       const allowed = replacedId ? `"${moduleId}" or "${replacedId}"` : `"${moduleId}"`
       throw refuseOperation(`Module "${moduleId}" cannot run Tactical operations for "${id}". It may use only ${allowed}.`)

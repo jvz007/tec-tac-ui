@@ -3,7 +3,7 @@ import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createLatestRequestGate } from '../admin-session-state'
 import { loadLatestHotfixRows } from '../module-hotfix-loader'
-import { confirmationRequired, installConfirmSummary, isReplacementProblem, replacedByLabel, replacementConfirmLines, replacementListChangedText, replacementProblemText, replacementSummary, replacesLabel, satisfiedByLine, willDisableIds } from '../module-replacement'
+import { confirmationRequired, handBackDisableLines, handBackEnableLines, installConfirmSummary, jobSwitchLines, secondConfirmationRequired, secondConfirmationRequiredPayload, secondConfirmationText, isReplacementProblem, replacedByLabel, replacementConfirmLines, replacementListChangedText, replacementProblemText, replacementSummary, replacesLabel, satisfiedByLine, willDisableIds } from '../module-replacement'
 import {
   addModuleRepository,
   checkModuleRemoval,
@@ -84,7 +84,16 @@ const cascade = ref(false)
 const reinstallTarget = ref(null)
 const installConfirm = ref(null)
 const listChanged = ref('')
-const enableNotice = computed(() => (confirmMode.value === 'enable' && confirmTarget.value ? replacementConfirmLines(confirmTarget.value.id, confirmTarget.value.will_disable) : []))
+const confirmStep = ref(1)
+const switchAck = ref(false)
+const needsSecondConfirmation = computed(() => confirmMode.value === 'enable' && secondConfirmationRequired(confirmTarget.value))
+const secondStepText = computed(() => (confirmTarget.value ? secondConfirmationText(confirmTarget.value.will_disable, confirmTarget.value.id) : { warning: '', checkbox: '', button: '' }))
+const enableNotice = computed(() => {
+  if (confirmMode.value !== 'enable' || !confirmTarget.value) return []
+  const row = confirmTarget.value
+  return needsSecondConfirmation.value ? handBackEnableLines(row.id, row.will_disable) : replacementConfirmLines(confirmTarget.value.id, confirmTarget.value.will_disable)
+})
+const disableNotice = computed(() => (confirmMode.value === 'disable' && confirmTarget.value ? handBackDisableLines(confirmTarget.value.id, confirmTarget.value.will_enable) : []))
 function satisfiedFor(row, id) {
   const dependency = (Array.isArray(row?.dependency_status) ? row.dependency_status : []).find((item) => item && item.id === id)
   return satisfiedByLine(dependency)
@@ -596,11 +605,13 @@ async function runInstall(disableReplaced) {
   }
 }
 
-function ask(item, mode) { confirmTarget.value = item; confirmMode.value = mode; confirmText.value = ''; cascade.value = false; listChanged.value = '' }
-function closeConfirm() { confirmTarget.value = null; confirmMode.value = ''; confirmText.value = ''; cascade.value = false; listChanged.value = '' }
+function ask(item, mode) { confirmTarget.value = item; confirmMode.value = mode; confirmText.value = ''; cascade.value = false; listChanged.value = ''; confirmStep.value = 1; switchAck.value = false }
+function closeConfirm() { confirmTarget.value = null; confirmMode.value = ''; confirmText.value = ''; cascade.value = false; listChanged.value = ''; confirmStep.value = 1; switchAck.value = false }
 async function confirmAction() {
   const item = confirmTarget.value
   if (!item || confirmText.value !== item.id) return
+  // First confirmation done. A replaced module with an enabled replacement needs a second, separate step; nothing is sent yet.
+  if (confirmMode.value === 'enable' && secondConfirmationRequired(item)) { confirmStep.value = 2; switchAck.value = false; return }
   try {
     let job
     if (confirmMode.value === 'enable') job = await setModuleEnabled(item.id, true, false, willDisableIds(item.will_disable))
@@ -613,13 +624,43 @@ async function confirmAction() {
     closeConfirm()
     beginPoll(job)
   } catch (e) {
-    // The list the user saw is out of date: show the fresh one and ask again.
-    const fresh = confirmationRequired(e)
-    if (fresh !== null && confirmMode.value === 'enable') {
-      confirmTarget.value = { ...item, will_disable: fresh }
-      listChanged.value = replacementListChangedText(fresh)
+    if (confirmMode.value === 'enable' && handleEnableRefusal(e, item)) {
+      // Core's fresh list is now shown in the dialog.
     } else error.value = e.message
   }
+}
+// The only caller that sends the second confirmation: the second step button.
+async function confirmSwitchAction() {
+  const item = confirmTarget.value
+  if (!item || confirmMode.value !== 'enable' || confirmStep.value !== 2 || !switchAck.value || !secondConfirmationRequired(item)) return
+  try {
+    const job = await setModuleEnabled(item.id, true, false, willDisableIds(item.will_disable), true)
+    closeConfirm()
+    beginPoll(job)
+  } catch (e) {
+    if (handleEnableRefusal(e, item)) return
+    error.value = e.message
+  }
+}
+// Core answered with a fresh list. Returns true when the dialog was updated.
+function handleEnableRefusal(e, item) {
+  const second = secondConfirmationRequiredPayload(e)
+  if (second) {
+    // The row was stale: Core now says a replacement will be switched off. Show its list and go to step two.
+    confirmTarget.value = { ...item, will_disable: second.willDisable, second_confirmation_required: second.willDisable.length > 0 }
+    listChanged.value = second.detail || replacementListChangedText(second.willDisable)
+    switchAck.value = false
+    confirmStep.value = second.willDisable.length ? 2 : 1
+    return true
+  }
+  // The list the user saw is out of date: show the fresh one, go back to step one and ask again.
+  const fresh = confirmationRequired(e)
+  if (fresh === null) return false
+  confirmTarget.value = { ...item, will_disable: fresh, second_confirmation_required: item.second_confirmation_required === true && fresh.length > 0 }
+  listChanged.value = replacementListChangedText(fresh)
+  confirmStep.value = 1
+  switchAck.value = false
+  return true
 }
 
 
@@ -999,15 +1040,15 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
       <div class="tablewrap"><table><thead><tr><th>Time</th><th>Action</th><th>Module(s)</th><th>Requested by</th><th>Status</th><th>Stage</th></tr></thead><tbody>
         <tr v-for="job in jobHistory" :key="job.id" class="clickrow" :class="{selected:historySelectedId===job.id}" @click="historySelectedId=job.id"><td class="mono">{{historyTime(job.created_at)}}</td><td><b>{{job.action}}</b><span v-if="job.replace" class="sub">replacement / upgrade</span></td><td class="mono">{{historyModules(job)}}</td><td>{{job.requested_by||'unknown / legacy'}}</td><td><span class="pill" :class="{ok:job.status==='succeeded',danger:['failed','dispatch_failed'].includes(job.status),warn:!['succeeded','failed','dispatch_failed'].includes(job.status)}">{{job.status}}</span></td><td class="mono">{{job.stage||'—'}}</td></tr>
       </tbody></table><div class="toolbar"><span class="muted mono">Showing {{ jobHistory.length }} of {{ historyTotal }}</span><span class="spacer"></span><button class="btn sm" :disabled="historyLoading || historyPage <= 1" @click="loadJobHistory(historyPage - 1)">Previous</button><button class="btn sm" :disabled="historyLoading || !historyPages || historyPage >= historyPages" @click="loadJobHistory(historyPage + 1)">Next</button></div></div>
-      <aside v-if="selectedHistory" class="card module-history-detail"><div class="cardhead"><div><span class="eyebrow">LIFECYCLE RECORD</span><h3>{{selectedHistory.action}} · {{historyModules(selectedHistory)}}</h3></div><span class="pill" :class="{ok:selectedHistory.status==='succeeded',danger:['failed','dispatch_failed'].includes(selectedHistory.status),warn:!['succeeded','failed','dispatch_failed'].includes(selectedHistory.status)}">{{selectedHistory.status}}</span></div><dl class="kvlist"><dt>Created</dt><dd class="mono">{{historyTime(selectedHistory.created_at)}}</dd><dt>Started</dt><dd class="mono">{{historyTime(selectedHistory.started_at)}}</dd><dt>Finished</dt><dd class="mono">{{historyTime(selectedHistory.finished_at)}}</dd><dt>Requested by</dt><dd>{{selectedHistory.requested_by||'unknown / legacy'}}</dd><dt>Job ID</dt><dd class="mono">{{selectedHistory.id}}</dd><dt>Package</dt><dd class="mono">{{selectedHistory.package_filename||'—'}}</dd><template v-if="selectedHistory.publisher_trust"><dt>Package trust</dt><dd><span class="pill" :class="selectedHistory.publisher_trust.verified&&selectedHistory.publisher_trust.trusted?'ok':(selectedHistory.publisher_trust.state==='unsigned'?'':'danger')">{{ selectedHistory.publisher_trust.verified&&selectedHistory.publisher_trust.trusted?'verified':(selectedHistory.publisher_trust.state||'unknown') }}</span></dd><dt>Publisher</dt><dd>{{ selectedHistory.publisher_trust.publisher_display_name || selectedHistory.publisher_trust.publisher_id || '—' }}</dd><dt>Key ID</dt><dd class="mono">{{ selectedHistory.publisher_trust.key_id || '—' }}</dd></template></dl><div v-if="selectedHistory.error" class="auth-error">{{selectedHistory.error}}</div><div v-if="selectedHistory.log_tail?.length" class="section-divider">Log tail</div><pre v-if="selectedHistory.log_tail?.length" class="job-log">{{selectedHistory.log_tail.join('\n')}}</pre></aside>
+      <aside v-if="selectedHistory" class="card module-history-detail"><div class="cardhead"><div><span class="eyebrow">LIFECYCLE RECORD</span><h3>{{selectedHistory.action}} · {{historyModules(selectedHistory)}}</h3></div><span class="pill" :class="{ok:selectedHistory.status==='succeeded',danger:['failed','dispatch_failed'].includes(selectedHistory.status),warn:!['succeeded','failed','dispatch_failed'].includes(selectedHistory.status)}">{{selectedHistory.status}}</span></div><dl class="kvlist"><dt>Created</dt><dd class="mono">{{historyTime(selectedHistory.created_at)}}</dd><dt>Started</dt><dd class="mono">{{historyTime(selectedHistory.started_at)}}</dd><dt>Finished</dt><dd class="mono">{{historyTime(selectedHistory.finished_at)}}</dd><dt>Requested by</dt><dd>{{selectedHistory.requested_by||'unknown / legacy'}}</dd><dt>Job ID</dt><dd class="mono">{{selectedHistory.id}}</dd><dt>Package</dt><dd class="mono">{{selectedHistory.package_filename||'—'}}</dd><template v-if="selectedHistory.publisher_trust"><dt>Package trust</dt><dd><span class="pill" :class="selectedHistory.publisher_trust.verified&&selectedHistory.publisher_trust.trusted?'ok':(selectedHistory.publisher_trust.state==='unsigned'?'':'danger')">{{ selectedHistory.publisher_trust.verified&&selectedHistory.publisher_trust.trusted?'verified':(selectedHistory.publisher_trust.state||'unknown') }}</span></dd><dt>Publisher</dt><dd>{{ selectedHistory.publisher_trust.publisher_display_name || selectedHistory.publisher_trust.publisher_id || '—' }}</dd><dt>Key ID</dt><dd class="mono">{{ selectedHistory.publisher_trust.key_id || '—' }}</dd></template></dl><div v-for="(line,index) in jobSwitchLines(selectedHistory)" :key="'hs'+index" class="compact-copy">{{ line }}</div><div v-if="selectedHistory.error" class="auth-error">{{selectedHistory.error}}</div><div v-if="selectedHistory.log_tail?.length" class="section-divider">Log tail</div><pre v-if="selectedHistory.log_tail?.length" class="job-log">{{selectedHistory.log_tail.join('\n')}}</pre></aside>
     </div>
   </template>
 
-  <div v-if="activeJob" class="job-panel card mt"><div class="cardhead"><div><span class="eyebrow">MODULE JOB</span><h3>{{ activeJob.action }} / {{ activeJob.plugin_id }}</h3></div><span class="pill" :class="{ok:activeJob.status==='succeeded',danger:['failed','dispatch_failed'].includes(activeJob.status),warn:!['succeeded','failed','dispatch_failed'].includes(activeJob.status)}">{{ activeJob.status }}</span></div><div v-if="jobPollError" class="state-inline warning"><b>Job status refresh failed.</b> {{ jobPollError }} Retrying automatically.</div><div v-if="activeJob.error" class="auth-error">{{ activeJob.error }}</div><pre v-if="activeJob.log_tail?.length" class="job-log">{{ activeJob.log_tail.join('\n') }}</pre><div v-if="activeJob.status==='succeeded'" class="row"><button class="btn primary" @click="reloadTecTac">Reload Tec-Tac</button></div></div>
+  <div v-if="activeJob" class="job-panel card mt"><div class="cardhead"><div><span class="eyebrow">MODULE JOB</span><h3>{{ activeJob.action }} / {{ activeJob.plugin_id }}</h3></div><span class="pill" :class="{ok:activeJob.status==='succeeded',danger:['failed','dispatch_failed'].includes(activeJob.status),warn:!['succeeded','failed','dispatch_failed'].includes(activeJob.status)}">{{ activeJob.status }}</span></div><div v-if="jobPollError" class="state-inline warning"><b>Job status refresh failed.</b> {{ jobPollError }} Retrying automatically.</div><div v-for="(line,index) in jobSwitchLines(activeJob)" :key="'sw'+index" class="compact-copy">{{ line }}</div><div v-if="activeJob.error" class="auth-error">{{ activeJob.error }}</div><pre v-if="activeJob.log_tail?.length" class="job-log">{{ activeJob.log_tail.join('\n') }}</pre><div v-if="activeJob.status==='succeeded'" class="row"><button class="btn primary" @click="reloadTecTac">Reload Tec-Tac</button></div></div>
 
   <div v-if="reinstallTarget" class="modal-backdrop" @click.self="closeReinstallConfirm"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="module-reinstall-title"><div class="cardhead"><div><span class="eyebrow">REINSTALL MODULE</span><h3 id="module-reinstall-title">{{ reinstallTarget.name || reinstallTarget.id }}</h3></div><span class="pill warn">SAME VERSION</span></div><p class="compact-copy">Installed version and repository version are both <span class="mono">{{ reinstallTarget.latest_version }}</span>. Continuing will download and inspect the same version for reinstall. The replacement still requires confirmation from the package inspection step.</p><div class="state-inline warning mt"><b>Existing module files will be replaced when the install job runs.</b> Configuration and data remain subject to the module's normal upgrade/reinstall lifecycle.</div><div class="modal-actions"><button class="btn primary" :disabled="inspecting || jobRunning" @click="confirmReinstall">Continue to reinstall</button><button class="btn" @click="closeReinstallConfirm">Cancel</button></div></section></div>
 
   <div v-if="installConfirm" class="modal-backdrop" @click.self="closeInstallConfirm"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="module-install-confirm-title"><div class="cardhead"><div><span class="eyebrow">INSTALL MODULES</span><h3 id="module-install-confirm-title">Switch off replaced modules?</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="installConfirm.changed" class="state-inline warning mt"><b>{{ installConfirm.changed }}</b></div><div v-if="installConfirm.lines.length" class="state-inline warning mt"><div v-for="(line,index) in installConfirm.lines" :key="index">{{ line }}</div></div><div class="modal-actions"><button class="btn primary" :disabled="jobRunning" @click="confirmInstall">{{ installConfirm.ids.length ? 'Install and switch off' : 'Install' }}</button><button class="btn" @click="closeInstallConfirm">Cancel</button></div></section></div>
-  <div v-if="confirmTarget" class="modal-backdrop" @click.self="closeConfirm"><section class="modal-panel"><div class="cardhead"><div><span class="eyebrow">{{ confirmMode.toUpperCase() }} MODULE</span><h3>{{ confirmTarget.id }}</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="enableNotice.length || listChanged" class="state-inline warning mt"><b v-if="listChanged">{{ listChanged }}</b><div v-for="(line,index) in enableNotice" :key="index">{{ line }}</div></div><p v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="compact-copy">Enabled dependants may block this action. Select cascade to disable dependent modules first.</p><label v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="checkline warning-check"><input v-model="cascade" type="checkbox"> Disable enabled dependants as part of this job</label><label class="field"><span>Type {{ confirmTarget.id }} to confirm</span><input v-model="confirmText" autocomplete="off"></label><div class="modal-actions"><button class="btn" :class="confirmMode==='enable'?'primary':'danger'" :disabled="confirmText!==confirmTarget.id" @click="confirmAction">{{ confirmMode }} module</button><button class="btn" @click="closeConfirm">Cancel</button></div></section></div>
+  <div v-if="confirmTarget" class="modal-backdrop" @click.self="closeConfirm"><section class="modal-panel"><div class="cardhead"><div><span class="eyebrow">{{ confirmMode.toUpperCase() }} MODULE</span><h3>{{ confirmTarget.id }}</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="enableNotice.length || listChanged" class="state-inline warning mt"><b v-if="listChanged">{{ listChanged }}</b><div v-for="(line,index) in enableNotice" :key="index">{{ line }}</div></div><div v-if="disableNotice.length" class="state-inline warning mt"><div v-for="(line,index) in disableNotice" :key="index">{{ line }}</div></div><p v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="compact-copy">Enabled dependants may block this action. Select cascade to disable dependent modules first.</p><label v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="checkline warning-check"><input v-model="cascade" type="checkbox"> Disable enabled dependants as part of this job</label><template v-if="confirmStep===2&&needsSecondConfirmation"><div class="auth-error mt"><b>Second confirmation.</b> {{ secondStepText.warning }}</div><label class="checkline warning-check"><input v-model="switchAck" type="checkbox"> {{ secondStepText.checkbox }}</label><div class="modal-actions"><button class="btn danger" :disabled="!switchAck" @click="confirmSwitchAction">{{ secondStepText.button }}</button><button class="btn" @click="closeConfirm">Cancel</button></div></template><template v-else><label class="field"><span>Type {{ confirmTarget.id }} to confirm</span><input v-model="confirmText" autocomplete="off"></label><div class="modal-actions"><button class="btn" :class="confirmMode==='enable'?'primary':'danger'" :disabled="confirmText!==confirmTarget.id" @click="confirmAction">{{ confirmMode }} module</button><button class="btn" @click="closeConfirm">Cancel</button></div></template></section></div>
 </section>
 </template>

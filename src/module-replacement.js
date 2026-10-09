@@ -75,6 +75,74 @@ export function replacementConfirmLines(moduleId, willDisable) {
   ]
 }
 
+// True only when Core says enabling this row switches off an enabled replacement
+// (Core 1.17.12) and names it. Anything else keeps the single confirmation.
+export function secondConfirmationRequired(row) {
+  return row?.second_confirmation_required === true && willDisableIds(row?.will_disable).length > 0
+}
+
+// The notice for enabling a replaced module while its replacement is enabled.
+export function handBackEnableLines(moduleId, willDisable) {
+  const names = willDisableIds(willDisable)
+  const who = text(moduleId) || 'This module'
+  if (!names.length) return []
+  const many = names.length > 1
+  const them = many ? 'them' : names[0]
+  return [
+    `Enabling ${who} will switch off ${nameList(names)}, ${many ? 'the replacements, which are' : 'the replacement, which is'} enabled now.`,
+    `${many ? 'They stay' : `${names[0]} stays`} installed.`,
+    `${who} takes its routes and contracts back.`,
+    `Disabling ${them} later switches ${who} back on. To use ${them} again, disable ${who} first, then enable ${them}.`,
+  ]
+}
+
+// The text beside the second confirmation checkbox and button.
+export function secondConfirmationText(willDisable, moduleId) {
+  const names = willDisableIds(willDisable)
+  const who = text(moduleId) || 'this module'
+  if (!names.length) return { warning: '', checkbox: '', button: '' }
+  const list = nameList(names)
+  const many = names.length > 1
+  return {
+    warning: `${list} ${many ? 'are' : 'is'} enabled and in use. Continuing switches ${many ? 'them' : 'it'} off and hands the routes and contracts back to ${who}.`,
+    checkbox: `I understand ${list} will be switched off`,
+    button: `Switch ${list} off and enable ${who}`,
+  }
+}
+
+// HTTP 400 replacement_second_confirmation_required: { willDisable, detail, module },
+// else null so the ordinary error path keeps handling it.
+export function secondConfirmationRequiredPayload(error) {
+  if (!error || error.status !== 400) return null
+  const payload = object(error.payload)
+  const code = text(payload?.code) || text(error.code)
+  if (code !== 'replacement_second_confirmation_required') return null
+  return { willDisable: willDisableIds(payload?.will_disable), detail: text(payload?.detail), module: text(payload?.module) }
+}
+
+// The module ids an enabled replacement hands back to (Core 1.17.12).
+export function willEnableIds(value) {
+  return willDisableIds(value)
+}
+
+// The notice for disabling a replacement. This direction has no second confirmation.
+export function handBackDisableLines(moduleId, willEnable) {
+  const names = willEnableIds(willEnable)
+  const who = text(moduleId) || 'This module'
+  if (!names.length) return []
+  return [`Disabling ${who} switches ${nameList(names)} back on in the same job.`]
+}
+
+// "Switched off: A" style lines for a job row. Missing or non-array fields show nothing.
+export function jobSwitchLines(job) {
+  const out = []
+  const add = (label, value) => { const names = willDisableIds(value); if (names.length) out.push(`${label}: ${names.join(', ')}`) }
+  add('Switched off', job?.disabled_modules)
+  add('Switched on', job?.enabled_modules)
+  add('Conflict resolved', job?.reconciled_modules)
+  return out
+}
+
 // What an inspected install plan will switch off: the plan's list, plus which
 // package switches off which module. { ids, lines }
 export function installConfirmSummary(plan) {
@@ -191,6 +259,9 @@ export function replacementSummary(row) {
       }
     }
   }
+
+  const willEnable = willEnableIds(row?.will_enable)
+  if (willEnable.length && status?.honoured === true) lines.push(`Disabling this module switches ${nameList(willEnable)} back on in the same job.`)
 
   if (replacedBy) {
     lines.push(`Replaced by ${replacedBy}. While it is active, it serves this module's routes and contracts. This module stays disabled; Core never runs both.`)
