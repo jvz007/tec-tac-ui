@@ -73,8 +73,9 @@ assert.equal(stableRelease({ saved: branchDev, online: onlineBranch, cached: cac
 const { stable_release: _drop, ...old } = onlineBranch
 assert.equal(stableRelease({ saved: branchDev, online: old, cached: null, sourcesSupported: true }), null)
 assert.equal(stableRelease({ saved: branchDev, online: null, cached: { source: branchDev, latest_release: null }, sourcesSupported: true }), null)
-assert.equal(stableRelease({ saved: branchDev, online: null, cached: { ...cachedRow, source: { type: 'branch', ref: 'main' } }, sourcesSupported: true }), null)
-assert.equal(stableRelease({ saved: branchDev, online: null, cached: { ...cachedRow, source: { type: 'release', ref: null } }, sourcesSupported: true }), null)
+// 0.12.87: a row cached for another source is only the last known release.
+assert.equal(stableRelease({ saved: branchDev, online: null, cached: { ...cachedRow, source: { type: 'branch', ref: 'main' } }, sourcesSupported: true }).notRefreshed, true)
+assert.equal(stableRelease({ saved: branchDev, online: null, cached: { ...cachedRow, source: { type: 'release', ref: null } }, sourcesSupported: true }).notRefreshed, true)
 assert.equal(stableRelease({}), null)
 assert.equal(stableRelease(), null)
 
@@ -126,9 +127,10 @@ assert.match(script, /stageSourceCheck\(/)
   const d = script.indexOf('// The secondary Stable release line')
   assert.ok(a > 0 && b > a && c > b && d > c)
   const body = script.slice(a, d)
-  const make = new Function('deps', `const { sourceSaving, sourceError, saveUpdateSource, status, syncSourceDraft, onlineRequestGate, checkOnline, canEditSource, savedIsBranch, draftState, sourceDraft } = deps\n${body}\nreturn { switchToRelease, applySource, saveSource }`)
+  const make = new Function('deps', `const { sourceSaving, sourceError, cachedStable, saveUpdateSource, status, syncSourceDraft, onlineRequestGate, checkOnline, canEditSource, savedIsBranch, draftState, sourceDraft } = deps\n${body}\nreturn { switchToRelease, applySource, saveSource }`)
   const calls = []
   const deps = (over = {}) => ({
+    cachedStable: { value: { framework: null, ui: { source: branchDev } } },
     sourceSaving: { value: { framework: false, ui: false } },
     sourceError: { value: { framework: '', ui: '' } },
     saveUpdateSource: async (component, type, ref) => { calls.push(['save', component, type, ref]); return { update_sources: { [component]: { type, ref } } } },
@@ -146,6 +148,7 @@ assert.match(script, /stageSourceCheck\(/)
   await make(d1).switchToRelease('ui')
   assert.deepEqual(calls, [['save', 'ui', 'release', null], ['sync', 'ui'], ['invalidate', 'ui'], ['check', 'ui', { force: true }]])
   assert.deepEqual(d1.status.value.update_sources.ui, { type: 'release', ref: null })
+  assert.equal(d1.cachedStable.value.ui, null, 'a first-load row for the old source is dropped after a save (0.12.87)')
   assert.equal(d1.status.value.update_sources.framework, branchDev, 'the other component is untouched')
   assert.equal(d1.sourceSaving.value.ui, false)
   // not allowed: no edit permission, not a branch, or already saving

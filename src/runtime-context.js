@@ -12,6 +12,17 @@ export function normalizeRegisterTimeoutSeconds(value) {
     : DEFAULT_MODULE_REGISTER_TIMEOUT_SECONDS
 }
 
+// Core's tactical_permissions: a plain object of can_* keys with strict boolean
+// values. Anything else is dropped, never coerced.
+export function normalizeTacticalPermissions(value) {
+  const out = {}
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return out
+  for (const [key, flag] of Object.entries(value)) {
+    if (/^can_[a-z0-9_]+$/.test(key) && typeof flag === 'boolean') out[key] = flag
+  }
+  return out
+}
+
 export function emptyRuntimeContext(user = {}) {
   return {
     user: user || {},
@@ -25,6 +36,7 @@ export function emptyRuntimeContext(user = {}) {
     timeZone: null,
     dateTimeFormat: null,
     tactical_ui: null,
+    tactical_permissions: {},
     tactical_web_ui: { installed: false, url: null },
     preferences_initialized: false,
     preferences_updated_at: null,
@@ -49,6 +61,7 @@ export function normalizeBackendRuntimeContext(richContext, browserUser = {}) {
     timeZone: typeof source.timeZone === 'string' && source.timeZone ? source.timeZone : null,
     dateTimeFormat: typeof source.dateTimeFormat === 'string' && source.dateTimeFormat ? source.dateTimeFormat : null,
     tactical_ui: source.tactical_ui && typeof source.tactical_ui === 'object' ? source.tactical_ui : null,
+    tactical_permissions: normalizeTacticalPermissions(source.tactical_permissions),
     tactical_web_ui: source.tactical_web_ui && typeof source.tactical_web_ui === 'object'
       ? { installed: source.tactical_web_ui.installed === true, url: typeof source.tactical_web_ui.url === 'string' ? source.tactical_web_ui.url : null }
       : { installed: false, url: null },

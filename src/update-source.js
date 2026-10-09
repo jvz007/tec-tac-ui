@@ -163,7 +163,9 @@ export function discoveredVersion({ saved, online, sourcesSupported } = {}) {
 // a release source, an older Core without the key, or a cached row for another
 // branch. An online result for another branch is ignored (after a Save from
 // branch A to B, A's release_error and stale flag must not show under B); the
-// cached row for the saved branch is used instead. { none: true } means Core knows no release yet. A release failure is
+// cached row for the saved branch is used instead. When no result for the saved
+// branch has the key, the last known release from any result is returned with
+// notRefreshed: true (0.12.87). { none: true } means Core knows no release yet. A release failure is
 // release_error only, so it never touches branch_error or the headline.
 export function stableRelease({ saved, online, cached, sourcesSupported } = {}) {
   if (!sourcesSupported) return null
@@ -174,8 +176,17 @@ export function stableRelease({ saved, online, cached, sourcesSupported } = {}) 
   const sameBranch = (value) => value?.source?.type === 'branch' && value?.source?.ref === source.ref
   if (hasKey(online) && sameBranch(online)) from = online
   else if (hasKey(cached) && sameBranch(cached)) from = cached
-  if (!from) return null
-  const error = typeof from.release_error === 'string' ? from.release_error : ''
+  // The release is not branch-specific. When no result for the saved branch
+  // carries it (the forced check after a Save failed), show the last known one,
+  // marked not refreshed. Never copy the other result's error or stale flag.
+  let notRefreshed = false
+  if (!from) {
+    const usable = (value) => hasKey(value) && value.stable_release && typeof value.stable_release === 'object' && value.stable_release.tag
+    from = usable(online) ? online : (usable(cached) ? cached : null)
+    if (!from) return null
+    notRefreshed = true
+  }
+  const error = notRefreshed ? '' : (typeof from.release_error === 'string' ? from.release_error : '')
   const row = from.stable_release
   if (!row || typeof row !== 'object' || !row.tag) return { none: true, error }
   return {
@@ -184,8 +195,9 @@ export function stableRelease({ saved, online, cached, sourcesSupported } = {}) 
     trust: row.release_trust || null,
     acceptance: row.release_trust?.acceptance_policy || null,
     operation: row.operation || '',
-    stale: from.cache?.stale === true,
+    stale: notRefreshed ? false : from.cache?.stale === true,
     error,
+    notRefreshed,
   }
 }
 

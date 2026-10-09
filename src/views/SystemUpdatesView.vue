@@ -397,6 +397,8 @@ async function applySource(component, type, ref) {
     const result = await saveUpdateSource(component, type, ref)
     status.value = { ...status.value, update_sources: { ...status.value.update_sources, [component]: result.update_sources[component] } }
     syncSourceDraft(component)
+    // A first-load row for the old branch is not current for the new source.
+    cachedStable.value[component] = null
     // Anything still in flight was for the old source.
     onlineRequestGate.invalidate(component)
     await checkOnline(component, { force: true })
@@ -765,6 +767,7 @@ onBeforeUnmount(() => {
                   <span class="mono">{{ stable(component.id).tag }}</span>
                   <span v-if="stable(component.id).date" class="sub">{{ formatCheckedAt(stable(component.id).date) }}</span>
                   <span v-if="stable(component.id).stale" class="pill muted ml">STALE</span>
+                  <span v-if="stable(component.id).notRefreshed" class="sub muted" data-test="stable-release-not-refreshed">Last known stable release, not refreshed</span>
                   <ReleaseTrustBadge
                     :trust="stable(component.id).trust"
                     :label="systemTrustLabel(stable(component.id).trust)"

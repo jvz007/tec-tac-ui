@@ -5,6 +5,7 @@ import { apiBlob, apiFetch, apiRaw, apiText, beginTacticalSso, loadStaticModuleM
 import { router } from './router'
 import { state, loadContext, recordModuleRuntimeError } from './state'
 import { loadPublicUiModules, loadUiModules } from './module-loader'
+import { createTacticalOperation } from './tactical-operations'
 import { createContextActionRegistry } from './context-actions'
 import { createContextInteractionRegistry } from './context-interactions'
 import { createResourceViewRegistry } from './resource-views'
@@ -61,6 +62,12 @@ async function bootstrap() {
   const hasPermission = (code) => (
     state.context.user?.superuser || permissionSet.has(code)
   )
+  // Display hint only: Tactical decides every call (AD-12). True only for a flag
+  // that is exactly true in the map Core sent.
+  const hasTacticalPermission = (flag) => (
+    typeof flag === 'string' && state.context?.tactical_permissions?.[flag] === true
+  )
+  const tacticalOperation = createTacticalOperation({ apiRaw })
   const contextActions = createContextActionRegistry({ hasPermission })
   const contextInteractions = createContextInteractionRegistry({ hasPermission })
   const resourceViews = createResourceViewRegistry({ hasPermission })
@@ -135,6 +142,8 @@ async function bootstrap() {
         apiBlob,
         apiText,
         hasPermission,
+        hasTacticalPermission,
+        tacticalOperation,
         contextActions,
         contextInteractions,
         resourceViews,

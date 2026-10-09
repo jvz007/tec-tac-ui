@@ -213,6 +213,41 @@ Modules cannot remove navigation. `register(context)` has `addNavigation` but no
 - It returns `false` for everyone else, and when no backend context exists.
 - This is a display rule only. Use it to hide a button. The backend still refuses the request.
 
+## tacticalOperation(moduleId, operationId, options)
+
+`context.tacticalOperation(moduleId, operationId, { params, body, signal })` runs one Tactical operation through Core. Core makes the Tactical call on the server, checks that your module owns the operation, and writes the audit row itself (AD-19). Use it instead of calling Tactical routes from the browser. It needs Core 1.17.7 or later and UI 0.12.87 or later. Public modules (`registerPublic`) do not get it.
+
+```js
+const result = await context.tacticalOperation('checks', 'run-checks', { params: { agent_id: id }, body: {} })
+if (result.auditRecorded === false) notify('The action ran. Core could not record it in the audit log.')
+```
+
+- It sends `POST /api/tfd/tactical-operations/<moduleId>/<operationId>/` with `{ params, body }`, through `apiRaw`. You never build a token or an auth header.
+- Both ids must match `^[A-Za-z0-9][A-Za-z0-9_-]*$`. The helper never accepts a path, a slash, a dot or a percent sign.
+- `params` is a plain object of string or number values. `body` is a plain object (default `{}`). Anything else is refused before any request, with an error whose `status` is 0.
+- It accepts no headers and no audit field, so it never sends an audit outcome. Core decides what the audit row says.
+- It shows no notice itself. Your page decides what to tell the user.
+
+On success it returns `{ ok, status, data, blob, contentType, contentDisposition, filename, audit, auditRecorded }`.
+
+- `data` holds parsed JSON, or text for a text answer. It is `null` for 204 and for a file answer.
+- A file answer (an `attachment` disposition, or a type that is not text or JSON) comes back as `blob`, with its `contentType` and `contentDisposition` kept. `filename` is read from `filename*` first, then `filename`.
+- `audit` is the `X-Tec-Tac-Audit` header: `recorded`, `not-recorded`, or `''` for a missing or unknown value. `auditRecorded` is `true`, `false` or `null` to match.
+
+On a failed response the `apiRaw` error passes through unchanged: `status`, `payload` and `code`. Core refusal codes such as `tactical_permission_denied` and `object_not_found`, and a 429, stay readable. The error also carries the response `headers` as a non-enumerable property, so a page can read `X-Tec-Tac-Audit` on a 5xx. Core writes "outcome unknown" there.
+
+If the API is served from a different origin than the page, the proxy must expose `X-Tec-Tac-Audit` and `Content-Disposition` (`Access-Control-Expose-Headers`). Otherwise the browser hides them and `audit` stays `''`. Same-origin installs are unaffected.
+
+## hasTacticalPermission(flag)
+
+`context.hasTacticalPermission(flag)` answers whether Tactical's own role lets the signed-in user do something, for example `can_list_agents`.
+
+- Core computes the flags and sends them as `tactical_permissions` in `GET /api/tfd/ui/context/` (Core 1.17.7). The runtime context carries them as `context.context.tactical_permissions`: a plain object of `can_*` keys with `true` or `false` values. A value that is not a boolean, or a key that does not start with `can_`, is dropped.
+- It returns `true` only when the flag is exactly `true` in that map. It returns `false` for an unknown flag, a value that is not a string, an empty map, an older Core and a non-backend context.
+- There is no superuser shortcut here. Core already sends every flag as `true` for a superuser, and none for an installer user or a user with no role.
+- This is a display rule only. Use it to hide a button (AD-12). Tactical still decides every call.
+- It is separate from `hasPermission(code)`, which answers Tec-Tac permission codes and is unchanged.
+
 ## codeEditor.languages
 
 `context.codeEditor.languages` is the frozen list of language ids that `create` and `createModel` accept:

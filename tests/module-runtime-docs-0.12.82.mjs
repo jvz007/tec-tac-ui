@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 const read = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8')
 const doc = read('../docs/module-runtime-api.md')
 
-for (const heading of ['## Module router', '## hasPermission(code)', '## codeEditor.languages']) {
+for (const heading of ['## Module router', '## hasPermission(code)', '## codeEditor.languages', '## tacticalOperation(moduleId, operationId, options)', '## hasTacticalPermission(flag)']) {
   assert.ok(doc.split('\n').includes(heading), `missing heading ${heading}`)
 }
 

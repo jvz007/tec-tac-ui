@@ -462,7 +462,11 @@ async function authenticatedRawRequest(path, options = {}) {
         { code: sessionCode },
       )
     }
-    throw failure(messageFromPayload(payload, `API request failed: ${response.status} ${response.statusText}`), response.status, payload)
+    const failed = failure(messageFromPayload(payload, `API request failed: ${response.status} ${response.statusText}`), response.status, payload)
+    // Additive and non-enumerable, so error-shape consumers are unaffected. A
+    // page reads X-Tec-Tac-Audit from it on a 5xx (outcome unknown).
+    try { Object.defineProperty(failed, 'headers', { value: response.headers, enumerable: false, configurable: true, writable: true }) } catch {}
+    throw failed
   }
 
   return response

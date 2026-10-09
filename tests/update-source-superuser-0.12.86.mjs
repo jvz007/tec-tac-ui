@@ -65,8 +65,9 @@ globalThis.fetch = async (url, options) => { seen.push({ url, options }); return
   const a = script.indexOf('async function saveSource')
   const d = script.indexOf('// The secondary Stable release line')
   assert.ok(a > 0 && d > a)
-  const make = new Function('deps', `const { sourceSaving, sourceError, saveUpdateSource, status, syncSourceDraft, onlineRequestGate, checkOnline, canEditSource, savedIsBranch, draftState, sourceDraft } = deps\n${script.slice(a, d)}\nreturn { switchToRelease }`)
+  const make = new Function('deps', `const { sourceSaving, sourceError, cachedStable, saveUpdateSource, status, syncSourceDraft, onlineRequestGate, checkOnline, canEditSource, savedIsBranch, draftState, sourceDraft } = deps\n${script.slice(a, d)}\nreturn { switchToRelease }`)
   const deps = (allowed) => ({
+    cachedStable: { value: { framework: null, ui: null } },
     sourceSaving: { value: { framework: false, ui: false } },
     sourceError: { value: { framework: '', ui: '' } },
     saveUpdateSource,
@@ -94,9 +95,9 @@ globalThis.fetch = async (url, options) => { seen.push({ url, options }); return
 }
 
 // (6) Requirement, notes, test wiring.
-assert.equal(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], '>=1.17.5,<2.0.0')
+assert.equal(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], '>=1.17.7,<2.0.0')
 assert.match(read('../package.json'), /stable-release-0\.12\.85\.mjs && node tests\/update-source-superuser-0\.12\.86\.mjs/)
-assert.ok(fs.existsSync(new URL('../RELEASE_NOTES_0.12.86.md', import.meta.url)))
+assert.ok(fs.existsSync(new URL('../docs/releases/RELEASE_NOTES_0.12.86.md', import.meta.url)))
 // (7) Help article.
 assert.match(read('../src/help/articles/system-updates.md'), /Only a superuser can change it/)
 console.log('update-source-superuser-0.12.86 ok')
