@@ -14,7 +14,7 @@ import {
 } from '../api'
 import ReleaseTrustBadge from '../components/ReleaseTrustBadge.vue'
 import { copyTextWithFeedback } from '../copy-feedback'
-import { canEditRuntimeSettings } from '../runtime-settings'
+import { canChangeUpdateSource } from '../runtime-settings'
 import {
   branchComparison,
   discoveredVersion,
@@ -52,7 +52,7 @@ const sourceDraft = ref({ framework: { type: 'release', ref: '' }, ui: { type: '
 const sourceSaving = ref({ framework: false, ui: false })
 const sourceError = ref({ framework: '', ui: '' })
 const branchListFailed = ref({ framework: false, ui: false })
-const canEditSource = computed(() => canEditRuntimeSettings(appState?.context))
+const canEditSource = computed(() => canChangeUpdateSource(appState?.context))
 const sourcesSupported = computed(() => supportsUpdateSource(status.value))
 const savedSources = computed(() => normalizeUpdateSources(status.value))
 const stage = ref(null)
@@ -408,7 +408,7 @@ async function applySource(component, type, ref) {
 }
 
 // One click from a branch back to the release source. It stages and installs
-// nothing. Core still checks core.runtime_settings.manage.
+// nothing. Core checks that you are a superuser.
 async function switchToRelease(component) {
   if (!canEditSource.value || !savedIsBranch(component) || sourceSaving.value[component]) return
   await applySource(component, 'release', null)
@@ -841,7 +841,7 @@ onBeforeUnmount(() => {
             </label>
             <button class="btn primary" type="submit" :disabled="sourceSaving[component.id] || !draftState(component.id).valid || !draftState(component.id).dirty">{{ sourceSaving[component.id] ? 'Saving…' : 'Save' }}</button>
           </form>
-          <p v-else class="compact-copy muted">Only a superuser, or an administrator with the core.privileged_operations or core.runtime_settings.manage permission, can change the update source.</p>
+          <p v-else class="compact-copy muted">Only a superuser can change the update source.</p>
           <p v-if="canEditSource && branchListFailed[component.id] && sourceDraft[component.id].type === 'branch'" class="compact-copy muted">The branch list is not available. Type the branch name.</p>
           <p v-if="savedBranchMissing(component.id)" class="compact-copy update-source-warn">The saved branch {{ savedBranchRef(component.id) }} is not in the repository's branch list. It may have been deleted.</p>
           <p v-if="canEditSource && draftState(component.id).message" class="compact-copy" :class="draftState(component.id).valid ? 'muted' : 'update-source-warn'">{{ draftState(component.id).message }}</p>

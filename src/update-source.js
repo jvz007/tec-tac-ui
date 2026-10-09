@@ -161,7 +161,9 @@ export function discoveredVersion({ saved, online, sourcesSupported } = {}) {
 // reads online.stable_release when the online result carries the key, else the
 // cached release_cache row for the same saved branch. null means draw nothing:
 // a release source, an older Core without the key, or a cached row for another
-// branch. { none: true } means Core knows no release yet. A release failure is
+// branch. An online result for another branch is ignored (after a Save from
+// branch A to B, A's release_error and stale flag must not show under B); the
+// cached row for the saved branch is used instead. { none: true } means Core knows no release yet. A release failure is
 // release_error only, so it never touches branch_error or the headline.
 export function stableRelease({ saved, online, cached, sourcesSupported } = {}) {
   if (!sourcesSupported) return null
@@ -169,8 +171,9 @@ export function stableRelease({ saved, online, cached, sourcesSupported } = {}) 
   if (source.type !== 'branch') return null
   const hasKey = (value) => Boolean(value && typeof value === 'object' && Object.prototype.hasOwnProperty.call(value, 'stable_release'))
   let from = null
-  if (hasKey(online)) from = online
-  else if (hasKey(cached) && cached.source?.type === 'branch' && cached.source?.ref === source.ref) from = cached
+  const sameBranch = (value) => value?.source?.type === 'branch' && value?.source?.ref === source.ref
+  if (hasKey(online) && sameBranch(online)) from = online
+  else if (hasKey(cached) && sameBranch(cached)) from = cached
   if (!from) return null
   const error = typeof from.release_error === 'string' ? from.release_error : ''
   const row = from.stable_release

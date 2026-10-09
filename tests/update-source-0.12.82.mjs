@@ -146,8 +146,9 @@ assert.equal(canEditRuntimeSettings({ user: {}, permissions: ['core.view'] }), f
 const view = read('../src/views/SystemUpdatesView.vue')
 const template = view.slice(view.indexOf('<template>'))
 const script = view.slice(0, view.indexOf('</script>'))
-assert.match(script, /import \{ canEditRuntimeSettings \} from '\.\.\/runtime-settings'/)
-assert.match(script, /canEditRuntimeSettings\(appState\?\.context\)/)
+// 0.12.86: the source controls follow canChangeUpdateSource (superuser only).
+assert.match(script, /import \{ canChangeUpdateSource \} from '\.\.\/runtime-settings'/)
+assert.match(script, /canChangeUpdateSource\(appState\?\.context\)/)
 // The saved source and the picker sit outside the advanced unlock.
 const advancedAt = template.indexOf('v-if="!advancedUnlocked"')
 assert.ok(advancedAt > 0)

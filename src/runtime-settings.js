@@ -29,6 +29,13 @@ export function canEditRuntimeSettings(context = {}) {
   return RUNTIME_SETTINGS_PERMISSIONS.some((code) => held.includes(code))
 }
 
+// Only a superuser changes the update source (Core 1.17.5 enforces it). The
+// System Updates page hides the source controls for everyone else. This is
+// display only; the backend refuses the save.
+export function canChangeUpdateSource(context = {}) {
+  return context?.user?.superuser === true
+}
+
 export function normalizeRuntimeSettings(payload) {
   const entry = payload && typeof payload === 'object' ? payload[REGISTER_TIMEOUT_KEY] : null
   if (!entry || typeof entry !== 'object') return null
