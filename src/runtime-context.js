@@ -23,6 +23,25 @@ export function normalizeTacticalPermissions(value) {
   return out
 }
 
+const TACTICAL_SCOPE_MODES = ['unrestricted', 'clients', 'sites', 'mixed', 'none']
+const scopeCount = (value) => (Number.isInteger(value) && value >= 0 ? value : 0)
+
+// Core's tactical_scope (Core 1.17.17): the role's client and site scope as a
+// display hint. Counts only. Fails closed: anything unexpected, an older Core
+// and a failed lookup all give mode 'none'. Any other key (an id list) is dropped.
+export function normalizeTacticalScope(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { mode: 'none', unrestricted: false, whole_client_count: 0, site_count: 0 }
+  }
+  const mode = TACTICAL_SCOPE_MODES.includes(value.mode) ? value.mode : 'none'
+  return {
+    mode,
+    unrestricted: value.unrestricted === true && mode === 'unrestricted',
+    whole_client_count: scopeCount(value.whole_client_count),
+    site_count: scopeCount(value.site_count),
+  }
+}
+
 export function emptyRuntimeContext(user = {}) {
   return {
     user: user || {},
@@ -37,6 +56,7 @@ export function emptyRuntimeContext(user = {}) {
     dateTimeFormat: null,
     tactical_ui: null,
     tactical_permissions: {},
+    tactical_scope: normalizeTacticalScope(null),
     tactical_web_ui: { installed: false, url: null },
     preferences_initialized: false,
     preferences_updated_at: null,
@@ -62,6 +82,7 @@ export function normalizeBackendRuntimeContext(richContext, browserUser = {}) {
     dateTimeFormat: typeof source.dateTimeFormat === 'string' && source.dateTimeFormat ? source.dateTimeFormat : null,
     tactical_ui: source.tactical_ui && typeof source.tactical_ui === 'object' ? source.tactical_ui : null,
     tactical_permissions: normalizeTacticalPermissions(source.tactical_permissions),
+    tactical_scope: normalizeTacticalScope(source.tactical_scope),
     tactical_web_ui: source.tactical_web_ui && typeof source.tactical_web_ui === 'object'
       ? { installed: source.tactical_web_ui.installed === true, url: typeof source.tactical_web_ui.url === 'string' ? source.tactical_web_ui.url : null }
       : { installed: false, url: null },

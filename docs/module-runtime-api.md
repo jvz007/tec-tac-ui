@@ -2,7 +2,7 @@
 
 Tec-Tac authenticated UI modules receive Core-owned request helpers in `register(context)`. Modules must use these helpers instead of reading `localStorage.access_token`, constructing Tactical `Authorization` headers, or duplicating session-expiry handling.
 
-This page also covers [the module router](#module-router), [`hasPermission(code)`](#haspermissioncode), [navigation](#navigation-permissions) and [`codeEditor.languages`](#codeeditorlanguages).
+The `resourceViews` registry also takes grid columns at `endpoint.grid-columns` (UI 0.12.93); see `module-resource-views.md`. This page also covers [the module router](#module-router), [`hasPermission(code)`](#haspermissioncode), [navigation](#navigation-permissions) and [`codeEditor.languages`](#codeeditorlanguages).
 
 
 ## Authenticated runtime context
@@ -41,6 +41,17 @@ context.context.tactical_web_ui = {
 ```
 
 Use this capability instead of assuming that a Tactical UI exists on every Tec-Tac server.
+
+Core also publishes the Tactical role's client and site scope as counts (UI 0.12.93, Core 1.17.17). See [`tacticalScope()`](#tacticalscope):
+
+```js
+context.context.tactical_scope = {
+  mode,               // "unrestricted", "clients", "sites", "mixed" or "none"
+  unrestricted,       // true only when mode is "unrestricted"
+  whole_client_count,
+  site_count,
+}
+```
 
 ## Helpers
 
@@ -253,6 +264,17 @@ If the API is served from a different origin than the page, the proxy must expos
 - There is no superuser shortcut here. Core already sends every flag as `true` for a superuser, and none for an installer user or a user with no role.
 - This is a display rule only. Use it to hide a button (AD-12). Tactical still decides every call.
 - It is separate from `hasPermission(code)`, which answers Tec-Tac permission codes and is unchanged.
+
+## tacticalScope()
+
+`context.tacticalScope()` tells a module which clients and sites the signed-in user's Tactical role covers. Use it as a hint, for example to say "you see part of the estate" on a page.
+
+- Core sends `tactical_scope` in `GET /api/tfd/ui/context/` (Core 1.17.17). It needs UI 0.12.93. The runtime context carries it as `context.context.tactical_scope`, next to `tactical_permissions`.
+- It returns a fresh object each call: `{ mode, unrestricted, whole_client_count, site_count }`.
+- `mode` is `unrestricted`, `clients`, `sites`, `mixed` or `none`. `unrestricted` is `true` only when the mode is `unrestricted`.
+- The counts are whole numbers. There are no id lists. Core keeps those.
+- An older Core, a failed lookup or a value the UI does not recognise gives `{ mode: 'none', unrestricted: false, whole_client_count: 0, site_count: 0 }`. You do not need a null check.
+- This is a display hint only. Tactical and Core decide every call (AD-12). Do not use it to authorise anything.
 
 ## codeEditor.languages
 

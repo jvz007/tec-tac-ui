@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.92",
+  "version": "0.12.93",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "1612e28a90a20fc2a7bb107b4c803f2feb0914c1150862bb169ce4d9c2a81a2c"
     },
     {
-      "path": "RELEASE_NOTES_0.12.92.md",
-      "size": 5404,
-      "sha256": "f914672070750df4640d2dc02d21fd07776b5de93af34558b396b3f1012c4109"
+      "path": "RELEASE_NOTES_0.12.93.md",
+      "size": 3049,
+      "sha256": "702998e643cacd3b51226637c3c5149653ae5762883fd78a6b12bedfb7714908"
     },
     {
       "path": "VERSION",
       "size": 8,
-      "sha256": "62626b800d712ebf1590ebaa0617f2a32cf1fc47bd4bc1384148191766040dcd"
+      "sha256": "c080b94561a7c3d53ee2477f2397325179746b0584aa1dd90a5947e1463f14f9"
     },
     {
       "path": "docs/context-actions.md",
@@ -88,13 +88,13 @@
     },
     {
       "path": "docs/module-resource-views.md",
-      "size": 4173,
-      "sha256": "1d09884d6dab9d8215c213546aea966471cc23372e3f63bb158ccbcc27f241c2"
+      "size": 8116,
+      "sha256": "f6c0784415dd4fa94d1c11494ad16d7ab14e16608d26bae159148b0adffe5d33"
     },
     {
       "path": "docs/module-runtime-api.md",
-      "size": 19770,
-      "sha256": "2e782c845cf3d39caa73e88a06d0fd33116bafdae8520abafdae94af98e59602"
+      "size": 21266,
+      "sha256": "7fa8b08bbd762e552aa1f763a63f250f0de4ab35de4a1c1384f1d4ef9813631b"
     },
     {
       "path": "docs/module-sso.md",
@@ -672,6 +672,11 @@
       "sha256": "903a971eeb2778bf0bd9503bd103ee231e88232d8545d52e3813f6cc774db12b"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.92.md",
+      "size": 5404,
+      "sha256": "f914672070750df4640d2dc02d21fd07776b5de93af34558b396b3f1012c4109"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.2.0.md",
       "size": 1284,
       "sha256": "be54aadd04066e8034717e9733cafc4a56a734393cc300cd4ec0537615718c2d"
@@ -824,12 +829,12 @@
     {
       "path": "package-lock.json",
       "size": 44095,
-      "sha256": "6fd772415d71339d40c22ac0c4bc27f8f5784c4d7c0ab0687d2e961d1d07f034"
+      "sha256": "a61a3040ae4e1be020bf1e8713816e28358992a77003ed0ff1a47173e669ff82"
     },
     {
       "path": "package.json",
-      "size": 4256,
-      "sha256": "73a49e77d15f8fcaf4944b4f399217fd3a8e8144b22123f0a5605e19f8762adb"
+      "size": 4353,
+      "sha256": "4c48dc29ff77f0d71ea9478ac74cc5df1a5c96547a8e020d718ed18bce2f8074"
     },
     {
       "path": "public/modules/modules.json",
@@ -1178,8 +1183,8 @@
     },
     {
       "path": "src/main.js",
-      "size": 7338,
-      "sha256": "c769f9eeca8c4c4e4407f18d211d2fd8241d2dee31bf0ce800fc67a6d574e66e"
+      "size": 7749,
+      "sha256": "ef389b934e386a0af95a15d3f1b14431e25560d082add926f488322f53d793e6"
     },
     {
       "path": "src/mfa-enrollment.js",
@@ -1258,8 +1263,8 @@
     },
     {
       "path": "src/resource-views.js",
-      "size": 4367,
-      "sha256": "f983782e3c8b26aa72238acdc7f499d1260966c0a22ee02198bc39511577a8c4"
+      "size": 8758,
+      "sha256": "79506150b1fc198c1e6b867a7df4ada642c8267af48aaa21ce101e48cfed5471"
     },
     {
       "path": "src/role-selection-loader.js",
@@ -1273,8 +1278,8 @@
     },
     {
       "path": "src/runtime-context.js",
-      "size": 3438,
-      "sha256": "9e1c269f8bf9834d703c66f8c084d776b287c84950f5cb8ed1edae6faa9dc5c6"
+      "size": 4460,
+      "sha256": "1e6e202463f3b41bfb798ee7091a7d45121aa16c038252ebf6d567a0ca064f06"
     },
     {
       "path": "src/runtime-settings.js",
@@ -1439,7 +1444,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 138,
-      "sha256": "051afa00584fc771df15c6a60b259aeceb9a64c21704b9cf97a684c8b263ca79"
+      "sha256": "8c4908887182d06cbfea6bc68e7214c2fb6243f37b322bb8527fcc0e54a39845"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1550,6 +1555,11 @@
       "path": "tests/discovered-version-0.12.84.mjs",
       "size": 5850,
       "sha256": "90786f0038e03dfa7aa51df5249a0bda1a8c3f01e960e0553077a51e41eca109"
+    },
+    {
+      "path": "tests/endpoint-grid-columns-0.12.93.mjs",
+      "size": 10374,
+      "sha256": "f456b890f9b663d72f03e00075daf49a3de909def1c55157daf3d61c40bcaa82"
     },
     {
       "path": "tests/extension-hooks-0.12.62.mjs",
@@ -1679,7 +1689,7 @@
     {
       "path": "tests/module-category-0.12.91.mjs",
       "size": 4886,
-      "sha256": "dc955c6b63e6989b8bd7bc11c74222803d85b0a0d3d2ac95c9cd36f04448fb22"
+      "sha256": "cd10ddd3ae65a72b48db9e45ec12c046001df966b6a913b3301c6735801f3ed7"
     },
     {
       "path": "tests/module-failure-containment-0.12.81.mjs",
@@ -1704,12 +1714,12 @@
     {
       "path": "tests/module-replacement-confirm-0.12.89.mjs",
       "size": 8133,
-      "sha256": "e268cf137636c4381b69b26dbee9b3c09f52ba0fc26858be69e78793f6f4f6c1"
+      "sha256": "ea8758f40a855b338a6e11f995c0d22aa2ee81d653e6eb21160d2a3100aa0baf"
     },
     {
       "path": "tests/module-replacement-handback-0.12.90.mjs",
       "size": 10862,
-      "sha256": "35d856de3d4713809a5a712ab88d032fd7532e4e517fff303d95603d1d64c1b7"
+      "sha256": "55a4d0e33610cf178eb3bf588a0f8f82396985c7cf8c49f06fa6639563b0a2cf"
     },
     {
       "path": "tests/module-replacement-second-empty-0.12.91.mjs",
@@ -1718,8 +1728,8 @@
     },
     {
       "path": "tests/module-replacement-status-0.12.88.mjs",
-      "size": 9568,
-      "sha256": "3379ccbd5dcfe3b471108b65cb0f51a05bb260d2d6b9996217cfba0a62c77ce6"
+      "size": 9577,
+      "sha256": "4318f327c17b6f84110740f5d8bf37f40828d90d04b97fc023e563f7e6037e26"
     },
     {
       "path": "tests/module-runtime-docs-0.12.82.mjs",
@@ -1843,8 +1853,13 @@
     },
     {
       "path": "tests/tactical-permissions-context-0.12.87.mjs",
-      "size": 2884,
-      "sha256": "b2ef42eef9ba2896e8b30190bf1bd5eba41c3e89ad2195e2e99d68473a506b2c"
+      "size": 2956,
+      "sha256": "79192e8b2c55a76776ccda8da3a1851aa0a633aa39c2cd5811a4935fe225c1dd"
+    },
+    {
+      "path": "tests/tactical-scope-context-0.12.93.mjs",
+      "size": 5212,
+      "sha256": "e1b1b5577ca96afb14c93915a41034e9fa9d875b94e0c7e60418165860d772c3"
     },
     {
       "path": "tests/tracker-acceptance-0.12.67.mjs",
@@ -2004,7 +2019,7 @@
     {
       "path": "tests/update-source-superuser-0.12.86.mjs",
       "size": 6175,
-      "sha256": "e557df7ad74a7df3f6c649b9b0291b8d4a1beb629585872df97c47022622ab2a"
+      "sha256": "504013448fc7d96431c7d1fc69e384d8a2bf934c104e288f211866d4e717ebbf"
     },
     {
       "path": "tests/upload-limit-setting-0.12.92.mjs",

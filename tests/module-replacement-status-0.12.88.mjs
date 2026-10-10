@@ -125,5 +125,5 @@ const helper = fs.readFileSync(new URL('../src/module-replacement.js', import.me
 assert.ok(!/^import /m.test(helper), 'module-replacement.js stays import-free')
 assert.ok(!/fetch|localStorage|sessionStorage|Authorization/.test(helper))
 const pkg = JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url), 'utf8'))
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.15,<2.0.0') // raised in 0.12.89, 0.12.90, 0.12.91 and 0.12.92
+assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.17,<2.0.0') // raised in 0.12.89, 0.12.90, 0.12.91, 0.12.92 and 0.12.93
 console.log('module-replacement-status-0.12.88: ok')

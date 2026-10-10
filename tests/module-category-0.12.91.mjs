@@ -79,7 +79,7 @@ const manifest = JSON.parse(read('../tec_tac_package.json'))
 // The release version moves on with each release; the three version files must agree.
 assert.equal(pkg.version, read('../VERSION').trim())
 assert.equal(manifest.version, read('../VERSION').trim())
-assert.equal(manifest.requires['tec-tac-framework'], '>=1.17.15,<2.0.0')
+assert.equal(manifest.requires['tec-tac-framework'], '>=1.17.17,<2.0.0')
 assert.match(pkg.scripts.test, /tests\/module-category-0\.12\.91\.mjs/)
 assert.match(pkg.scripts.test, /tests\/tactical-operations-query-file-0\.12\.91\.mjs/)
 assert.match(pkg.scripts.test, /tests\/module-replacement-second-empty-0\.12\.91\.mjs/)

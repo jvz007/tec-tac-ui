@@ -6,6 +6,7 @@ import { router } from './router'
 import { state, loadContext, recordModuleRuntimeError } from './state'
 import { loadPublicUiModules, loadUiModules } from './module-loader'
 import { createTacticalOperation } from './tactical-operations'
+import { normalizeTacticalScope } from './runtime-context'
 import { createContextActionRegistry } from './context-actions'
 import { createContextInteractionRegistry } from './context-interactions'
 import { createResourceViewRegistry } from './resource-views'
@@ -67,10 +68,13 @@ async function bootstrap() {
   const hasTacticalPermission = (flag) => (
     typeof flag === 'string' && state.context?.tactical_permissions?.[flag] === true
   )
+  // Display hint only (AD-12): the role's client and site scope as counts. A fresh
+  // copy each call, normalized again so a module cannot change the shared state.
+  const tacticalScope = () => ({ ...normalizeTacticalScope(state.context?.tactical_scope) })
   const tacticalOperation = createTacticalOperation({ apiRaw })
   const contextActions = createContextActionRegistry({ hasPermission })
   const contextInteractions = createContextInteractionRegistry({ hasPermission })
-  const resourceViews = createResourceViewRegistry({ hasPermission })
+  const resourceViews = createResourceViewRegistry({ hasPermission, timeoutSeconds: () => state.context?.module_register_timeout_seconds })
   const codeEditor = createCodeEditorService()
   const dashboardWidgets = createDashboardWidgetRegistry({ hasPermission })
   const quickActions = createQuickActionRegistry({ hasPermission })
@@ -143,6 +147,7 @@ async function bootstrap() {
         apiText,
         hasPermission,
         hasTacticalPermission,
+        tacticalScope,
         tacticalOperation,
         contextActions,
         contextInteractions,

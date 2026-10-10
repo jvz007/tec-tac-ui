@@ -38,11 +38,12 @@ state.context = { ...n, tactical_permissions: { can_list_agents: false } }
 assert.equal(has('can_list_agents'), false, 'follows a reloaded context')
 state.context = {}
 assert.equal(has('can_list_agents'), false, 'an older Core')
-assert.match(main, /hasTacticalPermission,\s*\n\s*tacticalOperation,/)
+// 0.12.93 puts tacticalScope between the two.
+assert.match(main, /hasTacticalPermission,\s*\n\s*(tacticalScope,\s*\n\s*)?tacticalOperation,/)
 
 // hasPermission is unchanged.
 assert.match(main, /const hasPermission = \(code\) => \(\s*\n\s*state\.context\.user\?\.superuser \|\| permissionSet\.has\(code\)\s*\n\s*\)/)
 
 const pkg = JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url), 'utf8'))
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.15,<2.0.0')
+assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.17,<2.0.0')
 console.log('tactical-permissions-context-0.12.87 ok')
