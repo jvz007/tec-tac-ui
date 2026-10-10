@@ -149,7 +149,7 @@ assert.match(version, /^0\.12\.\d+/) // 0.12.91: pinned versions live in the new
 assert.equal(JSON.parse(read('../package.json')).version, version)
 const pkg = JSON.parse(read('../tec_tac_package.json'))
 assert.equal(pkg.version, version)
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.13,<2.0.0')
+assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.15,<2.0.0')
 const notes = read('../docs/releases/RELEASE_NOTES_0.12.90.md')
 assert.match(notes, /Core 1\.17\.12/)
 assert.match(notes, /contract export/)

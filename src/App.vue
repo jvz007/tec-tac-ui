@@ -153,8 +153,13 @@ function applyTheme(value) {
 }
 watch(theme, applyTheme, { immediate: true })
 watch(() => state.status, (status) => {
-  if (status === 'ready') void startSessionActivityTracking()
-  else stopSessionActivityTracking()
+  if (status === 'ready') {
+    void startSessionActivityTracking()
+    notifications?.startServerNoticePolling?.()
+  } else {
+    stopSessionActivityTracking()
+    notifications?.stopServerNoticePolling?.()
+  }
 }, { immediate: true })
 function applyFontScale(value) { document.documentElement.style.setProperty('--font-scale', String(value || 1)) }
 watch(fontScale, applyFontScale, { immediate: true })
@@ -240,7 +245,7 @@ async function doSignOut() {
 function signOut() { requestLeave(doSignOut) }
 
 onMounted(() => window.addEventListener('keydown', handleGlobalKey))
-onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); stopSessionActivityTracking() })
+onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); stopSessionActivityTracking(); notifications?.stopServerNoticePolling?.() })
 </script>
 
 <template>

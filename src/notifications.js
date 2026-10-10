@@ -6,6 +6,9 @@ const MAX_VISIBLE = 5
 const MAX_MESSAGE = 1000
 const MAX_TITLE = 120
 const MAX_ACTION_LABEL = 60
+// Core creates some notices itself (module job failures, Core 1.17.14). This page checks for new unread ones.
+const SERVER_NOTICE_POLL_MS = 30000
+const MAX_KNOWN_NOTICES = 1000
 
 function text(value, max, label) {
   const result = String(value ?? '').trim()
@@ -51,6 +54,12 @@ export function createNotificationService({ api, router } = {}) {
   })
   const timers = new Map()
   let sequence = 0
+  // Notice ids this page has seen. The first poll only records the backlog, so old notices never toast again.
+  const knownNoticeIds = new Set()
+  let persistsInFlight = 0
+  let serverPollTimer = null
+  let serverPollBusy = false
+  let serverPollSeeded = false
 
   function clearTimer(id) {
     const timer = timers.get(id)
@@ -118,6 +127,13 @@ export function createNotificationService({ api, router } = {}) {
     history.items = history.items.slice(0, 100)
   }
 
+  function rememberNotice(id) {
+    const key = String(id || '')
+    if (!key) return
+    knownNoticeIds.add(key)
+    while (knownNoticeIds.size > MAX_KNOWN_NOTICES) knownNoticeIds.delete(knownNoticeIds.values().next().value)
+  }
+
   async function persist(toast) {
     if (typeof api !== 'function') return
     const signature = JSON.stringify([
@@ -125,6 +141,7 @@ export function createNotificationService({ api, router } = {}) {
       toast.action?.route || '', toast.action?.route ? toast.action.label : '',
     ])
     if (toast.lastPersistSignature === signature) return
+    persistsInFlight += 1
     try {
       const payload = await api('/api/tfd/ui/notices/', {
         method: 'POST',
@@ -139,6 +156,8 @@ export function createNotificationService({ api, router } = {}) {
         }),
       })
       toast.lastPersistSignature = signature
+      // A notice this page stored itself is never toasted again when the poll finds it.
+      rememberNotice(payload?.notice?.id)
       if (Number.isFinite(Number(payload?.unread_count))) history.unreadCount = Number(payload.unread_count)
       mergeHistoryNotice(payload?.notice)
     } catch (error) {
@@ -146,10 +165,12 @@ export function createNotificationService({ api, router } = {}) {
       // recursive error toast. The shell surfaces retrieval errors in the drawer.
       if (history.open) history.error = error?.message || 'Notice history could not be updated.'
       console.warn('[TEC-TAC-UI] Notice history persistence failed.', error)
+    } finally {
+      persistsInFlight -= 1
     }
   }
 
-  function showForModule(moduleId, input, forcedLevel = null) {
+  function showForModule(moduleId, input, forcedLevel = null, persistNotice = true) {
     const normalized = normalize(moduleId, input, forcedLevel)
     const existing = normalized.dedupeKey
       ? toasts.find((item) => item.moduleId === moduleId && item.dedupeKey === normalized.dedupeKey)
@@ -158,7 +179,7 @@ export function createNotificationService({ api, router } = {}) {
     if (existing) {
       Object.assign(existing, normalized, { busy: false, updatedAt: Date.now() })
       schedule(existing)
-      void persist(existing)
+      if (persistNotice) void persist(existing)
       return existing.id
     }
 
@@ -173,8 +194,63 @@ export function createNotificationService({ api, router } = {}) {
     toasts.push(toast)
     trimVisible()
     schedule(toast)
-    void persist(toast)
+    if (persistNotice) void persist(toast)
     return toast.id
+  }
+
+  // A row Core stored shows as a toast. It is not posted back: the row already lives in Core.
+  function showServerNotice(row) {
+    const level = String(row.level || '').trim().toLowerCase()
+    // A link that is not an internal route is dropped; the message still shows.
+    const route = typeof row.action?.route === 'string' ? row.action.route.trim() : ''
+    const internal = route.startsWith('/') && !route.startsWith('//') && !/[\u0000-\u001f]/.test(route)
+    showForModule(String(row.source || 'core').trim() || 'core', {
+      level: LEVELS.has(level) ? level : 'info',
+      title: row.title || undefined,
+      message: row.message,
+      action: internal ? { label: row.action?.label || 'Open', route } : undefined,
+    }, null, false)
+  }
+
+  // One check for unread notices Core stored. Rows the page has not seen become toasts; the first check
+  // after start only records what is already there.
+  async function pollServerNotices() {
+    if (typeof api !== 'function' || serverPollBusy || persistsInFlight > 0) return
+    serverPollBusy = true
+    try {
+      const payload = await api('/api/tfd/ui/notices/?state=unread&limit=100')
+      const rows = Array.isArray(payload?.notices) ? payload.notices : []
+      const firstCheck = !serverPollSeeded
+      serverPollSeeded = true
+      for (const row of rows) {
+        const id = String(row?.id || '')
+        if (!id || knownNoticeIds.has(id)) continue
+        rememberNotice(id)
+        if (firstCheck) continue
+        try {
+          showServerNotice(row)
+        } catch (error) {
+          console.warn('[TEC-TAC-UI] A notice from Core could not be shown.', error)
+        }
+      }
+      if (Number.isFinite(Number(payload?.unread_count))) history.unreadCount = Number(payload.unread_count)
+    } catch (error) {
+      console.warn('[TEC-TAC-UI] Notices from Core could not be checked.', error)
+    } finally {
+      serverPollBusy = false
+    }
+  }
+
+  function startServerNoticePolling() {
+    if (serverPollTimer || typeof api !== 'function') return
+    serverPollSeeded = false
+    serverPollTimer = setInterval(() => { void pollServerNotices() }, SERVER_NOTICE_POLL_MS)
+    void pollServerNotices()
+  }
+
+  function stopServerNoticePolling() {
+    if (serverPollTimer) clearInterval(serverPollTimer)
+    serverPollTimer = null
   }
 
   async function invoke(id) {
@@ -299,5 +375,6 @@ export function createNotificationService({ api, router } = {}) {
   return Object.freeze({
     toasts, history, dismiss, invoke, forModule, setInitialUnreadCount,
     loadHistory, openHistory, closeHistory, markRead, markAllRead, clearRead, activateHistoryNotice,
+    pollServerNotices, startServerNoticePolling, stopServerNoticePolling,
   })
 }

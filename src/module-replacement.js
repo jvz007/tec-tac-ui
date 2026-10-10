@@ -111,13 +111,94 @@ export function secondConfirmationText(willDisable, moduleId) {
 }
 
 // HTTP 400 replacement_second_confirmation_required: { willDisable, detail, module },
-// else null so the ordinary error path keeps handling it.
+// else null so the ordinary error path keeps handling it. Core 1.17.14 also names
+// dependants; the key appears only when it has some, so an older answer keeps its shape.
 export function secondConfirmationRequiredPayload(error) {
   if (!error || error.status !== 400) return null
   const payload = object(error.payload)
   const code = text(payload?.code) || text(error.code)
   if (code !== 'replacement_second_confirmation_required') return null
-  return { willDisable: willDisableIds(payload?.will_disable), detail: text(payload?.detail), module: text(payload?.module) }
+  const result = { willDisable: willDisableIds(payload?.will_disable), detail: text(payload?.detail), module: text(payload?.module) }
+  const dependants = dependantsRows(payload?.dependants)
+  if (dependants.length) result.dependants = dependants
+  return result
+}
+
+// [{replacement, modules[]}] (Core 1.17.14, CQ35): the enabled modules that name a replacement directly.
+// Rows with no replacement id or no module id drop out.
+export function dependantsRows(value) {
+  const out = []
+  for (const item of list(value)) {
+    const replacement = text(item?.replacement)
+    const modules = ids(item?.modules)
+    if (replacement && modules.length) out.push({ replacement, modules })
+  }
+  return out
+}
+
+// Step-two lines: for each replacement that will be switched off, the enabled modules that name it.
+// They are not switched off (Core does not cascade), so the lines ask the person to check them.
+export function dependantLines(dependants, willDisable) {
+  const rows = dependantsRows(dependants)
+  const lines = []
+  for (const name of willDisableIds(willDisable)) {
+    const row = rows.find((item) => item.replacement === name)
+    if (!row) continue
+    const many = row.modules.length > 1
+    lines.push(`${nameList(row.modules)} ${many ? 'name' : 'names'} ${name} as a dependency. ${many ? 'They stay' : `${row.modules[0]} stays`} enabled. Check that ${many ? 'they still work' : 'it still works'} once ${name} is switched off.`)
+  }
+  return lines
+}
+
+// [{module, reasons[], required[]}] from hand_back_unavailable (Core 1.17.14). A row without a module id drops out.
+export function handBackUnavailableRows(value) {
+  const out = []
+  for (const item of list(value)) {
+    const module = text(item?.module)
+    if (!module) continue
+    out.push({ module, reasons: list(item.reasons).map(text).filter(Boolean), required: ids(item.required_modules) })
+  }
+  return out
+}
+
+// HTTP 400 replacement_hand_back_confirmation_required (Core 1.17.14 for a disable, 1.17.15 for an uninstall):
+// { module, willEnable, unavailable, detail }, else null so the ordinary error path keeps handling it.
+export function handBackRequiredPayload(error) {
+  if (!error || error.status !== 400) return null
+  const payload = object(error.payload)
+  const code = text(payload?.code) || text(error.code)
+  if (code !== 'replacement_hand_back_confirmation_required') return null
+  return {
+    module: text(payload?.module),
+    willEnable: willEnableIds(payload?.will_enable),
+    unavailable: handBackUnavailableRows(payload?.hand_back_unavailable),
+    detail: text(payload?.detail),
+  }
+}
+
+// The warning shown before a replacement is disabled (mode 'disable') or uninstalled (mode 'remove') while the
+// replaced module cannot come back. Returns { lines, button }; no lines means nothing to warn about.
+export function handBackWarning(mode, moduleId, unavailable, willEnable) {
+  const rows = handBackUnavailableRows(unavailable)
+  if (!rows.length) return { lines: [], button: '' }
+  const who = text(moduleId) || 'This module'
+  const names = rows.map((row) => row.module)
+  const many = names.length > 1
+  const remove = mode === 'remove'
+  const back = willEnableIds(willEnable)
+  const lines = [`${remove ? 'Uninstalling' : 'Disabling'} ${who} leaves ${nameList(names)} switched off, because ${many ? 'they' : 'it'} cannot come back cleanly.`]
+  for (const row of rows) {
+    const reason = row.reasons.map((item) => item.replace(/[\s.]+$/, '')).join('; ')
+    const needs = row.required.length ? ` It needs ${nameList(row.required)}.` : ''
+    lines.push(`${row.module}: ${reason || 'Core did not say why'}.${needs}`)
+  }
+  if (back.length) lines.push(`${nameList(back)} ${back.length > 1 ? 'still come' : 'still comes'} back on.`)
+  lines.push(`Until ${many ? 'they are' : 'it is'} enabled again, nothing serves ${many ? 'their' : 'its'} routes and contracts.`)
+  lines.push('Continue only if you are happy for them to stay off for now.')
+  return {
+    lines,
+    button: remove ? `Uninstall ${who} and leave ${nameList(names)} off` : `Disable ${who} and leave ${nameList(names)} off`,
+  }
 }
 
 // Core asked for a second confirmation but named nothing to switch off. The page shows this text,

@@ -50,15 +50,75 @@ export function normalizeRuntimeSettings(payload) {
   }
 }
 
-// Returns null when this Core has no runtime-settings endpoint (404), so the
-// caller can leave the card out on an older Core. Other errors are thrown.
-export async function getRuntimeSettings({ api = apiFetch } = {}) {
+// The raw answer of GET runtime-settings, or null when this Core has no such endpoint (404), so the
+// caller can leave the cards out on an older Core. Other errors are thrown.
+export async function getRuntimeSettingsPayload({ api = apiFetch } = {}) {
   try {
-    return normalizeRuntimeSettings(await api(RUNTIME_SETTINGS_PATH))
+    return await api(RUNTIME_SETTINGS_PATH)
   } catch (error) {
     if (error?.status === 404) return null
     throw error
   }
+}
+
+// Returns null when this Core has no runtime-settings endpoint (404), so the
+// caller can leave the card out on an older Core. Other errors are thrown.
+export async function getRuntimeSettings({ api = apiFetch } = {}) {
+  return normalizeRuntimeSettings(await getRuntimeSettingsPayload({ api }))
+}
+
+// The Tactical operation upload ceiling (Core 1.17.14, CQ40 and CQ44): whole MiB, 1 to 25, 10 by default.
+// Only a superuser changes it. Core answers anyone else with 403 for this key.
+export const UPLOAD_LIMIT_KEY = 'tactical_operation_upload_max_mib'
+export const UPLOAD_LIMIT_MIN = 1
+export const UPLOAD_LIMIT_MAX = 25
+export const UPLOAD_LIMIT_DEFAULT = 10
+
+// Display only: the superuser check decides whether the form shows. The backend refuses everyone else.
+export function canEditUploadLimit(context = {}) {
+  return context?.user?.superuser === true
+}
+
+export function uploadLimitDefaultText(value = UPLOAD_LIMIT_DEFAULT) {
+  return `${value} MiB by default`
+}
+
+export function uploadLimitRangeText(minimum = UPLOAD_LIMIT_MIN, maximum = UPLOAD_LIMIT_MAX) {
+  return `${minimum} to ${maximum} MiB`
+}
+
+export function validateUploadLimit(value, { minimum = UPLOAD_LIMIT_MIN, maximum = UPLOAD_LIMIT_MAX } = {}) {
+  if (typeof value !== 'number' || !Number.isInteger(value)) {
+    return { valid: false, message: `Enter a whole number of MiB from ${minimum} to ${maximum}.` }
+  }
+  if (value < minimum || value > maximum) {
+    return { valid: false, message: `The limit must be from ${minimum} to ${maximum} MiB.` }
+  }
+  return { valid: true, message: '' }
+}
+
+// { value, minimum, maximum, default } from a runtime-settings answer, or null when the key is absent.
+export function normalizeUploadLimit(payload) {
+  const entry = payload && typeof payload === 'object' ? payload[UPLOAD_LIMIT_KEY] : null
+  if (!entry || typeof entry !== 'object') return null
+  const number = (value, fallback) => (Number.isInteger(value) ? value : fallback)
+  return {
+    value: number(entry.value, UPLOAD_LIMIT_DEFAULT),
+    minimum: number(entry.minimum, UPLOAD_LIMIT_MIN),
+    maximum: number(entry.maximum, UPLOAD_LIMIT_MAX),
+    default: number(entry.default, UPLOAD_LIMIT_DEFAULT),
+  }
+}
+
+// Core's 400 and 403 messages reach the caller unchanged in error.message.
+export async function saveUploadLimit(mib, { api = apiFetch } = {}) {
+  const check = validateUploadLimit(mib)
+  if (!check.valid) throw Object.assign(new Error(check.message), { status: 0, payload: null, code: null })
+  const payload = await api(RUNTIME_SETTINGS_PATH, {
+    method: 'PATCH',
+    body: JSON.stringify({ [UPLOAD_LIMIT_KEY]: mib }),
+  })
+  return normalizeUploadLimit(payload)
 }
 
 // Core's 400, 403 and 429 messages reach the caller unchanged in error.message.

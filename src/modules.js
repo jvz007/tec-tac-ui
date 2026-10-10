@@ -23,14 +23,20 @@ function withDisableReplaced(body,disableReplaced){
 export function installModuleArtifact(uploadId,kind='artifact',order=[],disableReplaced=[]){ return apiFetch(`/api/tfd/modules/v2/packages/${encodeURIComponent(uploadId)}/install/`,{method:'POST',body:JSON.stringify(withDisableReplaced({kind,order},disableReplaced))}) }
 export function discardModuleArtifact(uploadId){ return apiFetch(`/api/tfd/modules/v2/packages/${encodeURIComponent(uploadId)}/`,{method:'DELETE'}) }
 // confirm_replacement_switch (Core 1.17.12) is sent only when confirmSwitch is exactly true.
-export function setModuleEnabled(moduleId,enabled,cascade=false,disableReplaced=[],confirmSwitch=false){
+// confirm_without_hand_back (Core 1.17.14) is sent only when confirmWithoutHandBack is exactly true.
+export function setModuleEnabled(moduleId,enabled,cascade=false,disableReplaced=[],confirmSwitch=false,confirmWithoutHandBack=false){
   const body=withDisableReplaced({enabled:!!enabled,cascade:!!cascade},disableReplaced)
   if(confirmSwitch===true) body.confirm_replacement_switch=true
+  if(confirmWithoutHandBack===true) body.confirm_without_hand_back=true
   return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/state/`,{method:'POST',body:JSON.stringify(body)})
 }
 export function setModuleVisible(moduleId,visible){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/visibility/`,{method:'POST',body:JSON.stringify({visible:!!visible})}) }
 export function checkModuleRemoval(moduleId){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/remove-check/`) }
-export function removeModule(moduleId){ return apiFetch(`/api/tfd/modules/${encodeURIComponent(moduleId)}/remove/`,{method:'POST',body:JSON.stringify({})}) }
+// confirm_without_hand_back (Core 1.17.15) is sent only when confirmWithoutHandBack is exactly true.
+export function removeModule(moduleId,confirmWithoutHandBack=false){
+  const body=confirmWithoutHandBack===true?{confirm_without_hand_back:true}:{}
+  return apiFetch(`/api/tfd/modules/${encodeURIComponent(moduleId)}/remove/`,{method:'POST',body:JSON.stringify(body)})
+}
 export function listModuleJobs({page=1,pageSize=50,status='',action='',search=''}={}){
   const query=new URLSearchParams({page:String(page),page_size:String(pageSize)})
   if(status) query.set('status',status)
