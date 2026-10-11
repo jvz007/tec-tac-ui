@@ -671,7 +671,7 @@ printf '[TEST] PASS same-version module reinstall confirmation\n'
 grep -q "body.append('signature',signature)" "${ROOT}/src/modules.js" || fail "module signature sidecar is not sent to Core"
 grep -q "body.append('metadata',metadata)" "${ROOT}/src/modules.js" || fail "module release metadata sidecar is not sent to Core"
 grep -q "function intakeFileType" "${ROOT}/src/views/ModulesView.vue" || fail "module package sidecar classifier missing"
-grep -q "stagedTrust = computed" "${ROOT}/src/views/ModulesView.vue" || fail "staged package trust result missing"
+grep -q "intake_trust: trust, intake_trust_label: trustLabelOf(trust)" "${ROOT}/src/views/ModulesView.vue" || fail "staged package trust result missing"
 grep -q 'data-label="Trust"' "${ROOT}/src/views/ModulesView.vue" || fail "package trust review column missing"
 grep -q "global Update Trust Policy" "${ROOT}/src/views/ModulesView.vue" || fail "global module trust policy is not explicit in trust popover"
 grep -q "Privileged publisher permissions still require a trusted signature" "${ROOT}/src/views/ModulesView.vue" || fail "privileged unsigned-package boundary is not visible"
@@ -683,7 +683,7 @@ printf '[TEST] PASS module package signature intake and trust visibility\n'
 # 0.12.11 compact package trust badge and hover/focus details
 grep -q 'module-trust-badge' "${ROOT}/src/views/ModulesView.vue" || fail "compact package trust badge missing"
 grep -q 'module-trust-popover' "${ROOT}/src/views/ModulesView.vue" || fail "package trust hover/focus details missing"
-grep -q "stagedTrustLabel === 'VERIFIED' ? 'SIGNED'" "${ROOT}/src/views/ModulesView.vue" || fail "verified package is not labelled SIGNED in review row"
+grep -q "row.intake_trust_label === 'VERIFIED' ? 'SIGNED'" "${ROOT}/src/views/ModulesView.vue" || fail "verified package is not labelled SIGNED in review row"
 ! grep -q 'class="card mt module-signature-card"' "${ROOT}/src/views/ModulesView.vue" || fail "large package trust card still present"
 grep -q '.module-trust-badge:hover .module-trust-popover' "${ROOT}/src/styles.css" || fail "trust hover popover styling missing"
 grep -q '.module-trust-badge:focus .module-trust-popover' "${ROOT}/src/styles.css" || fail "keyboard trust popover styling missing"

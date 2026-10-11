@@ -108,7 +108,8 @@ const view = fs.readFileSync(new URL('../src/views/ModulesView.vue', import.meta
 assert.match(view, /setModuleEnabled\(item\.id, true, false, willDisableIds\(item\.will_disable\)\)/)
 assert.match(view, /replacementConfirmLines\(confirmTarget\.value\.id, confirmTarget\.value\.will_disable\)/)
 assert.match(view, /const summary = installConfirmSummary\(plan\.value\)\n\s*if \(summary\.ids\.length\) \{\n\s*installConfirm\.value = [^\n]*\n\s*return\n\s*\}\n\s*await runInstall\(\[\]\)/)
-assert.match(view, /installModuleArtifact\(\n\s*staged\.value\.upload_id,[\s\S]*?installOrder\.value,\n\s*disableReplaced,/)
+// 0.12.94: the call sends the head staged group's upload, its order and its own replacement list (was staged.value and installOrder).
+assert.match(view, /installModuleArtifact\(\n\s*group\.staged\.upload_id,[\s\S]*?\border,\n\s*sendIds,/)
 assert.match(view, /confirmationRequired\(e\)/)
 assert.match(view, /v-if="installConfirm"/)
 assert.match(view, /@click="confirmInstall"/)

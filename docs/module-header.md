@@ -29,6 +29,7 @@ export default {
 - `props` may be an object or a synchronous function of the Core header context.
 - Core sorts by `order`, then label/id, and renders at most six module header contributions.
 - Core owns top-bar placement and layout.
+- Header contributions render in the shell's top bar layer (0.12.94): above page content and below shell dialogs. A popup inside a header item, such as the Alerts list, is not covered by sticky page bars and needs no z-index of its own. Shell dialogs, drawers and the help panel still open above it.
 - A module cannot unregister another module's contribution.
 - Failed module registration clears partial header contributions from that module.
 - A contribution the user lacks the permission for is hidden (AD-12): it is not listed.

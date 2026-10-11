@@ -3,6 +3,7 @@ import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createLatestRequestGate } from '../admin-session-state'
 import { loadLatestHotfixRows } from '../module-hotfix-loader'
+import { orderGroupsByDependency, pairIntakeFiles } from '../module-intake'
 import { categoryBadge, categoryNote, categorySearchText, CATEGORY_FILTERS, filterByCategory } from '../module-category'
 import { confirmationRequired, dependantLines, handBackDisableLines, handBackEnableLines, handBackRequiredPayload, handBackWarning, installConfirmSummary, jobSwitchLines, emptySecondConfirmationText, secondConfirmationRequired, secondConfirmationRequiredPayload, secondConfirmationText, isReplacementProblem, replacedByLabel, replacementConfirmLines, replacementListChangedText, replacementProblemText, replacementSummary, replacesLabel, satisfiedByLine, willDisableIds } from '../module-replacement'
 import {
@@ -12,7 +13,7 @@ import {
   discardModuleArtifact,
   getModuleJob,
   listModuleJobs,
-  inspectModulePackages,
+  inspectIntakeSets,
   inspectModuleHotfix,
   discardModuleHotfix,
   applyModuleHotfix,
@@ -75,6 +76,9 @@ const inspecting = ref(false)
 const staged = ref(null)
 const installOrder = ref([])
 const queueWarning = ref('')
+// 0.12.94: sets that did not inspect, [{ key, label, message }], and the replacement ids the person confirmed.
+const intakeErrors = ref([])
+const confirmedDisable = ref([])
 const dragId = ref(null)
 const activeJob = ref(null)
 const jobPollError = ref('')
@@ -152,20 +156,18 @@ const plan = computed(() => preview.value?.plan || staged.value?.plan || null)
 const artifactKind = computed(() => staged.value?.kind || preview.value?.kind || 'artifact')
 const stagedSourceLabel = computed(() => staged.value?.source?.repository_name || staged.value?.source?.type || 'offline')
 const stagedHash = computed(() => staged.value?.sha256 || staged.value?.source?.package_sha256 || '—')
-const stagedTrust = computed(() => staged.value?.publisher_trust || preview.value?.publisher_trust || null)
-const stagedTrustLabel = computed(() => {
-  const trust = stagedTrust.value
+// 0.12.94: trust is read per row, because a composite view holds packages that each have their own trust.
+function trustLabelOf(trust) {
   if (!trust) return 'NOT REPORTED'
   if (trust.verified && trust.trusted) return 'VERIFIED'
   if (trust.state === 'unsigned' || !trust.signed) return 'UNSIGNED'
   return String(trust.state || 'UNTRUSTED').toUpperCase()
-})
-const stagedTrustClass = computed(() => {
-  const trust = stagedTrust.value
+}
+function trustClassOf(trust) {
   if (trust?.verified && trust?.trusted) return 'ok'
   if (trust?.state === 'unsigned' || trust?.signed === false) return ''
   return 'danger'
-})
+}
 const stagedArtifactLabel = computed(() => {
   if (staged.value?.filename) return staged.value.filename
   if (artifactKind.value === 'batch') return 'Multiple packages'
@@ -202,12 +204,19 @@ const selectedNavigation = computed(() => dynamicNav.find((item) => item?.module
 const canOpenSelected = computed(() => Boolean(selected.value?.enabled && ['loaded', 'runtime-error'].includes(selectedLoad.value.state) && selectedNavigation.value?.to))
 function openSelectedModule() { if (canOpenSelected.value) router.push(selectedNavigation.value.to) }
 
-const stagedRows = computed(() => {
-  if (!staged.value) return []
+// 0.12.94: the plan of one staged payload (a package, a bundle or an unsigned batch).
+function planOf(payload) { return (payload?.preview || payload)?.plan || payload?.plan || null }
+// Rows for one staged payload. Each row carries its own trust, so a composite view shows every package's trust.
+function stagedRowsOf(payload) {
+  if (!payload) return []
+  const view = payload.preview || payload
+  const kind = payload.kind || view.kind || 'artifact'
+  const trust = payload.publisher_trust || view.publisher_trust || null
+  const trustFields = { intake_trust: trust, intake_trust_label: trustLabelOf(trust), intake_trust_class: trustClassOf(trust) }
   let rows = []
-  if (artifactKind.value === 'batch') {
-    const artifacts = new Map((staged.value.artifacts || []).map((item) => [item.upload_id, item]))
-    rows = (staged.value.packages || []).map((item) => {
+  if (kind === 'batch') {
+    const artifacts = new Map((payload.artifacts || []).map((item) => [item.upload_id, item]))
+    rows = (payload.packages || []).map((item) => {
       const previewRow = item.preview || item
       const artifact = artifacts.get(item.source_upload_id) || {}
       const sourceKind = item.source_kind || artifact.kind || 'package'
@@ -220,23 +229,28 @@ const stagedRows = computed(() => {
         intake_sha256: item.sha256 || artifact.sha256 || artifact.source?.package_sha256 || '',
       }
     })
-  } else if (artifactKind.value === 'bundle') {
-    rows = (preview.value?.packages || []).map((item) => ({
+  } else if (kind === 'bundle') {
+    rows = (view.packages || []).map((item) => ({
       ...item,
-      intake_filename: staged.value.filename || preview.value?.id || 'bundle',
-      intake_source: `bundle · ${preview.value?.id || staged.value.filename || 'package'}`,
-      intake_sha256: staged.value.sha256 || '',
+      intake_filename: payload.filename || view.id || 'bundle',
+      intake_source: `bundle · ${view.id || payload.filename || 'package'}`,
+      intake_sha256: payload.sha256 || '',
     }))
   } else {
-    rows = preview.value ? [{
-      ...preview.value,
-      intake_filename: staged.value.filename || preview.value.id || 'package',
-      intake_source: stagedSourceLabel.value,
-      intake_sha256: stagedHash.value === '—' ? '' : stagedHash.value,
-    }] : []
+    rows = [{
+      ...view,
+      intake_filename: payload.filename || view.id || 'package',
+      intake_source: payload.source?.repository_name || payload.source?.type || 'offline',
+      intake_sha256: payload.sha256 || payload.source?.package_sha256 || '',
+    }]
   }
-  const actions = new Map((plan.value?.actions || []).map((item) => [item.id, item]))
-  return rows.map((item) => ({ ...item, ...(actions.get(item.id) || {}) }))
+  const actions = new Map((planOf(payload)?.actions || []).map((item) => [item.id, item]))
+  return rows.map((item) => ({ ...item, ...trustFields, ...(actions.get(item.id) || {}) }))
+}
+const stagedRows = computed(() => {
+  if (!staged.value) return []
+  const payloads = staged.value.composite ? staged.value.groups.map((group) => group.staged) : [staged.value]
+  return payloads.flatMap((payload) => stagedRowsOf(payload))
 })
 
 function moduleTargetVersion(row) { return row?.version || row?.extension_version || '—' }
@@ -262,20 +276,17 @@ function intakeFileLabel(file) {
   if (type === 'metadata') return 'RELEASE JSON'
   return 'PACKAGE'
 }
-const pendingIntake = computed(() => ({
-  packages: pendingFiles.value.filter((file) => intakeFileType(file) === 'package'),
-  signatures: pendingFiles.value.filter((file) => intakeFileType(file) === 'signature'),
-  metadata: pendingFiles.value.filter((file) => intakeFileType(file) === 'metadata'),
-}))
-const pendingIntakeProblem = computed(() => {
-  const intake = pendingIntake.value
-  if (!intake.packages.length) return 'Add at least one Tec-Tac package or bundle.'
-  if (intake.signatures.length > 1) return 'Only one detached signature can accompany an uploaded package.'
-  if (intake.metadata.length > 1) return 'Only one release metadata file can accompany an uploaded package.'
-  const hasSidecar = intake.signatures.length || intake.metadata.length
-  if (hasSidecar && intake.packages.length !== 1) return 'Signature and release metadata companions can only be used with one package or bundle at a time.'
-  if (hasSidecar && (!intake.signatures.length || !intake.metadata.length)) return 'A signed package needs both the .sig file and the .release.json file. Remove the sidecar to inspect the package as unsigned, or add its matching companion.'
-  return ''
+// 0.12.94: each package pairs with the .sig and .release.json that share its name. Problems belong to one set.
+const pendingSets = computed(() => pairIntakeFiles(pendingFiles.value))
+const pendingIntakeProblem = computed(() => pendingSets.value.problems[0] || '')
+const problemSets = computed(() => pendingSets.value.sets.filter((set) => set.problems.length))
+const intakeBlocked = computed(() => pendingSets.value.problems.length > 0 || problemSets.value.length > 0)
+const intakeNotes = computed(() => {
+  const sets = pendingSets.value.sets
+  return {
+    signed: sets.filter((set) => set.pkg && set.sig && set.meta).length,
+    unsigned: sets.filter((set) => set.pkg && !set.sig && !set.meta).length,
+  }
 })
 
 const orderedRows = computed(() => {
@@ -494,24 +505,121 @@ function movePending(index, offset) {
   pendingFiles.value = next
 }
 
+function clearPending() {
+  pendingFiles.value = []
+  intakeErrors.value = []
+  queueWarning.value = ''
+}
+
+// 0.12.94: inspects every set. A set that passes is staged. A set that fails keeps its files in the list with its message.
 async function inspectPending() {
-  if (!pendingFiles.value.length || inspecting.value) return
-  if (pendingIntakeProblem.value) {
-    queueWarning.value = pendingIntakeProblem.value
+  if (!pendingFiles.value.length || inspecting.value || staged.value || jobRunning.value) return
+  if (intakeBlocked.value) {
+    queueWarning.value = pendingIntakeProblem.value || 'Fix the files marked in the list before you inspect.'
     return
   }
   inspecting.value = true
   error.value = ''
   queueWarning.value = ''
+  intakeErrors.value = []
   try {
-    staged.value = await inspectModulePackages(pendingFiles.value)
-    installOrder.value = [...(plan.value?.order || stagedRows.value.map((item) => item.id))]
-    pendingFiles.value = []
+    const results = await inspectIntakeSets(pendingSets.value.sets)
+    const bySource = new Map()
+    const failed = []
+    for (const result of results) {
+      if (result.staged) bySource.set(result.staged, [...(bySource.get(result.staged) || []), result.set])
+      else failed.push(result)
+    }
+    const groups = [...bySource].map(([payload, sets]) => groupFor(payload, sets))
+    intakeErrors.value = failed.map(({ set, error: message }) => ({ key: set.key, label: set.label, message }))
+    const keep = new Set(failed.flatMap(({ set }) => [set.pkg, set.sig, set.meta].filter(Boolean)))
+    pendingFiles.value = pendingFiles.value.filter((file) => keep.has(file))
+    installOrder.value = []
+    restageGroups(orderGroupsByDependency(groups))
   } catch (err) {
     error.value = err.message || 'Inspection failed.'
   } finally {
     inspecting.value = false
   }
+}
+
+// One staged payload as a group. Its module ids and requirements decide the install order of the groups.
+function groupFor(payload, sets) {
+  const rows = stagedRowsOf(payload)
+  return {
+    key: sets.map((set) => set.key).join('|'),
+    label: sets.map((set) => set.label).join(', '),
+    staged: payload,
+    moduleIds: rows.map((row) => row.id),
+    requires: rows.flatMap((row) => Object.keys(row.dependencies || {})),
+  }
+}
+// The groups still staged, in install order. A composite holds several; a single payload is one group.
+function stagedGroups() {
+  if (!staged.value) return []
+  if (staged.value.composite) return staged.value.groups
+  const payload = staged.value
+  return [groupFor(payload, [{ key: 'single', label: payload.filename || (payload.preview || payload).id || 'package' }])]
+}
+function kindOf(payload) { return (payload?.kind || (payload?.preview || payload)?.kind) === 'batch' ? 'batch' : 'artifact' }
+// A group's install order: the person's order for its modules, else Core's plan order.
+function orderFor(group, current) {
+  const kept = current.filter((id) => group.moduleIds.includes(id))
+  return kept.length ? kept : [...(planOf(group.staged)?.order || group.moduleIds)]
+}
+// One view over several staged groups. Valid only when every group is valid and no module is in two groups.
+function compositeOf(groups) {
+  const plans = groups.map((group) => planOf(group.staged) || {})
+  const owner = new Map()
+  const duplicates = []
+  for (const group of groups) {
+    for (const id of group.moduleIds) {
+      if (!owner.has(id)) owner.set(id, group.key)
+      else if (owner.get(id) !== group.key && !duplicates.some((item) => item.module === id)) {
+        duplicates.push({ module: id, type: 'listed in more than one package set' })
+      }
+    }
+  }
+  return {
+    composite: true,
+    kind: 'composite',
+    filename: `${groups.length} package sets`,
+    groups,
+    plan: {
+      valid: duplicates.length === 0 && plans.every((plan) => Boolean(plan.valid)),
+      order: groups.flatMap((group, index) => plans[index].order || group.moduleIds),
+      actions: plans.flatMap((plan) => plan.actions || []),
+      problems: [...plans.flatMap((plan) => plan.problems || []), ...duplicates],
+      will_disable: [...new Set(plans.flatMap((plan) => willDisableIds(plan.will_disable)))],
+    },
+  }
+}
+// Shows the groups that are still staged. One group uses the single-package view; several use the composite view.
+function restageGroups(groups) {
+  const current = installOrder.value
+  if (!groups.length) {
+    staged.value = null
+    installOrder.value = []
+    return
+  }
+  if (groups.length === 1) {
+    staged.value = groups[0].staged
+    installOrder.value = orderFor(groups[0], current)
+    return
+  }
+  staged.value = compositeOf(groups)
+  installOrder.value = groups.flatMap((group) => orderFor(group, current))
+}
+// In a composite, each set's modules stay together and the sets keep their install order.
+function keepsSetsTogether(order) {
+  const groups = stagedGroups()
+  if (groups.length < 2) return true
+  const sequence = []
+  for (const id of order) {
+    const index = groups.findIndex((group) => group.moduleIds.includes(id))
+    if (sequence[sequence.length - 1] !== index) sequence.push(index)
+  }
+  return sequence.join(',') === groups.map((_, index) => index).join(',')
 }
 
 function dependencyViolation(order) {
@@ -539,6 +647,10 @@ function requestMove(id, targetIndex) {
     queueWarning.value = `Required sequence enforced: ${violation}`
     return
   }
+  if (!keepsSetsTogether(next)) {
+    queueWarning.value = 'Packages move within their own set, and the sets install in the order shown.'
+    return
+  }
   installOrder.value = next
   queueWarning.value = ''
 }
@@ -555,26 +667,29 @@ function dropOn(id) {
   dragId.value = null
 }
 
+// Discards every staged upload, so a composite leaves no upload behind.
 async function clearStaged() {
-  const uploadId = staged.value?.upload_id
+  const uploadIds = stagedGroups().map((group) => group.staged?.upload_id).filter(Boolean)
   staged.value = null
   installOrder.value = []
   queueWarning.value = ''
-  if (!uploadId) return
-  try { await discardModuleArtifact(uploadId) } catch (e) { error.value = e.message || 'Unable to discard staged packages.' }
+  for (const uploadId of uploadIds) {
+    try { await discardModuleArtifact(uploadId) } catch (e) { error.value = e.message || 'Unable to discard staged packages.' }
+  }
 }
 
 async function install() {
-  if (!staged.value?.upload_id || plan.value?.valid === false) return
+  const groups = stagedGroups()
+  if (!groups.length || !groups.every((group) => group.staged?.upload_id) || plan.value?.valid === false) return
   const violation = dependencyViolation(installOrder.value)
   if (violation) {
     queueWarning.value = `Required sequence enforced: ${violation}`
     return
   }
-  // A replacement switches another module off. Ask first, naming each module.
+  // A replacement switches another module off. Ask first, naming each module. One question covers every set.
   const summary = installConfirmSummary(plan.value)
   if (summary.ids.length) {
-    installConfirm.value = { ids: summary.ids, lines: summary.lines, changed: '' }
+    installConfirm.value = { ids: summary.ids, lines: summary.lines, changed: '', exact: false }
     return
   }
   await runInstall([])
@@ -583,32 +698,49 @@ async function install() {
 function closeInstallConfirm() { installConfirm.value = null }
 async function confirmInstall() {
   if (!installConfirm.value) return
-  await runInstall(installConfirm.value.ids)
+  await runInstall(installConfirm.value.ids, installConfirm.value.exact === true)
 }
-async function runInstall(disableReplaced) {
-  if (!staged.value?.upload_id) return
+// Installs the first staged group. Each group is its own job: the next one starts when this job succeeds.
+// disableReplaced is filtered to the group's own replaced modules, unless exact (a fresh list from Core for this group).
+async function runInstall(disableReplaced, exact = false, afterSuccess = false) {
+  const groups = stagedGroups()
+  const group = groups[0]
+  if (!group?.staged?.upload_id) return
+  // The list the person confirmed is kept for the sets that follow. A chained set does not replace it.
+  if (!afterSuccess) confirmedDisable.value = disableReplaced
+  const order = groups.length === 1 ? installOrder.value : orderFor(group, installOrder.value)
+  const own = installConfirmSummary(planOf(group.staged)).ids
+  const sendIds = exact ? disableReplaced : disableReplaced.filter((id) => own.includes(id))
   try {
     const job = await installModuleArtifact(
-      staged.value.upload_id,
-      artifactKind.value === 'batch' ? 'batch' : 'artifact',
-      installOrder.value,
-      disableReplaced,
+      group.staged.upload_id,
+      kindOf(group.staged),
+      order,
+      sendIds,
     )
     installConfirm.value = null
-    staged.value = null
-    installOrder.value = []
+    restageGroups(groups.slice(1))
     beginPoll(job)
   } catch (e) {
     // The list the user saw is out of date: show the fresh one and ask again.
     const fresh = confirmationRequired(e)
     if (fresh !== null) {
       const summary = installConfirmSummary({ will_disable: fresh })
-      installConfirm.value = { ids: summary.ids, lines: summary.lines, changed: replacementListChangedText(fresh) }
+      installConfirm.value = { ids: summary.ids, lines: summary.lines, changed: replacementListChangedText(fresh), exact: true }
     } else {
       installConfirm.value = null
-      error.value = e.message
+      error.value = groups.length > 1 || afterSuccess
+        ? notRunMessage(e.message || 'Unable to install this package.', groups, afterSuccess)
+        : e.message
     }
   }
+}
+// The message when a set did not install: which sets did not run, and whether a reload is needed.
+function notRunMessage(message, groups, reloadHint) {
+  const parts = [message]
+  if (groups.length) parts.push(`Not run yet: ${groups.map((group) => group.label).join(', ')}. They stay staged.`)
+  if (reloadHint) parts.push('Reload Tec-Tac to load the packages that installed.')
+  return parts.join(' ')
 }
 
 function ask(item, mode) { confirmTarget.value = item; confirmMode.value = mode; confirmText.value = ''; cascade.value = false; listChanged.value = ''; confirmStep.value = 1; switchAck.value = false; handBack.value = null }
@@ -827,6 +959,11 @@ async function poll() {
     if (['succeeded', 'failed', 'dispatch_failed'].includes(activeJob.value.status)) {
       await loadJobHistory()
       if (activeJob.value.status === 'succeeded') {
+        // A composite installs its next set first. The reload waits for the last set.
+        if (stagedGroups().length) {
+          await runInstall(confirmedDisable.value, false, true)
+          return
+        }
         // Module lifecycle jobs may replace dynamically imported browser code.
         // sync-modules.sh has already regenerated content-versioned entry URLs;
         // reload the shell so the browser consumes the new manifest and module.
@@ -835,6 +972,8 @@ async function poll() {
       }
       await refresh(activeJob.value.plugin_id)
       await loadOnlineCatalog()
+      // A failed job stops the run. The sets that were not started stay staged.
+      if (stagedGroups().length) error.value = notRunMessage('A package in this run did not install.', stagedGroups(), false)
       return
     }
   } catch (e) {
@@ -897,11 +1036,11 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
       @drop.prevent="onDrop"
     >
       <div class="drop-icon">⇩</div>
-      <div><b>{{ dropActive ? 'Drop package files here' : 'Drag & drop Tec-Tac packages here' }}</b><span>Signatures are optional for normal modules. For a signed package, add the package, matching .sig and matching .release.json together.</span></div>
+      <div><b>{{ dropActive ? 'Drop package files here' : 'Drag & drop Tec-Tac packages here' }}</b><span>Signatures are optional for normal modules. Each package pairs with the .sig and .release.json that share its file name.</span></div>
       <button class="btn sm" type="button" :disabled="!canManage || jobRunning || inspecting" @click.stop="pick">Browse files</button>
     </div>
 
-    <div v-if="pendingFiles.length && !staged" class="package-queue">
+    <div v-if="pendingFiles.length" class="package-queue">
       <div class="queue-head"><span class="eyebrow">FILES TO INSPECT</span><span class="mono muted">{{ pendingFiles.length }} file{{ pendingFiles.length===1?'':'s' }}</span></div>
       <div v-for="(file,index) in pendingFiles" :key="fileKey(file)" class="queue-row">
         <span class="queue-grip" aria-hidden="true">⋮⋮</span>
@@ -911,9 +1050,12 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
         <div class="queue-actions"><button class="iconbtn" :disabled="index===0" title="Move up" @click="movePending(index,-1)">↑</button><button class="iconbtn" :disabled="index===pendingFiles.length-1" title="Move down" @click="movePending(index,1)">↓</button><button class="iconbtn" title="Remove" @click="removePending(index)">×</button></div>
       </div>
       <div v-if="pendingIntakeProblem" class="state-inline warning mt"><b>Package intake needs attention.</b> {{ pendingIntakeProblem }}</div>
-      <div v-else-if="pendingIntake.packages.length===1 && !pendingIntake.signatures.length" class="state-inline mt"><b>Unsigned package.</b> Signing is optional for normal modules at this stage; Core will still inspect and can install it unless the module requests privileged publisher permissions.</div>
-      <div v-else-if="pendingIntake.signatures.length && pendingIntake.metadata.length" class="state-inline mt"><b>Signed package companions detected.</b> Core will verify the package hash, publisher policy and detached Ed25519 signature during inspection.</div>
-      <div class="queue-footer"><button class="btn" @click="pendingFiles=[]">Clear</button><span class="spacer"></span><button class="btn primary" :disabled="inspecting || !!pendingIntakeProblem" @click="inspectPending">{{ inspecting ? 'Inspecting…' : 'Inspect package intake' }}</button></div>
+      <div v-for="set in problemSets" :key="`problem-${set.key}`" class="state-inline warning mt"><b>{{ set.label }}</b> {{ set.problems.join(' ') }}</div>
+      <div v-for="item in intakeErrors" :key="`failed-${item.key}`" class="state-inline warning mt"><b>{{ item.label }}</b> did not inspect. {{ item.message }}</div>
+      <div v-if="!intakeBlocked && intakeNotes.unsigned" class="state-inline mt"><b>{{ intakeNotes.unsigned === 1 ? 'Unsigned package.' : `${intakeNotes.unsigned} unsigned packages.` }}</b> Signing is optional for normal modules at this stage; Core will still inspect and can install them unless a module requests privileged publisher permissions.</div>
+      <div v-if="!intakeBlocked && intakeNotes.signed" class="state-inline mt"><b>{{ intakeNotes.signed === 1 ? 'Signed package detected.' : `${intakeNotes.signed} signed packages detected.` }}</b> Each one is inspected with its own .sig and .release.json. Core checks the package hash, publisher policy and detached Ed25519 signature.</div>
+      <div v-if="staged" class="state-inline warning mt"><b>Packages are staged.</b> Install or discard them before you inspect these files.</div>
+      <div class="queue-footer"><button class="btn" @click="clearPending">Clear</button><span class="spacer"></span><button class="btn primary" :disabled="inspecting || intakeBlocked || !!staged" @click="inspectPending">{{ inspecting ? 'Inspecting…' : 'Inspect package intake' }}</button></div>
     </div>
 
     <div v-if="staged" class="install-plan-workspace">
@@ -932,34 +1074,34 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
             <div data-label="Package" class="mono module-target-version">{{ moduleTargetVersion(row) }}</div>
             <div data-label="Trust" class="module-trust-cell">
               <span
-                v-if="stagedTrust"
+                v-if="row.intake_trust"
                 class="pill module-trust-badge"
-                :class="stagedTrustClass"
+                :class="row.intake_trust_class"
                 tabindex="0"
-                :aria-label="`Package trust: ${stagedTrustLabel}`"
+                :aria-label="`Package trust: ${row.intake_trust_label}`"
               >
-                {{ stagedTrustLabel === 'VERIFIED' ? 'SIGNED' : stagedTrustLabel }}
+                {{ row.intake_trust_label === 'VERIFIED' ? 'SIGNED' : row.intake_trust_label }}
                 <span class="module-trust-popover" role="tooltip">
-                  <b>{{ stagedTrustLabel === 'VERIFIED' ? 'Signed package' : (stagedTrustLabel === 'UNSIGNED' ? 'Unsigned package' : stagedTrustLabel) }}</b>
-                  <template v-if="stagedTrust.verified && stagedTrust.trusted">
-                    <span><strong>Publisher</strong>{{ stagedTrust.publisher_display_name || stagedTrust.publisher_id || '—' }}</span>
-                    <span><strong>Publisher ID</strong><code>{{ stagedTrust.publisher_id || '—' }}</code></span>
-                    <span><strong>Key ID</strong><code>{{ stagedTrust.key_id || '—' }}</code></span>
-                    <span><strong>Algorithm</strong><code>{{ stagedTrust.algorithm || 'Ed25519' }}</code></span>
-                    <span><strong>Environment</strong><code>{{ stagedTrust.publisher_environment || stagedTrust.server_environment || '—' }}</code></span>
-                    <span><strong>Assurance</strong><code>{{ stagedTrust.assurance || 'standard' }}</code></span>
-                    <span v-if="stagedTrust.acceptance_policy"><strong>Acceptance</strong><code>{{ stagedTrust.acceptance_policy.actual_label }} · minimum {{ stagedTrust.acceptance_policy.minimum_label }}</code></span>
-                    <span><strong>SHA256</strong><code>{{ stagedTrust.package_sha256 || row.intake_sha256 || '—' }}</code></span>
-                    <span><strong>Required</strong><code>{{ stagedTrust.required_permissions?.length ? stagedTrust.required_permissions.join(', ') : 'none' }}</code></span>
-                    <span><strong>Approved</strong><code>{{ stagedTrust.approved_permissions?.length ? stagedTrust.approved_permissions.join(', ') : 'none' }}</code></span>
+                  <b>{{ row.intake_trust_label === 'VERIFIED' ? 'Signed package' : (row.intake_trust_label === 'UNSIGNED' ? 'Unsigned package' : row.intake_trust_label) }}</b>
+                  <template v-if="row.intake_trust.verified && row.intake_trust.trusted">
+                    <span><strong>Publisher</strong>{{ row.intake_trust.publisher_display_name || row.intake_trust.publisher_id || '—' }}</span>
+                    <span><strong>Publisher ID</strong><code>{{ row.intake_trust.publisher_id || '—' }}</code></span>
+                    <span><strong>Key ID</strong><code>{{ row.intake_trust.key_id || '—' }}</code></span>
+                    <span><strong>Algorithm</strong><code>{{ row.intake_trust.algorithm || 'Ed25519' }}</code></span>
+                    <span><strong>Environment</strong><code>{{ row.intake_trust.publisher_environment || row.intake_trust.server_environment || '—' }}</code></span>
+                    <span><strong>Assurance</strong><code>{{ row.intake_trust.assurance || 'standard' }}</code></span>
+                    <span v-if="row.intake_trust.acceptance_policy"><strong>Acceptance</strong><code>{{ row.intake_trust.acceptance_policy.actual_label }} · minimum {{ row.intake_trust.acceptance_policy.minimum_label }}</code></span>
+                    <span><strong>SHA256</strong><code>{{ row.intake_trust.package_sha256 || row.intake_sha256 || '—' }}</code></span>
+                    <span><strong>Required</strong><code>{{ row.intake_trust.required_permissions?.length ? row.intake_trust.required_permissions.join(', ') : 'none' }}</code></span>
+                    <span><strong>Approved</strong><code>{{ row.intake_trust.approved_permissions?.length ? row.intake_trust.approved_permissions.join(', ') : 'none' }}</code></span>
                   </template>
-                  <template v-else-if="stagedTrust.state==='unsigned' || stagedTrust.signed===false">
+                  <template v-else-if="row.intake_trust.state==='unsigned' || row.intake_trust.signed===false">
                     <span class="module-trust-note">No package signature was supplied.</span>
                     <span class="module-trust-note">Unsigned packages are accepted only when the global Update Trust Policy and module-specific rules permit them.</span>
                     <span class="module-trust-note">Privileged publisher permissions still require a trusted signature regardless of the global minimum.</span>
                   </template>
                   <template v-else>
-                    <span class="module-trust-note">{{ stagedTrust.reason || stagedTrust.error || 'Core did not accept the package trust material.' }}</span>
+                    <span class="module-trust-note">{{ row.intake_trust.reason || row.intake_trust.error || 'Core did not accept the package trust material.' }}</span>
                   </template>
                 </span>
               </span>
@@ -998,7 +1140,7 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
         <div v-for="(problem,index) in plan.problems" :key="index" class="state-inline warning mt"><template v-if="isReplacementProblem(problem)">{{ replacementProblemText(problem) }}</template><template v-else><span class="mono">{{ problem.module || 'plan' }}</span> — {{ problem.type }}</template><span v-if="problem.dependency">: {{ problem.dependency }} {{ problem.constraint }}</span></div>
       </template>
 
-      <div class="queue-footer"><button class="btn" @click="clearStaged">Cancel / discard</button><span class="spacer"></span><span class="muted smalltext">The framework validates this sequence again before execution.</span><button class="btn primary" :disabled="!plan?.valid || !orderedRows.length" @click="install">Install {{ orderedRows.length }} package{{ orderedRows.length===1?'':'s' }}</button></div>
+      <div class="queue-footer"><button class="btn" :disabled="jobRunning" @click="clearStaged">Cancel / discard</button><span class="spacer"></span><span class="muted smalltext">The framework validates this sequence again before execution.</span><button class="btn primary" :disabled="!plan?.valid || !orderedRows.length || jobRunning" @click="install">Install {{ orderedRows.length }} package{{ orderedRows.length===1?'':'s' }}</button></div>
     </div>
   </section>
 

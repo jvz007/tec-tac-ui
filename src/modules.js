@@ -14,6 +14,35 @@ export function inspectModulePackages(files){
   if(metadata) body.append('metadata',metadata)
   return apiFetch('/api/tfd/modules/v2/packages/inspect/',{method:'POST',body})
 }
+// 0.12.94: several intake sets. Unsigned packages share one request, so they keep one dependency plan. Each signed set
+// (package, .sig, .release.json) goes in its own request, because Core takes one signature per request. Requests run
+// one at a time. A failed request marks only its own sets. Returns one { set, staged } or { set, error } per set, in order.
+export async function inspectIntakeSets(sets, post = inspectModulePackages){
+  const list=Array.isArray(sets)?sets:[]
+  const results=new Map()
+  const unsigned=[]
+  for(const set of list){
+    if(set?.problems?.length) results.set(set,{set,error:set.problems[0]})
+    else if(!set.sig&&!set.meta) unsigned.push(set)
+  }
+  if(unsigned.length){
+    try{
+      const staged=await post(unsigned.map((set)=>set.pkg))
+      for(const set of unsigned) results.set(set,{set,staged})
+    }catch(e){
+      for(const set of unsigned) results.set(set,{set,error:e?.message||'Inspection failed.'})
+    }
+  }
+  for(const set of list){
+    if(results.has(set)) continue
+    try{
+      results.set(set,{set,staged:await post([set.pkg,set.sig,set.meta].filter(Boolean))})
+    }catch(e){
+      results.set(set,{set,error:e?.message||'Inspection failed.'})
+    }
+  }
+  return list.map((set)=>results.get(set))
+}
 // disable_replaced is added only when it names modules, so an older Core and a plain install see the old body.
 function withDisableReplaced(body,disableReplaced){
   const ids=Array.isArray(disableReplaced)?disableReplaced.filter((id)=>typeof id==='string'&&id):[]
