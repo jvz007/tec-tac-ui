@@ -21,6 +21,8 @@ export const state = reactive({
   context: emptyRuntimeContext(tacticalIdentityFromStorage()),
 
   moduleLoad: { loaded: [], failed: [], skipped: [] },
+  // Popup (chromeless) window state, 0.12.95. active is set only by main.js for a /popup/ hash.
+  popup: { active: false, status: 'idle', message: '' },
   publicModuleLoad: { loaded: [], failed: [] },
   publicModules: [],
   // Failures captured by Core's error boundaries and the app error handler.

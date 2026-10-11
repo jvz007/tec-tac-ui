@@ -668,10 +668,10 @@ grep -q "item.update_available ? 'Download update' : 'Reinstall'" "${ROOT}/src/v
 printf '[TEST] PASS same-version module reinstall confirmation\n'
 
 # 0.12.10 module package signature intake and trust visibility
-grep -q "body.append('signature',signature)" "${ROOT}/src/modules.js" || fail "module signature sidecar is not sent to Core"
-grep -q "body.append('metadata',metadata)" "${ROOT}/src/modules.js" || fail "module release metadata sidecar is not sent to Core"
+grep -q "body.append('signatures',file)" "${ROOT}/src/modules.js" || fail "module signature sidecars are not sent to Core (0.12.95 repeated field)"
+grep -q "body.append('metadata_files',file)" "${ROOT}/src/modules.js" || fail "module release metadata sidecars are not sent to Core (0.12.95 repeated field)"
 grep -q "function intakeFileType" "${ROOT}/src/views/ModulesView.vue" || fail "module package sidecar classifier missing"
-grep -q "intake_trust: trust, intake_trust_label: trustLabelOf(trust)" "${ROOT}/src/views/ModulesView.vue" || fail "staged package trust result missing"
+grep -q "...trustFieldsOf(rowTrust)" "${ROOT}/src/views/ModulesView.vue" || fail "staged package trust result missing"
 grep -q 'data-label="Trust"' "${ROOT}/src/views/ModulesView.vue" || fail "package trust review column missing"
 grep -q "global Update Trust Policy" "${ROOT}/src/views/ModulesView.vue" || fail "global module trust policy is not explicit in trust popover"
 grep -q "Privileged publisher permissions still require a trusted signature" "${ROOT}/src/views/ModulesView.vue" || fail "privileged unsigned-package boundary is not visible"

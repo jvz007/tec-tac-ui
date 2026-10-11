@@ -61,6 +61,9 @@ if extensions_root.is_dir():
     if not entry and not public_entry: raise SystemExit(f"UI module must declare entry, public.entry, or both in {manifest}")
     ext_manifest=extension/"tec_tac.json"; ext_payload=json.loads(ext_manifest.read_text(encoding="utf-8"))
     declared={code for values in (ext_payload.get("permission_groups") or {}).values() for code in values}
+    # 0.12.95: hard dependency ids only. A popup window loads these with the module; optional ones are not loaded.
+    raw_deps=ext_payload.get("dependencies") or {}
+    hard_deps=sorted(str(dep) for dep in (raw_deps.keys() if isinstance(raw_deps,dict) else raw_deps))
     ui_permissions=payload.get("permissions") or []
     unknown=sorted(set(ui_permissions)-declared)
     if unknown: raise SystemExit(f"UI module {mid} references undeclared permissions: {', '.join(unknown)}")
@@ -87,7 +90,7 @@ if extensions_root.is_dir():
     navigation=payload.get("navigation") or {"label":mid,"section":"Extensions","icon":"◇"}
     if not isinstance(navigation,dict): raise SystemExit(f"navigation must be an object in {manifest}")
     navigation=dict(navigation); navigation["visible"]=effective_visible
-    modules.append({"id":mid,"version":str(payload.get("version","0.0.0")),"visible":effective_visible,"entry":f"/tec-tac/modules/{mid}/{src.name}?v={src_key}" if src else None,"public":{"entry":f"/tec-tac/modules/{mid}/{pub.name}?v={pub_key}","base_path":public_base} if pub else None,"navigation":navigation,"permissions":ui_permissions})
+    modules.append({"id":mid,"version":str(payload.get("version","0.0.0")),"visible":effective_visible,"entry":f"/tec-tac/modules/{mid}/{src.name}?v={src_key}" if src else None,"public":{"entry":f"/tec-tac/modules/{mid}/{pub.name}?v={pub_key}","base_path":public_base} if pub else None,"navigation":navigation,"permissions":ui_permissions,"dependencies":hard_deps})
 (out_root/"modules.json").write_text(json.dumps(modules,indent=2)+"\n",encoding="utf-8")
 print(f"discovered={len(modules)} manifest={out_root/'modules.json'}")
 PY

@@ -24,8 +24,9 @@ let modulesSource = fs.readFileSync(new URL('../src/modules.js', import.meta.url
 modulesSource = modulesSource.replace("import { apiFetch } from './api'", "const apiFetch = async () => ({ ok: true })")
 const modules = await import(`data:text/javascript;base64,${Buffer.from(modulesSource).toString('base64')}`)
 const file = (name) => ({ name })
-assert.throws(() => modules.inspectModulePackages([file('a.zip'), file('a.sig'), file('b.sig')]), /exactly one detached signature/)
-assert.throws(() => modules.inspectModulePackages([file('a.zip'), file('a.release.json'), file('b.release.json')]), /exactly one release metadata/)
+// 0.12.95: normal intake sends several signatures and release files to Core in one request; the refusal is gone.
+assert.doesNotThrow(() => modules.inspectModulePackages([file('a.zip'), file('a.sig'), file('b.sig')]))
+assert.doesNotThrow(() => modules.inspectModulePackages([file('a.zip'), file('a.release.json'), file('b.release.json')]))
 assert.throws(() => modules.inspectModuleHotfix([file('a.zip'), file('a.sig'), file('b.sig')]), /exactly one detached signature/)
 assert.throws(() => modules.inspectModuleHotfix([file('a.zip'), file('a.release.json'), file('b.release.json')]), /exactly one release metadata/)
 

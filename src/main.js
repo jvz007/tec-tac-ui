@@ -4,7 +4,8 @@ import App from './App.vue'
 import { apiBlob, apiFetch, apiRaw, apiText, beginTacticalSso, loadStaticModuleManifest, publicApiFetch } from './api'
 import { router } from './router'
 import { state, loadContext, recordModuleRuntimeError } from './state'
-import { loadPublicUiModules, loadUiModules } from './module-loader'
+import { loadPublicUiModules, loadUiModules, moduleIsAllowed } from './module-loader'
+import { parsePopupHash, popupHref as buildPopupHref, popupModuleSet, popupRoutePermitted, POPUP_HASH_PREFIX, POPUP_MESSAGE_NOT_POPUP, POPUP_MESSAGE_UNAVAILABLE } from './popup-mode'
 import { createTacticalOperation } from './tactical-operations'
 import { normalizeTacticalScope } from './runtime-context'
 import { createContextActionRegistry } from './context-actions'
@@ -106,16 +107,28 @@ async function bootstrap() {
     ? window.location.hash.slice(1)
     : null
 
+  // Popup window (0.12.95). A /popup/ hash opens one module page with no shell chrome. Only that module loads, plus its
+  // hard dependencies. No public modules, no dashboard and no notice polling. A /popup/ hash that does not parse is refused.
+  const popupRequested = window.location.hash.startsWith(POPUP_HASH_PREFIX)
+  const popupTarget = popupRequested ? parsePopupHash(window.location.hash) : null
+  const popupMode = popupRequested
+  const refusePopup = (message) => { state.popup = { ...state.popup, active: true, status: 'refused', message } }
+  if (popupMode) {
+    state.popup = { active: true, status: popupTarget ? 'loading' : 'refused', message: popupTarget ? '' : POPUP_MESSAGE_NOT_POPUP }
+  }
+
   // Public module routes must be registered before authentication is required.
   // This lets anonymous visitors open /public/<extension-id>/... directly.
   let staticModules = []
   try {
     staticModules = await loadStaticModuleManifest()
     state.publicModules = staticModules.filter((item) => item?.public?.entry)
-    state.publicModuleLoad = await loadPublicUiModules(
-      { app, router, publicApi: publicApiFetch, ssoProviders },
-      state.publicModules,
-    )
+    state.publicModuleLoad = popupMode
+      ? { loaded: [], failed: [] }
+      : await loadPublicUiModules(
+        { app, router, publicApi: publicApiFetch, ssoProviders },
+        state.publicModules,
+      )
   } catch (error) {
     state.publicModuleLoad = { loaded: [], failed: [{ id: 'manifest', message: error?.message || String(error) }] }
   }
@@ -134,6 +147,13 @@ async function bootstrap() {
     await initializeUserPreferences(state.context)
     const modules = createModuleStatusService(state.context.module_status, state.context.modules || staticModules)
     app.provide('tecTacModules', modules)
+    const descriptors = state.context.modules || staticModules
+    // A popup loads its module and the hard dependencies only. A module that is not allowed, not installed or not
+    // enabled is not in the list, so it is never requested.
+    const popupGate = { permissions: state.context.permissions || [], permissionSet: new Set(state.context.permissions || []), user: state.context.user || {}, source: state.contextSource }
+    const toLoad = popupMode
+      ? (popupTarget ? popupModuleSet(descriptors, popupTarget.moduleId, { allowed: (descriptor) => moduleIsAllowed(descriptor, popupGate) }) : [])
+      : descriptors
     state.moduleLoad = await loadUiModules(
       {
         app,
@@ -149,6 +169,16 @@ async function bootstrap() {
         hasTacticalPermission,
         tacticalScope,
         tacticalOperation,
+        // Popup mode (0.12.95): popupHref is for every module; popupMode is set only in a popup window.
+        popupHref: (moduleId, path) => buildPopupHref(moduleId, path, window.location.origin),
+        popupMode: popupTarget
+          ? {
+            moduleId: popupTarget.moduleId,
+            permitted: (meta) => popupRoutePermitted(meta, { permissions: state.context.permissions || [], user: state.context.user || {}, source: state.contextSource }),
+            refuse: refusePopup,
+            deniedMessage: POPUP_MESSAGE_UNAVAILABLE,
+          }
+          : null,
         contextActions,
         contextInteractions,
         resourceViews,
@@ -161,14 +191,21 @@ async function bootstrap() {
         header,
         modules,
       },
-      state.context.modules || staticModules,
+      toLoad,
     )
+
+    // A popup whose module did not load (not allowed, not installed, disabled or failed) is refused without a retry.
+    if (popupTarget && !state.moduleLoad.loaded.includes(popupTarget.moduleId)) refusePopup(POPUP_MESSAGE_UNAVAILABLE)
 
     // A fresh tab may target a dynamically registered authenticated route.
     // The core catch-all can resolve before modules are loaded, so replay the
     // original hash after module registration to restore the intended route.
     if (initialHashTarget && !initialHashTarget.startsWith('/public/') && initialHashTarget !== '/sso/callback') {
       await router.replace(initialHashTarget)
+    }
+    // A popup route that did not register (no such route, or no meta.popup) lands on the popup catch-all.
+    if (popupTarget && router.currentRoute.value.name === 'popup-pending' && state.popup.status !== 'refused') {
+      refusePopup(POPUP_MESSAGE_NOT_POPUP)
     }
   }
 }

@@ -293,3 +293,40 @@ If the API is served from a different origin than the page, the proxy must expos
 - `typescript`
 
 Any other id throws `Unsupported Tec-Tac editor language`. See [module-code-editor.md](module-code-editor.md) for the editor itself.
+
+## Popup mode
+
+A module can open one of its pages in its own window, without the Tec-Tac chrome. It needs UI 0.12.95 or later and no Core change. Ask the runtime for the address with `context.popupHref(path)` and open the window yourself:
+
+```js
+const url = context.popupHref(`/take-control/${agentId}/vnc`)
+if (url) window.open(url, 'tec-tac-vnc', 'popup,width=1100,height=700')
+```
+
+`popupHref(path)` returns an absolute address of the form `https://<host>/tec-tac/#/popup/<your module id><path>`, or `''` when it cannot build the address safely. It refuses a query string, `..`, control or zero-width characters, and a path that starts with `/popup`. It always names your own module, so one module cannot point at another module's window. It opens nothing: keep your own `window.open` call and its window features. It is refused after a failed or timed-out `register()`. Public modules (`registerPublic`) do not get it.
+
+A route opens in a popup only when it says so in its `meta`:
+
+```js
+context.router.addRoute({
+  path: '/take-control/:agent_id/vnc',
+  name: 'take-control-vnc',
+  component: VncView,
+  meta: { popup: true, permission: 'example.view' },
+})
+```
+
+- `meta.popup: true` lets the route open in a popup. A route without it has no popup address, and a popup request for it shows a refusal. Leave it off a route that is not designed for a bare window.
+- `meta.permission` (one Tec-Tac code) or `meta.permissions` (a list) names the codes the person must hold. The rule matches navigation items: a superuser passes, otherwise every code is required, and a context that did not come from the backend is denied. A person who may not open the route sees a plain refusal before your component renders (AD-12). The backend stays the authority.
+
+The popup address uses the route path, so the module id appears twice: `/tec-tac/#/popup/take-control/take-control/12/vnc` opens `/take-control/12/vnc`.
+
+**What a popup loads.** Only the owning module's bundle and its hard dependencies from `tec_tac.json` (`dependencies`), dependencies first. `scripts/sync-modules.sh` copies those ids into the module's descriptor in `modules.json` as `dependencies`. Until that sync runs, a descriptor with no `dependencies` field loads the module alone. A hard dependency that the person may not use, or that has no authenticated entry, is left out, so your module must cope without it. Optional dependencies (`optional_dependencies`) are not loaded in a popup: check `modules.isActive(id)` and degrade without them.
+
+**What a popup does not load.** Public modules, the dashboard, notice polling, header contributions and the `register()` of any other module. The shell still verifies the session, reads `GET /api/tfd/ui/context/`, and gives your module the full runtime context (`api`, `tacticalOperation`, and the rest).
+
+**What the popup window shows.** No brand header, top bar, navigation rail, navigation menu, notice drawer, help drawer or quick actions. It keeps the toast stack (your `notifications` calls still show), the unsaved-changes dialog, the theme and text size, and session tracking. The idle timeout remains Core's rule.
+
+**When a popup cannot open.** The window shows "This page is not available to you." when the module is skipped, not installed, disabled, failed to load, or the person lacks the route's permission. It shows "This page cannot open in its own window." when the route does not exist or lacks `meta.popup`. Neither case makes a request for the module's page.
+
+Expect a popup to load its own bundle and its dependencies, not the whole shell. Measure the boot in your own release before you claim a figure.

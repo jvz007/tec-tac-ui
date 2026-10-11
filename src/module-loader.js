@@ -178,6 +178,41 @@ export function bindTacticalOperation(operation, { moduleId, replaces, isAbandon
   }
 }
 
+// Popup mode (0.12.95). A route with meta.popup === true is also reachable at /popup/<id><path> for the owning module, so
+// its component reads useRoute().params unchanged. Its permission is checked before it renders (AD-12). The alias rule is
+// the one in popupAliasPath (src/popup-mode.js), repeated here because this file must not gain relative imports.
+const POPUP_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
+function withPopupRoute(route, popup) {
+  if (route.meta?.popup !== true || typeof route.path !== 'string' || !route.path.startsWith('/')) return route
+  if (!POPUP_ID_PATTERN.test(String(popup.moduleId)) || route.path.includes('..') || /[\\?#\s]/.test(route.path)) return route
+  const alias = `/popup/${popup.moduleId}${route.path}`
+  const existing = route.alias === undefined ? [] : [].concat(route.alias)
+  const previousGuard = route.beforeEnter
+  return {
+    ...route,
+    alias: [...existing, alias],
+    beforeEnter(to, from) {
+      if (!popup.permitted(route.meta || {})) {
+        popup.refuse?.(popup.deniedMessage)
+        return '/popup/refused'
+      }
+      return typeof previousGuard === 'function' ? previousGuard.call(this, to, from) : true
+    },
+  }
+}
+
+// Binds context.popupHref to the module that receives it. The shared helper names the module it is given, and the bound
+// helper always passes this module's own id. It is refused after a failed or timed-out register().
+export function bindPopupHref(href, { moduleId, isAbandoned } = {}) {
+  return function popupHref(path) {
+    if (typeof isAbandoned === 'function' && isAbandoned()) {
+      throw new Error(`module ${moduleId} was abandoned after a failed or timed-out register(); popupHref() is refused`)
+    }
+    const built = href(moduleId, path)
+    return typeof built === 'string' ? built : ''
+  }
+}
+
 function guardedModuleRouter(router, descriptor, routeOwners, hooks = {}) {
   return new Proxy(router, {
     get(target, prop, receiver) {
@@ -200,10 +235,11 @@ function guardedModuleRouter(router, descriptor, routeOwners, hooks = {}) {
           throw new Error(`module ${descriptor.id} cannot claim ${key}; it is already owned by ${owner}`)
         }
 
-        const decorated = {
+        let decorated = {
           ...route,
           meta: { ...(route.meta || {}), dynamicModule: descriptor.id },
         }
+        if (hooks.popup) decorated = withPopupRoute(decorated, hooks.popup)
         const result = maybeRoute === undefined
           ? target.addRoute(decorated)
           : target.addRoute(parentOrRoute, decorated)
@@ -215,7 +251,7 @@ function guardedModuleRouter(router, descriptor, routeOwners, hooks = {}) {
   })
 }
 
-function moduleIsAllowed(descriptor, context) {
+export function moduleIsAllowed(descriptor, context) {
   if (descriptor.allowed === false) return false
   if (!descriptor.permissions?.length) return true
   if (context.user?.superuser) return true
@@ -391,8 +427,11 @@ export async function loadUiModules(runtime, modules, options = {}) {
           owner: descriptor.id,
         })
       }
+      // Popup mode is on only for the module the popup window opens; every other module gets no alias (0.12.95).
+      const popupForModule = runtime.popupMode && runtime.popupMode.moduleId === descriptor.id ? runtime.popupMode : null
       const moduleRouter = guardedModuleRouter(runtime.router, descriptor, routeOwners, {
         isAbandoned,
+        popup: popupForModule,
         onRouteAdded(path, remove) {
           routePaths.push(path)
           if (typeof remove === 'function') routeRemovers.push(remove)
@@ -410,7 +449,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
       moduleHeader = guardAbandoned(runtime.header?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null, isAbandoned, descriptor.id)
       // removeNavigation is Core's: the loader calls it when a module fails. A
       // module can add navigation but never remove another module's items.
-      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, ...moduleRuntime } = runtime
+      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, ...moduleRuntime } = runtime
       // Bound to this module: another module's id is refused, and so is any
       // call after a failed or timed-out register().
       const boundTacticalOperation = typeof sharedTacticalOperation === 'function'
@@ -420,10 +459,15 @@ export async function loadUiModules(runtime, modules, options = {}) {
           isAbandoned,
         }) }
         : {}
+      // popupHref names this module's own popup window only (0.12.95).
+      const boundPopupHref = typeof sharedPopupHref === 'function'
+        ? { popupHref: bindPopupHref(sharedPopupHref, { moduleId: descriptor.id, isAbandoned }) }
+        : {}
       await plugin.register({
         ...moduleRuntime,
         ...guardTransport(runtime, descriptor.id, replacedSnapshot.get(descriptor.id) || ''),
         ...boundTacticalOperation,
+        ...boundPopupHref,
         context: runtime.state.context,
         router: moduleRouter,
         addNavigation,

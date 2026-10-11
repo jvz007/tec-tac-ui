@@ -73,6 +73,9 @@ if (newWindowLaunch.value) {
   window.history.replaceState(window.history.state, '', `${cleanUrl.pathname}${cleanUrl.search}${cleanUrl.hash}`)
 }
 const publicRoute = computed(() => route.meta?.public === true || route.path.startsWith('/public/'))
+// Popup window (0.12.95): no brand, top bar, rail, navigation menu, notices, help or quick actions. The toast stack,
+// the unsaved-changes dialog, theme and text size, and session tracking stay.
+const popupLayout = computed(() => route.path.startsWith('/popup/') || state.popup?.active === true)
 const coreNav = computed(() => coreNavigation(state.context))
 
 // The shell labels a failure by the module that owns the current route.
@@ -155,7 +158,8 @@ watch(theme, applyTheme, { immediate: true })
 watch(() => state.status, (status) => {
   if (status === 'ready') {
     void startSessionActivityTracking()
-    notifications?.startServerNoticePolling?.()
+    // A popup window does not poll for notices (0.12.95).
+    if (!state.popup?.active) notifications?.startServerNoticePolling?.()
   } else {
     stopSessionActivityTracking()
     notifications?.stopServerNoticePolling?.()
@@ -249,7 +253,8 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
 </script>
 
 <template>
-  <div class="app-shell" :class="{ 'public-shell': publicRoute, 'rail-collapsed': railCollapsed && !publicRoute }" @click="closeNavContextMenu">
+  <div class="app-shell" :class="{ 'public-shell': publicRoute, 'rail-collapsed': railCollapsed && !publicRoute && !popupLayout, 'popup-shell': popupLayout }" @click="closeNavContextMenu">
+    <template v-if="!popupLayout">
     <header class="brand">
       <div class="mark" aria-hidden="true"></div>
       <div class="brand-copy"><b>TEC-TAC</b><span>TACTICAL EXTENSION CONSOLE</span></div>
@@ -326,6 +331,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
       <button type="button" @click="openInNewTab(navContextMenu.item)"><span>↗</span><span>Open in new tab</span></button>
       <button type="button" @click="toggleFavorite(navContextMenu.item)"><span>{{ isFavorite(navContextMenu.item) ? '☆' : '★' }}</span><span>{{ isFavorite(navContextMenu.item) ? 'Remove from Favorites' : 'Add to Favorites' }}</span></button>
     </div>
+    </template>
 
     <main class="main">
       <ModuleErrorBoundary v-if="publicRoute" :provider="routeProvider" label="page" variant="page" :reset-key="route.fullPath" :recorder="recordModuleRuntimeError"><router-view /></ModuleErrorBoundary>
@@ -352,9 +358,9 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
         <button type="button" class="toast-dismiss" title="Dismiss notification" aria-label="Dismiss notification" @click="notifications.dismiss(toast.id)">×</button>
       </article>
     </div>
-    <NoticeDrawer />
-    <HelpDrawer />
-    <QuickActionsDialog v-model="quickActionsOpen" />
+    <NoticeDrawer v-if="!popupLayout" />
+    <HelpDrawer v-if="!popupLayout" />
+    <QuickActionsDialog v-if="!popupLayout" v-model="quickActionsOpen" />
     <UnsavedChangesDialog />
   </div>
 </template>

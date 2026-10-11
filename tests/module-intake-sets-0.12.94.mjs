@@ -1,5 +1,5 @@
 // 0.12.94: module intake pairs each package with the .sig and .release.json that share its name.
-// Each signed set goes to Core in its own request; unsigned packages share one request.
+// 0.12.95: every clean set goes to Core in one request (the request shape is pinned in the 0.12.94 section below).
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
@@ -91,7 +91,8 @@ for (const name of srcFiles) {
   assert.ok(!text.includes('Only one release metadata file can accompany'), name)
 }
 
-// (10) inspectIntakeSets: unsigned packages in one call, each signed set in its own call, one failure does not hide the rest.
+// (10) inspectIntakeSets (0.12.95): every clean set goes in ONE request; a set with a problem is never sent. A failed
+// request marks each sent set with Core's text and sends nothing else (no per-set retry).
 const sets = pairIntakeFiles([
   stub('u1.zip'), stub('s1.zip'), stub('s1.zip.sig'), stub('s1.release.json'),
   stub('u2.zip'), stub('bad.zip'), stub('bad.zip.sig'), stub('bad.release.json'),
@@ -104,23 +105,29 @@ const post = async (files) => {
   return { upload_id: `upload-${calls.length}` }
 }
 const results = await inspectIntakeSets(sets, post)
-assert.deepEqual(calls, [
-  ['u1.zip', 'u2.zip'],
-  ['s1.zip', 's1.zip.sig', 's1.release.json'],
-  ['bad.zip', 'bad.zip.sig', 'bad.release.json'],
-])
+assert.deepEqual(calls, [[
+  'u1.zip', 's1.zip', 's1.zip.sig', 's1.release.json',
+  'u2.zip', 'bad.zip', 'bad.zip.sig', 'bad.release.json',
+]])
 assert.equal(results.length, sets.length)
 assert.deepEqual(results.map((result) => result.set.key), sets.map((set) => set.key))
 const [u1, s1, u2, bad, half] = results
-assert.equal(u1.staged, u2.staged, 'unsigned packages share one staged batch')
-assert.equal(u1.staged.upload_id, 'upload-1')
-assert.equal(s1.staged.upload_id, 'upload-2')
+assert.equal(u1.error, 'Core refused this signature.')
+assert.equal(s1.error, 'Core refused this signature.')
+assert.equal(u2.error, 'Core refused this signature.')
 assert.equal(bad.error, 'Core refused this signature.')
 assert.ok(!('staged' in bad))
 assert.match(half.error, /^Needs both/)
 assert.equal(calls.some((call) => call.includes('half.zip')), false, 'a set with a problem is never sent')
+const okSets = sets.filter((set) => set.key === 'u1' || set.key === 'u2' || set.key === 's1')
+const okCalls = []
+const okResults = await inspectIntakeSets(okSets, async (files) => { okCalls.push(files.length); return { upload_id: 'batch-1', kind: 'batch' } })
+assert.deepEqual(okCalls, [5], 'one request carries every set (u1: 1 file, s1: 3 files, u2: 1 file)')
+assert.ok(okResults.every((result) => result.staged === okResults[0].staged), 'sets sent together share one staged payload')
+assert.equal(okResults[0].staged.upload_id, 'batch-1')
 
-// (11) the real request: a signed set sends packages, signature and metadata parts; an unsigned batch sends packages only.
+// (11) the real request (0.12.95): every file in one request, as repeated fields. Packages, signatures and release files
+// each keep their own field name, in upload order.
 const sent = []
 globalThis.fetch = async (url, init) => {
   sent.push({ url, body: init.body })
@@ -129,14 +136,12 @@ globalThis.fetch = async (url, init) => {
 const signed = pairIntakeFiles([new File(['p'], 'agents-0.5.0.zip'), new File(['s'], 'agents-0.5.0.zip.sig'), new File(['m'], 'agents-0.5.0.release.json')]).sets
 const pair = [new File(['a'], 'a.zip'), new File(['b'], 'b.zip')]
 await inspectIntakeSets([...signed, ...pairIntakeFiles(pair).sets], inspectModulePackages)
-// Unsigned packages go first, in one request; the signed set follows in its own request.
-assert.equal(sent.length, 2)
+assert.equal(sent.length, 1)
 assert.match(sent[0].url, /\/api\/tfd\/modules\/v2\/packages\/inspect\/$/)
-assert.deepEqual([...sent[0].body.keys()], ['packages', 'packages'])
-assert.deepEqual([...sent[1].body.keys()], ['packages', 'signature', 'metadata'])
-assert.equal(sent[1].body.get('packages').name, 'agents-0.5.0.zip')
-assert.equal(sent[1].body.get('signature').name, 'agents-0.5.0.zip.sig')
-assert.equal(sent[1].body.get('metadata').name, 'agents-0.5.0.release.json')
+assert.deepEqual([...sent[0].body.keys()], ['packages', 'signatures', 'metadata_files', 'packages', 'packages'])
+assert.equal(sent[0].body.getAll('packages')[0].name, 'agents-0.5.0.zip')
+assert.equal(sent[0].body.getAll('signatures')[0].name, 'agents-0.5.0.zip.sig')
+assert.equal(sent[0].body.getAll('metadata_files')[0].name, 'agents-0.5.0.release.json')
 
 // (12) install order: a group whose modules another group requires installs after it; a cycle keeps upload order.
 const ordered = orderGroupsByDependency([
@@ -156,7 +161,8 @@ assert.deepEqual(cycle.map((group) => group.key), ['a', 'b'])
 const view = fs.readFileSync(new URL('../src/views/ModulesView.vue', import.meta.url), 'utf8')
 assert.match(view, /const pendingIntakeProblem = computed\(\(\) => pendingSets\.value\.problems\[0\] \|\| ''\)/)
 assert.doesNotMatch(view, /intake\.signatures\.length > 1/)
-assert.match(view, /inspectIntakeSets\(pendingSets\.value\.sets\)/)
+assert.match(view, /const checked = await checkIntakeMetadata\(pendingSets\.value\.sets, \(file\) => file\.text\(\)\)/)
+assert.match(view, /const results = await inspectIntakeSets\(checked\)/)
 const pollBody = view.slice(view.indexOf('async function poll()'), view.indexOf('function reloadTecTac'))
 // The reload comes only after the queued-set check, so a queued set never reloads the page early.
 assert.match(pollBody, /if \(stagedGroups\(\)\.length\) \{\s*await runInstall\(confirmedDisable\.value, false, true\)\s*return\s*\}[\s\S]*?scheduleReload\(\)/)

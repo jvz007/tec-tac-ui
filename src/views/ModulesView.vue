@@ -3,7 +3,7 @@ import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { createLatestRequestGate } from '../admin-session-state'
 import { loadLatestHotfixRows } from '../module-hotfix-loader'
-import { orderGroupsByDependency, pairIntakeFiles } from '../module-intake'
+import { checkIntakeMetadata, orderGroupsByDependency, pairIntakeFiles } from '../module-intake'
 import { categoryBadge, categoryNote, categorySearchText, CATEGORY_FILTERS, filterByCategory } from '../module-category'
 import { confirmationRequired, dependantLines, handBackDisableLines, handBackEnableLines, handBackRequiredPayload, handBackWarning, installConfirmSummary, jobSwitchLines, emptySecondConfirmationText, secondConfirmationRequired, secondConfirmationRequiredPayload, secondConfirmationText, isReplacementProblem, replacedByLabel, replacementConfirmLines, replacementListChangedText, replacementProblemText, replacementSummary, replacesLabel, satisfiedByLine, willDisableIds } from '../module-replacement'
 import {
@@ -73,6 +73,8 @@ const fileInput = ref(null)
 const pendingFiles = ref([])
 const dropActive = ref(false)
 const inspecting = ref(false)
+// 0.12.95: true while an install request is in flight. Install, discard and a second confirmation wait for it.
+const installing = ref(false)
 const staged = ref(null)
 const installOrder = ref([])
 const queueWarning = ref('')
@@ -206,13 +208,18 @@ function openSelectedModule() { if (canOpenSelected.value) router.push(selectedN
 
 // 0.12.94: the plan of one staged payload (a package, a bundle or an unsigned batch).
 function planOf(payload) { return (payload?.preview || payload)?.plan || payload?.plan || null }
-// Rows for one staged payload. Each row carries its own trust, so a composite view shows every package's trust.
+// The trust fields a row shows. A batch has no trust of its own, so each row passes its own trust in.
+function trustFieldsOf(trust) {
+  return { intake_trust: trust, intake_trust_label: trustLabelOf(trust), intake_trust_class: trustClassOf(trust) }
+}
+// Rows for one staged payload. Each row carries its own trust, so a batch shows every package's trust (0.12.95).
+// A batch row takes its trust from the row (publisher_trust) or else from the artifact it came from (source_upload_id),
+// which also covers a bundle's children.
 function stagedRowsOf(payload) {
   if (!payload) return []
   const view = payload.preview || payload
   const kind = payload.kind || view.kind || 'artifact'
   const trust = payload.publisher_trust || view.publisher_trust || null
-  const trustFields = { intake_trust: trust, intake_trust_label: trustLabelOf(trust), intake_trust_class: trustClassOf(trust) }
   let rows = []
   if (kind === 'batch') {
     const artifacts = new Map((payload.artifacts || []).map((item) => [item.upload_id, item]))
@@ -220,8 +227,10 @@ function stagedRowsOf(payload) {
       const previewRow = item.preview || item
       const artifact = artifacts.get(item.source_upload_id) || {}
       const sourceKind = item.source_kind || artifact.kind || 'package'
+      const rowTrust = item.publisher_trust || artifact.publisher_trust || null
       return {
         ...previewRow,
+        ...trustFieldsOf(rowTrust),
         intake_filename: item.source_filename || artifact.filename || previewRow.id || 'package',
         intake_source: sourceKind === 'bundle'
           ? `bundle · ${item.source_bundle_id || item.source_filename || 'package'}`
@@ -232,6 +241,7 @@ function stagedRowsOf(payload) {
   } else if (kind === 'bundle') {
     rows = (view.packages || []).map((item) => ({
       ...item,
+      ...trustFieldsOf(trust),
       intake_filename: payload.filename || view.id || 'bundle',
       intake_source: `bundle · ${view.id || payload.filename || 'package'}`,
       intake_sha256: payload.sha256 || '',
@@ -239,13 +249,14 @@ function stagedRowsOf(payload) {
   } else {
     rows = [{
       ...view,
+      ...trustFieldsOf(trust),
       intake_filename: payload.filename || view.id || 'package',
       intake_source: payload.source?.repository_name || payload.source?.type || 'offline',
       intake_sha256: payload.sha256 || payload.source?.package_sha256 || '',
     }]
   }
   const actions = new Map((planOf(payload)?.actions || []).map((item) => [item.id, item]))
-  return rows.map((item) => ({ ...item, ...trustFields, ...(actions.get(item.id) || {}) }))
+  return rows.map((item) => ({ ...item, ...(actions.get(item.id) || {}) }))
 }
 const stagedRows = computed(() => {
   if (!staged.value) return []
@@ -511,7 +522,8 @@ function clearPending() {
   queueWarning.value = ''
 }
 
-// 0.12.94: inspects every set. A set that passes is staged. A set that fails keeps its files in the list with its message.
+// 0.12.95: inspects every set in one request. A set whose release file does not match its files is marked before
+// anything is sent. A set that fails keeps its files in the list with its message.
 async function inspectPending() {
   if (!pendingFiles.value.length || inspecting.value || staged.value || jobRunning.value) return
   if (intakeBlocked.value) {
@@ -523,7 +535,8 @@ async function inspectPending() {
   queueWarning.value = ''
   intakeErrors.value = []
   try {
-    const results = await inspectIntakeSets(pendingSets.value.sets)
+    const checked = await checkIntakeMetadata(pendingSets.value.sets, (file) => file.text())
+    const results = await inspectIntakeSets(checked)
     const bySource = new Map()
     const failed = []
     for (const result of results) {
@@ -559,7 +572,8 @@ function stagedGroups() {
   if (!staged.value) return []
   if (staged.value.composite) return staged.value.groups
   const payload = staged.value
-  return [groupFor(payload, [{ key: 'single', label: payload.filename || (payload.preview || payload).id || 'package' }])]
+  const label = payload.kind === 'batch' ? 'Multiple packages' : (payload.filename || (payload.preview || payload).id || 'package')
+  return [groupFor(payload, [{ key: 'single', label }])]
 }
 function kindOf(payload) { return (payload?.kind || (payload?.preview || payload)?.kind) === 'batch' ? 'batch' : 'artifact' }
 // A group's install order: the person's order for its modules, else Core's plan order.
@@ -669,6 +683,8 @@ function dropOn(id) {
 
 // Discards every staged upload, so a composite leaves no upload behind.
 async function clearStaged() {
+  // A discard during an install would remove the upload that install is using (0.12.95).
+  if (installing.value) return
   const uploadIds = stagedGroups().map((group) => group.staged?.upload_id).filter(Boolean)
   staged.value = null
   installOrder.value = []
@@ -679,6 +695,8 @@ async function clearStaged() {
 }
 
 async function install() {
+  // A second click while the last install request is in flight would send a second install (0.12.95).
+  if (installing.value) return
   const groups = stagedGroups()
   if (!groups.length || !groups.every((group) => group.staged?.upload_id) || plan.value?.valid === false) return
   const violation = dependencyViolation(installOrder.value)
@@ -689,20 +707,28 @@ async function install() {
   // A replacement switches another module off. Ask first, naming each module. One question covers every set.
   const summary = installConfirmSummary(plan.value)
   if (summary.ids.length) {
-    installConfirm.value = { ids: summary.ids, lines: summary.lines, changed: '', exact: false }
+    installConfirm.value = { ids: summary.ids, lines: summary.lines, changed: '', exact: false, partial: false }
     return
   }
   await runInstall([])
 }
 
-function closeInstallConfirm() { installConfirm.value = null }
+// 0.12.95: cancelling a chained set's confirmation keeps the reload hint, because the sets before it already installed.
+// Cancelling the first set's confirmation shows nothing, as before.
+function closeInstallConfirm() {
+  const partial = installConfirm.value?.partial === true
+  installConfirm.value = null
+  if (partial) error.value = notRunMessage('Install cancelled.', stagedGroups(), true)
+}
 async function confirmInstall() {
-  if (!installConfirm.value) return
-  await runInstall(installConfirm.value.ids, installConfirm.value.exact === true)
+  if (!installConfirm.value || installing.value) return
+  const { ids, exact, partial } = installConfirm.value
+  await runInstall(ids, exact === true, false, partial === true)
 }
 // Installs the first staged group. Each group is its own job: the next one starts when this job succeeds.
 // disableReplaced is filtered to the group's own replaced modules, unless exact (a fresh list from Core for this group).
-async function runInstall(disableReplaced, exact = false, afterSuccess = false) {
+// reloadHint: an earlier set already installed, so a failure here also says to reload (0.12.95).
+async function runInstall(disableReplaced, exact = false, afterSuccess = false, reloadHint = afterSuccess) {
   const groups = stagedGroups()
   const group = groups[0]
   if (!group?.staged?.upload_id) return
@@ -711,6 +737,7 @@ async function runInstall(disableReplaced, exact = false, afterSuccess = false) 
   const order = groups.length === 1 ? installOrder.value : orderFor(group, installOrder.value)
   const own = installConfirmSummary(planOf(group.staged)).ids
   const sendIds = exact ? disableReplaced : disableReplaced.filter((id) => own.includes(id))
+  installing.value = true
   try {
     const job = await installModuleArtifact(
       group.staged.upload_id,
@@ -726,13 +753,15 @@ async function runInstall(disableReplaced, exact = false, afterSuccess = false) 
     const fresh = confirmationRequired(e)
     if (fresh !== null) {
       const summary = installConfirmSummary({ will_disable: fresh })
-      installConfirm.value = { ids: summary.ids, lines: summary.lines, changed: replacementListChangedText(fresh), exact: true }
+      installConfirm.value = { ids: summary.ids, lines: summary.lines, changed: replacementListChangedText(fresh), exact: true, partial: reloadHint }
     } else {
       installConfirm.value = null
-      error.value = groups.length > 1 || afterSuccess
-        ? notRunMessage(e.message || 'Unable to install this package.', groups, afterSuccess)
+      error.value = groups.length > 1 || reloadHint
+        ? notRunMessage(e.message || 'Unable to install this package.', groups, reloadHint)
         : e.message
     }
+  } finally {
+    installing.value = false
   }
 }
 // The message when a set did not install: which sets did not run, and whether a reload is needed.
@@ -1053,7 +1082,7 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
       <div v-for="set in problemSets" :key="`problem-${set.key}`" class="state-inline warning mt"><b>{{ set.label }}</b> {{ set.problems.join(' ') }}</div>
       <div v-for="item in intakeErrors" :key="`failed-${item.key}`" class="state-inline warning mt"><b>{{ item.label }}</b> did not inspect. {{ item.message }}</div>
       <div v-if="!intakeBlocked && intakeNotes.unsigned" class="state-inline mt"><b>{{ intakeNotes.unsigned === 1 ? 'Unsigned package.' : `${intakeNotes.unsigned} unsigned packages.` }}</b> Signing is optional for normal modules at this stage; Core will still inspect and can install them unless a module requests privileged publisher permissions.</div>
-      <div v-if="!intakeBlocked && intakeNotes.signed" class="state-inline mt"><b>{{ intakeNotes.signed === 1 ? 'Signed package detected.' : `${intakeNotes.signed} signed packages detected.` }}</b> Each one is inspected with its own .sig and .release.json. Core checks the package hash, publisher policy and detached Ed25519 signature.</div>
+      <div v-if="!intakeBlocked && intakeNotes.signed" class="state-inline mt"><b>{{ intakeNotes.signed === 1 ? 'Signed package detected.' : `${intakeNotes.signed} signed packages detected.` }}</b> Core checks each package with its own .sig and .release.json, and inspects them all in one request. Core checks the package hash, publisher policy and detached Ed25519 signature.</div>
       <div v-if="staged" class="state-inline warning mt"><b>Packages are staged.</b> Install or discard them before you inspect these files.</div>
       <div class="queue-footer"><button class="btn" @click="clearPending">Clear</button><span class="spacer"></span><button class="btn primary" :disabled="inspecting || intakeBlocked || !!staged" @click="inspectPending">{{ inspecting ? 'Inspecting…' : 'Inspect package intake' }}</button></div>
     </div>
@@ -1140,7 +1169,7 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
         <div v-for="(problem,index) in plan.problems" :key="index" class="state-inline warning mt"><template v-if="isReplacementProblem(problem)">{{ replacementProblemText(problem) }}</template><template v-else><span class="mono">{{ problem.module || 'plan' }}</span> — {{ problem.type }}</template><span v-if="problem.dependency">: {{ problem.dependency }} {{ problem.constraint }}</span></div>
       </template>
 
-      <div class="queue-footer"><button class="btn" :disabled="jobRunning" @click="clearStaged">Cancel / discard</button><span class="spacer"></span><span class="muted smalltext">The framework validates this sequence again before execution.</span><button class="btn primary" :disabled="!plan?.valid || !orderedRows.length || jobRunning" @click="install">Install {{ orderedRows.length }} package{{ orderedRows.length===1?'':'s' }}</button></div>
+      <div class="queue-footer"><button class="btn" :disabled="jobRunning || installing" @click="clearStaged">Cancel / discard</button><span class="spacer"></span><span class="muted smalltext">The framework validates this sequence again before execution.</span><button class="btn primary" :disabled="!plan?.valid || !orderedRows.length || jobRunning || installing" @click="install">Install {{ orderedRows.length }} package{{ orderedRows.length===1?'':'s' }}</button></div>
     </div>
   </section>
 
@@ -1241,7 +1270,7 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
 
   <div v-if="reinstallTarget" class="modal-backdrop" @click.self="closeReinstallConfirm"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="module-reinstall-title"><div class="cardhead"><div><span class="eyebrow">REINSTALL MODULE</span><h3 id="module-reinstall-title">{{ reinstallTarget.name || reinstallTarget.id }}</h3></div><span class="pill warn">SAME VERSION</span></div><p class="compact-copy">Installed version and repository version are both <span class="mono">{{ reinstallTarget.latest_version }}</span>. Continuing will download and inspect the same version for reinstall. The replacement still requires confirmation from the package inspection step.</p><div class="state-inline warning mt"><b>Existing module files will be replaced when the install job runs.</b> Configuration and data remain subject to the module's normal upgrade/reinstall lifecycle.</div><div class="modal-actions"><button class="btn primary" :disabled="inspecting || jobRunning" @click="confirmReinstall">Continue to reinstall</button><button class="btn" @click="closeReinstallConfirm">Cancel</button></div></section></div>
 
-  <div v-if="installConfirm" class="modal-backdrop" @click.self="closeInstallConfirm"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="module-install-confirm-title"><div class="cardhead"><div><span class="eyebrow">INSTALL MODULES</span><h3 id="module-install-confirm-title">Switch off replaced modules?</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="installConfirm.changed" class="state-inline warning mt"><b>{{ installConfirm.changed }}</b></div><div v-if="installConfirm.lines.length" class="state-inline warning mt"><div v-for="(line,index) in installConfirm.lines" :key="index">{{ line }}</div></div><div class="modal-actions"><button class="btn primary" :disabled="jobRunning" @click="confirmInstall">{{ installConfirm.ids.length ? 'Install and switch off' : 'Install' }}</button><button class="btn" @click="closeInstallConfirm">Cancel</button></div></section></div>
+  <div v-if="installConfirm" class="modal-backdrop" @click.self="closeInstallConfirm"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="module-install-confirm-title"><div class="cardhead"><div><span class="eyebrow">INSTALL MODULES</span><h3 id="module-install-confirm-title">Switch off replaced modules?</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="installConfirm.changed" class="state-inline warning mt"><b>{{ installConfirm.changed }}</b></div><div v-if="installConfirm.lines.length" class="state-inline warning mt"><div v-for="(line,index) in installConfirm.lines" :key="index">{{ line }}</div></div><div class="modal-actions"><button class="btn primary" :disabled="jobRunning || installing" @click="confirmInstall">{{ installConfirm.ids.length ? 'Install and switch off' : 'Install' }}</button><button class="btn" @click="closeInstallConfirm">Cancel</button></div></section></div>
   <div v-if="confirmTarget" class="modal-backdrop" @click.self="closeConfirm"><section class="modal-panel"><div class="cardhead"><div><span class="eyebrow">{{ confirmMode.toUpperCase() }} MODULE</span><h3>{{ confirmTarget.id }}</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="enableNotice.length || listChanged" class="state-inline warning mt"><b v-if="listChanged">{{ listChanged }}</b><div v-for="(line,index) in enableNotice" :key="index">{{ line }}</div></div><div v-if="disableNotice.length" class="state-inline warning mt"><div v-for="(line,index) in disableNotice" :key="index">{{ line }}</div></div><p v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="compact-copy">Enabled dependants may block this action. Select cascade to disable dependent modules first.</p><label v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="checkline warning-check"><input v-model="cascade" type="checkbox"> Disable enabled dependants as part of this job</label><template v-if="handBack"><div class="state-inline warning mt"><div v-for="(line,index) in handBack.lines" :key="'hand-back'+index">{{ line }}</div></div><div class="modal-actions"><button class="btn danger" :disabled="handBackBusy" @click="confirmHandBack">{{ handBack.button }}</button><button class="btn" @click="closeConfirm">Cancel</button></div></template><template v-else-if="confirmStep===2&&needsSecondConfirmation"><div class="auth-error mt"><b>Second confirmation.</b> {{ secondStepText.warning }}</div><div v-for="(line,index) in secondDependantLines" :key="'dependant'+index" class="state-inline warning mt">{{ line }}</div><label class="checkline warning-check"><input v-model="switchAck" type="checkbox"> {{ secondStepText.checkbox }}</label><div class="modal-actions"><button class="btn danger" :disabled="!switchAck" @click="confirmSwitchAction">{{ secondStepText.button }}</button><button class="btn" @click="closeConfirm">Cancel</button></div></template><template v-else><label class="field"><span>Type {{ confirmTarget.id }} to confirm</span><input v-model="confirmText" autocomplete="off"></label><div class="modal-actions"><button class="btn" :class="confirmMode==='enable'?'primary':'danger'" :disabled="confirmText!==confirmTarget.id" @click="confirmAction">{{ confirmMode }} module</button><button class="btn" @click="closeConfirm">Cancel</button></div></template></section></div>
 </section>
 </template>

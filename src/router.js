@@ -12,6 +12,7 @@ import SchedulesView from './views/SchedulesView.vue'
 import SchedulerSettingsView from './views/SchedulerSettingsView.vue'
 import ContractsView from './views/ContractsView.vue'
 import PublicPendingView from './views/PublicPendingView.vue'
+import PopupPendingView from './views/PopupPendingView.vue'
 import SsoCallbackView from './views/SsoCallbackView.vue'
 import PreferencesView from './views/PreferencesView.vue'
 import MyAccountView from './views/MyAccountView.vue'
@@ -43,6 +44,9 @@ export const router = createRouter({
     { path: '/help/:articleId', name: 'help-article', component: HelpView, meta: { title: 'Help' } },
     { path: '/sso/callback', name: 'sso-callback', component: SsoCallbackView, meta: { title: 'SSO sign-in', public: true } },
     { path: '/public/:pathMatch(.*)*', name: 'public-pending', component: PublicPendingView, meta: { title: 'Public', public: true } },
+    // Popup windows (0.12.95). Registered before the catch-all so a popup never lands on the dashboard. A module route
+    // opened in a popup is matched by its /popup/<id>/... alias first, which is more specific than this catch.
+    { path: '/popup/:pathMatch(.*)*', name: 'popup-pending', component: PopupPendingView, meta: { title: 'Window' } },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })

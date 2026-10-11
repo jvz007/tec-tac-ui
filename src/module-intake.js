@@ -78,3 +78,42 @@ export function orderGroupsByDependency(groups) {
   }
   return out
 }
+
+// 0.12.95: a release file longer than this is not a release file. The check reads each one, so the cap keeps it small.
+export const INTAKE_METADATA_MAX_BYTES = 256 * 1024
+
+// One plain problem for a set whose release file does not match its files, or '' when it matches. Core still makes the
+// same check; this one runs first so the problem is attributed to its own set and the set is never sent.
+async function metadataProblem(set, readText) {
+  const metaName = String(set.meta.name || 'release file')
+  const pkgName = String(set.pkg.name || '')
+  const sigName = String(set.sig.name || '')
+  if (Number(set.meta.size) > INTAKE_METADATA_MAX_BYTES) return `${metaName} is too large to be a release file. Download it again.`
+  let text
+  try { text = await readText(set.meta) } catch { return `Could not read ${metaName}. Add it again.` }
+  let data
+  try { data = JSON.parse(String(text)) } catch { return `${metaName} is not valid JSON. Download it again.` }
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return `${metaName} is not a release file. Download it again.`
+  const packageFor = String(data.filename || '')
+  const signatureFor = String(data.signature || '')
+  if (packageFor !== pkgName) {
+    return `${metaName} is for the package "${packageFor || 'unknown'}". Rename ${pkgName} back to "${packageFor || 'unknown'}" and add it again. A browser may have renamed the copy.`
+  }
+  if (signatureFor !== sigName) {
+    return `${metaName} names the signature "${signatureFor || 'unknown'}". Rename ${sigName} back to "${signatureFor || 'unknown'}" and add it again.`
+  }
+  return ''
+}
+
+// Checks each set that has a package, a .sig and a .release.json before anything is sent. Returns the same list, where
+// a set that fails gets one more problem. Sets with problems already, or without sidecars, are returned unchanged.
+// readText(file) returns the file's text. Pure apart from that call.
+export async function checkIntakeMetadata(sets, readText) {
+  const out = []
+  for (const set of sets || []) {
+    if (!set || set.problems?.length || !set.pkg || !set.sig || !set.meta) { out.push(set); continue }
+    const problem = await metadataProblem(set, readText)
+    out.push(problem ? { ...set, problems: [...set.problems, problem] } : set)
+  }
+  return out
+}

@@ -1,44 +1,35 @@
 import { apiFetch } from './api'
 export function listModules(){ return apiFetch('/api/tfd/modules/v2/') }
+// 0.12.95: every file goes to Core in one request as repeated fields. Core pairs each package with its .sig and
+// .release.json from the release metadata. Core 1.17.20 or later.
 export function inspectModulePackages(files){
   const body=new FormData()
-  let signature=null
-  let metadata=null
   for(const file of files){
     const name=String(file?.name||'')
-    if(/\.sig$/i.test(name)){ if(signature) throw new Error('Select exactly one detached signature (.sig).'); signature=file; continue }
-    if(/\.release(?:\(\d+\))?\.json$/i.test(name)){ if(metadata) throw new Error('Select exactly one release metadata file (.release.json).'); metadata=file; continue }
+    if(/\.sig$/i.test(name)){ body.append('signatures',file); continue }
+    if(/\.release(?:\(\d+\))?\.json$/i.test(name)){ body.append('metadata_files',file); continue }
     body.append('packages',file)
   }
-  if(signature) body.append('signature',signature)
-  if(metadata) body.append('metadata',metadata)
   return apiFetch('/api/tfd/modules/v2/packages/inspect/',{method:'POST',body})
 }
-// 0.12.94: several intake sets. Unsigned packages share one request, so they keep one dependency plan. Each signed set
-// (package, .sig, .release.json) goes in its own request, because Core takes one signature per request. Requests run
-// one at a time. A failed request marks only its own sets. Returns one { set, staged } or { set, error } per set, in order.
+// 0.12.95: every set with no problem goes in ONE request (one batch from Core, or one staged package). A set with a
+// problem is never sent. If the request fails, every sent set carries Core's message and nothing else is sent: there is
+// no per-set retry. Returns one { set, staged } or { set, error } per set, in order. Sets that were sent share one staged payload.
 export async function inspectIntakeSets(sets, post = inspectModulePackages){
   const list=Array.isArray(sets)?sets:[]
   const results=new Map()
-  const unsigned=[]
+  const sent=[]
   for(const set of list){
     if(set?.problems?.length) results.set(set,{set,error:set.problems[0]})
-    else if(!set.sig&&!set.meta) unsigned.push(set)
+    else sent.push(set)
   }
-  if(unsigned.length){
+  if(sent.length){
+    const files=sent.flatMap((set)=>[set.pkg,set.sig,set.meta].filter(Boolean))
     try{
-      const staged=await post(unsigned.map((set)=>set.pkg))
-      for(const set of unsigned) results.set(set,{set,staged})
+      const staged=await post(files)
+      for(const set of sent) results.set(set,{set,staged})
     }catch(e){
-      for(const set of unsigned) results.set(set,{set,error:e?.message||'Inspection failed.'})
-    }
-  }
-  for(const set of list){
-    if(results.has(set)) continue
-    try{
-      results.set(set,{set,staged:await post([set.pkg,set.sig,set.meta].filter(Boolean))})
-    }catch(e){
-      results.set(set,{set,error:e?.message||'Inspection failed.'})
+      for(const set of sent) results.set(set,{set,error:e?.message||'Inspection failed.'})
     }
   }
   return list.map((set)=>results.get(set))
