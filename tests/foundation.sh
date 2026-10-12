@@ -186,7 +186,8 @@ grep -q "getSchedulerConfig" "${ROOT}/src/scheduler.js" || fail "scheduler confi
 grep -q "runSchedulerSelfTest" "${ROOT}/src/scheduler.js" || fail "scheduler self-test API missing"
 [[ -f "${ROOT}/src/views/SchedulerSettingsView.vue" ]] || fail "Scheduler administration view missing"
 grep -q "Scheduler Configuration" "${ROOT}/src/views/SchedulerSettingsView.vue" || fail "scheduler configuration surface missing"
-grep -q "Type the schedule name to confirm" "${ROOT}/src/views/SchedulesView.vue" || fail "dangerous Run now confirmation missing"
+grep -q "useConfirm" "${ROOT}/src/views/SchedulesView.vue" || fail "dangerous Run now confirmation missing (shell dialog)"
+grep -q "Type the schedule name" "${ROOT}/src/views/SchedulesView.vue" && fail "typed schedule name confirmation must not return"
 
 # 0.10.1 persistent navigation collapse
 grep -q "tec_tac_nav_rail_collapsed" "${ROOT}/src/preferences.js" || fail "rail collapse cache/migration persistence missing"
@@ -545,7 +546,7 @@ grep -q "Module history" "${ROOT}/src/views/SchedulesView.vue" || fail "Schedule
 grep -q "User schedules" "${ROOT}/src/views/SchedulesView.vue" || fail "Scheduler user ownership tab missing"
 grep -q "Module schedules" "${ROOT}/src/views/SchedulesView.vue" || fail "Scheduler module ownership tab missing"
 grep -q "Filter schedules" "${ROOT}/src/views/SchedulesView.vue" || fail "Scheduler filter UX missing"
-grep -q "deleteConfirm" "${ROOT}/src/views/SchedulesView.vue" || fail "Scheduler delete confirmation modal missing"
+grep -q "Delete schedule " "${ROOT}/src/views/SchedulesView.vue" || fail "Scheduler delete confirmation (shell dialog) missing"
 ! grep -q "getSchedulerConfig" "${ROOT}/src/views/SchedulesView.vue" || fail "operational Scheduler view must not load configuration"
 ! grep -q "getSchedulerHealth" "${ROOT}/src/views/SchedulesView.vue" || fail "operational Scheduler view must not load diagnostics"
 grep -q "getSchedulerConfig" "${ROOT}/src/views/SchedulerSettingsView.vue" || fail "Scheduler Configuration does not load config"
@@ -727,8 +728,8 @@ node --check "${ROOT}/src/notifications.js"
 echo "[TEST] PASS notice center and startup optimisation"
 
 # Scheduler durability UI
-grep -q "forceDeleteRequired" "$ROOT/src/views/SchedulesView.vue"
-grep -q "Fail active runs & delete" "$ROOT/src/views/SchedulesView.vue"
+grep -q "Force delete " "$ROOT/src/views/SchedulesView.vue"
+grep -q "active_runs" "$ROOT/src/views/SchedulesView.vue"
 grep -q "force=true" "$ROOT/src/scheduler.js"
 
 # Trust-policy help must stay inside the built-in Knowledge Base.

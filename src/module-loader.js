@@ -213,6 +213,23 @@ export function bindPopupHref(href, { moduleId, isAbandoned } = {}) {
   }
 }
 
+// Binds register(context).confirm to the module that receives it. The shell adds the "Asked by <module id>" line
+// itself, so a module cannot name another asker. It is refused after a failed or timed-out register().
+export function bindConfirm(confirm, { moduleId, isAbandoned } = {}) {
+  return function confirmForModule(options) {
+    if (typeof isAbandoned === 'function' && isAbandoned()) {
+      return Promise.reject(new Error(`module ${moduleId} was abandoned after a failed or timed-out register(); confirm() is refused`))
+    }
+    return confirm(options, moduleId)
+  }
+}
+
+// The /popup/ prefix is the shell's (0.12.96). Only withPopupRoute adds a path under it, for the owning module's own
+// route. A module's own path or alias there is refused, so no module can shadow another module's popup address.
+// Matching in vue-router ignores case and repeated slashes, so the check does too.
+const POPUP_PREFIX_PATTERN = /^\/popup(\/|$)/i
+function underPopupPrefix(path) { return POPUP_PREFIX_PATTERN.test(String(path).trim().replace(/\/{2,}/g, '/')) }
+
 function guardedModuleRouter(router, descriptor, routeOwners, hooks = {}) {
   return new Proxy(router, {
     get(target, prop, receiver) {
@@ -224,6 +241,11 @@ function guardedModuleRouter(router, descriptor, routeOwners, hooks = {}) {
         const path = String(route.path || '').trim()
         const name = route.name == null ? '' : String(route.name)
         if (!path) throw new Error(`module ${descriptor.id} attempted to register a route without a path`)
+
+        const ownAliases = route.alias === undefined || route.alias === null ? [] : [].concat(route.alias).map((item) => String(item).trim())
+        if (underPopupPrefix(path) || ownAliases.some(underPopupPrefix)) {
+          throw new Error(`module ${descriptor.id} cannot register a route or alias under /popup/; that prefix belongs to the shell`)
+        }
 
         const existing = target.getRoutes()
         const pathMatch = existing.find((item) => item.path === path)
@@ -240,6 +262,15 @@ function guardedModuleRouter(router, descriptor, routeOwners, hooks = {}) {
           meta: { ...(route.meta || {}), dynamicModule: descriptor.id },
         }
         if (hooks.popup) decorated = withPopupRoute(decorated, hooks.popup)
+        // Every alias, the module's own and the popup one, is checked against the paths and aliases already registered.
+        const decoratedAliases = decorated.alias === undefined || decorated.alias === null ? [] : [].concat(decorated.alias).map((item) => String(item))
+        for (const alias of decoratedAliases) {
+          const taken = existing.find((item) => item.path === alias)
+          if (taken) {
+            const owner = routeOwners.get(taken.path) || taken.meta?.dynamicModule || 'core shell / previously registered route'
+            throw new Error(`module ${descriptor.id} cannot claim alias ${alias}; it is already owned by ${owner}`)
+          }
+        }
         const result = maybeRoute === undefined
           ? target.addRoute(decorated)
           : target.addRoute(parentOrRoute, decorated)
@@ -449,7 +480,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
       moduleHeader = guardAbandoned(runtime.header?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null, isAbandoned, descriptor.id)
       // removeNavigation is Core's: the loader calls it when a module fails. A
       // module can add navigation but never remove another module's items.
-      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, ...moduleRuntime } = runtime
+      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, ...moduleRuntime } = runtime
       // Bound to this module: another module's id is refused, and so is any
       // call after a failed or timed-out register().
       const boundTacticalOperation = typeof sharedTacticalOperation === 'function'
@@ -463,11 +494,16 @@ export async function loadUiModules(runtime, modules, options = {}) {
       const boundPopupHref = typeof sharedPopupHref === 'function'
         ? { popupHref: bindPopupHref(sharedPopupHref, { moduleId: descriptor.id, isAbandoned }) }
         : {}
+      // confirm is the shell's Yes or No dialog, bound to this module (0.12.96).
+      const boundConfirm = typeof sharedConfirm === 'function'
+        ? { confirm: bindConfirm(sharedConfirm, { moduleId: descriptor.id, isAbandoned }) }
+        : {}
       await plugin.register({
         ...moduleRuntime,
         ...guardTransport(runtime, descriptor.id, replacedSnapshot.get(descriptor.id) || ''),
         ...boundTacticalOperation,
         ...boundPopupHref,
+        ...boundConfirm,
         context: runtime.state.context,
         router: moduleRouter,
         addNavigation,

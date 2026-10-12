@@ -650,10 +650,24 @@ export async function listResourceClients({ search = '', page = 1, pageSize = 10
   return apiFetch(`/api/tfd/resources/clients/?${query.toString()}`)
 }
 
-export async function createResourceClient(name) {
+// Custom field values as Core takes them on create: [{ field_id, value }]. Anything else is dropped.
+function customFieldValues(rows) {
+  return (Array.isArray(rows) ? rows : [])
+    .filter((row) => row && row.field_id != null)
+    .map((row) => ({ field_id: row.field_id, value: row.value }))
+}
+
+// A plain string is still accepted (older callers): it sends the name alone, so Core names the first site
+// "Default Site". New callers pass { name, siteName, customFields }.
+export async function createResourceClient(input) {
+  const options = typeof input === 'string' ? { name: input } : (input || {})
+  const body = { name: options.name }
+  if (options.siteName != null) body.site_name = options.siteName
+  const fields = customFieldValues(options.customFields)
+  if (fields.length) body.custom_fields = fields
   return apiFetch('/api/tfd/resources/clients/', {
     method: 'POST',
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(body),
   })
 }
 
@@ -673,10 +687,13 @@ export async function listResourceSites({ clientId = null, search = '', page = 1
   return apiFetch(`/api/tfd/resources/sites/?${query.toString()}`)
 }
 
-export async function createResourceSite({ clientId, name }) {
+export async function createResourceSite({ clientId, name, customFields } = {}) {
+  const body = { client_id: clientId, name }
+  const fields = customFieldValues(customFields)
+  if (fields.length) body.custom_fields = fields
   return apiFetch('/api/tfd/resources/sites/', {
     method: 'POST',
-    body: JSON.stringify({ client_id: clientId, name }),
+    body: JSON.stringify(body),
   })
 }
 

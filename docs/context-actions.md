@@ -62,6 +62,8 @@ Required:
 - `placements` — one or more supported contribution slots.
 - execution handler — second argument to `register(...)` or descriptor `execute` function.
 
+The handler receives the context you passed to `execute()`, with one key added by the shell (UI 0.12.96): `confirm(options)`. It is the Yes or No dialog, bound to the module that owns the action, and answers a Promise of `true` or `false`. The shell's value wins over a `confirm` key the caller supplied. Every other key is passed through untouched. A handler that never reads it keeps working. The options and rules are in [module-runtime-api.md](module-runtime-api.md#confirmoptions). Do not ask for a typed name or number.
+
 Optional:
 
 - `icon`

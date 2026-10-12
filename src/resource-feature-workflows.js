@@ -35,3 +35,22 @@ export async function saveCustomFieldsWorkflow(draft, { updateResourceCustomFiel
   await updateResourceCustomFields(draft.resourceType, draft.row.id, values)
   return { message: `${draft.resourceType === 'client' ? 'Client' : 'Site'} custom fields updated.`, values }
 }
+
+export const FIRST_SITE_REQUIRED = 'Enter the first site name.'
+export const SITE_ONLY_SCOPE_NOTE = 'Your role is limited to sites only, so Tactical does not add this client to your access. Ask an administrator to add it.'
+
+// Add client: the first site name is required. Core's own refusal text reaches the caller as it was sent.
+export async function createClientWorkflow(draft, { createResourceClient }) {
+  const name = String(draft?.name ?? '').trim()
+  const siteName = String(draft?.siteName ?? '').trim()
+  if (!name) throw new Error('Enter the client name.')
+  if (!siteName) throw new Error(FIRST_SITE_REQUIRED)
+  const row = await createResourceClient({ name, siteName })
+  return { row, siteName }
+}
+
+// The notice after Add client. scopeMode is state.context.tactical_scope.mode (a display hint).
+export function clientCreatedNotice(siteName, scopeMode) {
+  const base = `Client created with first site ${siteName}.`
+  return scopeMode === 'sites' ? `${base} ${SITE_ONLY_SCOPE_NOTE}` : base
+}

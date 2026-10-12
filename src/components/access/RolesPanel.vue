@@ -4,8 +4,13 @@ import { TACTICAL_PERMISSION_GROUPS, createRole, deleteRole, getRole, getRoleExt
 import { clearUnsaved, registerUnsaved, requestLeave } from '../../unsaved'
 import { createLatestRequestGate } from '../../admin-session-state'
 import { loadLatestRoleSelection } from '../../role-selection-loader'
+import { listResourceClients, listResourceSites } from '../../api'
+import { SCOPE_LIMIT_REMINDER, SCOPE_SUPERUSER_NOTE, applyScopePayload, becomesLimited, buildScopeDirectory, normalizeIdList, readScopeDirectory, scopeNotes, scopeSummary } from '../../role-scope'
+import { useConfirm } from '../../confirm-dialog'
+import RoleScopePicker from './RoleScopePicker.vue'
 
 const state = inject('tecTacState')
+const confirmAction = useConfirm()
 const roles = ref([])
 const selected = ref(null)
 const extensionCatalog = ref([])
@@ -22,6 +27,10 @@ const editorTab = ref('overview')
 const permissionQuery = ref('')
 const enabledOnly = ref(false)
 const collapsedGroups = ref({})
+const scopeRead = ref({ mode: 'none', directory: buildScopeDirectory([]), truncated: false, error: '' })
+const scopeLoading = ref(false)
+let scopeLoaded = false
+const savedScope = ref({ clients: [], sites: [] })
 const OWNER = 'roles-editor'
 const roleRequestGate = createLatestRequestGate()
 
@@ -39,10 +48,29 @@ const extensionPermissionTotal = computed(() => {
 })
 const totalGrantCount = computed(() => permissionCount.value + extensionPermissionCount.value)
 
+// The role's two Tactical lists. An empty pair means no limit. Ids are kept even when the pickers cannot show them.
+const scopeClients = computed(() => normalizeIdList(selected.value?.can_view_clients))
+const scopeSites = computed(() => normalizeIdList(selected.value?.can_view_sites))
+const scopeReadOnly = computed(() => capabilityResolved.value && !canManage.value)
+const scopeNoteList = computed(() => scopeNotes(scopeClients.value, scopeSites.value))
+const scopeReminder = computed(() => becomesLimited(savedScope.value.clients, savedScope.value.sites, scopeClients.value, scopeSites.value))
+function setScopeClients(ids) { if (selected.value) selected.value.can_view_clients = normalizeIdList(ids) }
+function setScopeSites(ids) { if (selected.value) selected.value.can_view_sites = normalizeIdList(ids) }
+
+async function ensureScopeDirectory() {
+  if (scopeLoaded || scopeLoading.value) return
+  scopeLoading.value = true
+  try {
+    scopeRead.value = await readScopeDirectory({ context: state.context, listClients: listResourceClients, listSites: listResourceSites })
+    scopeLoaded = true
+  } finally { scopeLoading.value = false }
+}
+
 const editorTabs = computed(() => [
   { id:'overview', label:'Overview', hint:'Identity and role summary' },
   { id:'tactical', label:'Tactical permissions', hint:`${permissionCount.value} of ${tacticalPermissionTotal.value} enabled` },
   { id:'extensions', label:'Extension permissions', hint:`${extensionPermissionCount.value} of ${extensionPermissionTotal.value} enabled` },
+  { id:'scope', label:'Clients & sites', hint: scopeSummary(scopeClients.value, scopeSites.value) },
 ])
 
 const tacticalGroups = computed(() => {
@@ -125,7 +153,8 @@ function snapshot() {
     for (const key of group.keys) if (key in selected.value) tactical[key] = !!selected.value[key]
   }
   const extensions = Object.fromEntries(Object.entries(extensionPermissions.value).sort(([a],[b]) => a.localeCompare(b)).map(([key,value]) => [key, !!value]))
-  return JSON.stringify({ tactical, extensions })
+  const scope = { clients: scopeClients.value, sites: scopeSites.value }
+  return JSON.stringify({ tactical, extensions, scope })
 }
 
 const dirty = computed(() => !!selected.value && !!baseline.value && snapshot() !== baseline.value)
@@ -164,6 +193,7 @@ async function loadRole(id) {
   extensionCatalog.value = result.extensions
   extensionPermissions.value = result.permissions
   baseline.value = snapshot()
+  savedScope.value = { clients: scopeClients.value, sites: scopeSites.value }
   permissionQuery.value = ''
   enabledOnly.value = false
   collapsedGroups.value = {}
@@ -212,7 +242,8 @@ async function persistRole() {
   saving.value = true
   const id = selected.value.id
   try {
-    const payload = { ...selected.value }
+    // Every key Tactical returned goes back; only the two lists are normalised (PUT replaces both).
+    const payload = applyScopePayload({ ...selected.value }, scopeClients.value, scopeSites.value)
     delete payload.user_count
     await updateRole(id, payload)
     if (Object.keys(extensionPermissions.value).length) await updateRoleExtensionPermissions(id, extensionPermissions.value)
@@ -241,7 +272,7 @@ async function removeRole() {
   }
   const summary = roles.value.find((r) => r.id === selected.value.id)
   if (summary?.user_count > 0) { error.value = 'Reassign users before deleting this role.'; return }
-  if (!window.confirm(`Delete role ${selected.value.name}? This cannot be undone.`)) return
+  if (!(await confirmAction({ question: `Delete role ${selected.value.name}?`, target: selected.value.name, detail: 'This cannot be undone.', danger: true }))) return
   saving.value = true; error.value = ''
   try { await deleteRole(selected.value.id); selected.value = null; baseline.value = ''; clearUnsaved(OWNER); await loadRoles() }
   catch (err) { error.value = err.message || 'Unable to delete role.' }
@@ -261,7 +292,7 @@ function setAllGroupsCollapsed(value) {
   for (const key of groupKeysForCurrentTab()) next[key] = value
   collapsedGroups.value = next
 }
-function setEditorTab(id) { editorTab.value = id; permissionQuery.value = ''; enabledOnly.value = false }
+function setEditorTab(id) { editorTab.value = id; permissionQuery.value = ''; enabledOnly.value = false; if (id === 'scope') void ensureScopeDirectory() }
 function beforeUnload(event) { if (!dirty.value) return; event.preventDefault(); event.returnValue = '' }
 
 onMounted(() => { window.addEventListener('beforeunload', beforeUnload); loadRoles() })
@@ -329,6 +360,13 @@ onBeforeUnmount(() => { roleRequestGate.begin(); window.removeEventListener('bef
             </div>
             <div class="role-overview-links"><button class="btn" @click="setEditorTab('tactical')">Review Tactical permissions</button><button class="btn" @click="setEditorTab('extensions')">Review extension permissions</button></div>
           </article>
+        </section>
+
+        <section v-else-if="editorTab === 'scope'" class="role-scope-tab">
+          <div class="state-inline" v-for="note in scopeNoteList" :key="note">{{ note }}</div>
+          <div v-if="selected.is_superuser" class="state-inline warning">{{ SCOPE_SUPERUSER_NOTE }}</div>
+          <div v-if="scopeReminder" class="state-inline warning">{{ SCOPE_LIMIT_REMINDER }}</div>
+          <RoleScopePicker :clients="scopeClients" :sites="scopeSites" :directory="scopeRead.directory" :mode="scopeRead.mode" :loading="scopeLoading" :error="scopeRead.error" :truncated="scopeRead.truncated" :read-only="scopeReadOnly" :disabled="!!selected.is_superuser" @update:clients="setScopeClients" @update:sites="setScopeSites" />
         </section>
 
         <template v-else>

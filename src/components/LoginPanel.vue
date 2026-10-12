@@ -8,7 +8,7 @@ import {
   setupTacticalTotp,
 } from '../api'
 import { copyTextWithFeedback } from '../copy-feedback'
-import { enrollmentSetupErrorMessage } from '../mfa-enrollment'
+import { SETUP_SESSION_REQUIRED_CODE, enrollmentSetupErrorMessage } from '../mfa-enrollment'
 import { loginSsoEntries, beginLoginSso } from '../extension-surface-workflows'
 import LoginSsoProviders from './LoginSsoProviders.js'
 
@@ -109,7 +109,10 @@ async function beginTotpSetup() {
     await nextTick()
     totpInput.value?.focus()
   } catch (err) {
-    error.value = enrollmentSetupErrorMessage(err, normalizeError)
+    const message = enrollmentSetupErrorMessage(err, normalizeError)
+    // The setup session ended: back to the credentials step so the person can sign in again.
+    if (err?.code === SETUP_SESSION_REQUIRED_CODE) backToCredentials()
+    error.value = message
   } finally {
     busy.value = false
   }

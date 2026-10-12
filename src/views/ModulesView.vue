@@ -1,6 +1,7 @@
 <script setup>
 import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useConfirm } from '../confirm-dialog'
 import { createLatestRequestGate } from '../admin-session-state'
 import { loadLatestHotfixRows } from '../module-hotfix-loader'
 import { checkIntakeMetadata, orderGroupsByDependency, pairIntakeFiles } from '../module-intake'
@@ -36,6 +37,7 @@ import {
 const state = inject('tecTacState')
 const dynamicNav = inject('tecTacNavigation', [])
 const router = useRouter()
+const askConfirm = useConfirm()
 const modules = ref([])
 const loading = ref(true)
 const error = ref('')
@@ -86,7 +88,6 @@ const activeJob = ref(null)
 const jobPollError = ref('')
 const confirmTarget = ref(null)
 const confirmMode = ref('')
-const confirmText = ref('')
 const cascade = ref(false)
 const reinstallTarget = ref(null)
 const installConfirm = ref(null)
@@ -406,7 +407,7 @@ async function toggleRepository(item) {
 
 async function removeRepository(item) {
   if (!item || !canManage.value || repositoryBusy.value) return
-  if (!window.confirm(`Remove repository ${item.name}? Installed modules remain installed and keep their recorded source provenance.`)) return
+  if (!(await askConfirm({ question: `Remove repository ${item.name}?`, target: item.name, detail: 'Installed modules remain installed and keep their recorded source provenance.', danger: true }))) return
   repositoryBusy.value = true
   error.value = ''
   try {
@@ -772,11 +773,11 @@ function notRunMessage(message, groups, reloadHint) {
   return parts.join(' ')
 }
 
-function ask(item, mode) { confirmTarget.value = item; confirmMode.value = mode; confirmText.value = ''; cascade.value = false; listChanged.value = ''; confirmStep.value = 1; switchAck.value = false; handBack.value = null }
-function closeConfirm() { confirmTarget.value = null; confirmMode.value = ''; confirmText.value = ''; cascade.value = false; listChanged.value = ''; confirmStep.value = 1; switchAck.value = false; handBack.value = null }
+function ask(item, mode) { confirmTarget.value = item; confirmMode.value = mode; cascade.value = false; listChanged.value = ''; confirmStep.value = 1; switchAck.value = false; handBack.value = null }
+function closeConfirm() { confirmTarget.value = null; confirmMode.value = ''; cascade.value = false; listChanged.value = ''; confirmStep.value = 1; switchAck.value = false; handBack.value = null }
 async function confirmAction() {
   const item = confirmTarget.value
-  if (!item || confirmText.value !== item.id) return
+  if (!item) return
   // First confirmation done. A replaced module with an enabled replacement needs a second, separate step; nothing is sent yet.
   if (confirmMode.value === 'enable' && secondConfirmationRequired(item)) { confirmStep.value = 2; switchAck.value = false; return }
   // Core marks a replacement whose replaced module cannot come back on its row, so the warning comes before anything is sent.
@@ -940,7 +941,7 @@ async function applyHotfix(){
 async function rollbackHotfix(row){
   const moduleId=hotfixSelectedModuleId.value
   if(!moduleId||!row?.id||hotfixJobRunning.value) return
-  if(!window.confirm(`Roll back hotfix ${row.id} from ${moduleId}? Hotfixes must be rolled back newest first.`)) return
+  if(!(await askConfirm({ question: `Roll back hotfix ${row.id} from ${moduleId}?`, target: moduleId, detail: 'Hotfixes must be rolled back newest first.', danger: true }))) return
   hotfixJobError.value=''
   try{ hotfixJob.value=await rollbackModuleHotfix(moduleId,row.id); beginHotfixPoll() }
   catch(e){ hotfixJobError.value=e?.message||'Unable to roll back hotfix.' }
@@ -1271,6 +1272,6 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
   <div v-if="reinstallTarget" class="modal-backdrop" @click.self="closeReinstallConfirm"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="module-reinstall-title"><div class="cardhead"><div><span class="eyebrow">REINSTALL MODULE</span><h3 id="module-reinstall-title">{{ reinstallTarget.name || reinstallTarget.id }}</h3></div><span class="pill warn">SAME VERSION</span></div><p class="compact-copy">Installed version and repository version are both <span class="mono">{{ reinstallTarget.latest_version }}</span>. Continuing will download and inspect the same version for reinstall. The replacement still requires confirmation from the package inspection step.</p><div class="state-inline warning mt"><b>Existing module files will be replaced when the install job runs.</b> Configuration and data remain subject to the module's normal upgrade/reinstall lifecycle.</div><div class="modal-actions"><button class="btn primary" :disabled="inspecting || jobRunning" @click="confirmReinstall">Continue to reinstall</button><button class="btn" @click="closeReinstallConfirm">Cancel</button></div></section></div>
 
   <div v-if="installConfirm" class="modal-backdrop" @click.self="closeInstallConfirm"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="module-install-confirm-title"><div class="cardhead"><div><span class="eyebrow">INSTALL MODULES</span><h3 id="module-install-confirm-title">Switch off replaced modules?</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="installConfirm.changed" class="state-inline warning mt"><b>{{ installConfirm.changed }}</b></div><div v-if="installConfirm.lines.length" class="state-inline warning mt"><div v-for="(line,index) in installConfirm.lines" :key="index">{{ line }}</div></div><div class="modal-actions"><button class="btn primary" :disabled="jobRunning || installing" @click="confirmInstall">{{ installConfirm.ids.length ? 'Install and switch off' : 'Install' }}</button><button class="btn" @click="closeInstallConfirm">Cancel</button></div></section></div>
-  <div v-if="confirmTarget" class="modal-backdrop" @click.self="closeConfirm"><section class="modal-panel"><div class="cardhead"><div><span class="eyebrow">{{ confirmMode.toUpperCase() }} MODULE</span><h3>{{ confirmTarget.id }}</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="enableNotice.length || listChanged" class="state-inline warning mt"><b v-if="listChanged">{{ listChanged }}</b><div v-for="(line,index) in enableNotice" :key="index">{{ line }}</div></div><div v-if="disableNotice.length" class="state-inline warning mt"><div v-for="(line,index) in disableNotice" :key="index">{{ line }}</div></div><p v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="compact-copy">Enabled dependants may block this action. Select cascade to disable dependent modules first.</p><label v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="checkline warning-check"><input v-model="cascade" type="checkbox"> Disable enabled dependants as part of this job</label><template v-if="handBack"><div class="state-inline warning mt"><div v-for="(line,index) in handBack.lines" :key="'hand-back'+index">{{ line }}</div></div><div class="modal-actions"><button class="btn danger" :disabled="handBackBusy" @click="confirmHandBack">{{ handBack.button }}</button><button class="btn" @click="closeConfirm">Cancel</button></div></template><template v-else-if="confirmStep===2&&needsSecondConfirmation"><div class="auth-error mt"><b>Second confirmation.</b> {{ secondStepText.warning }}</div><div v-for="(line,index) in secondDependantLines" :key="'dependant'+index" class="state-inline warning mt">{{ line }}</div><label class="checkline warning-check"><input v-model="switchAck" type="checkbox"> {{ secondStepText.checkbox }}</label><div class="modal-actions"><button class="btn danger" :disabled="!switchAck" @click="confirmSwitchAction">{{ secondStepText.button }}</button><button class="btn" @click="closeConfirm">Cancel</button></div></template><template v-else><label class="field"><span>Type {{ confirmTarget.id }} to confirm</span><input v-model="confirmText" autocomplete="off"></label><div class="modal-actions"><button class="btn" :class="confirmMode==='enable'?'primary':'danger'" :disabled="confirmText!==confirmTarget.id" @click="confirmAction">{{ confirmMode }} module</button><button class="btn" @click="closeConfirm">Cancel</button></div></template></section></div>
+  <div v-if="confirmTarget" class="modal-backdrop" @click.self="closeConfirm"><section class="modal-panel"><div class="cardhead"><div><span class="eyebrow">{{ confirmMode.toUpperCase() }} MODULE</span><h3>{{ confirmTarget.id }}</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="enableNotice.length || listChanged" class="state-inline warning mt"><b v-if="listChanged">{{ listChanged }}</b><div v-for="(line,index) in enableNotice" :key="index">{{ line }}</div></div><div v-if="disableNotice.length" class="state-inline warning mt"><div v-for="(line,index) in disableNotice" :key="index">{{ line }}</div></div><p v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="compact-copy">Enabled dependants may block this action. Select cascade to disable dependent modules first.</p><label v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="checkline warning-check"><input v-model="cascade" type="checkbox"> Disable enabled dependants as part of this job</label><template v-if="handBack"><div class="state-inline warning mt"><div v-for="(line,index) in handBack.lines" :key="'hand-back'+index">{{ line }}</div></div><div class="modal-actions"><button class="btn danger" :disabled="handBackBusy" @click="confirmHandBack">{{ handBack.button }}</button><button class="btn" @click="closeConfirm">Cancel</button></div></template><template v-else-if="confirmStep===2&&needsSecondConfirmation"><div class="auth-error mt"><b>Second confirmation.</b> {{ secondStepText.warning }}</div><div v-for="(line,index) in secondDependantLines" :key="'dependant'+index" class="state-inline warning mt">{{ line }}</div><label class="checkline warning-check"><input v-model="switchAck" type="checkbox"> {{ secondStepText.checkbox }}</label><div class="modal-actions"><button class="btn danger" :disabled="!switchAck" @click="confirmSwitchAction">{{ secondStepText.button }}</button><button class="btn" @click="closeConfirm">Cancel</button></div></template><template v-else><p class="confirm-question">{{ confirmMode.charAt(0).toUpperCase() + confirmMode.slice(1) }} module {{ confirmTarget.id }}? Are you sure?</p><div class="modal-actions"><button class="btn" @click="closeConfirm">No</button><button class="btn" :class="confirmMode==='enable'?'primary':'danger'" @click="confirmAction">Yes</button></div></template></section></div>
 </section>
 </template>

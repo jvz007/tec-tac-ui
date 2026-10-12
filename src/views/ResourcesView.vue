@@ -13,11 +13,17 @@ import {
   updateResourceSite,
 } from '../api'
 import { createResourceSiteSearchCoordinator } from '../resource-site-search-state'
-import { loadRelocationSites, deleteResourceWorkflow, editableCustomFieldRows, saveCustomFieldsWorkflow } from '../resource-feature-workflows'
+import { loadRelocationSites, deleteResourceWorkflow, editableCustomFieldRows, saveCustomFieldsWorkflow, createClientWorkflow, clientCreatedNotice, FIRST_SITE_REQUIRED } from '../resource-feature-workflows'
+import { resourceReadMode, groupSitesByClient, readAllPages } from '../resource-directory-read'
+import { useConfirm } from '../confirm-dialog'
 import { resourceContextMenuActions, executeResourceContextMenuAction } from '../extension-surface-workflows'
 
 const PAGE_SIZE = 50
 const state = inject('tecTacState')
+const confirmAction = useConfirm()
+// 'clients': the clients read (each client carries its sites). 'sites': the sites read, grouped by client.
+// 'none': no read at all. A refused read shows Core's message and never tries the other one (Core 1.17.22).
+const readMode = computed(() => resourceReadMode(state.context))
 const contextActions = inject('tecTacContextActions', null)
 const permissions = computed(() => new Set(state.context.permissions || []))
 const superuser = computed(() => state.context.user?.superuser === true)
@@ -39,6 +45,8 @@ const loadingClients = ref(false)
 const loadingSites = ref(false)
 const error = ref('')
 const notice = ref('')
+const noticeAction = ref(null)
+let directoryCache = null
 const clientDialog = ref(null)
 const siteDialog = ref(null)
 const siteClientSearch = ref('')
@@ -62,7 +70,7 @@ function moduleActions(resourceType, row) {
 
 async function runModuleAction(action, resourceType, row) {
   if (!action || action.state?.enabled === false || moduleActionBusyId.value) return
-  if (action.dangerous && !window.confirm(`Run ${action.label} for ${row.name || resourceType}?`)) return
+  if (action.dangerous && !(await confirmAction({ question: `Run ${action.label}?`, target: row.name || resourceType, danger: true }))) return
   error.value = ''
   notice.value = ''
   moduleActionBusyId.value = action.id
@@ -83,8 +91,13 @@ function normalizePage(value, fallback = 1) {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback
 }
 
+// Nested sites keep their client id, so Edit and Delete on a site row work as before.
+function withSiteClientIds(row) {
+  return Array.isArray(row?.sites) ? { ...row, sites: row.sites.map((site) => ({ ...site, client_id: site.client_id ?? row.id })) } : row
+}
+
 function applyClientPayload(payload) {
-  clients.value = Array.isArray(payload?.items) ? payload.items : []
+  clients.value = Array.isArray(payload?.items) ? payload.items.map(withSiteClientIds) : []
   clientCount.value = Number(payload?.count || 0)
   clientPage.value = normalizePage(payload?.page, clientPage.value)
   clientPages.value = Number(payload?.pages || 0)
@@ -97,14 +110,39 @@ function applySitePayload(payload) {
   sitePages.value = Number(payload?.pages || 0)
 }
 
+// Sites mode: read every site once, group them by client, then search and page the grouped list here.
+async function readSitesDirectory() {
+  if (directoryCache) return directoryCache
+  const { items } = await readAllPages(listResourceSites)
+  directoryCache = groupSitesByClient(items)
+  return directoryCache
+}
+function invalidateDirectory() { directoryCache = null }
+
+function groupedClientPayload(grouped) {
+  const needle = clientSearch.value.trim().toLowerCase()
+  const rows = needle ? grouped.filter((client) => client.name.toLowerCase().includes(needle)) : grouped
+  const pages = Math.ceil(rows.length / PAGE_SIZE)
+  const page = Math.min(Math.max(clientPage.value, 1), Math.max(pages, 1))
+  return { items: rows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), count: rows.length, page, pages }
+}
+
 let clientRequest = 0
 async function loadClients({ resetPage = false } = {}) {
   if (resetPage) clientPage.value = 1
   const request = ++clientRequest
+  if (readMode.value === 'none') {
+    applyClientPayload(null)
+    selectedClientId.value = null
+    loadingClients.value = false
+    return
+  }
   loadingClients.value = true
   error.value = ''
   try {
-    const payload = await listResourceClients({ search: clientSearch.value, page: clientPage.value, pageSize: PAGE_SIZE })
+    const payload = readMode.value === 'sites'
+      ? groupedClientPayload(await readSitesDirectory())
+      : await listResourceClients({ search: clientSearch.value, page: clientPage.value, pageSize: PAGE_SIZE })
     if (request !== clientRequest) return
     applyClientPayload(payload)
     if (clientPages.value && clientPage.value > clientPages.value) {
@@ -113,6 +151,7 @@ async function loadClients({ resetPage = false } = {}) {
     }
     if (selectedClientId.value && !clients.value.some((x) => x.id === selectedClientId.value)) selectedClientId.value = null
     if (!selectedClientId.value && clients.value.length) selectedClientId.value = clients.value[0].id
+    applyLocalSites()
   } catch (e) {
     if (request === clientRequest) error.value = message(e, 'Unable to load clients.')
   } finally {
@@ -120,35 +159,25 @@ async function loadClients({ resetPage = false } = {}) {
   }
 }
 
-let siteRequest = 0
+// The site pane reads nothing: the selected client already carries its sites (clients mode), or the grouped
+// list does (sites mode). Search and paging are local.
+function applyLocalSites() {
+  const all = Array.isArray(selectedClient.value?.sites) ? selectedClient.value.sites : []
+  const needle = siteSearch.value.trim().toLowerCase()
+  const rows = needle ? all.filter((site) => String(site.name).toLowerCase().includes(needle)) : all
+  siteCount.value = rows.length
+  sitePages.value = Math.ceil(rows.length / PAGE_SIZE)
+  if (sitePage.value > sitePages.value) sitePage.value = Math.max(sitePages.value, 1)
+  sites.value = rows.slice((sitePage.value - 1) * PAGE_SIZE, sitePage.value * PAGE_SIZE)
+}
+
 async function loadSites({ resetPage = false } = {}) {
   if (resetPage) sitePage.value = 1
-  const request = ++siteRequest
-  if (!selectedClientId.value) {
-    sites.value = []
-    siteCount.value = 0
-    sitePages.value = 0
-    loadingSites.value = false
-    return
-  }
-  loadingSites.value = true
-  error.value = ''
-  try {
-    const payload = await listResourceSites({ clientId: selectedClientId.value, search: siteSearch.value, page: sitePage.value, pageSize: PAGE_SIZE })
-    if (request !== siteRequest) return
-    applySitePayload(payload)
-    if (sitePages.value && sitePage.value > sitePages.value) {
-      sitePage.value = sitePages.value
-      return loadSites()
-    }
-  } catch (e) {
-    if (request === siteRequest) error.value = message(e, 'Unable to load sites.')
-  } finally {
-    if (request === siteRequest) loadingSites.value = false
-  }
+  applyLocalSites()
 }
 
 async function refreshAll() {
+  invalidateDirectory()
   await loadClients()
   await loadSites()
 }
@@ -157,7 +186,7 @@ function chooseClient(id) {
   if (selectedClientId.value === id) return
   selectedClientId.value = id
 }
-function openCreateClient() { clientDialog.value = { mode: 'create', id: null, name: '' } }
+function openCreateClient() { clientDialog.value = { mode: 'create', id: null, name: '', siteName: '' } }
 function openEditClient(client) { clientDialog.value = { mode: 'edit', id: client.id, name: client.name } }
 function openCreateSite() {
   if (!selectedClient.value) return
@@ -177,7 +206,11 @@ async function loadSiteClientOptions() {
   const request = ++siteClientRequest
   loadingSiteClientOptions.value = true
   try {
-    const payload = await listResourceClients({ search: siteClientSearch.value, page: 1, pageSize: 50 })
+    // Sites mode: the options come from the grouped list, not from a clients read.
+    const needle = siteClientSearch.value.trim().toLowerCase()
+    const payload = readMode.value === 'sites'
+      ? { items: (await readSitesDirectory()).filter((client) => !needle || client.name.toLowerCase().includes(needle)).slice(0, 50) }
+      : await listResourceClients({ search: siteClientSearch.value, page: 1, pageSize: 50 })
     if (request !== siteClientRequest) return
     const rows = Array.isArray(payload?.items) ? payload.items : []
     const current = selectedClient.value
@@ -193,15 +226,20 @@ async function loadSiteClientOptions() {
 async function saveClient() {
   const draft = clientDialog.value
   if (!draft || !draft.name.trim()) return
+  if (draft.mode === 'create' && !draft.siteName.trim()) { error.value = FIRST_SITE_REQUIRED; return }
   saving.value = true
   error.value = ''
   notice.value = ''
+  noticeAction.value = null
   try {
-    const row = draft.mode === 'create'
-      ? await createResourceClient(draft.name.trim())
-      : await updateResourceClient(draft.id, draft.name.trim())
+    let row
+    let siteName = ''
+    if (draft.mode === 'create') ({ row, siteName } = await createClientWorkflow(draft, { createResourceClient }))
+    else row = await updateResourceClient(draft.id, draft.name.trim())
     clientDialog.value = null
-    notice.value = draft.mode === 'create' ? 'Client created.' : 'Client updated.'
+    notice.value = draft.mode === 'create' ? clientCreatedNotice(siteName, state.context?.tactical_scope?.mode) : 'Client updated.'
+    if (draft.mode === 'create' && row?.id) noticeAction.value = { label: 'Edit fields', run: () => openCustomFields('client', { id: row.id, name: row.name || draft.name.trim() }) }
+    invalidateDirectory()
     await loadClients()
     if (row?.id && clients.value.some((item) => item.id === row.id)) selectedClientId.value = row.id
   } catch (e) {
@@ -215,20 +253,20 @@ async function saveSite() {
   saving.value = true
   error.value = ''
   notice.value = ''
+  noticeAction.value = null
   try {
-    await (draft.mode === 'create'
+    const row = await (draft.mode === 'create'
       ? createResourceSite({ clientId: draft.client_id, name: draft.name.trim() })
       : updateResourceSite(draft.id, { clientId: draft.client_id, name: draft.name.trim() }))
     const destination = draft.client_id
     siteDialog.value = null
     notice.value = draft.mode === 'create' ? 'Site created.' : 'Site updated.'
-    if (destination === selectedClientId.value) {
-      await loadSites()
-    } else {
-      const visibleDestination = clients.value.some((client) => client.id === destination)
-      if (visibleDestination) selectedClientId.value = destination
-      else await loadSites()
-    }
+    if (draft.mode === 'create' && row?.id) noticeAction.value = { label: 'Edit fields', run: () => openCustomFields('site', { id: row.id, name: row.name || draft.name.trim() }) }
+    // The sites live on the client rows, so the list is read again.
+    invalidateDirectory()
+    await loadClients()
+    if (destination !== selectedClientId.value && clients.value.some((client) => client.id === destination)) selectedClientId.value = destination
+    else await loadSites()
   } catch (e) {
     error.value = message(e, 'Unable to save site.')
   } finally { saving.value = false }
@@ -276,6 +314,7 @@ async function confirmDeleteResource() {
     const deletedClientId = result.deletedClientId
     deleteDialog.value = null
     if (deletedClientId && selectedClientId.value === deletedClientId) selectedClientId.value = null
+    invalidateDirectory()
     await loadClients()
     await loadSites()
   } catch (e) {
@@ -352,7 +391,6 @@ onBeforeUnmount(() => {
   siteSearchCoordinator.reset()
   clearTimeout(siteClientTimer)
   clientRequest += 1
-  siteRequest += 1
   siteClientRequest += 1
 })
 </script>
@@ -365,9 +403,10 @@ onBeforeUnmount(() => {
     </div>
 
     <div v-if="error" class="auth-error mb"><b>Resource operation failed.</b> {{ error }}</div>
-    <div v-if="notice" class="state-inline ok mb"><b>{{ notice }}</b></div>
+    <div v-if="notice" class="state-inline ok mb"><b>{{ notice }}</b><button v-if="noticeAction" type="button" class="btn sm" @click="noticeAction.run()">{{ noticeAction.label }}</button></div>
 
-    <div class="grid g2 resources-grid">
+    <div v-if="readMode === 'none'" class="state-inline warning mb">Your role cannot list clients or sites.</div>
+    <div v-else class="grid g2 resources-grid">
       <section class="card resource-pane">
         <div class="cardhead"><div><span class="eyebrow">CLIENTS</span><h3>Client directory</h3><p>Only clients visible in your Tactical scope are shown.</p></div><span class="pill">{{clientCount}}</span></div>
         <label class="field"><span>Search clients</span><input v-model="clientSearch" placeholder="Client name"></label>
@@ -396,8 +435,11 @@ onBeforeUnmount(() => {
       <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="client-resource-title">
         <div class="cardhead"><div><span class="eyebrow">{{clientDialog.mode==='create'?'CREATE CLIENT':'EDIT CLIENT'}}</span><h3 id="client-resource-title">{{clientDialog.mode==='create'?'New client':`Client ${clientDialog.id}`}}</h3></div></div>
         <label class="field"><span>Client name</span><input v-model="clientDialog.name" maxlength="255" autofocus @keydown.enter.prevent="saveClient"></label>
+        <label v-if="clientDialog.mode==='create'" class="field"><span>First site name <small>· required</small></span><input v-model="clientDialog.siteName" maxlength="255" @keydown.enter.prevent="saveClient"></label>
+        <p class="muted compact-copy">The character | is not allowed in a name. Core decides and shows its own message if a name is refused.</p>
+        <p v-if="clientDialog.mode==='create'" class="muted compact-copy">Custom fields can be filled in right after creating.</p>
         <p class="muted compact-copy">Core validates uniqueness and Tactical/Tec-Tac authorization. No customer-specific workflow is stored here.</p>
-        <div class="modal-actions"><button class="btn" :disabled="saving" @click="clientDialog=null">Cancel</button><button class="btn primary" :disabled="saving||!clientDialog.name.trim()" @click="saveClient">{{saving?'Saving…':'Save client'}}</button></div>
+        <div class="modal-actions"><button class="btn" :disabled="saving" @click="clientDialog=null">Cancel</button><button class="btn primary" :disabled="saving||!clientDialog.name.trim()||(clientDialog.mode==='create'&&!clientDialog.siteName.trim())" @click="saveClient">{{saving?'Saving…':'Save client'}}</button></div>
       </section>
     </div>
 
@@ -407,6 +449,8 @@ onBeforeUnmount(() => {
         <label class="field"><span>Find client</span><input v-model="siteClientSearch" placeholder="Search client name"></label>
         <label class="field"><span>Client</span><select v-model.number="siteDialog.client_id" :disabled="loadingSiteClientOptions"><option v-for="client in siteClientOptions" :key="client.id" :value="client.id">{{client.name}} · {{client.id}}</option></select></label>
         <label class="field"><span>Site name</span><input v-model="siteDialog.name" maxlength="255" autofocus @keydown.enter.prevent="saveSite"></label>
+        <p class="muted compact-copy">The character | is not allowed in a name. Core decides and shows its own message if a name is refused.</p>
+        <p v-if="siteDialog.mode==='create'" class="muted compact-copy">Custom fields can be filled in right after creating.</p>
         <p class="muted compact-copy">Moving a site is permitted only when Core confirms your Tactical scope and <span class="mono">core.resources.sites.manage</span> grant.</p>
         <div class="modal-actions"><button class="btn" :disabled="saving" @click="siteDialog=null">Cancel</button><button class="btn primary" :disabled="saving||!siteDialog.name.trim()||!siteDialog.client_id" @click="saveSite">{{saving?'Saving…':'Save site'}}</button></div>
       </section>

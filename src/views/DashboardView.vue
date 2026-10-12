@@ -6,7 +6,9 @@ import { preferenceState, updateUserPreferences } from '../preferences'
 import { createKeyedLatestRequestGate } from '../latest-request-gate'
 import ModuleErrorBoundary from '../components/module-error-boundary.js'
 import { recordModuleRuntimeError } from '../state'
+import { useConfirm } from '../confirm-dialog'
 
+const confirmAction = useConfirm()
 const route = useRoute()
 const router = useRouter()
 const state = inject('tecTacState')
@@ -172,7 +174,7 @@ async function saveEdit() {
 }
 
 async function removeCurrent() {
-  if (!selected.value?.can_edit || !window.confirm(`Delete dashboard ${selected.value.name}?`)) return
+  if (!selected.value?.can_edit || !(await confirmAction({ question: `Delete dashboard ${selected.value.name}?`, target: selected.value.name, danger: true }))) return
   saving.value = true
   try {
     const id = selected.value.id

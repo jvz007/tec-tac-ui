@@ -7,6 +7,9 @@ import {
   saveUserPreferences,
 } from '../preferences'
 import { listDashboards } from '../dashboards'
+import { useConfirm } from '../confirm-dialog'
+
+const confirmAction = useConfirm()
 
 function clone(value) { return JSON.parse(JSON.stringify(value)) }
 const draft = ref(clone(preferenceState.preferences))
@@ -44,7 +47,7 @@ async function save() {
 }
 
 async function resetNavigation() {
-  if (!window.confirm('Reset your Tec-Tac navigation order, Favorites and collapsed sections?')) return
+  if (!(await confirmAction({ question: 'Reset your Tec-Tac navigation order, Favorites and collapsed sections?', danger: true }))) return
   error.value = ''
   saved.value = ''
   try {
@@ -58,7 +61,7 @@ async function resetNavigation() {
 }
 
 async function resetAll() {
-  if (!window.confirm('Reset all Tec-Tac preferences for your user?')) return
+  if (!(await confirmAction({ question: 'Reset all Tec-Tac preferences for your user?', danger: true }))) return
   error.value = ''
   saved.value = ''
   try {

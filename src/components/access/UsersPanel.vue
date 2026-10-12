@@ -1,8 +1,10 @@
 <script setup>
 import { computed, inject, onMounted, reactive, ref } from 'vue'
+import { useConfirm } from '../../confirm-dialog'
 import { createUser, deleteUser, getUserMfaRecovery, invalidateUserMfaBackupCodes, listRoles, listUsers, resetUserPassword, resetUserTotp, updateUser } from '../../access'
 
 const state = inject('tecTacState')
+const confirmAction = useConfirm()
 const users = ref([])
 const roles = ref([])
 const loading = ref(true)
@@ -111,7 +113,7 @@ async function saveUser() {
 }
 
 async function removeUser() {
-  if (!editing.value || !window.confirm(`Delete Tactical user ${editing.value.username}? This cannot be undone.`)) return
+  if (!editing.value || !(await confirmAction({ question: `Delete Tactical user ${editing.value.username}?`, target: editing.value.username, detail: 'This cannot be undone.', danger: true }))) return
   saving.value = true; error.value = ''
   try { await deleteUser(editing.value.id); closeEditor(); await load() }
   catch (err) { error.value = err.message || 'Unable to delete user.' }
@@ -120,7 +122,7 @@ async function removeUser() {
 
 async function changePassword() {
   if (!editing.value || !passwordReset.value) return
-  if (!window.confirm(`Reset the password for ${editing.value.username}?`)) return
+  if (!(await confirmAction({ question: `Reset the password for ${editing.value.username}?`, target: editing.value.username, danger: true }))) return
   saving.value = true; error.value = ''
   try { await resetUserPassword(editing.value.id, passwordReset.value); passwordReset.value = '' }
   catch (err) { error.value = err.message || 'Unable to reset password.' }
@@ -128,7 +130,7 @@ async function changePassword() {
 }
 
 async function resetTotp() {
-  if (!editing.value || !window.confirm(`Reset 2FA for ${editing.value.username}? They must enroll again at next sign-in.`)) return
+  if (!editing.value || !(await confirmAction({ question: `Reset 2FA for ${editing.value.username}?`, target: editing.value.username, detail: 'They must enroll again at next sign-in.', danger: true }))) return
   saving.value = true; error.value = ''; mfaNotice.value = ''
   try {
     await resetUserTotp(editing.value.id)

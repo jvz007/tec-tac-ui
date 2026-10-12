@@ -1,8 +1,10 @@
 <script setup>
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { listActiveLoginSessions, revokeLoginSession, revokeUserLoginSessions } from '../../access'
+import { useConfirm } from '../../confirm-dialog'
 import { createLatestRequestGate, revokeSessionPrompt, revokeUserSessionsPrompt } from '../../admin-session-state'
 
+const confirmAction = useConfirm()
 const sessions = ref([])
 const loading = ref(true)
 const busyId = ref('')
@@ -54,7 +56,7 @@ function scheduleSearch() {
 }
 
 async function revoke(row) {
-  if (!window.confirm(revokeSessionPrompt(row))) return
+  if (!(await confirmAction({ question: revokeSessionPrompt(row), target: row.username || '', danger: true }))) return
   busyId.value = row.id
   error.value = ''
   try {
@@ -68,7 +70,7 @@ async function revoke(row) {
 }
 
 async function revokeAll(row) {
-  if (!window.confirm(revokeUserSessionsPrompt(row))) return
+  if (!(await confirmAction({ question: revokeUserSessionsPrompt(row), target: row.username || '', danger: true }))) return
   busyId.value = `user:${row.user_id}`
   error.value = ''
   try {

@@ -1,4 +1,9 @@
+// Core 1.17.22: the first-login setup session ended before enrolment finished.
+export const SETUP_SESSION_REQUIRED_CODE = 'setup_session_required'
+export const SETUP_SESSION_ENDED_MESSAGE = 'Your setup session ended. Sign in again.'
+
 export function enrollmentSetupErrorMessage(error, normalizeError) {
+  if (error?.code === SETUP_SESSION_REQUIRED_CODE) return SETUP_SESSION_ENDED_MESSAGE
   const base = typeof normalizeError === 'function'
     ? normalizeError(error)
     : (error?.message || 'Authenticator enrollment failed.')

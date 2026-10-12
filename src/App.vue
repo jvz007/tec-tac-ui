@@ -3,6 +3,8 @@ import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import LoginPanel from './components/LoginPanel.vue'
 import UnsavedChangesDialog from './components/UnsavedChangesDialog.vue'
+import ConfirmDialog from './components/ConfirmDialog.vue'
+import { useConfirm } from './confirm-dialog'
 import QuickActionsDialog from './components/QuickActionsDialog.vue'
 import ModuleErrorBoundary from './components/module-error-boundary.js'
 import HelpDrawer from './components/HelpDrawer.vue'
@@ -22,6 +24,8 @@ const quickActions = inject('tecTacQuickActions', null)
 const notifications = inject('tecTacNotifications', null)
 const help = inject('tecTacHelp', null)
 const header = inject('tecTacHeader', null)
+const confirmService = inject('tecTacConfirm', null)
+const confirmAction = useConfirm()
 const FONT_SIZES = [
   { value: 0.9, label: 'A−', title: 'Small text' },
   { value: 1, label: 'A', title: 'Default text size' },
@@ -212,7 +216,7 @@ function openNavContextMenu(event, item, section) {
 function closeNavContextMenu() { navContextMenu.value = null }
 async function runQuickAction(pin) {
   if (!pin || pin.state?.enabled === false || quickActionBusyId.value) return
-  if (pin.dangerous && !window.confirm(`Run quick action ${pin.label}?`)) return
+  if (pin.dangerous && !(await confirmAction({ question: `Run quick action ${pin.label}?`, target: pin.label, danger: true }))) return
   quickActionBusyId.value = pin.id
   quickActionError.value = ''
   try {
@@ -244,6 +248,7 @@ function backToTactical() {
 async function doSignOut() {
   if (signingOut.value) return
   signingOut.value = true
+  confirmService?.cancelAll()
   try { await logoutTacticalSession() } finally { window.location.reload() }
 }
 function signOut() { requestLeave(doSignOut) }
@@ -362,5 +367,6 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
     <HelpDrawer v-if="!popupLayout" />
     <QuickActionsDialog v-if="!popupLayout" v-model="quickActionsOpen" />
     <UnsavedChangesDialog />
+    <ConfirmDialog v-if="confirmService" :service="confirmService" />
   </div>
 </template>

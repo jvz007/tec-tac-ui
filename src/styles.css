@@ -240,3 +240,11 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .app-shell.popup-shell{grid-template-columns:1fr;grid-template-rows:1fr;grid-template-areas:"main"}
 .popup-shell .main{padding:16px}
 .popup-shell .popup-pending{max-width:640px;margin:12vh auto;padding:24px;background:var(--surface);border:1px solid var(--line);border-radius:3px}
+
+/* Shell confirm dialog (0.12.96): above every other dialog. Existing tokens only. */
+.confirm-backdrop{z-index:1400}
+.confirm-panel{width:min(440px,100%)}
+.confirm-question{margin:4px 0 8px;color:var(--ink)}
+.confirm-target{margin:0 0 8px;padding:6px 8px;border:1px solid var(--line-soft);background:var(--input-bg);overflow-wrap:anywhere}
+.confirm-count{margin:0 0 8px;color:var(--warn)}
+.confirm-asker{margin-top:4px}

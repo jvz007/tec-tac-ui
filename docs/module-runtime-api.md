@@ -214,6 +214,7 @@ Modules cannot remove navigation. `register(context)` has `addNavigation` but no
 - Core sets `meta.dynamicModule` to your module id on every route you add. Do not set it yourself.
 - `addRoute` returns the remover, as vue-router does. Core runs the removers when your module is abandoned or fails.
 - `addRoute` throws after the module was abandoned (a failed or timed-out `register()`).
+- A route path or alias that starts with `/popup/` is refused: that prefix belongs to the shell (UI 0.12.96). The shell adds the popup address itself for a route with `meta.popup`. An alias that another path or alias already owns is refused too.
 - Every other member passes through unchanged: `push`, `replace`, `resolve`, `currentRoute`, `getRoutes` and the rest.
 
 ## hasPermission(code)
@@ -293,6 +294,36 @@ If the API is served from a different origin than the page, the proxy must expos
 - `typescript`
 
 Any other id throws `Unsupported Tec-Tac editor language`. See [module-code-editor.md](module-code-editor.md) for the editor itself.
+
+## confirm(options)
+
+`context.confirm(options)` asks the person one plain question with Yes and No. It needs UI 0.12.96 and no Core change. Use it before an action that changes or deletes something, or that touches many endpoints. It answers a Promise of `true` (Yes) or `false` (No, Escape, or a click outside the dialog).
+
+```js
+const ok = await context.confirm({ question: 'Delete policy Servers?', target: 'Servers' })
+if (!ok) return
+```
+
+Options:
+
+- `question` (required): plain text, at most 300 characters. A missing or empty question rejects with a `TypeError`.
+- `target`: the name the action is about, shown on its own line, at most 200 characters.
+- `count`: a whole number of 1 or more. The dialog adds "This affects N endpoints." Any other value is dropped.
+- `noun`: the word that follows the count, default `endpoints`, at most 30 characters.
+- `detail`: one short extra sentence, at most 400 characters.
+- `danger`: `true` only changes how the Yes button looks.
+- `yesLabel` and `noLabel`: default "Yes" and "No", at most 24 characters.
+
+Rules:
+
+- Text is shown as text. Tabs, line breaks, other control characters and zero-width characters are removed. A text over its limit is cut.
+- The dialog is titled "Are you sure?", takes focus on No and has no input field. Do not ask people to type a name, a hostname or a number. A bulk action names the endpoint count with `count`.
+- Requests queue and show one at a time. A call from a module shows a small line "Asked by <your module id>". The shell adds it, so a module cannot name another asker.
+- `confirm` is bound to your module. It is refused after a failed or timed-out `register()`.
+- A request still open when the person signs out answers No.
+- The dialog does not change who may do what. Permissions, scope, caps and audit rows stay as they are. Hiding or confirming is never authorisation.
+- A context action handler receives the same helper as `context.confirm` (see [context-actions.md](context-actions.md)).
+- Your own typed or custom confirmation dialog keeps working until you move to this one.
 
 ## Popup mode
 

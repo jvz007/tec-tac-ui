@@ -9,7 +9,7 @@ export async function resetTotpWorkflow(mfa, { resetMyTotp, confirmReset, clearS
   const password = String(mfa?.password || '')
   const code = String(mfa?.code || '').trim()
   if (!password || !code) throw new Error('Current password and authenticator code are required.')
-  if (confirmReset && !confirmReset()) return { cancelled: true }
+  if (confirmReset && !(await confirmReset())) return { cancelled: true }
   await resetMyTotp(password, code)
   clearSession?.()
   reload?.()
@@ -17,7 +17,7 @@ export async function resetTotpWorkflow(mfa, { resetMyTotp, confirmReset, clearS
 }
 
 export async function revokeOthersWorkflow({ revokeMyOtherSessions, confirmRevoke }) {
-  if (confirmRevoke && !confirmRevoke()) return { cancelled: true }
+  if (confirmRevoke && !(await confirmRevoke())) return { cancelled: true }
   const result = await revokeMyOtherSessions()
   return { message: `${Number(result?.revoked || 0)} other session(s) signed out.` }
 }

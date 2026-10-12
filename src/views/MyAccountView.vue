@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import { applyTacticalUiPreferences, changePasswordWorkflow, resetTotpWorkflow, revokeOthersWorkflow, saveTacticalUiWorkflow } from '../my-account-workflows'
 import { passwordFailureMessage } from '../my-account-password'
 import { clearTacticalSession } from '../api'
+import { useConfirm } from '../confirm-dialog'
 import { state } from '../state'
 import {
   changeMyPassword,
@@ -12,6 +13,7 @@ import {
   saveMyTacticalUiPreferences,
 } from '../account'
 
+const confirmAction = useConfirm()
 const loading = ref(true)
 const busy = ref('')
 const error = ref('')
@@ -65,7 +67,7 @@ async function resetMfa() {
   try {
     const result = await resetTotpWorkflow(mfa, {
       resetMyTotp,
-      confirmReset: () => window.confirm('Reset your authenticator and sign out every active session? You will need to sign in and enrol two-factor authentication again.'),
+      confirmReset: () => confirmAction({ question: 'Reset your authenticator and sign out every active session?', detail: 'You will need to sign in and enrol two-factor authentication again.', danger: true }),
       clearSession: clearTacticalSession,
       reload: () => window.location.reload(),
     })
@@ -79,7 +81,7 @@ async function revokeOthers() {
   try {
     const result = await revokeOthersWorkflow({
       revokeMyOtherSessions,
-      confirmRevoke: () => window.confirm('Sign out every other active session for your account? Your current session will stay signed in.'),
+      confirmRevoke: () => confirmAction({ question: 'Sign out every other active session for your account?', detail: 'Your current session will stay signed in.', danger: true }),
     })
     if (!result.cancelled) flash(result.message)
   } catch (err) { fail(err, 'Unable to sign out other sessions.') }

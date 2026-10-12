@@ -9,6 +9,7 @@ import { parsePopupHash, popupHref as buildPopupHref, popupModuleSet, popupRoute
 import { createTacticalOperation } from './tactical-operations'
 import { normalizeTacticalScope } from './runtime-context'
 import { createContextActionRegistry } from './context-actions'
+import { createConfirmService } from './confirm-dialog'
 import { createContextInteractionRegistry } from './context-interactions'
 import { createResourceViewRegistry } from './resource-views'
 import { createCodeEditorService } from './code-editor'
@@ -73,7 +74,9 @@ async function bootstrap() {
   // copy each call, normalized again so a module cannot change the shared state.
   const tacticalScope = () => ({ ...normalizeTacticalScope(state.context?.tactical_scope) })
   const tacticalOperation = createTacticalOperation({ apiRaw })
-  const contextActions = createContextActionRegistry({ hasPermission })
+  // The shell's own Yes or No dialog (0.12.96). A module gets it bound to its own id.
+  const confirmService = createConfirmService()
+  const contextActions = createContextActionRegistry({ hasPermission, confirm: confirmService.confirm })
   const contextInteractions = createContextInteractionRegistry({ hasPermission })
   const resourceViews = createResourceViewRegistry({ hasPermission, timeoutSeconds: () => state.context?.module_register_timeout_seconds })
   const codeEditor = createCodeEditorService()
@@ -102,6 +105,7 @@ async function bootstrap() {
   app.provide('tecTacHelp', help)
   app.provide('tecTacSsoProviders', ssoProviders)
   app.provide('tecTacHeader', header)
+  app.provide('tecTacConfirm', confirmService)
   app.use(router)
   const initialHashTarget = window.location.hash.startsWith('#/')
     ? window.location.hash.slice(1)
@@ -170,6 +174,8 @@ async function bootstrap() {
         tacticalScope,
         tacticalOperation,
         // Popup mode (0.12.95): popupHref is for every module; popupMode is set only in a popup window.
+        // confirm is the shell's shared service; the loader binds it to each module (0.12.96).
+        confirm: confirmService.confirm,
         popupHref: (moduleId, path) => buildPopupHref(moduleId, path, window.location.origin),
         popupMode: popupTarget
           ? {

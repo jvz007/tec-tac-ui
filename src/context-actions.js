@@ -47,7 +47,15 @@ function normalizeAction(moduleId, source, execute) {
   }
 }
 
-export function createContextActionRegistry({ hasPermission } = {}) {
+// confirm is the shell's Yes or No dialog (0.12.96): (options, askedBy) => Promise<boolean>. A handler receives it
+// as context.confirm(options), bound to the module that owns the action. The shell's value wins over a key the
+// caller supplied; every other key is passed through untouched.
+export function createContextActionRegistry({ hasPermission, confirm } = {}) {
+  function handlerContext(action, context) {
+    if (typeof confirm !== 'function') return context
+    return { ...context, confirm: (options) => confirm(options, action.provider) }
+  }
+
   const actions = reactive(new Map())
 
   function removeProvider(moduleId) {
@@ -127,7 +135,7 @@ export function createContextActionRegistry({ hasPermission } = {}) {
         if (!action) throw new Error(`Context action ${id} is not registered.`)
         const state = evaluate(action, context)
         if (!state.visible || !state.enabled) throw new Error(state.reason || `Context action ${id} is unavailable.`)
-        return await action.execute(context)
+        return await action.execute(handlerContext(action, context))
       },
       clear() {
         for (const id of owned) {
@@ -143,7 +151,7 @@ export function createContextActionRegistry({ hasPermission } = {}) {
     if (!action) throw new Error(`Context action ${id} is not registered.`)
     const state = evaluate(action, context)
     if (!state.visible || !state.enabled) throw new Error(state.reason || `Context action ${id} is unavailable.`)
-    return await action.execute(context)
+    return await action.execute(handlerContext(action, context))
   }
 
   return Object.freeze({
