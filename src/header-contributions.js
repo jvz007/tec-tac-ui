@@ -1,6 +1,8 @@
 import { markRaw, reactive } from 'vue'
 
 const MAX_VISIBLE_HEADER_CONTRIBUTIONS = 6
+// 0.12.101: the body-level layer a header pop-up teleports to (App.vue). It sits above the top bar and below shell dialogs.
+export const HEADER_POPOVER_TARGET = '#tec-tac-popover-layer'
 
 function asPermissionList(value) {
   const values = Array.isArray(value) ? value : (value == null || value === '' ? [] : [value])
@@ -70,6 +72,8 @@ export function createHeaderContributionRegistry({ hasPermission = () => false, 
     const owned = new Set()
     const moduleDefaults = { permissions: asPermissionList(defaults.permissions) }
     return Object.freeze({
+      // A selector for <Teleport :to>, so a pop-up is not trapped in the top bar's stacking context (0.12.101).
+      popoverTarget: HEADER_POPOVER_TARGET,
       register(source) {
         const entry = normalize(provider, source, moduleDefaults)
         const existing = entries.get(entry.id)

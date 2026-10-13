@@ -9,6 +9,11 @@ const MAX_ACTION_LABEL = 60
 // Core creates some notices itself (module job failures, Core 1.17.14). This page checks for new unread ones.
 const SERVER_NOTICE_POLL_MS = 30000
 const MAX_KNOWN_NOTICES = 1000
+// 0.12.101: per person, in this browser. The toasted list holds notice ids only; the checked key holds a time in milliseconds.
+// Never a token and never notice text.
+const TOASTED_KEY_PREFIX = 'tec_tac_notices_toasted:'
+const CHECKED_KEY_PREFIX = 'tec_tac_notices_checked:'
+const MAX_STORED_TOASTED = 500
 
 function text(value, max, label) {
   const result = String(value ?? '').trim()
@@ -41,7 +46,69 @@ function persistentId() {
   return `n-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 14)}`
 }
 
-export function createNotificationService({ api, router } = {}) {
+// Browser storage (0.12.101). Every access is guarded: missing or throwing storage leaves the page on its memory alone.
+function storageArea() {
+  try {
+    return typeof window !== 'undefined' && window?.localStorage ? window.localStorage : null
+  } catch {
+    return null
+  }
+}
+
+function storageRead(key) {
+  try {
+    const area = storageArea()
+    return area ? area.getItem(key) : null
+  } catch {
+    return null
+  }
+}
+
+function storageWrite(key, value) {
+  try {
+    const area = storageArea()
+    if (!area) return
+    area.setItem(key, value)
+  } catch {
+    // Storage refused the write. The ids stay in memory for this page.
+  }
+}
+
+function parseIdList(raw) {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string' && id) : []
+  } catch {
+    return []
+  }
+}
+
+function personKeyText(value) {
+  if (value == null) return ''
+  const key = String(value).trim()
+  return key && key.length <= 64 ? key : ''
+}
+
+function readCheckedAt(person) {
+  if (!person) return null
+  const raw = storageRead(`${CHECKED_KEY_PREFIX}${person}`)
+  const value = raw == null || raw === '' ? NaN : Number(raw)
+  return Number.isFinite(value) && value > 0 ? value : null
+}
+
+function writeCheckedAt(person, at) {
+  if (person) storageWrite(`${CHECKED_KEY_PREFIX}${person}`, String(at))
+}
+
+// Core's created_at is the sweep time, not the time the job failed. A row without a readable time is not new.
+function createdSince(createdAt, checkedAt) {
+  if (checkedAt == null) return false
+  const created = Date.parse(String(createdAt || ''))
+  return Number.isFinite(created) && created > checkedAt
+}
+
+export function createNotificationService({ api, router, userKey } = {}) {
   const toasts = reactive([])
   const history = reactive({
     open: false,
@@ -60,6 +127,31 @@ export function createNotificationService({ api, router } = {}) {
   let serverPollTimer = null
   let serverPollBusy = false
   let serverPollSeeded = false
+  // 0.12.101: ids this page has toasted for the current person. The browser's stored list is read as well (isToasted).
+  const toastedMemory = new Set()
+  let seenPerson = null
+
+  function currentPerson() {
+    try {
+      return personKeyText(typeof userKey === 'function' ? userKey() : null)
+    } catch {
+      return ''
+    }
+  }
+
+  function isToasted(person, id) {
+    if (toastedMemory.has(id)) return true
+    return !!person && parseIdList(storageRead(`${TOASTED_KEY_PREFIX}${person}`)).includes(id)
+  }
+
+  function markToasted(person, id) {
+    toastedMemory.add(id)
+    while (toastedMemory.size > MAX_KNOWN_NOTICES) toastedMemory.delete(toastedMemory.values().next().value)
+    if (!person) return
+    const key = `${TOASTED_KEY_PREFIX}${person}`
+    const stored = parseIdList(storageRead(key)).filter((item) => item !== id)
+    storageWrite(key, JSON.stringify([...stored, id].slice(-MAX_STORED_TOASTED)))
+  }
 
   function clearTimer(id) {
     const timer = timers.get(id)
@@ -204,35 +296,53 @@ export function createNotificationService({ api, router } = {}) {
     // A link that is not an internal route is dropped; the message still shows.
     const route = typeof row.action?.route === 'string' ? row.action.route.trim() : ''
     const internal = route.startsWith('/') && !route.startsWith('//') && !/[\u0000-\u001f]/.test(route)
-    showForModule(String(row.source || 'core').trim() || 'core', {
+    const id = showForModule(String(row.source || 'core').trim() || 'core', {
       level: LEVELS.has(level) ? level : 'info',
       title: row.title || undefined,
       message: row.message,
       action: internal ? { label: row.action?.label || 'Open', route } : undefined,
     }, null, false)
+    // The Core row id rides on the toast, so its × and its action can mark that row read (0.12.101).
+    const toast = toasts.find((item) => item.id === id)
+    if (toast) toast.serverNoticeId = String(row.id)
+    return id
   }
 
-  // One check for unread notices Core stored. Rows the page has not seen become toasts; the first check
-  // after start only records what is already there.
+  // One check for unread notices Core stored. A notice toasts once per person in this browser. The first check of a page
+  // load toasts only a notice created since the last check; older rows are only recorded.
   async function pollServerNotices() {
     if (typeof api !== 'function' || serverPollBusy || persistsInFlight > 0) return
     serverPollBusy = true
+    const person = currentPerson()
+    // A change of person starts over: the page forgets what it knew and the next check is a first check (0.12.101).
+    if (person !== seenPerson) {
+      seenPerson = person
+      knownNoticeIds.clear()
+      toastedMemory.clear()
+      serverPollSeeded = false
+    }
+    const startedAt = Date.now()
     try {
       const payload = await api('/api/tfd/ui/notices/?state=unread&limit=100')
       const rows = Array.isArray(payload?.notices) ? payload.notices : []
       const firstCheck = !serverPollSeeded
+      // The first check reads the time of the last check before this check writes its own.
+      const checkedAt = firstCheck ? readCheckedAt(person) : null
       serverPollSeeded = true
       for (const row of rows) {
         const id = String(row?.id || '')
         if (!id || knownNoticeIds.has(id)) continue
         rememberNotice(id)
-        if (firstCheck) continue
+        if (isToasted(person, id)) continue
+        if (firstCheck && !createdSince(row.created_at, checkedAt)) continue
         try {
           showServerNotice(row)
+          markToasted(person, id)
         } catch (error) {
           console.warn('[TEC-TAC-UI] A notice from Core could not be shown.', error)
         }
       }
+      writeCheckedAt(person, startedAt)
       if (Number.isFinite(Number(payload?.unread_count))) history.unreadCount = Number(payload.unread_count)
     } catch (error) {
       console.warn('[TEC-TAC-UI] Notices from Core could not be checked.', error)
@@ -241,9 +351,10 @@ export function createNotificationService({ api, router } = {}) {
     }
   }
 
+  // Starting or stopping the timer does not reset the first-check state: a restart neither re-toasts known rows nor
+  // swallows a new one (0.12.101). Only a change of person resets it.
   function startServerNoticePolling() {
     if (serverPollTimer || typeof api !== 'function') return
-    serverPollSeeded = false
     serverPollTimer = setInterval(() => { void pollServerNotices() }, SERVER_NOTICE_POLL_MS)
     void pollServerNotices()
   }
@@ -258,6 +369,8 @@ export function createNotificationService({ api, router } = {}) {
     if (!toast?.action || toast.busy) return
     toast.busy = true
     clearTimer(id)
+    // Using the notice's action reads the notice (0.12.101). A failed mark-read only warns; the toast does not return.
+    if (toast.serverNoticeId) void markRead(toast.serverNoticeId)
     try {
       if (toast.action.handler) await toast.action.handler({ notification: { ...toast, action: undefined } })
       else if (toast.action.route && router) await router.push(toast.action.route)
@@ -311,17 +424,33 @@ export function createNotificationService({ api, router } = {}) {
   }
   function closeHistory() { history.open = false }
 
-  async function markRead(notice) {
-    if (!notice?.id || notice.read || typeof api !== 'function') return
+  // Takes a notice row (the drawer) or its id (0.12.101). History and the unread count move together.
+  async function markRead(target) {
+    const notice = target && typeof target === 'object' ? target : null
+    const id = String(notice ? (notice.id ?? '') : (target ?? ''))
+    if (!id || notice?.read || typeof api !== 'function') return
     try {
-      const payload = await api(`/api/tfd/ui/notices/${encodeURIComponent(notice.id)}/read/`, { method: 'POST' })
-      notice.read = true
-      notice.read_at = new Date().toISOString()
+      const payload = await api(`/api/tfd/ui/notices/${encodeURIComponent(id)}/read/`, { method: 'POST' })
+      const listed = notice || history.items.find((item) => item.id === id)
+      if (listed) {
+        listed.read = true
+        listed.read_at = new Date().toISOString()
+      }
       history.unreadCount = Number(payload?.unread_count || 0)
-      if (history.filter === 'unread') history.items = history.items.filter((item) => item.id !== notice.id)
+      if (history.filter === 'unread') history.items = history.items.filter((item) => item.id !== id)
     } catch (error) {
-      history.error = error?.message || 'Notice could not be marked read.'
+      console.warn('[TEC-TAC-UI] A notice could not be marked read.', error)
+      if (history.open) history.error = error?.message || 'Notice could not be marked read.'
     }
+  }
+
+  // The person closed a Core notice's toast with the × (0.12.101): the notice is read. Timer expiry, trimming and a
+  // module's clear do not do this; the notice stays in the bell.
+  async function dismissByPerson(id) {
+    const toast = toasts.find((item) => item.id === id)
+    const noticeId = toast?.serverNoticeId || ''
+    dismiss(id)
+    if (noticeId) await markRead(noticeId)
   }
 
   async function markAllRead() {
@@ -374,7 +503,7 @@ export function createNotificationService({ api, router } = {}) {
 
   return Object.freeze({
     toasts, history, dismiss, invoke, forModule, setInitialUnreadCount,
-    loadHistory, openHistory, closeHistory, markRead, markAllRead, clearRead, activateHistoryNotice,
+    loadHistory, openHistory, closeHistory, markRead, dismissByPerson, markAllRead, clearRead, activateHistoryNotice,
     pollServerNotices, startServerNoticePolling, stopServerNoticePolling,
   })
 }

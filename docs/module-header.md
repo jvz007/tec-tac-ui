@@ -37,3 +37,25 @@ export default {
 - When the module is disabled/unloaded, it contributes nothing.
 
 Header components should be compact, keyboard accessible, and must not perform heavy startup data loading during registration.
+
+## Pop-ups from a header item (UI 0.12.101)
+
+The top bar has its own stacking layer, so a pop-up rendered inside a header item can sit under page content. The shell
+offers a body-level layer for this. The header service has a `popoverTarget` key:
+
+```js
+header.popoverTarget // '#tec-tac-popover-layer'
+```
+
+Use it as the target of a `<Teleport>`:
+
+```vue
+<Teleport :to="header.popoverTarget">
+  <div class="alerts-popover">...</div>
+</Teleport>
+```
+
+The layer is a fixed element above the top bar and page content, and below the help drawer, shell dialogs, quick actions,
+toasts and the confirm dialog, so a shell dialog still covers an open header pop-up. Its children take the pointer; the
+rest of the layer lets clicks through. It is not rendered in a popup window, which has no header. Position the pop-up
+itself (for example with `position: absolute` next to the item) inside the layer.

@@ -298,6 +298,8 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
         <button v-if="state.status === 'ready'" class="iconbtn" title="Sign out" aria-label="Sign out" :disabled="signingOut" @click="signOut">⏻</button>
       </div>
     </header>
+    <!-- 0.12.101: header pop-ups teleport here, outside the top bar's stacking context (docs/module-header.md). -->
+    <div id="tec-tac-popover-layer" class="tec-tac-popover-layer"></div>
 
     <aside v-if="!publicRoute" class="rail">
       <template v-if="state.status === 'ready'">
@@ -361,7 +363,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
           <div class="toast-message">{{ toast.message }}</div>
           <button v-if="toast.action" type="button" class="toast-action" :disabled="toast.busy" @click="notifications.invoke(toast.id)">{{ toast.busy ? 'Working…' : toast.action.label }}</button>
         </div>
-        <button type="button" class="toast-dismiss" title="Dismiss notification" aria-label="Dismiss notification" @click="notifications.dismiss(toast.id)">×</button>
+        <button type="button" class="toast-dismiss" title="Dismiss notification" aria-label="Dismiss notification" @click="notifications.dismissByPerson(toast.id)">×</button>
       </article>
     </div>
     <NoticeDrawer v-if="!popupLayout" />

@@ -16,6 +16,7 @@ import { createCodeEditorService } from './code-editor'
 import { createDashboardWidgetRegistry } from './dashboard-widgets'
 import { createQuickActionRegistry } from './quick-actions'
 import { createNotificationService } from './notifications'
+import { createModuleServiceRegistry } from './module-services'
 import { createModuleStatusService } from './module-status'
 import { createAuditService } from './audit'
 import { createHelpService } from './help'
@@ -82,13 +83,16 @@ async function bootstrap() {
   const codeEditor = createCodeEditorService()
   const dashboardWidgets = createDashboardWidgetRegistry({ hasPermission })
   const quickActions = createQuickActionRegistry({ hasPermission })
-  const notifications = createNotificationService({ api: apiFetch, router })
+  // The person key scopes the notices this browser has toasted (0.12.101). Core's user id is Tactical's own id.
+  const notifications = createNotificationService({ api: apiFetch, router, userKey: () => state.context?.user?.id })
   const audit = createAuditService(apiFetch)
   const help = createHelpService()
   const ssoProviders = createSsoProviderRegistry({
     beginProvider: (entry) => beginTacticalSso(entry.provider_id),
   })
   const header = createHeaderContributionRegistry({ hasPermission, isTrustedContext: () => state.contextSource === 'backend' })
+  // Browser services between modules (0.12.101). Permission is checked on every list, has and call.
+  const moduleServices = createModuleServiceRegistry({ hasPermission, hasTacticalPermission })
   registerCoreDashboardWidgets(dashboardWidgets, state)
   registerCoreHelpArticles(help)
 
@@ -194,6 +198,7 @@ async function bootstrap() {
       audit,
       help,
       header,
+      services: moduleServices,
       modules,
     }
     state.moduleLoad = await loadUiModules(loaderRuntime, toLoad)

@@ -82,6 +82,20 @@ notifications.clear()
 
 Core also clears notifications contributed during a module registration attempt if that module fails to load.
 
+## Notices Core stores (UI 0.12.101)
+
+Core stores some notices itself, for example when a module job fails. The shell checks for unread ones and shows each as a
+toast. A module does not call this; it is listed here so a module author knows what a person sees.
+
+- A notice toasts **once per person in this browser**. The browser keeps the ids it has toasted, under a key for that person.
+  It keeps ids only: no notice text and no token. The list holds at most 500 ids.
+- On the first check after a page load, only a notice created since the last check toasts. Older notices are recorded and
+  stay in the bell.
+- Clicking the toast's **×** or its action marks the notice read. Clicking **Open Modules** marks it read.
+- A toast that closes by timer, or is pushed out when more than five show, does **not** mark the notice read. It stays
+  unread in the bell.
+- If the browser's storage is blocked, the ids stay in memory for that page only.
+
 ## Duration rules
 
 Default display times are:

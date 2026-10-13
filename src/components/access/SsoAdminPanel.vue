@@ -1,7 +1,8 @@
 <script setup>
-import { computed, inject, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, reactive, ref } from 'vue'
 import { useConfirm } from '../../confirm-dialog'
 import { createKeyedLatestRequestGate } from '../../latest-request-gate'
+import { createLoadPhase, finishLoadPhase, startLoadPhase } from '../../load-phase'
 import { addSsoProvider, deleteSsoProvider, getSsoSettings, listRoles, listSsoProviders, saveSsoSettings, updateSsoProvider } from '../../access'
 import { nextTabIndex } from '../../dialog-tabs'
 import {
@@ -27,7 +28,8 @@ const roles = ref([])
 const rolesAvailable = ref(false)
 const stored = ref({ sso_enabled: false, block_local_user_logon: false })
 const draft = ref({ sso_enabled: false, block_local_user_logon: false })
-const loading = ref(true)
+// 0.12.101: loading is the first load only; refreshing marks a later load, and the list controls wait for it.
+const phase = reactive(createLoadPhase())
 const denied = ref(false)
 const error = ref('')
 const notice = ref('')
@@ -62,7 +64,10 @@ async function loadRoles() {
 
 async function load() {
   const request = gate.begin('sso')
-  loading.value = true
+  // The settings draft is filled from the stored values on the first load only. A later load keeps what the person has
+  // ticked but not saved (0.12.101); reloadSettings after a save is separate.
+  const firstLoad = !phase.loaded
+  startLoadPhase(phase)
   error.value = ''
   denied.value = false
   try {
@@ -70,13 +75,13 @@ async function load() {
     if (!gate.isCurrent('sso', request)) return
     providers.value = Array.isArray(providerData) ? providerData : []
     stored.value = buildSettingsPayload(settingsData)
-    draft.value = { ...stored.value }
+    if (firstLoad) draft.value = { ...stored.value }
   } catch (err) {
     if (!gate.isCurrent('sso', request)) return
     if (err.status === 403) denied.value = true
     else error.value = errorMessage(err, 'Unable to load single sign-on.')
   } finally {
-    if (gate.isCurrent('sso', request)) loading.value = false
+    if (gate.isCurrent('sso', request)) finishLoadPhase(phase)
   }
 }
 
@@ -209,7 +214,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div v-if="loading" class="callout mono">Loading single sign-on…</div>
+  <div v-if="phase.loading" class="callout mono">Loading single sign-on…</div>
   <div v-else-if="denied" class="state-inline denied"><b>Permission denied.</b> This Tactical role does not have <span class="mono">can_list_accounts</span>.</div>
   <div v-else>
     <div v-if="error" class="auth-error" role="alert">{{ error }}</div>
@@ -231,9 +236,10 @@ onMounted(async () => {
 
     <div class="toolbar">
       <span class="muted mono">{{ providers.length }} {{ providers.length === 1 ? 'provider' : 'providers' }}</span>
+      <span v-if="phase.refreshing" class="muted mono" role="status">Refreshing…</span>
       <span class="spacer"></span>
-      <button v-if="isSuperuser" class="btn primary" @click="openAdd">+ Add provider</button>
-      <button class="btn" @click="load">Refresh</button>
+      <button v-if="isSuperuser" class="btn primary" :disabled="phase.refreshing" @click="openAdd">+ Add provider</button>
+      <button class="btn" :disabled="phase.refreshing" @click="load">Refresh</button>
     </div>
 
     <div class="tablewrap table-clean">
@@ -248,8 +254,8 @@ onMounted(async () => {
             <td class="cell-truncate" :title="roleLabel(row.role)">{{ roleLabel(row.role) }}</td>
             <td class="cell-truncate mono" :title="row.callback_url">{{ row.callback_url || '—' }}</td>
             <td v-if="isSuperuser" class="row-actions">
-              <button class="btn sm" @click="openEdit(row)">Edit</button>
-              <button class="btn sm danger" @click="removeProvider(row)">Delete</button>
+              <button class="btn sm" :disabled="phase.refreshing" @click="openEdit(row)">Edit</button>
+              <button class="btn sm danger" :disabled="phase.refreshing" @click="removeProvider(row)">Delete</button>
             </td>
           </tr>
           <tr v-if="!providers.length"><td :colspan="isSuperuser ? 7 : 6" class="table-empty">No sign-in providers yet. Add one to let people sign in with your identity provider.</td></tr>

@@ -2,12 +2,14 @@
 
 Tec-Tac authenticated UI modules receive Core-owned request helpers in `register(context)`. Modules must use these helpers instead of reading `localStorage.access_token`, constructing Tactical `Authorization` headers, or duplicating session-expiry handling.
 
-The `resourceViews` registry also takes grid columns at `endpoint.grid-columns` (UI 0.12.93); see `module-resource-views.md`. This page also covers [the module router](#module-router), [`hasPermission(code)`](#haspermissioncode), [navigation](#navigation-permissions) and [`codeEditor.languages`](#codeeditorlanguages).
+The `resourceViews` registry also takes grid columns at `endpoint.grid-columns` (UI 0.12.93); see `module-resource-views.md`. This page also covers [the module router](#module-router), [`hasPermission(code)`](#haspermissioncode), [navigation](#navigation-permissions) and [`codeEditor.languages`](#codeeditorlanguages). Modules can also publish and call browser operations through `services`; see `module-services.md` (UI 0.12.101).
 
 
 ## Authenticated runtime context
 
 `register(context)` receives the current authenticated Core context directly as `context.context`. The same object remains available through `context.state.context` for compatibility. Treat both as read-only runtime state.
+
+`context.context.user.id` is the signed-in person's Tactical user id (Core sends Tactical's own user primary key, UI 0.12.101). Use it as an owner or author id only when it is a whole number of at least 1; if it is missing, ask the person to sign in again rather than guess one.
 
 The context includes the current user's Tactical UI preferences under:
 

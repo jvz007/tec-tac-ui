@@ -14,6 +14,18 @@ export function canManageApiKeys(context) {
   return context?.tactical_permissions?.can_manage_api_keys === true
 }
 
+// The signed-in person's Tactical user id (0.12.101). Core sends context.user.id as Tactical's own user id. Only a whole
+// number of at least 1 counts (digits in a string are accepted). Anything else is null, and the panel refuses to create a
+// key rather than guess an owner.
+export function selfOwner(context) {
+  const user = context?.user
+  if (!user || typeof user !== 'object') return null
+  const raw = user.id
+  const id = typeof raw === 'string' && /^\d+$/.test(raw) ? Number(raw) : raw
+  if (!Number.isSafeInteger(id) || id < 1) return null
+  return { id, username: typeof user.username === 'string' ? user.username : '' }
+}
+
 // Core's account protection shows this value for a protected owner's key. It is text, never a key to copy.
 export function isRedacted(value) {
   return value === API_KEY_REDACTED

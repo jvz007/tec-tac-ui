@@ -242,6 +242,7 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .popup-shell .popup-pending{max-width:640px;margin:12vh auto;padding:24px;background:var(--surface);border:1px solid var(--line);border-radius:3px}
 
 /* Shell confirm dialog (0.12.96): above every other dialog. Existing tokens only. */
+.tec-tac-popover-layer{position:fixed;inset:0;z-index:900;pointer-events:none}.tec-tac-popover-layer>*{pointer-events:auto}
 .confirm-backdrop{z-index:1400}
 .confirm-panel{width:min(440px,100%)}
 .confirm-question{margin:4px 0 8px;color:var(--ink)}

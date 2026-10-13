@@ -1,8 +1,9 @@
 <script setup>
-import { computed, inject, onMounted, ref } from 'vue'
+import { computed, inject, onMounted, reactive, ref } from 'vue'
 import { useConfirm } from '../../confirm-dialog'
 import { copyTextWithFeedback } from '../../copy-feedback'
 import { createKeyedLatestRequestGate } from '../../latest-request-gate'
+import { createLoadPhase, finishLoadPhase, startLoadPhase } from '../../load-phase'
 import { createApiKey, deleteApiKey, listApiKeys, listUsers, updateApiKey } from '../../access'
 import {
   API_KEY_NAME_MAX,
@@ -16,6 +17,7 @@ import {
   findCreatedKey,
   isRedacted,
   normalizeApiKeys,
+  selfOwner,
 } from '../../api-keys'
 
 // 0.12.100 (Core 1.17.26): Tactical's API keys. The list needs can_list_api_keys; the key value, Add, Edit and Delete need
@@ -28,7 +30,8 @@ const gate = createKeyedLatestRequestGate(['keys'])
 const keys = ref([])
 const users = ref([])
 const usersAvailable = ref(false)
-const loading = ref(true)
+// 0.12.101: loading is the first load only; refreshing marks a later load, and the list controls wait for it.
+const phase = reactive(createLoadPhase())
 const error = ref('')
 const denied = ref(false)
 const search = ref('')
@@ -39,7 +42,10 @@ const oneTime = ref(null)
 const oneTimeMessage = ref('')
 
 const canManage = computed(() => canManageApiKeys(state.context))
-const ownerSelf = computed(() => ({ id: state.context.user?.id ?? null, username: state.context.user?.username || '' }))
+// 0.12.101: the create default is the person's own id, only when Core sent a valid one (no guess).
+const self = computed(() => selfOwner(state.context))
+// A role that cannot list Tactical users creates a key only for its own account, so it needs that id.
+const createBlocked = computed(() => !usersAvailable.value && !self.value)
 const filtered = computed(() => {
   const q = search.value.trim().toLowerCase()
   if (!q) return keys.value
@@ -53,7 +59,7 @@ function formatExpiry(iso) {
 
 async function load() {
   const request = gate.begin('keys')
-  loading.value = true
+  startLoadPhase(phase)
   error.value = ''
   denied.value = false
   try {
@@ -65,7 +71,7 @@ async function load() {
     if (err.status === 403) denied.value = true
     else error.value = apiKeyErrorText(err, 'Unable to load API keys.')
   } finally {
-    if (gate.isCurrent('keys', request)) loading.value = false
+    if (gate.isCurrent('keys', request)) finishLoadPhase(phase)
   }
 }
 
@@ -82,14 +88,15 @@ async function loadUsers() {
 }
 
 function openCreate() {
+  if (createBlocked.value) return
   notice.value = ''
   oneTime.value = null
   editor.value = {
     mode: 'create',
     id: null,
     name: '',
-    ownerId: ownerSelf.value.id,
-    ownerLabel: ownerSelf.value.username,
+    ownerId: self.value?.id ?? null,
+    ownerLabel: self.value?.username || '',
     expires: '',
     error: '',
     saving: false,
@@ -146,7 +153,7 @@ async function saveEditor() {
       oneTimeMessage.value = ''
       oneTime.value = {
         name: payload.name,
-        owner: created?.username || ownerSelf.value.username,
+        owner: created?.username || self.value?.username || '',
         key: created && !isRedacted(created.key) ? created.key : '',
         note: !created
           ? 'The key was saved. Find it in the list below.'
@@ -214,19 +221,21 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div v-if="loading" class="callout mono">Loading API keys…</div>
+  <div v-if="phase.loading" class="callout mono">Loading API keys…</div>
   <div v-else-if="denied" class="state-inline denied"><b>Permission denied.</b> This Tactical role does not have <span class="mono">can_list_api_keys</span>.</div>
   <div v-else>
     <div class="toolbar">
       <label class="compact-input"><span class="sr-only">Search API keys</span><input v-model="search" placeholder="Search API keys…" /></label>
       <span class="muted mono">{{ filtered.length }} / {{ keys.length }} keys</span>
+      <span v-if="phase.refreshing" class="muted mono" role="status">Refreshing…</span>
       <span class="spacer"></span>
-      <button v-if="canManage" class="btn primary" @click="openCreate">+ Add API key</button>
-      <button class="btn" @click="load">Refresh</button>
+      <button v-if="canManage" class="btn primary" :disabled="phase.refreshing || createBlocked" @click="openCreate">+ Add API key</button>
+      <button class="btn" :disabled="phase.refreshing" @click="load">Refresh</button>
     </div>
     <div v-if="error" class="auth-error" role="alert">{{ error }}</div>
     <div v-if="notice" class="state-inline" role="status">{{ notice }}</div>
     <div v-if="!canManage" class="state-inline warning"><b>Read-only.</b> Your Tactical role can list API keys but does not have <span class="mono">can_manage_api_keys</span>, so the key values stay hidden.</div>
+    <p v-if="canManage && createBlocked" class="field-help">Your account id is not available, so a key cannot be created here. Sign in again.</p>
 
     <div class="split-layout">
       <div class="tablewrap table-clean">
@@ -242,13 +251,13 @@ onMounted(async () => {
                 <span v-else-if="!canManage" class="sub">Shown to people who can manage API keys</span>
                 <template v-else>
                   <span class="mono smalltext key-value">{{ revealed.has(row.id) ? row.key : '••••••••••••' }}</span>
-                  <button class="btn sm" :aria-label="`${revealed.has(row.id) ? 'Hide' : 'Show'} the key for ${row.name}`" @click="toggleReveal(row.id)">{{ revealed.has(row.id) ? 'Hide' : 'Show' }}</button>
-                  <button class="btn sm" :disabled="!row.key" :aria-label="`Copy the key for ${row.name}`" @click="copyKey(row)">Copy</button>
+                  <button class="btn sm" :disabled="phase.refreshing" :aria-label="`${revealed.has(row.id) ? 'Hide' : 'Show'} the key for ${row.name}`" @click="toggleReveal(row.id)">{{ revealed.has(row.id) ? 'Hide' : 'Show' }}</button>
+                  <button class="btn sm" :disabled="!row.key || phase.refreshing" :aria-label="`Copy the key for ${row.name}`" @click="copyKey(row)">Copy</button>
                 </template>
               </td>
               <td v-if="canManage" class="row-actions">
-                <button class="btn sm" @click="openEdit(row)">Edit</button>
-                <button class="btn sm danger" @click="removeKey(row)">Delete</button>
+                <button class="btn sm" :disabled="phase.refreshing" @click="openEdit(row)">Edit</button>
+                <button class="btn sm danger" :disabled="phase.refreshing" @click="removeKey(row)">Delete</button>
               </td>
             </tr>
             <tr v-if="!filtered.length"><td :colspan="canManage ? 5 : 4" class="table-empty">{{ keys.length ? 'No API keys match the current search.' : 'No API keys yet. Add one for a script or tool that calls Tactical.' }}</td></tr>

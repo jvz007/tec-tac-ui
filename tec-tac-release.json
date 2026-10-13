@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.100",
+  "version": "0.12.101",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "1612e28a90a20fc2a7bb107b4c803f2feb0914c1150862bb169ce4d9c2a81a2c"
     },
     {
-      "path": "RELEASE_NOTES_0.12.100.md",
-      "size": 5228,
-      "sha256": "a9325a5658424317f7fcdab16783e86424d1833d710829d9997c175110d2b927"
+      "path": "RELEASE_NOTES_0.12.101.md",
+      "size": 5898,
+      "sha256": "8a1a24a9f30e150261586ddcee5c649c939b584615084767f17f14cb42aae4ee"
     },
     {
       "path": "VERSION",
       "size": 9,
-      "sha256": "d531148196d1205c761717bcf46c9dca44a468159374a4e35fb2bb0668401672"
+      "sha256": "00a8d3b7b1d0943008852a6906f0973b2d6f20fbdcd55ba578d7d469bc5a0d1b"
     },
     {
       "path": "docs/context-actions.md",
@@ -68,8 +68,8 @@
     },
     {
       "path": "docs/module-header.md",
-      "size": 2480,
-      "sha256": "eade91bece2ee87402a3c791f9c00a0993aeccd0021097d4a88e173d747549bc"
+      "size": 3374,
+      "sha256": "e5921e2d034105b3ea8c94bf6c78d713328dd6c293dcf707b4acbd28b77301bf"
     },
     {
       "path": "docs/module-help.md",
@@ -78,8 +78,8 @@
     },
     {
       "path": "docs/module-notifications.md",
-      "size": 6193,
-      "sha256": "c86fd3b128472dc9ee8496317b435123e0d3fb118be588231082166fc7a7d819"
+      "size": 7136,
+      "sha256": "57c3f94315117740876d597e8a152dfa2be12824516ba7b945a81769d03d1bb0"
     },
     {
       "path": "docs/module-quick-actions.md",
@@ -93,8 +93,13 @@
     },
     {
       "path": "docs/module-runtime-api.md",
-      "size": 33264,
-      "sha256": "1f94b184361445511641dbf124f5b64e28ab347489c4801463a541698381b3f1"
+      "size": 33657,
+      "sha256": "5731ab5f3c81b64d2afff39ec313345336f6473efc078250fc3335d093825dba"
+    },
+    {
+      "path": "docs/module-services.md",
+      "size": 4199,
+      "sha256": "9f2167f65d6ae857b9fa133e20c8973cb99528bec04f9bc49115e48d2d845cf8"
     },
     {
       "path": "docs/module-sso.md",
@@ -275,6 +280,11 @@
       "path": "docs/releases/RELEASE_NOTES_0.12.10.md",
       "size": 1088,
       "sha256": "e6a42a78164d1563fb20deaade582b6a896ce61d22fb1541528b7c9f6c492a53"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.100.md",
+      "size": 5228,
+      "sha256": "a9325a5658424317f7fcdab16783e86424d1833d710829d9997c175110d2b927"
     },
     {
       "path": "docs/releases/RELEASE_NOTES_0.12.11.md",
@@ -864,12 +874,12 @@
     {
       "path": "package-lock.json",
       "size": 44097,
-      "sha256": "ba9a506c5420d2f21475dd4e90859e16656678fe3d908eb933c7b923614792d9"
+      "sha256": "5f956f8bf15989714a1594b2f5b2e34771c49a18743ed5d6c56c8d304273d213"
     },
     {
       "path": "package.json",
-      "size": 5915,
-      "sha256": "2f96102998c02367df06819b49f565b5295c976d08d5019ffe57b6254b2a58dc"
+      "size": 6099,
+      "sha256": "983b5ce28131187019c8c3be8700fdd6e32e12d3f42f20b92e9b0a03f5ebca86"
     },
     {
       "path": "public/modules/modules.json",
@@ -913,8 +923,8 @@
     },
     {
       "path": "src/App.vue",
-      "size": 24239,
-      "sha256": "35702c71195c2dff6d314fa1c1737ebec1fcf3a860fbee072600dc818a9cd1f6"
+      "size": 24437,
+      "sha256": "3291a2510b72d0ef29495db9fd40b4055a880d4d5cfe68e13e6ce3e4e0f068ac"
     },
     {
       "path": "src/access.js",
@@ -938,8 +948,8 @@
     },
     {
       "path": "src/api-keys.js",
-      "size": 4710,
-      "sha256": "e128e8ed2c7d003f908c660c6cdede09130c81623bf972eebe0a220a41c6b99b"
+      "size": 5349,
+      "sha256": "ff206414b6bd76d46eb300a2d301858a811b00ac1f331b1bee8eae7206e81135"
     },
     {
       "path": "src/api.js",
@@ -1048,8 +1058,8 @@
     },
     {
       "path": "src/components/access/ApiKeysPanel.vue",
-      "size": 12934,
-      "sha256": "b386a83459a2bfb4682012465d20a362311168f386f34884fad4f7ad78c194ec"
+      "size": 13847,
+      "sha256": "640c4ac12c6e897e26a55e7e5f4ee2df593c4e2185d99fa22d97f417c7611898"
     },
     {
       "path": "src/components/access/MfaRecoveryPanel.vue",
@@ -1078,8 +1088,8 @@
     },
     {
       "path": "src/components/access/SsoAdminPanel.vue",
-      "size": 14085,
-      "sha256": "629812c43a97889fc556e26d4b552f73ff4cc3332863fc54dd567d10062b50cd"
+      "size": 14768,
+      "sha256": "ffe7e6fa305256270014ba1822a0a593edf7f54d2a8ba3c1fb588b7e65c0e492"
     },
     {
       "path": "src/components/access/UsersPanel.vue",
@@ -1153,8 +1163,8 @@
     },
     {
       "path": "src/header-contributions.js",
-      "size": 4436,
-      "sha256": "14a636dca798bc06b460ab4ae8ec2fcc09ed0a829caf04178ac6a57f7ffbfa01"
+      "size": 4780,
+      "sha256": "c7fc0714fcc9f7c7960123f8994bab490aff064e49821916557a9519273e6c4d"
     },
     {
       "path": "src/help.js",
@@ -1267,9 +1277,14 @@
       "sha256": "5f2ab166c6278b8d1e7f6f0e15423f2a48b3b59deb1b1b03ad48438edd0a14aa"
     },
     {
+      "path": "src/load-phase.js",
+      "size": 714,
+      "sha256": "4b521363dc2583aeca02b8cc318b7fd74e614f90cf1fd1521b92b9a90f9339a0"
+    },
+    {
       "path": "src/main.js",
-      "size": 12593,
-      "sha256": "82c6e9653287e3efce8ef202367aac2bced855f9b36fa8e6ae6e48e162153aa0"
+      "size": 13038,
+      "sha256": "f547d7e464e2a248daf6104b56468be8e0216169289129cd92da5595ca85261d"
     },
     {
       "path": "src/mfa-enrollment.js",
@@ -1293,13 +1308,18 @@
     },
     {
       "path": "src/module-loader.js",
-      "size": 26849,
-      "sha256": "15351c756be740dc1d63b75c45ddc8750f1e84e1635d12efdb681858fbc48f07"
+      "size": 27387,
+      "sha256": "a6e5690beb09f04a747f22390ce8cca7751994ed2de5e4c96902af837f028e35"
     },
     {
       "path": "src/module-replacement.js",
       "size": 18531,
       "sha256": "fd64ad7b9f1366d96ad4ed29be431744969d85aec2fb171c376e884e9089319e"
+    },
+    {
+      "path": "src/module-services.js",
+      "size": 5283,
+      "sha256": "d5e35dd6df00b25dfb2dee755c76e989711e518bcc08d7e09b1e1c73f3b6cb12"
     },
     {
       "path": "src/module-status.js",
@@ -1323,8 +1343,8 @@
     },
     {
       "path": "src/notifications.js",
-      "size": 14438,
-      "sha256": "25959b20410b4aeb9931a2b3129db4cc6dabee2c6ffaf75d08bcb17be1096386"
+      "size": 19482,
+      "sha256": "16ac1e23159e65b494b348b0ba2394d7e8b54f704a0dffb6982a03a6f59e827c"
     },
     {
       "path": "src/popup-mode.js",
@@ -1438,8 +1458,8 @@
     },
     {
       "path": "src/styles.css",
-      "size": 92622,
-      "sha256": "a81e6a722824b816c7abf5d07a8f778f3eb11f7eed465a32cde0d8dccde9d601"
+      "size": 92746,
+      "sha256": "998d01a892ec31ad9ca6e042dd51ebf1ee0e20fbde555f5297357761454d8332"
     },
     {
       "path": "src/system-trust-popover-state.js",
@@ -1564,7 +1584,12 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "d8d57598d59e58ee95d70b961264b00fb12521657a304ed4f3905ce8bbbccc3b"
+      "sha256": "36fe8138ca9dfea2d9011e5a8d2e1cae841389475586266148fbfdb2fe69820c"
+    },
+    {
+      "path": "tests/access-panels-reload-0.12.101.mjs",
+      "size": 7354,
+      "sha256": "b6d1397adc309d9f7ec66250147f47e84f6f406da9c4497440dfb88b24e48af8"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1802,6 +1827,11 @@
       "sha256": "8938cfb9da8dc15589c3051d7c9e53c41ad864cb286f44623081b27ebebcdb07"
     },
     {
+      "path": "tests/header-popover-layer-0.12.101.mjs",
+      "size": 4534,
+      "sha256": "3e704a76c0dcce007e5bc26ccd3eeb14f3250bcb2ce18bdf0081b08b2c1ec8e0"
+    },
+    {
       "path": "tests/hidden-when-denied-0.12.81.mjs",
       "size": 12533,
       "sha256": "930f4db60328c7850cb694b6186037f63c92a0b2f38087f8002f7df0beb8c634"
@@ -1902,6 +1932,11 @@
       "sha256": "bf86e2f270a690de9a76964a02e80fbe8313ba7cdc09b43dfa2643ae88050b7f"
     },
     {
+      "path": "tests/module-services-0.12.101.mjs",
+      "size": 11516,
+      "sha256": "c45977af1d3ee75e03c50c133ead594f10d6880993cdad556554609f1bc07184"
+    },
+    {
       "path": "tests/my-account-0.12.60.mjs",
       "size": 2040,
       "sha256": "c9e53920432be5c88259cee5965d8cc88ddbe539a8ff76695d30d14a3eb78832"
@@ -1920,6 +1955,11 @@
       "path": "tests/notice-stream-toast-0.12.92.mjs",
       "size": 6554,
       "sha256": "842080d1834b0addbd0b903fd3b109db137fd9a4a01b69a0ea12a7d53586a273"
+    },
+    {
+      "path": "tests/notice-toast-once-0.12.101.mjs",
+      "size": 14609,
+      "sha256": "f5a775e1c01d634f3450a74ddd28669123186629a524b33878553b07a6acd838"
     },
     {
       "path": "tests/popup-mode-0.12.95.mjs",

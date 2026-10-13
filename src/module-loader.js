@@ -431,6 +431,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
     let moduleAudit = null
     let moduleHelp = null
     let moduleHeader = null
+    let moduleServices = null
 
     // Removes everything this module contributed: registry entries, navigation
     // items and routes. Safe to run more than once.
@@ -445,6 +446,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
       try { moduleAudit?.clear?.() } catch {}
       try { moduleHelp?.clear?.() } catch {}
       try { moduleHeader?.clear?.() } catch {}
+      try { moduleServices?.clear?.() } catch {}
       try { runtime.removeNavigation?.(descriptor.id) } catch {}
       for (const remove of routeRemovers.splice(0)) {
         try { remove() } catch {}
@@ -495,9 +497,12 @@ export async function loadUiModules(runtime, modules, options = {}) {
       moduleAudit = guardAbandoned(runtime.audit?.forModule(descriptor.id) || null, isAbandoned, descriptor.id)
       moduleHelp = guardAbandoned(runtime.help?.forModule(descriptor.id, descriptor) || null, isAbandoned, descriptor.id)
       moduleHeader = guardAbandoned(runtime.header?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null, isAbandoned, descriptor.id)
+      // Browser services (0.12.101): bound to this module, so the caller id is this module's own and an abandoned module
+      // cannot provide or call. The module's own permissions are its default; a service may only add to them.
+      moduleServices = guardAbandoned(runtime.services?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null, isAbandoned, descriptor.id)
       // removeNavigation is Core's: the loader calls it when a module fails. A
       // module can add navigation but never remove another module's items.
-      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, ...moduleRuntime } = runtime
+      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, services: _sharedServices, ...moduleRuntime } = runtime
       // Bound to this module: another module's id is refused, and so is any
       // call after a failed or timed-out register().
       const boundTacticalOperation = typeof sharedTacticalOperation === 'function'
@@ -536,6 +541,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
         audit: moduleAudit,
         help: moduleHelp,
         header: moduleHeader,
+        services: moduleServices,
       })
     })()
     // A register() that settles after the budget ran out is already marked
