@@ -49,8 +49,8 @@ assert.throws(() => provider.provide('scriptexecution.bad name', () => {}), /may
 assert.throws(() => provider.provide('scriptexecution.run', 'not a function'), /requires a handler function/)
 
 // (3) a name taken by another module is refused (module ids with dots can share a prefix)
-const demo = registry.forModule('demo')
-const demoSub = registry.forModule('demo.sub')
+const demo = registry.forModule('demo', { permissions: ['scriptexecution.view'] })
+const demoSub = registry.forModule('demo.sub', { permissions: ['scriptexecution.view'] })
 demo.provide('demo.sub.run', () => 'first')
 assert.throws(() => demoSub.provide('demo.sub.run', () => 'second'), /already provided by demo/)
 assert.equal(await consumer.call('demo.sub.run'), 'first', 'the first provider keeps the name')
@@ -135,7 +135,7 @@ const plainEntry = entry(`
 export default { register(ctx) { globalThis.__plainServices = ctx.services } }`)
 
 const first = await loader.loadUiModules(runtime, [
-  { id: 'provider', entry: providerEntry, permissions: [], allowed: true },
+  { id: 'provider', entry: providerEntry, permissions: ['provider.use'], allowed: true },
   { id: 'checks', entry: consumerEntry, permissions: [], allowed: true },
 ], { timeoutMs: 500 })
 assert.deepEqual(first.loaded, ['provider', 'checks'])
@@ -146,11 +146,11 @@ const echoed = await checks.call('provider.echo', { value: 1 })
 assert.deepEqual(echoed, { args: { value: 1 }, caller: 'checks' }, 'the loader binds the caller to the module that calls')
 await assert.rejects(checks.call('provider.boom'), (error) => error.provider === 'provider' && error.service === 'provider.boom')
 
-const failed = await loader.loadUiModules(runtime, [{ id: 'flaky', entry: failingEntry, permissions: [], allowed: true }], { timeoutMs: 500 })
+const failed = await loader.loadUiModules(runtime, [{ id: 'flaky', entry: failingEntry, permissions: ['flaky.use'], allowed: true }], { timeoutMs: 500 })
 assert.equal(failed.failed[0]?.id, 'flaky')
 assert.equal(checks.has('flaky.run'), false, 'a module whose register() failed leaves no service')
 
-const timedOut = await loader.loadUiModules(runtime, [{ id: 'slow', entry: slowEntry, permissions: [], allowed: true }], { timeoutMs: 50 })
+const timedOut = await loader.loadUiModules(runtime, [{ id: 'slow', entry: slowEntry, permissions: ['slow.use'], allowed: true }], { timeoutMs: 50 })
 assert.equal(timedOut.failed[0]?.timedOut, true)
 assert.equal(checks.has('slow.run'), false, 'a timed-out module leaves no service')
 await new Promise((resolve) => setTimeout(resolve, 200))
@@ -172,7 +172,7 @@ assert.match(loaderSource, /        services: moduleServices,\n      \}\)/)
 
 // (10) the shell creates the registry with the same permission and flag checks as the rest of the shell
 const main = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
-assert.match(main, /const moduleServices = createModuleServiceRegistry\(\{ hasPermission, hasTacticalPermission \}\)/)
+assert.match(main, /const moduleServices = createModuleServiceRegistry\(\{ hasPermission, hasTacticalPermission, isTrustedContext: \(\) => state\.contextSource === 'backend' \}\)/)
 assert.match(main, /services: moduleServices,/)
 
 const doc = fs.readFileSync(new URL('../docs/module-services.md', import.meta.url), 'utf8')

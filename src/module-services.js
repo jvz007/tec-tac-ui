@@ -4,6 +4,9 @@ import { reactive } from 'vue'
 // looks it up and calls it. Permission is checked each time a service is listed, asked for or called (AD-12): a service
 // the person may not use is hidden, and call() refuses it. The provider's handler receives the caller's module id as a
 // hint. It is never authorization: the backend decides every server action.
+// 0.12.102: fail closed. A service needs at least one permission (the module's own, the service's, or a Tactical flag),
+// and outside a backend-supplied context every service is hidden and refused (AD-12). The loader's unload calls
+// removeProvider when a module is switched off.
 
 const MAX_NAME = 120
 const NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_.-]*$/
@@ -17,7 +20,7 @@ function refusal(message, code, service, provider = null) {
   return Object.assign(new Error(message), { code, service, provider })
 }
 
-export function createModuleServiceRegistry({ hasPermission = () => false, hasTacticalPermission = () => false } = {}) {
+export function createModuleServiceRegistry({ hasPermission = () => false, hasTacticalPermission = () => false, isTrustedContext = () => true } = {}) {
   const entries = new Map()
   const signal = reactive({ version: 0 })
   const touch = () => { signal.version += 1 }
@@ -25,6 +28,7 @@ export function createModuleServiceRegistry({ hasPermission = () => false, hasTa
   // The module's permissions always apply. A permission named by the provider only adds to them, so it can narrow a
   // service but never widen it. Tactical flags are strict: only the boolean true counts.
   function allowed(entry) {
+    if (!isTrustedContext()) return false
     if (entry.permissions.some((code) => !hasPermission(code))) return false
     return entry.tacticalPermissions.every((flag) => hasTacticalPermission(flag) === true)
   }
@@ -79,12 +83,18 @@ export function createModuleServiceRegistry({ hasPermission = () => false, hasTa
         const existing = entries.get(key)
         if (existing && existing.provider !== provider) throw new Error(`service ${key} is already provided by ${existing.provider}`)
         const source = options && typeof options === 'object' ? options : {}
+        const permissions = asList([...defaultPermissions, ...asList(source.permission), ...asList(source.permissions)])
+        const tacticalPermissions = asList(source.tacticalPermission)
+        // Fail closed (0.12.102): a service with no permission at all would be open to every module and person.
+        if (permissions.length === 0 && tacticalPermissions.length === 0) {
+          throw new Error(`Service ${key} needs at least one permission: declare one for the module or for this service.`)
+        }
         const entry = {
           name: key,
           provider,
           label: String(source.label || key),
-          permissions: asList([...defaultPermissions, ...asList(source.permission), ...asList(source.permissions)]),
-          tacticalPermissions: asList(source.tacticalPermission),
+          permissions,
+          tacticalPermissions,
           handler,
         }
         entries.set(key, entry)

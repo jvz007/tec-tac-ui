@@ -46,6 +46,15 @@ A service is visible and callable only for a person who passes its checks:
 A service the person may not use is hidden (AD-12). It does not appear in `list()`, `has()` returns `false`, and `call()`
 refuses it.
 
+**A service needs at least one permission (UI 0.12.102).** `provide` refuses a service whose permissions are all empty: the
+provider's module permissions, the service's `permission` or `permissions`, and `tacticalPermission` together must name at
+least one. A refused `provide` throws `Service <name> needs at least one permission: declare one for the module or for this
+service.` Nothing is registered. A service with no permission would be open to every module and person.
+
+**Outside a backend-supplied context every service is hidden and refused (UI 0.12.102).** Before sign-in, or when the
+context is not from Core, `has()` returns `false`, `list()` is empty and `call()` refuses with `service_denied`. This is the
+same rule as the header registry and `addNavigation`.
+
 ## Call
 
 ```js
@@ -76,7 +85,8 @@ An error thrown inside the provider's handler reaches the caller with the messag
 
 Everything a module provides is removed when its `register()` fails, times out, or is abandoned after a time-out. An
 abandoned module cannot provide or call a service any more; a call made after abandonment throws. Calls from one module
-to another stay available only while the provider is loaded.
+to another stay available only while the provider is loaded. A module that is switched off while the page is open is
+unloaded at once (UI 0.12.102): its services stop answering, and `has()` and `call()` refuse them, before the page reloads.
 
 ## What this does not replace
 

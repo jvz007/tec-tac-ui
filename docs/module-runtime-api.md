@@ -2,7 +2,7 @@
 
 Tec-Tac authenticated UI modules receive Core-owned request helpers in `register(context)`. Modules must use these helpers instead of reading `localStorage.access_token`, constructing Tactical `Authorization` headers, or duplicating session-expiry handling.
 
-The `resourceViews` registry also takes grid columns at `endpoint.grid-columns` (UI 0.12.93); see `module-resource-views.md`. This page also covers [the module router](#module-router), [`hasPermission(code)`](#haspermissioncode), [navigation](#navigation-permissions) and [`codeEditor.languages`](#codeeditorlanguages). Modules can also publish and call browser operations through `services`; see `module-services.md` (UI 0.12.101).
+The `resourceViews` registry also takes grid columns at `endpoint.grid-columns` (UI 0.12.93); see `module-resource-views.md`. This page also covers [the module router](#module-router), [`hasPermission(code)`](#haspermissioncode), [navigation](#navigation-permissions) and [`codeEditor.languages`](#codeeditorlanguages). Modules can also publish and call browser operations through `services`; see `module-services.md` (UI 0.12.101). A module can open a Tactical terminal through `tacticalWebSocket`; see [Tactical terminal socket](#tactical-terminal-socket-tacticalwebsocket) and `module-tactical-websocket.md` (UI 0.12.102).
 
 
 ## Authenticated runtime context
@@ -271,6 +271,21 @@ On success it returns `{ ok, status, data, blob, contentType, contentDisposition
 On a failed response the `apiRaw` error passes through unchanged: `status`, `payload` and `code`. Core refusal codes such as `tactical_permission_denied` and `object_not_found`, and a 429, stay readable. The error also carries the response `headers` as a non-enumerable property, so a page can read `X-Tec-Tac-Audit` on a 5xx. Core writes "outcome unknown" there.
 
 If the API is served from a different origin than the page, the proxy must expose `X-Tec-Tac-Audit` and `Content-Disposition` (`Access-Control-Expose-Headers`). Otherwise the browser hides them and `audit` stays `''`. Same-origin installs are unaffected.
+
+## Tactical terminal socket (tacticalWebSocket)
+
+`context.tacticalWebSocket.open(moduleId, kind, { agentId, signal })` opens one Tactical terminal for the signed-in person, through a single-use ticket from Core (UI 0.12.102, Core 1.17.31 or later). The module never holds a token. The helper asks for a fresh ticket on every open, checks the answer, and opens `wss://<host>/ws/tfd/agent-terminal/<ticket>/` with no query and no subprotocol. It resolves with a session that has `start`, `input`, `resize`, `kill`, `close` and `on('output' | 'error' | 'info' | 'close', fn)`.
+
+- `moduleId` is the module's own id, or the core module it replaces under AD-20. Another id is refused before any request. `kind` is `agent-terminal`; any other kind is refused.
+- A ticket lives 30 seconds and works once. Ask for a new terminal for each terminal tab.
+- A terminal the module opened is closed when the module is cleaned up or unloaded. The shell closes every terminal when the Tactical session ends and when the page is left. A module has at most 8 open at once.
+- A raw `api`, `apiRaw`, `apiBlob` or `apiText` call to another module's `/api/tfd/tactical-websocket/` path is refused. Use the helper.
+- Hide the Terminal tab with `context.hasTacticalPermission('can_use_terminal')`. The helper does not check it; Core and Tactical decide.
+- Public modules (`registerPublic`) do not get it.
+
+The full rules, the frames, the close codes (4401, 4003, 4503, 1000 and the rest) and the ticket refusals are in `module-tactical-websocket.md`.
+
+**Contract row (UI 0.12.102, not yet in the export).** Browser contract row `ui.authenticated.websocket` (phase `authenticated`, service `tacticalWebSocket`): operations `open`, `session.start`, `session.input`, `session.resize`, `session.kill`, `session.close` and `session.on`; events `output`, `error`, `info` and `close`; close codes 4401 (`signin-ended`), 4003 (`not-allowed`) and 4503 (`unavailable`) with the messages in `module-tactical-websocket.md`, and 1000 and any other code with the plain close messages there; the ticket route `POST /api/tfd/tactical-websocket/<module_id>/<kind>/tickets/` with exactly `{agent_id}`, and its refusals; a ticket lives 30 seconds and works once, and a new one is asked for each terminal tab; the bound-module rule above; Core 1.17.31 or later and UI 0.12.102 or later. Core writes the export row. This release does not claim the export lists it; `reviews/requests/core.md` asks for it.
 
 ## hasTacticalPermission(flag)
 

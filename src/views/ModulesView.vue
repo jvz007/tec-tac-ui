@@ -36,6 +36,8 @@ import {
 
 const state = inject('tecTacState')
 const dynamicNav = inject('tecTacNavigation', [])
+// 0.12.102: the shell's unload for a module that is switched off while the page is open (main.js provides it).
+const unloadModule = inject('tecTacModuleUnload', null)
 const router = useRouter()
 const askConfirm = useConfirm()
 const modules = ref([])
@@ -961,6 +963,20 @@ async function pollHotfixJob(){
   }catch(e){ hotfixJobError.value=e?.message||'Unable to refresh hotfix job status.' }
   hotfixPollTimer=setTimeout(pollHotfixJob,1500)
 }
+// 0.12.102: when a disable or uninstall job succeeds, the module it switched off stops answering at once, before the reload
+// countdown. A replacement that a job switched off (disabled_modules, Core 1.17.12) is unloaded the same way. The single
+// job row has no module_ids (only the history list does), so plugin_id and disabled_modules are the source.
+function unloadSwitchedModules(job) {
+  if (typeof unloadModule !== 'function' || !job) return
+  const ids = new Set()
+  if ((job.action === 'disable' || job.action === 'remove') && typeof job.plugin_id === 'string' && job.plugin_id && job.plugin_id !== 'batch') ids.add(job.plugin_id)
+  for (const id of Array.isArray(job.disabled_modules) ? job.disabled_modules : []) {
+    if (typeof id === 'string' && id) ids.add(id)
+  }
+  for (const id of ids) {
+    try { unloadModule(id) } catch {}
+  }
+}
 function beginPoll(job) {
   activeJob.value = job
   jobPollError.value = ''
@@ -989,6 +1005,7 @@ async function poll() {
     if (['succeeded', 'failed', 'dispatch_failed'].includes(activeJob.value.status)) {
       await loadJobHistory()
       if (activeJob.value.status === 'succeeded') {
+        unloadSwitchedModules(activeJob.value)
         // A composite installs its next set first. The reload waits for the last set.
         if (stagedGroups().length) {
           await runInstall(confirmedDisable.value, false, true)

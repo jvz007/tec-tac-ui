@@ -1,10 +1,11 @@
 import { reactive } from 'vue'
 import { createApp } from 'vue'
 import App from './App.vue'
-import { apiBlob, apiFetch, apiRaw, apiText, beginTacticalSso, loadStaticModuleManifest, publicApiFetch } from './api'
+import { apiBase, apiBlob, apiFetch, apiRaw, apiText, beginTacticalSso, loadStaticModuleManifest, publicApiFetch, TACTICAL_SESSION_INVALID_EVENT } from './api'
 import { router } from './router'
 import { state, loadContext, recordModuleRuntimeError } from './state'
-import { loadPublicUiModules, loadUiModules, moduleIsAllowed } from './module-loader'
+import { loadPublicUiModules, loadUiModules, moduleIsAllowed, unloadUiModule } from './module-loader'
+import { createTacticalWebSocket } from './tactical-websocket'
 import { parsePopupHash, popupHref as buildPopupHref, popupMissDetails, popupModuleSet, popupPublisherSet, popupPublishersChoice, popupRoutePermitted, POPUP_HASH_PREFIX, POPUP_MESSAGE_NOT_POPUP, POPUP_MESSAGE_UNAVAILABLE } from './popup-mode'
 import { createTacticalOperation } from './tactical-operations'
 import { normalizeTacticalScope } from './runtime-context'
@@ -91,8 +92,14 @@ async function bootstrap() {
     beginProvider: (entry) => beginTacticalSso(entry.provider_id),
   })
   const header = createHeaderContributionRegistry({ hasPermission, isTrustedContext: () => state.contextSource === 'backend' })
-  // Browser services between modules (0.12.101). Permission is checked on every list, has and call.
-  const moduleServices = createModuleServiceRegistry({ hasPermission, hasTacticalPermission })
+  // Browser services between modules (0.12.101). Permission is checked on every list, has and call. Outside a backend
+  // context every service is hidden and refused (0.12.102, AD-12).
+  const moduleServices = createModuleServiceRegistry({ hasPermission, hasTacticalPermission, isTrustedContext: () => state.contextSource === 'backend' })
+  // Tactical terminal sockets (0.12.102, Core 1.17.31). The shell's one helper; each module gets a copy bound to its own id.
+  // Every terminal it opened is closed when the sign-in ends and when the page is left.
+  const tacticalWebSocket = createTacticalWebSocket({ api: apiFetch, wsBase: () => apiBase(), WebSocketImpl: window.WebSocket })
+  window.addEventListener(TACTICAL_SESSION_INVALID_EVENT, () => tacticalWebSocket.closeAll())
+  window.addEventListener('pagehide', () => tacticalWebSocket.closeAll())
   registerCoreDashboardWidgets(dashboardWidgets, state)
   registerCoreHelpArticles(help)
 
@@ -199,8 +206,11 @@ async function bootstrap() {
       help,
       header,
       services: moduleServices,
+      tacticalWebSocket,
       modules,
     }
+    // A module that is switched off while the page is open is unloaded at once (0.12.102). ModulesView calls it.
+    app.provide('tecTacModuleUnload', (moduleId) => unloadUiModule(loaderRuntime, moduleId))
     state.moduleLoad = await loadUiModules(loaderRuntime, toLoad)
 
     // Phase 2 (0.12.97): the owner's popup route may ask for the modules that publish into its placements

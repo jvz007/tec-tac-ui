@@ -97,8 +97,8 @@ function decodeToFixedPoint(text) {
 const JUNK_PATTERN = /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028\u2029\ufeff]/g
 function stripJunk(text) { return text.replace(JUNK_PATTERN, '') }
 
-// The module ids named by a tactical-operations path, or null when the path
-// cannot be read safely (callers treat null as a refusal).
+// The module ids named by a tactical-operations or tactical-websocket path, with the route each came from, or null when the
+// path cannot be read safely (callers treat null as a refusal). 0.12.102 adds the ticket route.
 function operationTargets(text) {
   const decoded = decodeToFixedPoint(stripJunk(text))
   if (decoded === null) return null
@@ -112,13 +112,15 @@ function operationTargets(text) {
       out.push(part.toLowerCase())
     }
     for (let i = 0; i + 2 < out.length; i += 1) {
-      if (out[i] === 'tfd' && out[i + 1] === 'tactical-operations') found.push(out[i + 2].split(';')[0])
+      if (out[i] === 'tfd' && (out[i + 1] === 'tactical-operations' || out[i + 1] === 'tactical-websocket')) {
+        found.push({ id: out[i + 2].split(';')[0], route: out[i + 1] })
+      }
     }
   }
   return found
 }
 
-// Refuses a path that reaches /api/tfd/tactical-operations/<id>/... for an id
+// Refuses a path that reaches /api/tfd/tactical-operations/<id>/... or /api/tfd/tactical-websocket/<id>/... for an id
 // other than the module's own or the one it replaces. Fails closed.
 export function guardTacticalOperationPath(path, moduleId, replacedId) {
   if (path === undefined || path === null) return
@@ -134,10 +136,11 @@ export function guardTacticalOperationPath(path, moduleId, replacedId) {
   if (targets === null) {
     throw refuseOperation(`Module "${moduleId}" used a path the shell cannot read safely. The call is refused.`)
   }
-  for (const id of [...targets, ...(operationTargets(cleaned.split(/[?#]/)[0]) || [])]) {
-    if (id !== own && id !== replaced) {
+  for (const found of [...targets, ...(operationTargets(cleaned.split(/[?#]/)[0]) || [])]) {
+    if (found.id !== own && found.id !== replaced) {
       const allowed = replacedId ? `"${moduleId}" or "${replacedId}"` : `"${moduleId}"`
-      throw refuseOperation(`Module "${moduleId}" cannot run Tactical operations for "${id}". It may use only ${allowed}.`)
+      const what = found.route === 'tactical-websocket' ? 'open Tactical terminals' : 'run Tactical operations'
+      throw refuseOperation(`Module "${moduleId}" cannot ${what} for "${found.id}". It may use only ${allowed}.`)
     }
   }
 }
@@ -176,6 +179,91 @@ export function bindTacticalOperation(operation, { moduleId, replaces, isAbandon
     }
     return operation(targetModuleId, operationId, options)
   }
+}
+
+// Binds register(context).tacticalWebSocket to the module that receives it (0.12.102). The same rule as tacticalOperation:
+// the module's own id, plus the core module it replaces under AD-20; any other id is refused before a request. A module
+// may have 8 terminals open or connecting at once. A terminal that finishes connecting after the module was cleaned up
+// is closed at once. Refused after a failed or timed-out register(), and after the module is unloaded.
+const TERMINAL_LIMIT = 8
+
+export function bindTacticalWebSocket(shared, { moduleId, replaces, isAbandoned } = {}) {
+  const live = new Set()
+  let pending = 0
+  let shut = false
+  const tacticalWebSocket = Object.freeze({
+    async open(targetModuleId, kind, options) {
+      if (typeof isAbandoned === 'function' && isAbandoned()) {
+        throw refuseOperation(`module ${moduleId} was abandoned after a failed or timed-out register(); tacticalWebSocket.open() is refused`)
+      }
+      if (shut) throw refuseOperation(`module ${moduleId} was unloaded; tacticalWebSocket.open() is refused`)
+      const replacedId = typeof replaces === 'function' ? replaces() : replaces
+      const replaced = typeof replacedId === 'string' && replacedId ? replacedId : ''
+      if (targetModuleId !== moduleId && targetModuleId !== replaced) {
+        const allowed = replaced ? `"${moduleId}" or "${replaced}"` : `"${moduleId}"`
+        throw refuseOperation(`Module "${moduleId}" cannot open Tactical terminals for "${String(targetModuleId)}". It may use only ${allowed}.`)
+      }
+      if (live.size + pending >= TERMINAL_LIMIT) {
+        throw refuseOperation(`Module "${moduleId}" already has ${TERMINAL_LIMIT} terminal sessions open. Close one and try again.`)
+      }
+      pending += 1
+      let session
+      try {
+        session = await shared(targetModuleId, kind, options)
+      } finally {
+        pending -= 1
+      }
+      if (shut || (typeof isAbandoned === 'function' && isAbandoned())) {
+        try { session.close() } catch {}
+        throw refuseOperation(`module ${moduleId} was cleaned up before its terminal opened; the terminal was closed`)
+      }
+      live.add(session)
+      session.on('close', () => { live.delete(session) })
+      return session
+    },
+  })
+  // Closes every terminal the module opened, and refuses any later open. Called by the cleanup of the module.
+  function close() {
+    shut = true
+    for (const session of [...live]) {
+      try { session.close() } catch {}
+    }
+    live.clear()
+  }
+  return { tacticalWebSocket, close }
+}
+
+// 0.12.102: every module that loaded keeps its cleanup, so the shell can unload it when it is switched off while the page is
+// open. One store per runtime object, so a second loadUiModules call (popup publishers) joins the same store.
+const loadedCleanups = new WeakMap()
+function cleanupStore(runtime) {
+  let store = loadedCleanups.get(runtime)
+  if (!store) {
+    store = new Map()
+    loadedCleanups.set(runtime, store)
+  }
+  return store
+}
+
+// Registries whose removeProvider(moduleId) the unload calls after the module's own cleanup. services is one of them.
+const PROVIDER_REGISTRIES = ['contextActions', 'contextInteractions', 'resourceViews', 'dashboardWidgets', 'help', 'services']
+
+// Unloads a module that is switched off while the page is open: its cleanup (registry entries, navigation, routes and
+// terminals), then each registry's removeProvider. Safe to run twice; an unknown id does nothing. Returns true when a
+// loaded module was cleaned up.
+export function unloadUiModule(runtime, moduleId) {
+  const id = typeof moduleId === 'string' ? moduleId : ''
+  if (!runtime || !id) return false
+  const store = cleanupStore(runtime)
+  const cleanup = store.get(id)
+  if (cleanup) {
+    store.delete(id)
+    try { cleanup() } catch {}
+  }
+  for (const key of PROVIDER_REGISTRIES) {
+    try { runtime[key]?.removeProvider?.(id) } catch {}
+  }
+  return Boolean(cleanup)
 }
 
 // Popup mode (0.12.95). A route with meta.popup === true is also reachable at /popup/<id><path> for the owning module, so
@@ -432,6 +520,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
     let moduleHelp = null
     let moduleHeader = null
     let moduleServices = null
+    let moduleTerminals = null
 
     // Removes everything this module contributed: registry entries, navigation
     // items and routes. Safe to run more than once.
@@ -447,6 +536,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
       try { moduleHelp?.clear?.() } catch {}
       try { moduleHeader?.clear?.() } catch {}
       try { moduleServices?.clear?.() } catch {}
+      try { moduleTerminals?.close?.() } catch {}
       try { runtime.removeNavigation?.(descriptor.id) } catch {}
       for (const remove of routeRemovers.splice(0)) {
         try { remove() } catch {}
@@ -502,7 +592,17 @@ export async function loadUiModules(runtime, modules, options = {}) {
       moduleServices = guardAbandoned(runtime.services?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null, isAbandoned, descriptor.id)
       // removeNavigation is Core's: the loader calls it when a module fails. A
       // module can add navigation but never remove another module's items.
-      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, services: _sharedServices, ...moduleRuntime } = runtime
+      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, tacticalWebSocket: sharedTacticalWebSocket, services: _sharedServices, ...moduleRuntime } = runtime
+      // The terminal helper (0.12.102) is bound to this module: its own id, plus the one core module it replaces.
+      const boundTerminal = sharedTacticalWebSocket && typeof sharedTacticalWebSocket.open === 'function'
+        ? bindTacticalWebSocket(sharedTacticalWebSocket.open, {
+          moduleId: descriptor.id,
+          replaces: replacedSnapshot.get(descriptor.id) || '',
+          isAbandoned,
+        })
+        : null
+      moduleTerminals = boundTerminal
+      const boundTerminalRuntime = boundTerminal ? { tacticalWebSocket: boundTerminal.tacticalWebSocket } : {}
       // Bound to this module: another module's id is refused, and so is any
       // call after a failed or timed-out register().
       const boundTacticalOperation = typeof sharedTacticalOperation === 'function'
@@ -526,6 +626,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
         ...boundTacticalOperation,
         ...boundPopupHref,
         ...boundConfirm,
+        ...boundTerminalRuntime,
         context: runtime.state.context,
         router: moduleRouter,
         addNavigation,
@@ -551,6 +652,8 @@ export async function loadUiModules(runtime, modules, options = {}) {
     try {
       await raceBudget(work, budget)
       loaded.push(descriptor.id)
+      // Kept so the shell can unload this module later, when it is switched off while the page is open (0.12.102).
+      cleanupStore(runtime).set(descriptor.id, cleanup)
     } catch (error) {
       abandoned = true
       cleanup()

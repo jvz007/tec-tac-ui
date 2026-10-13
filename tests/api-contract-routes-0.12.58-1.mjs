@@ -12,7 +12,7 @@ function walk(dir){
   return out
 }
 const scanned=walk(srcRoot).map(url=>({name:url.pathname.split('/src/')[1], text:fs.readFileSync(url,'utf8')}))
-const fixture=JSON.parse(fs.readFileSync(new URL('./fixtures/core-http-routes-1.17.25.json', import.meta.url),'utf8'))
+const fixture=JSON.parse(fs.readFileSync(new URL('./fixtures/core-http-routes-1.17.31.json', import.meta.url),'utf8'))
 const manifest=JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url),'utf8'))
 const frameworkRange=manifest.requires['tec-tac-framework']
 const minMatch=/^>=(\d+)\.(\d+)\.(\d+),<2\.0\.0$/.exec(frameworkRange)
@@ -43,6 +43,9 @@ const routes=new Set(fixture.routes.map(cleanRoute))
 // 0.12.99: the fixture is the 1.17.2 routes plus the four Core routes added since (custom-fields, revoke-all, session theme,
 // tactical-operations), taken from the signed export 1.17.25-0.12.98. Nothing is whitelisted any more.
 for (const route of ['/api/tfd/access/sessions/revoke-all/','/api/tfd/session/theme/','/api/tfd/resources/custom-fields/','/api/tfd/tactical-operations/<dynamic>/<dynamic>/']) assert.ok(routes.has(route), `${route} must be in the fixture`)
+// 0.12.102: the fixture is 1.17.31, which adds the terminal ticket route (Core 1.17.31, urls.py).
+assert.equal(fixture.core_version, '1.17.31')
+assert.ok(routes.has('/api/tfd/tactical-websocket/<dynamic>/<dynamic>/tickets/'), 'the terminal ticket route must be in the fixture')
 const missing=[]
 for (const raw of used) {
   const normalized=cleanUsed(raw)
