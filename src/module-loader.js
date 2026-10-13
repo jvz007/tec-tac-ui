@@ -466,7 +466,8 @@ export async function loadUiModules(runtime, modules, options = {}) {
         // surfaces such as Module Manager can still deep-link to an enabled
         // module. The shell remains authoritative for whether it is shown in
         // the left navigation. Optional `permission` / `permissions` fields on
-        // the item pass through; the shell hides an item the user lacks.
+        // the item pass through; the shell hides an item the user lacks. `tacticalPermission` (a Tactical flag or a list of
+        // them, 0.12.99) passes through the same way; the shell hides the item live until every flag is strictly true.
         runtime.addNavigation({
           ...item,
           visible: descriptor.visible !== false && item?.visible !== false,

@@ -100,6 +100,8 @@ export const preferenceState = reactive({
   updatedAt: null,
   // Core 1.17.24 (CO9): the header theme for this session. null means the saved theme is in effect.
   sessionTheme: null,
+  // True when the last clearSessionTheme could not reach Core: the old header theme may return after a refresh.
+  sessionThemeClearFailed: false,
   preferences: normalize({ appearance: { theme: cachedTheme, font_scale: cachedFontScale } }),
 })
 
@@ -186,9 +188,16 @@ export async function setSessionTheme(value) {
 }
 
 // Back to the saved theme. Save preferences calls this after it saves the theme on the page.
+// A failed DELETE never throws: the saved preferences already worked. The page shows the theme the person saved, and
+// sessionThemeClearFailed tells the caller to say the old header theme may return on refresh.
 export async function clearSessionTheme() {
   preferenceState.sessionTheme = null
-  await apiFetch('/api/tfd/session/theme/', { method: 'DELETE' })
+  preferenceState.sessionThemeClearFailed = false
+  try {
+    await apiFetch('/api/tfd/session/theme/', { method: 'DELETE' })
+  } catch {
+    preferenceState.sessionThemeClearFailed = true
+  }
   return effectiveTheme()
 }
 

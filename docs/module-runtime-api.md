@@ -213,6 +213,8 @@ Core renders every module-supplied component inside an error boundary: each rout
 
 `addNavigation(item)` accepts an optional `permission` (one code) or `permissions` (a list). The shell hides an item when the user lacks any of them. Superusers always see it, and an item with neither field is shown as before. Without a backend-supplied context there are no permissions, so a gated item is hidden. This is a display rule only. The backend still refuses the request.
 
+`addNavigation(item)` also accepts an optional `tacticalPermission` (UI 0.12.99): one Tactical flag name, or a list in which every flag must be true, for example `{ to: '/agents/pending', label: 'Pending actions', tacticalPermission: 'can_list_pendingactions' }`. The shell reads `context.tactical_permissions` and shows the item only while each flag is strictly `true`, the same test as `context.hasTacticalPermission(flag)`. It follows the context live, so the item appears or disappears when the role changes. A superuser gets no shortcut: Tactical's flags are Tactical's own. Without a backend-supplied context a gated item is hidden. It combines with `permission` and `permissions`, and both rules must pass. An item without the field behaves exactly as before. It is a display rule only. Tactical and Core still refuse the request.
+
 Modules cannot remove navigation. `register(context)` has `addNavigation` but no `removeNavigation`, so one module cannot remove another module's items. Core removes the items of a module whose `register()` failed or timed out.
 
 ## Module router

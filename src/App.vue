@@ -85,7 +85,7 @@ const coreNav = computed(() => coreNavigation(state.context))
 
 // The shell labels a failure by the module that owns the current route.
 const routeProvider = computed(() => route.meta?.dynamicModule || route.meta?.publicModule || 'Core')
-const navContext = computed(() => ({ user: state.context.user || {}, permissions: state.context.permissions || [], source: state.contextSource }))
+const navContext = computed(() => ({ user: state.context.user || {}, permissions: state.context.permissions || [], tactical_permissions: state.context.tactical_permissions || {}, source: state.contextSource }))
 const visibleNav = computed(() => [...coreNav.value, ...dynamicNav].filter((item) => item.visible !== false && item?.to && item?.label && navItemPermitted(item, navContext.value)))
 const allNav = computed(() => visibleNav.value.filter((item) => {
   if (!query.value.trim()) return true

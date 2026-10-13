@@ -12,7 +12,7 @@ function walk(dir){
   return out
 }
 const scanned=walk(srcRoot).map(url=>({name:url.pathname.split('/src/')[1], text:fs.readFileSync(url,'utf8')}))
-const fixture=JSON.parse(fs.readFileSync(new URL('./fixtures/core-http-routes-1.17.2.json', import.meta.url),'utf8'))
+const fixture=JSON.parse(fs.readFileSync(new URL('./fixtures/core-http-routes-1.17.25.json', import.meta.url),'utf8'))
 const manifest=JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url),'utf8'))
 const frameworkRange=manifest.requires['tec-tac-framework']
 const minMatch=/^>=(\d+)\.(\d+)\.(\d+),<2\.0\.0$/.exec(frameworkRange)
@@ -40,13 +40,9 @@ function cleanRoute(value){
   return value.replace(/<[^>]+>/g,'<dynamic>')
 }
 const routes=new Set(fixture.routes.map(cleanRoute))
-// Routes Core added after the 1.17.2 fixture, each with the Core version that ships it.
-const addedAfterFixture=[['/api/tfd/tactical-operations/<dynamic>/<dynamic>/','1.17.7'],['/api/tfd/resources/custom-fields/','1.17.23'],['/api/tfd/access/sessions/revoke-all/','1.17.24'],['/api/tfd/session/theme/','1.17.24']]
-for (const [route,since] of addedAfterFixture) {
-  const [a,b,c]=since.split('.').map(Number)
-  assert.ok(minVersion[0]>a || (minVersion[0]===a && (minVersion[1]>b || (minVersion[1]===b && minVersion[2]>=c))), `${route} needs framework ${since} or later in tec_tac_package.json`)
-  routes.add(route)
-}
+// 0.12.99: the fixture is the 1.17.2 routes plus the four Core routes added since (custom-fields, revoke-all, session theme,
+// tactical-operations), taken from the signed export 1.17.25-0.12.98. Nothing is whitelisted any more.
+for (const route of ['/api/tfd/access/sessions/revoke-all/','/api/tfd/session/theme/','/api/tfd/resources/custom-fields/','/api/tfd/tactical-operations/<dynamic>/<dynamic>/']) assert.ok(routes.has(route), `${route} must be in the fixture`)
 const missing=[]
 for (const raw of used) {
   const normalized=cleanUsed(raw)

@@ -248,3 +248,10 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .confirm-target{margin:0 0 8px;padding:6px 8px;border:1px solid var(--line-soft);background:var(--input-bg);overflow-wrap:anywhere}
 .confirm-count{margin:0 0 8px;color:var(--warn)}
 .confirm-asker{margin-top:4px}
+.resource-menu{position:fixed;z-index:1000;min-width:200px;max-width:min(320px,calc(100vw - 16px));max-height:calc(100vh - 16px);overflow-y:auto;padding:5px;background:var(--raised);border:1px solid var(--line-2);border-radius:3px;box-shadow:0 14px 34px rgba(0,0,0,.34)}
+.resource-menu-item{width:100%;border:0;background:transparent;color:var(--ink);display:grid;gap:2px;padding:8px 9px;text-align:left;font-size:calc(12.7px * var(--font-scale));border-radius:2px;cursor:pointer}
+.resource-menu-item:hover,.resource-menu-item:focus-visible{background:rgba(var(--accent-rgb),.13);outline:none}
+.resource-menu-item.danger{color:var(--danger)}
+.resource-menu-item.disabled{opacity:.6;cursor:not-allowed}
+.resource-menu-item small{color:var(--dim);font-size:calc(11px * var(--font-scale))}
+.resource-menu-divider{height:1px;margin:4px 2px;background:var(--line-2)}

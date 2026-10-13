@@ -24,7 +24,7 @@ const pkg = JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import
 const view = fs.readFileSync(new URL('../src/views/ResourcesView.vue', import.meta.url), 'utf8')
 
 // The Core range this release needs.
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.24,<2.0.0')
+assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.25,<2.0.0')
 
 // (1) A changed client sends PATCH with client_id only; with a rename too, name goes as well.
 await api.updateResourceSite(7, { clientId: 3 })
@@ -50,11 +50,11 @@ assert.match(view, /const renaming = name !== draft\.originalName/)
 assert.match(view, /if \(moving\) patch\.clientId = draft\.client_id/)
 assert.match(view, /if \(renaming\) patch\.name = name/)
 
-// (4) Core's refusals reach the caller unchanged, with the status kept.
+// (4) 0.12.99 (Core 1.17.25): a missing destination answers 400, not 404. Core's refusals reach the caller unchanged, with the status kept.
 const refusals = [
   [400, { detail: 'A client must retain at least one site.' }],
   [409, { detail: 'A site with that name already exists for the selected client.' }],
-  [404, { detail: 'Client not found.' }],
+  [400, { detail: 'Client not found.' }],
 ]
 for (const [status, payload] of refusals) {
   nextAnswer = { status, payload }

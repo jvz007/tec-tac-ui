@@ -17,6 +17,8 @@ import { createResourceSiteSearchCoordinator } from '../resource-site-search-sta
 import { loadRelocationSites, deleteResourceWorkflow, editableCustomFieldRows, saveCustomFieldsWorkflow, createClientWorkflow, createSiteWorkflow, loadCreateFieldsWorkflow, clientCreatedNotice, FIRST_SITE_REQUIRED } from '../resource-feature-workflows'
 import { resourceReadMode, groupSitesByClient, readAllPages } from '../resource-directory-read'
 import CustomFieldInputs from '../components/CustomFieldInputs.vue'
+import ResourceContextMenu from '../components/ResourceContextMenu.vue'
+import { menuAnchor, menuTargetIsTextField, resourceMenuEntries } from '../resource-context-menu'
 import { useConfirm } from '../confirm-dialog'
 import { resourceContextMenuActions, executeResourceContextMenuAction } from '../extension-surface-workflows'
 
@@ -83,6 +85,39 @@ async function runModuleAction(action, resourceType, row) {
   } finally {
     moduleActionBusyId.value = ''
   }
+}
+// Right-click menu (0.12.99, CO23, CK10). The contextmenu event also covers Shift+F10 and the menu key. The built-in entries follow
+// the row buttons' permission checks; the contributed ones are the Extensions button's actions, run the same way.
+const resourceMenu = ref(null)
+let resourceMenuId = 0
+function openResourceMenu(event, resourceType, row) {
+  // A text field keeps the browser's own menu.
+  if (menuTargetIsTextField(event.target)) return
+  if (resourceType === 'client') chooseClient(row.id)
+  const entries = resourceMenuEntries({
+    resourceType,
+    row,
+    can: { manageClients: canManageClients.value, manageSites: canManageSites.value },
+    handlers: resourceType === 'client'
+      ? { addSite: openCreateSite, edit: openEditClient, fields: (client) => openCustomFields('client', client), remove: openDeleteClient }
+      : { edit: openEditSite, fields: (site) => openCustomFields('site', site), remove: openDeleteSite },
+    moduleActions: moduleActions(resourceType, row),
+  })
+  // Nothing to offer: the browser's menu stays.
+  if (!entries.some((entry) => !entry.divider)) return
+  event.preventDefault()
+  const opener = event.currentTarget || null
+  const anchor = menuAnchor(event, opener)
+  resourceMenuId += 1
+  resourceMenu.value = { id: resourceMenuId, resourceType, row, entries, opener, ...anchor }
+}
+function closeResourceMenu() { resourceMenu.value = null }
+function chooseResourceMenuEntry(entry) {
+  const menu = resourceMenu.value
+  resourceMenu.value = null
+  if (!menu || !entry || entry.disabled) return
+  if (entry.kind === 'module') void runModuleAction(entry.action, menu.resourceType, menu.row)
+  else entry.run?.()
 }
 function message(errorValue, fallback) {
   return errorValue?.message || fallback
@@ -232,6 +267,8 @@ async function loadSiteClientOptions() {
   const request = ++siteClientRequest
   loadingSiteClientOptions.value = true
   try {
+    // Clients mode lists the clients Core's list returns, as Tactical's own Edit site does. The destination needs no grant
+    // (Core 1.17.25, AD-29), so nothing here filters the rows down to the clients the person holds; Core decides the move.
     // Sites mode: the options come from the grouped list, not from a clients read.
     const needle = siteClientSearch.value.trim().toLowerCase()
     const payload = readMode.value === 'sites'
@@ -239,6 +276,7 @@ async function loadSiteClientOptions() {
       : await listResourceClients({ search: siteClientSearch.value, page: 1, pageSize: 50 })
     if (request !== siteClientRequest) return
     const rows = Array.isArray(payload?.items) ? payload.items : []
+    // The site's current client stays in the list so the select can show it; that is the only row added.
     const current = selectedClient.value
     const merged = current && !rows.some((row) => row.id === current.id) ? [current, ...rows] : rows
     siteClientOptions.value = merged
@@ -312,12 +350,11 @@ async function saveSite() {
   notice.value = ''
   noticeAction.value = null
   try {
-    const row = await (draft.mode === 'create'
-      ? createSiteWorkflow(draft, { createResourceSite })
-      : updateResourceSite(draft.id, { clientId: draft.client_id, name: draft.name.trim() }))
+    // Only Add site reaches here. Edit site goes through saveSiteEdit above.
+    await createSiteWorkflow(draft, { createResourceSite })
     const destination = draft.client_id
     siteDialog.value = null
-    notice.value = draft.mode === 'create' ? 'Site created.' : 'Site updated.'
+    notice.value = 'Site created.'
     // The sites live on the client rows, so the list is read again.
     invalidateDirectory()
     await loadClients()
@@ -471,7 +508,7 @@ onBeforeUnmount(() => {
         <div v-if="loadingClients && !clients.length" class="state-inline">Loading clients…</div>
         <div v-else-if="!clients.length" class="empty">No clients match the current scope and search.</div>
         <div v-else class="tablewrap resource-table"><table><thead><tr><th>Client</th><th>ID</th><th></th></tr></thead><tbody>
-          <tr v-for="client in clients" :key="client.id" class="clickrow" :class="{selected:selectedClientId===client.id}" @click="chooseClient(client.id)"><td><b>{{client.name}}</b></td><td class="mono">{{client.id}}</td><td><div class="row resource-actions"><template v-if="canManageClients"><button class="btn sm" @click.stop="openEditClient(client)">Edit</button><button class="btn sm" @click.stop="openCustomFields('client', client)">Fields</button><button class="btn sm danger" @click.stop="openDeleteClient(client)">Delete</button></template><details v-if="moduleActions('client', client).length" class="resource-context-menu" @click.stop><summary class="btn sm">Extensions</summary><div class="resource-context-popover"><button v-for="action in moduleActions('client', client)" :key="action.id" type="button" class="resource-context-action" :class="{danger:action.dangerous}" :disabled="action.state?.enabled===false || !!moduleActionBusyId" :title="action.state?.reason || action.label" @click.prevent="runModuleAction(action, 'client', client)">{{ moduleActionBusyId===action.id ? 'Working…' : action.label }}</button></div></details></div></td></tr>
+          <tr v-for="client in clients" :key="client.id" class="clickrow" :class="{selected:selectedClientId===client.id}" tabindex="0" @click="chooseClient(client.id)" @keydown.enter.self="chooseClient(client.id)" @contextmenu="openResourceMenu($event, 'client', client)"><td><b>{{client.name}}</b></td><td class="mono">{{client.id}}</td><td><div class="row resource-actions"><template v-if="canManageClients"><button class="btn sm" @click.stop="openEditClient(client)">Edit</button><button class="btn sm" @click.stop="openCustomFields('client', client)">Fields</button><button class="btn sm danger" @click.stop="openDeleteClient(client)">Delete</button></template><details v-if="moduleActions('client', client).length" class="resource-context-menu" @click.stop><summary class="btn sm">Extensions</summary><div class="resource-context-popover"><button v-for="action in moduleActions('client', client)" :key="action.id" type="button" class="resource-context-action" :class="{danger:action.dangerous}" :disabled="action.state?.enabled===false || !!moduleActionBusyId" :title="action.state?.reason || action.label" @click.prevent="runModuleAction(action, 'client', client)">{{ moduleActionBusyId===action.id ? 'Working…' : action.label }}</button></div></details></div></td></tr>
         </tbody></table></div>
         <div v-if="clientPages>1" class="resource-pager"><span class="muted mono">Page {{clientPage}} / {{clientPages}}</span><div class="row"><button class="btn sm" :disabled="clientPage<=1||loadingClients" @click="changeClientPage(clientPage-1)">Previous</button><button class="btn sm" :disabled="clientPage>=clientPages||loadingClients" @click="changeClientPage(clientPage+1)">Next</button></div></div>
       </section>
@@ -483,11 +520,13 @@ onBeforeUnmount(() => {
         <div v-else-if="!selectedClient" class="empty">Select a client to inspect its sites.</div>
         <div v-else-if="!sites.length" class="empty">No sites match this client and search.</div>
         <div v-else class="tablewrap resource-table"><table><thead><tr><th>Site</th><th>ID</th><th></th></tr></thead><tbody>
-          <tr v-for="site in sites" :key="site.id"><td><b>{{site.name}}</b></td><td class="mono">{{site.id}}</td><td><div class="row resource-actions"><template v-if="canManageSites"><button class="btn sm" @click="openEditSite(site)">Edit</button><button class="btn sm" @click="openCustomFields('site', site)">Fields</button><button class="btn sm danger" @click="openDeleteSite(site)">Delete</button></template><details v-if="moduleActions('site', site).length" class="resource-context-menu" @click.stop><summary class="btn sm">Extensions</summary><div class="resource-context-popover"><button v-for="action in moduleActions('site', site)" :key="action.id" type="button" class="resource-context-action" :class="{danger:action.dangerous}" :disabled="action.state?.enabled===false || !!moduleActionBusyId" :title="action.state?.reason || action.label" @click.prevent="runModuleAction(action, 'site', site)">{{ moduleActionBusyId===action.id ? 'Working…' : action.label }}</button></div></details></div></td></tr>
+          <tr v-for="site in sites" :key="site.id" tabindex="0" @contextmenu="openResourceMenu($event, 'site', site)"><td><b>{{site.name}}</b></td><td class="mono">{{site.id}}</td><td><div class="row resource-actions"><template v-if="canManageSites"><button class="btn sm" @click="openEditSite(site)">Edit</button><button class="btn sm" @click="openCustomFields('site', site)">Fields</button><button class="btn sm danger" @click="openDeleteSite(site)">Delete</button></template><details v-if="moduleActions('site', site).length" class="resource-context-menu" @click.stop><summary class="btn sm">Extensions</summary><div class="resource-context-popover"><button v-for="action in moduleActions('site', site)" :key="action.id" type="button" class="resource-context-action" :class="{danger:action.dangerous}" :disabled="action.state?.enabled===false || !!moduleActionBusyId" :title="action.state?.reason || action.label" @click.prevent="runModuleAction(action, 'site', site)">{{ moduleActionBusyId===action.id ? 'Working…' : action.label }}</button></div></details></div></td></tr>
         </tbody></table></div>
         <div v-if="sitePages>1" class="resource-pager"><span class="muted mono">Page {{sitePage}} / {{sitePages}}</span><div class="row"><button class="btn sm" :disabled="sitePage<=1||loadingSites" @click="changeSitePage(sitePage-1)">Previous</button><button class="btn sm" :disabled="sitePage>=sitePages||loadingSites" @click="changeSitePage(sitePage+1)">Next</button></div></div>
       </section>
     </div>
+
+    <ResourceContextMenu v-if="resourceMenu" :key="resourceMenu.id" :x="resourceMenu.x" :y="resourceMenu.y" :entries="resourceMenu.entries" :opener="resourceMenu.opener" :label="resourceMenu.resourceType==='client' ? 'Client actions' : 'Site actions'" @close="closeResourceMenu" @select="chooseResourceMenuEntry" />
 
     <div v-if="clientDialog" class="modal-backdrop" @click.self="clientDialog=null">
       <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="client-resource-title">

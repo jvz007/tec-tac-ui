@@ -37,6 +37,8 @@ const orderedSectionCount = computed(() => Object.keys(draft.value.navigation?.o
 const sectionOrderCount = computed(() => draft.value.navigation?.section_order?.length || 0)
 const collapsedCount = computed(() => Object.values(draft.value.navigation?.collapsed_sections || {}).filter(Boolean).length)
 
+const SESSION_THEME_REFRESH_NOTICE = 'Core could not end your header theme choice. It may come back when you refresh the page.'
+
 async function loadDashboards() {
   try {
     const response = await listDashboards()
@@ -53,7 +55,7 @@ async function save() {
     await saveUserPreferences(draft.value)
     // The theme on this page is now saved, so the header choice for this session ends.
     await clearSessionTheme()
-    saved.value = 'Preferences saved.'
+    saved.value = preferenceState.sessionThemeClearFailed ? `Preferences saved. ${SESSION_THEME_REFRESH_NOTICE}` : 'Preferences saved.'
   } catch (e) {
     error.value = e?.message || 'Unable to save preferences.'
   }
@@ -82,7 +84,7 @@ async function resetAll() {
     await resetUserPreferences()
     await clearSessionTheme()
     draft.value = draftFrom(preferenceState.preferences)
-    saved.value = 'All preferences reset.'
+    saved.value = preferenceState.sessionThemeClearFailed ? `All preferences reset. ${SESSION_THEME_REFRESH_NOTICE}` : 'All preferences reset.'
   } catch (e) {
     error.value = e?.message || 'Unable to reset preferences.'
   }

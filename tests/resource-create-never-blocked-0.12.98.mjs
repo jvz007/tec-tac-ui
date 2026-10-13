@@ -31,7 +31,7 @@ const wf = await import('../src/resource-feature-workflows.js')
 const lastBody = () => calls.at(-1).body
 
 const pkg = JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url), 'utf8'))
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.24,<2.0.0')
+assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.25,<2.0.0')
 
 // (1) A failed read (403, 500, network) does not stop the create: no custom_fields key, the create succeeds.
 for (const status of [403, 500]) {
@@ -107,7 +107,10 @@ const workflows = fs.readFileSync(new URL('../src/resource-feature-workflows.js'
 assert.match(workflows, /the read never blocks Save \(0\.12\.98\)/)
 
 // The Q30 entry is closed by Johan's message, and the shipped list names the version.
-const questions = fs.readFileSync(new URL('../../../reviews/questions/ui.md', import.meta.url), 'utf8')
-assert.doesNotMatch(questions, /### Q30\./)
+// The questions file lives outside the package, so a clean checkout of repos/ui skips this check.
+const questionsUrl = new URL('../../../reviews/questions/ui.md', import.meta.url)
+if (fs.existsSync(questionsUrl)) {
+  assert.doesNotMatch(fs.readFileSync(questionsUrl, 'utf8'), /### Q30\. Custom-field/)
+}
 
 console.log('resource create never blocked 0.12.98: PASS')

@@ -171,7 +171,7 @@ assert.deepEqual(bundled.map((row) => row.intake_trust_label), ['VERIFIED', 'VER
 
 // (8) the requirement and the version.
 const pkgJson = JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url), 'utf8'))
-assert.equal(pkgJson.requires['tec-tac-framework'], '>=1.17.24,<2.0.0', 'batch intake needs Core 1.17.20')
+assert.equal(pkgJson.requires['tec-tac-framework'], '>=1.17.25,<2.0.0', 'batch intake needs Core 1.17.20')
 assert.equal(pkgJson.version, fs.readFileSync(new URL('../VERSION', import.meta.url), 'utf8').trim())
 
 console.log('module-intake-batch-0.12.95: ok')

@@ -9,7 +9,7 @@ import {
   tecTacTotpIssuer,
 } from '../api'
 import { copyTextWithFeedback } from '../copy-feedback'
-import { SETUP_SESSION_REQUIRED_CODE, enrollmentSetupErrorMessage } from '../mfa-enrollment'
+import { SETUP_SESSION_REQUIRED_CODE, enrollmentSetupErrorMessage, signInErrorMessage } from '../mfa-enrollment'
 import { loginSsoEntries, beginLoginSso } from '../extension-surface-workflows'
 import LoginSsoProviders from './LoginSsoProviders.js'
 
@@ -36,11 +36,9 @@ const setupUri = computed(() => setup.value?.qr_url || '')
 // The name Core gives the account in the authenticator app. It comes from the enrollment answer; the sign-in screen has no other source.
 const setupIssuer = computed(() => tecTacTotpIssuer({ answer: setup.value }))
 
+// The message names only what the current step asked for (signInErrorMessage).
 function normalizeError(err) {
-  if (!err) return 'Authentication failed.'
-  if (err.status === 400 || err.status === 401 || err.status === 403) return 'The username, password, or authentication code was not accepted by Tactical.'
-  if (err.status === 429) return 'Too many authentication attempts. Wait a moment before trying again.'
-  return err.message || 'Authentication failed.'
+  return signInErrorMessage(err, step.value)
 }
 
 async function submitCredentials() {
