@@ -1,10 +1,12 @@
 <script setup>
 import { computed, inject, onMounted, reactive, ref } from 'vue'
 import { useConfirm } from '../../confirm-dialog'
-import { createUser, deleteUser, getUserMfaRecovery, invalidateUserMfaBackupCodes, listRoles, listUsers, resetUserPassword, resetUserTotp, updateUser } from '../../access'
+import { createUser, deleteUser, disconnectSsoAccount, getUserMfaRecovery, invalidateUserMfaBackupCodes, listRoles, listUsers, resetUserPassword, resetUserTotp, updateUser } from '../../access'
+import { canAdministerSso } from '../../sso-admin'
 
 const state = inject('tecTacState')
 const confirmAction = useConfirm()
+const isSuperuser = computed(() => canAdministerSso(state.context))
 const users = ref([])
 const roles = ref([])
 const loading = ref(true)
@@ -120,6 +122,22 @@ async function removeUser() {
   finally { saving.value = false }
 }
 
+// 0.12.100 (Core 1.17.28, AD-12): unlinks one single sign-on account. Core refuses anyone who is not an effective superuser.
+async function disconnectAccount(account) {
+  if (!isSuperuser.value || !editing.value) return
+  const userId = editing.value.id
+  const username = editing.value.username
+  if (!(await confirmAction({ question: `Disconnect the ${account.provider} sign-in from ${username}?`, target: username, detail: 'The link to this sign-in provider is removed. The Tactical account stays.', danger: true }))) return
+  saving.value = true; error.value = ''
+  try {
+    await disconnectSsoAccount(account.uid, account.provider)
+    await load()
+    const fresh = users.value.find((u) => u.id === userId)
+    editing.value = fresh ? { ...fresh } : null
+  } catch (err) { error.value = err.message || 'Unable to disconnect the sign-in account.' }
+  finally { saving.value = false }
+}
+
 async function changePassword() {
   if (!editing.value || !passwordReset.value) return
   if (!(await confirmAction({ question: `Reset the password for ${editing.value.username}?`, target: editing.value.username, danger: true }))) return
@@ -177,7 +195,7 @@ onMounted(load)
     <div v-if="capabilityResolved && !canManage" class="state-inline warning"><b>Read-only.</b> Your Tactical role can list accounts but does not have <span class="mono">can_manage_accounts</span>.</div>
 
     <div class="split-layout">
-      <div class="tablewrap">
+      <div class="tablewrap table-clean">
         <table>
           <thead><tr><th>User</th><th>Role</th><th>Status</th><th>Last login</th></tr></thead>
           <tbody>
@@ -236,6 +254,14 @@ onMounted(load)
             <button class="btn" :disabled="mfaLoading" @click="loadMfaRecovery()">Refresh MFA status</button>
           </div>
           <p v-if="!mfaRecovery.can_invalidate" class="field-help">This protected/root account requires effective superuser authority for destructive MFA recovery actions.</p>
+        </template>
+        <template v-if="isSuperuser">
+          <div class="section-divider"><span>Single sign-on accounts</span></div>
+          <div v-if="!editing.social_accounts?.length" class="field-help">No single sign-on account is linked to this user.</div>
+          <div v-for="account in editing.social_accounts || []" :key="`${account.provider}:${account.uid}`" class="checkline">
+            <span><b>{{ account.display || account.uid }}</b><span class="sub mono">{{ account.provider }} · last login {{ account.last_login || 'never' }}</span></span>
+            <button class="btn sm danger" :disabled="saving" @click="disconnectAccount(account)">Disconnect</button>
+          </div>
         </template>
         <p class="field-help">Tactical protects the installation/root user from destructive UI changes. Tec-Tac never lets an administrator generate or reveal another user's backup codes.</p>
       </aside>

@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.99",
+  "version": "0.12.100",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,14 +32,14 @@
       "sha256": "1612e28a90a20fc2a7bb107b4c803f2feb0914c1150862bb169ce4d9c2a81a2c"
     },
     {
-      "path": "RELEASE_NOTES_0.12.99.md",
-      "size": 5000,
-      "sha256": "d7040778bd8d9f2606051ba182bbd9b814f11831436e175eeffeb2d05e6f775b"
+      "path": "RELEASE_NOTES_0.12.100.md",
+      "size": 5228,
+      "sha256": "a9325a5658424317f7fcdab16783e86424d1833d710829d9997c175110d2b927"
     },
     {
       "path": "VERSION",
-      "size": 8,
-      "sha256": "cb78ca95c7eee98cf3bd1a224780720e06877d993e2fe7c426161240271655b4"
+      "size": 9,
+      "sha256": "d531148196d1205c761717bcf46c9dca44a468159374a4e35fb2bb0668401672"
     },
     {
       "path": "docs/context-actions.md",
@@ -93,8 +93,8 @@
     },
     {
       "path": "docs/module-runtime-api.md",
-      "size": 32246,
-      "sha256": "e49ca4c54bf9b867b5a8de4c3d07d423c47b2afd1c2f313c2059768580db6997"
+      "size": 33264,
+      "sha256": "1f94b184361445511641dbf124f5b64e28ab347489c4801463a541698381b3f1"
     },
     {
       "path": "docs/module-sso.md",
@@ -707,6 +707,11 @@
       "sha256": "2ee14b88c813291eac6d0088b35663bf65a518d884bc0c1b5f2663337c34ad6e"
     },
     {
+      "path": "docs/releases/RELEASE_NOTES_0.12.99.md",
+      "size": 5000,
+      "sha256": "d7040778bd8d9f2606051ba182bbd9b814f11831436e175eeffeb2d05e6f775b"
+    },
+    {
       "path": "docs/releases/RELEASE_NOTES_0.2.0.md",
       "size": 1284,
       "sha256": "be54aadd04066e8034717e9733cafc4a56a734393cc300cd4ec0537615718c2d"
@@ -818,8 +823,8 @@
     },
     {
       "path": "docs/ui-design-standards.md",
-      "size": 15855,
-      "sha256": "2f2689f57383bca1d70177a127bf8a9226b763795812f6333c047c767230fcc6"
+      "size": 17407,
+      "sha256": "b799cca212b4cf95c23b176bdb58028f93149773de6889c62dd018c07060969e"
     },
     {
       "path": "docs/user-preferences.md",
@@ -858,13 +863,13 @@
     },
     {
       "path": "package-lock.json",
-      "size": 44095,
-      "sha256": "96191a5d1feedf5057e2659aa8c6fec09b8e90628832a60c674b645a7284a064"
+      "size": 44097,
+      "sha256": "ba9a506c5420d2f21475dd4e90859e16656678fe3d908eb933c7b923614792d9"
     },
     {
       "path": "package.json",
-      "size": 5745,
-      "sha256": "187172da772986d757cd47fc9ad51e4f0ea9e8c3fa117710f993d8dbeb41add4"
+      "size": 5915,
+      "sha256": "2f96102998c02367df06819b49f565b5295c976d08d5019ffe57b6254b2a58dc"
     },
     {
       "path": "public/modules/modules.json",
@@ -913,8 +918,8 @@
     },
     {
       "path": "src/access.js",
-      "size": 7423,
-      "sha256": "c0da30f49a5be90daaa325785d0cbbc5f9ed2a5711fdce007636ea0741f96e61"
+      "size": 9427,
+      "sha256": "d31770316515082c14067a46b04fb5320b37d2877973ba0f5b8ec17373263259"
     },
     {
       "path": "src/account-security-policy-save.js",
@@ -930,6 +935,11 @@
       "path": "src/admin-session-state.js",
       "size": 1384,
       "sha256": "aa46776c8700db492ce77bc117fdae94dce32172eee6852656b696912546037c"
+    },
+    {
+      "path": "src/api-keys.js",
+      "size": 4710,
+      "sha256": "e128e8ed2c7d003f908c660c6cdede09130c81623bf972eebe0a220a41c6b99b"
     },
     {
       "path": "src/api.js",
@@ -1037,6 +1047,11 @@
       "sha256": "f965cff6f5e285b9e5bda38680652627d88e9603312b9acf275479883b3f0097"
     },
     {
+      "path": "src/components/access/ApiKeysPanel.vue",
+      "size": 12934,
+      "sha256": "b386a83459a2bfb4682012465d20a362311168f386f34884fad4f7ad78c194ec"
+    },
+    {
       "path": "src/components/access/MfaRecoveryPanel.vue",
       "size": 7198,
       "sha256": "ea604ebfa76b7a2adce1f7f340c29188f122a3889ac04b385e19c712f8377584"
@@ -1062,9 +1077,14 @@
       "sha256": "392de1fbf89ba85a81fa61c4ef1b1ead40b26f6785193fc9669cf6c884ac5baf"
     },
     {
+      "path": "src/components/access/SsoAdminPanel.vue",
+      "size": 14085,
+      "sha256": "629812c43a97889fc556e26d4b552f73ff4cc3332863fc54dd567d10062b50cd"
+    },
+    {
       "path": "src/components/access/UsersPanel.vue",
-      "size": 16159,
-      "sha256": "b1709c0fab970c11476ebfe4e4730e6e423b7fbb261684a89a7a0dcdbc9a1b61"
+      "size": 17908,
+      "sha256": "af211630657d5208c1baf0dd50b75cd05201265ebbc8bdef2ce155f254ff64d7"
     },
     {
       "path": "src/components/module-error-boundary.js",
@@ -1098,8 +1118,8 @@
     },
     {
       "path": "src/core-navigation.js",
-      "size": 2479,
-      "sha256": "06f7ba9290a7c4e18f3512220a0d75bab7ef1863b23139f587d8efd7833af083"
+      "size": 2553,
+      "sha256": "08cf38ab1d72ccfadd14e8b2426dab95333e558196fa6ac7c4edb7561ca4fc3a"
     },
     {
       "path": "src/csp-violations.js",
@@ -1122,6 +1142,11 @@
       "sha256": "28cccebe287f3cb77d89f3e623a536d4b792738472d3c51c68f69f2693edb81f"
     },
     {
+      "path": "src/dialog-tabs.js",
+      "size": 694,
+      "sha256": "70effd73b17a76388645847c2098b3f662708a1af9c0f63b59309c6aa954389e"
+    },
+    {
       "path": "src/extension-surface-workflows.js",
       "size": 3058,
       "sha256": "aa3e41f6c7966dd39e284c89c406d57e1015058daa73ed593a0e89192e7f8d57"
@@ -1140,6 +1165,11 @@
       "path": "src/help/articles/access.md",
       "size": 635,
       "sha256": "cfb9a2157a9b3d5c91bf2ef39af848e16c49aea713a0e774db34acff915631fc"
+    },
+    {
+      "path": "src/help/articles/api-keys-sso.md",
+      "size": 2096,
+      "sha256": "f5f064d5eeba2171977ab3a37eb54571d13297f0cf318768ff583bc9fed9ad66"
     },
     {
       "path": "src/help/articles/core-ui.md",
@@ -1223,8 +1253,8 @@
     },
     {
       "path": "src/help/core-articles.js",
-      "size": 6172,
-      "sha256": "3a59514f105899253c512ec7e21f7bc9040875b7e36136839b510d2fe583bae4"
+      "size": 6589,
+      "sha256": "4ed4ac8d9a723feb2cd0816b32f44d85f8ac2d0893148a076d2d21dd4a8239ef"
     },
     {
       "path": "src/help/markdown.js",
@@ -1392,6 +1422,11 @@
       "sha256": "216061dc95ae5ae1c49310cc1d5f1dfff36721dad8b73b4949081e5e9124b889"
     },
     {
+      "path": "src/sso-admin.js",
+      "size": 3753,
+      "sha256": "6637124d465d4b4fd9bb19d8aa3dc01d052200217161c872203b573e9de2ae7a"
+    },
+    {
       "path": "src/sso-providers.js",
       "size": 4859,
       "sha256": "58c48d6ef5027dd76c6dc27cbc84c3e8c0ad48577985c077fb4fcfc4deed3808"
@@ -1403,8 +1438,8 @@
     },
     {
       "path": "src/styles.css",
-      "size": 90573,
-      "sha256": "73aed077ba57b4197dce023f85d1d078604f2e55479a0c17c65c62d73f5d3db3"
+      "size": 92622,
+      "sha256": "a81e6a722824b816c7abf5d07a8f778f3eb11f7eed465a32cde0d8dccde9d601"
     },
     {
       "path": "src/system-trust-popover-state.js",
@@ -1433,8 +1468,8 @@
     },
     {
       "path": "src/views/AccessView.vue",
-      "size": 2660,
-      "sha256": "3fe1dff4d10a012644895f59e768fb6de65a37bb223a516350e5b62c32199580"
+      "size": 3317,
+      "sha256": "3518ed7f3081d0aaafd761d29b1c6eb4768a1a0525b5ad71a15ec85e8a3a2085"
     },
     {
       "path": "src/views/BackupRestoreView.vue",
@@ -1528,8 +1563,8 @@
     },
     {
       "path": "tec_tac_package.json",
-      "size": 138,
-      "sha256": "1472bce138b7c69c39f4439fc54a629f84c1f6c8345f089c1e9c5fe2e25e8ddd"
+      "size": 139,
+      "sha256": "d8d57598d59e58ee95d70b961264b00fb12521657a304ed4f3905ce8bbbccc3b"
     },
     {
       "path": "tests/account-security-policy-api.mjs",
@@ -1567,6 +1602,11 @@
       "sha256": "b3e293ba42f6eeac9e2f717dd5abd34308c240178b71a6c3d15a8fba08ee98ac"
     },
     {
+      "path": "tests/api-keys-page-0.12.100.mjs",
+      "size": 9337,
+      "sha256": "543ea475851031b2b6d40de935b09912091db5b6f4768dcb051ceba70a2cf150"
+    },
+    {
       "path": "tests/api-raw.mjs",
       "size": 1982,
       "sha256": "fac1d9920a11c8834f9c706c0d11817f4eb726c811dafb3f45b551dcfe10be26"
@@ -1595,6 +1635,11 @@
       "path": "tests/context-action-confirm-abandoned-0.12.97.mjs",
       "size": 5026,
       "sha256": "77fe83efa1f7b6d6f01a804ef2e38c3d8155fdf9bb65a85357825127c9fb7322"
+    },
+    {
+      "path": "tests/contract-docs-0.12.100.mjs",
+      "size": 2799,
+      "sha256": "a24658bad95f8e5ea824e21beb165a152caf842a06f7d968eb4d9ba6a4395f51"
     },
     {
       "path": "tests/core-navigation-resources.mjs",
@@ -1794,7 +1839,7 @@
     {
       "path": "tests/module-category-0.12.91.mjs",
       "size": 4886,
-      "sha256": "2261f431507c461fe1cfccad4af9cdd048148ed9b367f6f058ffcdc88263b0a8"
+      "sha256": "43fd1ccde6bc2ede6621a616ecf3835d44948527329e046a64dcdc004139503a"
     },
     {
       "path": "tests/module-failure-containment-0.12.81.mjs",
@@ -1814,7 +1859,7 @@
     {
       "path": "tests/module-intake-batch-0.12.95.mjs",
       "size": 12780,
-      "sha256": "f0f7930c5f09d511382a09ca80ccc26db51be39692fd187e77b25191014c3186"
+      "sha256": "a99f5a207f1111b2e4bcf0c20385f11d4d7ed28c76cd2f5a2efbf0d8059521e7"
     },
     {
       "path": "tests/module-intake-sets-0.12.94.mjs",
@@ -1834,12 +1879,12 @@
     {
       "path": "tests/module-replacement-confirm-0.12.89.mjs",
       "size": 8248,
-      "sha256": "1aa187801eec62b378c13e91a9a84193965f73e185e74293032f5d1c74a95c6b"
+      "sha256": "11d3435b871dbb89782faae5dd01ba719009467fc94443ecedc0fc2e106bfb9e"
     },
     {
       "path": "tests/module-replacement-handback-0.12.90.mjs",
       "size": 10862,
-      "sha256": "812e2b5c78ecebeae75df94ec8a0bda3f8c4be9b44e6e80041b01e784a8bbe89"
+      "sha256": "3c4ff89536c9875192c93ed45425f628e27fa4156698c2602477dd6aa794df6d"
     },
     {
       "path": "tests/module-replacement-second-empty-0.12.91.mjs",
@@ -1849,7 +1894,7 @@
     {
       "path": "tests/module-replacement-status-0.12.88.mjs",
       "size": 9577,
-      "sha256": "8bbde470f21e31e4f56d42ac6871621f418832c2d2c429d02ab3f62bb2377e5d"
+      "sha256": "85ecc25869c10c3531d115955dee2bb11bdc1b9bcc32af116ba86be01092d5e0"
     },
     {
       "path": "tests/module-runtime-docs-0.12.82.mjs",
@@ -1894,7 +1939,7 @@
     {
       "path": "tests/popup-route-prefix-0.12.96.mjs",
       "size": 5478,
-      "sha256": "6a95182368ba85abec4376ff76d56b35d6d94da2ddb9b5fad934428a95678852"
+      "sha256": "d115f06d9aadddaf46ab777e0f823ee819ec351730e815879c07a61dbba066b7"
     },
     {
       "path": "tests/release-integrity.sh",
@@ -1929,7 +1974,7 @@
     {
       "path": "tests/resource-create-never-blocked-0.12.98.mjs",
       "size": 8478,
-      "sha256": "77b239beb93765cf87d5a39a400b2a039af477eaf155cd8dfe7d2f2a6ce3d9dd"
+      "sha256": "65a7cab536c97791d6d965a0fe673ec06ec6cae34143f4ce84c6ca89bb8b1f28"
     },
     {
       "path": "tests/resource-features-0.12.61.mjs",
@@ -1944,12 +1989,12 @@
     {
       "path": "tests/revoke-all-sessions-0.12.98.mjs",
       "size": 7145,
-      "sha256": "dd1d5502bfb168c0f6c465b05ad9cee99be21e3f9621104de6752e7b9bf2589f"
+      "sha256": "bebab7d60d7d75332d42406ed949821b455c4f550e76ef4b9ca372f17cddde57"
     },
     {
       "path": "tests/revoke-all-sessions-0.12.99.mjs",
       "size": 4902,
-      "sha256": "e45b1ef330b2903b3878ca8173a52b95deee1e929f346fea3a5e0cbd8a7176a1"
+      "sha256": "be920794d4aa4d99e9efd06e66498bb1709b63808a8860d1d47fd344675ba947"
     },
     {
       "path": "tests/role-scope-pickers-0.12.96.mjs",
@@ -1989,7 +2034,7 @@
     {
       "path": "tests/session-theme-0.12.98.mjs",
       "size": 10743,
-      "sha256": "34c763366dca40371e49fe4398904ea7553fa7ded57f76a20f9f4b7c62f6b186"
+      "sha256": "6c3db6ae0c6b2b7ae909991cff5eb69c2b1c2b3cafc77e35346514cec8ff6cf3"
     },
     {
       "path": "tests/session-theme-clear-0.12.99.mjs",
@@ -2009,12 +2054,17 @@
     {
       "path": "tests/site-move-0.12.98.mjs",
       "size": 8662,
-      "sha256": "00134b9cda14be0d2bd1b372d351b0a107820caba148c341ad801c1095a0b4c6"
+      "sha256": "8cdf2107c2c1e47c6447802c3cf97205c7409d5024963ef7981de6a0af492072"
     },
     {
       "path": "tests/site-move-follows-tactical-0.12.99.mjs",
       "size": 5451,
-      "sha256": "e39043ea793b725096cae3fa7be5da87900c5c115c33620cef76a2a159fa4e4a"
+      "sha256": "ae3a7bf31428887a1b560bd25513529d2af044194401c28dfdd3db8febb99ccb"
+    },
+    {
+      "path": "tests/sso-admin-page-0.12.100.mjs",
+      "size": 10336,
+      "sha256": "6cadfa2f4523c27ca6f795ef0453faeb42c481644dae7a3ff8e98b22b3174f61"
     },
     {
       "path": "tests/stable-release-0.12.85.mjs",
@@ -2044,7 +2094,7 @@
     {
       "path": "tests/system-name-superuser-0.12.98.mjs",
       "size": 4031,
-      "sha256": "e84335d7e4f65553f1b920ce1b34859c8290d4c2e4b9e76d976b3e1b4b4edb34"
+      "sha256": "90d6358b49b7021bafac25131febe2c95e350680f6d9a897e9978711a0a8811f"
     },
     {
       "path": "tests/system-settings-page-0.12.83.mjs",
@@ -2055,6 +2105,11 @@
       "path": "tests/system-update-trust-popover-focus.sh",
       "size": 1217,
       "sha256": "21f1821ef903d986015e394f45cb1fdec88e727af6922bb6683e325cd4a6fa56"
+    },
+    {
+      "path": "tests/table-dialog-tabs-0.12.100.mjs",
+      "size": 5253,
+      "sha256": "05cf0db28206db0464f2cc9e8e22db85548d018bc9f58f755bafa650a7b128d5"
     },
     {
       "path": "tests/tactical-button-0.12.73.mjs",
@@ -2084,12 +2139,12 @@
     {
       "path": "tests/tactical-permissions-context-0.12.87.mjs",
       "size": 2956,
-      "sha256": "159a72ec93bc03594d94d73fbea11f13c24fa9b3201009be0a9d2f7477366982"
+      "sha256": "0f5b768e90c16c9b9dfd693761584672815cd782f323dfd4666678b12d052865"
     },
     {
       "path": "tests/tactical-scope-context-0.12.93.mjs",
       "size": 5328,
-      "sha256": "f520dd25ea88c467af40c5d217e71de5e15b7918260b708de659261c35a41489"
+      "sha256": "451affd79847b1acfa8e29e1e4d8cd80fda73f03b9ce4ba3330b7850bf046aed"
     },
     {
       "path": "tests/topbar-stacking-0.12.94.mjs",
@@ -2259,7 +2314,7 @@
     {
       "path": "tests/update-source-superuser-0.12.86.mjs",
       "size": 6175,
-      "sha256": "df7d613c4a6bcfd0187ab172d35876c9c345ba21d4d2e1090b93841537a005dc"
+      "sha256": "9f7150380095bd1e138571c7d2c21af74940ce1a0feb5047f8e0f5524ecb5cb2"
     },
     {
       "path": "tests/upload-limit-setting-0.12.92.mjs",

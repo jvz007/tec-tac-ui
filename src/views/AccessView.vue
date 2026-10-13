@@ -7,7 +7,11 @@ import MfaRecoveryPanel from '../components/access/MfaRecoveryPanel.vue'
 import AdminSessionsPanel from '../components/access/AdminSessionsPanel.vue'
 import SessionSecurityPanel from '../components/access/SessionSecurityPanel.vue'
 import AccountSecurityPanel from '../components/access/AccountSecurityPanel.vue'
+import ApiKeysPanel from '../components/access/ApiKeysPanel.vue'
+import SsoAdminPanel from '../components/access/SsoAdminPanel.vue'
 import { requestLeave } from '../unsaved'
+import { canListApiKeys } from '../api-keys'
+import { canSeeSso } from '../sso-admin'
 
 const state = inject('tecTacState')
 const tab = ref('users')
@@ -15,13 +19,17 @@ const tabs = computed(() => {
   const items = [
     { id:'users', label:'Users', hint:'Tactical accounts and role assignment' },
     { id:'roles', label:'Roles & permissions', hint:'Native Tactical and Tec-Tac grants' },
+  ]
+  if (canListApiKeys(state.context)) items.push({ id:'api-keys', label:'API keys', hint:'Tactical keys for scripts and tools' })
+  items.push(
     { id:'session', label:'My session', hint:'Resolved identity and logout' },
     { id:'mfa', label:'MFA & recovery', hint:'Authenticator recovery and backup codes' },
-  ]
+  )
   if (state.context.capabilities?.manage_accounts) {
     items.push({ id:'login-sessions', label:'Login sessions', hint:'Admin session visibility and revocation' })
     items.push({ id:'account-security', label:'Account protection', hint:'Root-owned superuser account policy' })
   }
+  if (canSeeSso(state.context)) items.push({ id:'sso', label:'Single sign-on', hint:'Sign-in providers and local sign-in block' })
   if (state.context.capabilities?.manage_schedules || state.context.user?.superuser === true) items.push({ id:'session-security', label:'Session security', hint:'Core trust policy, sessions & audit' })
   return items
 })
@@ -40,10 +48,12 @@ function selectTab(id) {
     </nav>
     <UsersPanel v-if="tab === 'users'" />
     <RolesPanel v-else-if="tab === 'roles'" />
+    <ApiKeysPanel v-else-if="tab === 'api-keys' && canListApiKeys(state.context)" />
     <SessionPanel v-else-if="tab === 'session'" />
     <MfaRecoveryPanel v-else-if="tab === 'mfa'" />
     <AdminSessionsPanel v-else-if="tab === 'login-sessions'" />
     <AccountSecurityPanel v-else-if="tab === 'account-security'" />
     <SessionSecurityPanel v-else-if="tab === 'session-security'" />
+    <SsoAdminPanel v-else-if="tab === 'sso' && canSeeSso(state.context)" />
   </section>
 </template>

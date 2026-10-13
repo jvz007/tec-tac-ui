@@ -1,5 +1,6 @@
 import { canEditRuntimeSettings } from './runtime-settings.js'
 import { canSeeResourceDirectory } from './resource-directory-read.js'
+import { canListApiKeys } from './api-keys.js'
 
 export const DEFAULT_SECTION_ORDER = Object.freeze([
   'Workspace',
@@ -17,7 +18,7 @@ export function coreNavigation(context = {}) {
     { label: 'My Account', icon: '◎', to: '/account', section: 'Workspace', visible: true, owner: 'core' },
     { label: 'Schedules', icon: '◷', to: '/schedules', section: 'Operations', visible: capabilities.manage_schedules !== false, owner: 'core' },
     { label: 'Modules', icon: '▦', to: '/modules', section: 'Administration', visible: true, owner: 'core' },
-    { label: 'Access', icon: '⛨', to: '/access', section: 'Administration', visible: capabilities.list_accounts !== false || capabilities.list_roles !== false, owner: 'core' },
+    { label: 'Access', icon: '⛨', to: '/access', section: 'Administration', visible: capabilities.list_accounts !== false || capabilities.list_roles !== false || canListApiKeys(context), owner: 'core' },
     { label: 'Clients & Sites', icon: '▤', to: '/resources', section: 'Administration', visible: capabilities.list_clients === true || canSeeResourceDirectory(context), owner: 'core' },
     { label: 'Scheduler Configuration', icon: '◷', to: '/system/scheduler', section: 'Administration', visible: capabilities.manage_schedules === true || superuser, owner: 'core' },
     { label: 'System Configuration', icon: '⚙', to: '/system/settings', section: 'Administration', visible: canEditRuntimeSettings(context), owner: 'core' },

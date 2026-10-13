@@ -147,6 +147,8 @@ Rules:
 - Empty tables should show an explicit empty state rather than an empty frame.
 - Errors/results too long for the normal cell should truncate visually and expose the full value through a title, detail panel or data-display dialog.
 
+**Opt-in table style (UI 0.12.100): `table-clean`.** Add `table-clean` to the wrap: `<div class="tablewrap table-clean">`. It gives a tighter header that stays visible while the rows scroll (the wrap scrolls at 70% of the window height or 640 px, whichever is smaller), a hover and a selected row, an empty state (`td.table-empty` in the last row) and truncation (`td.cell-truncate` with a `title`). Row actions go in `td.row-actions`. The base `table`, `thead th` and `tbody td` rules are unchanged, so a table without `table-clean` keeps its look. Core's API keys, SSO providers and Users tables use it.
+
 ## 6. Status pills
 
 Use `.pill` with standard semantic states:
@@ -221,6 +223,8 @@ Rules:
 - If values are dirty, do not silently close on backdrop click. Use Core unsaved-change handling where appropriate.
 - Validation happens before submission and server errors remain visible inside the dialog.
 - The dialog title describes the action: `Pair storage`, `Create token`, `Edit assignment`.
+
+**Wide dialog with tabs (UI 0.12.100): `modal-wide` and `dialog-tabs`.** A long form may be split into sections. Add `modal-wide` to the panel (`<section class="modal-panel modal-wide">`, up to 760 px, full width on a phone). Put a tab strip under the title: `<div class="dialog-tabs" role="tablist">` with one `<button role="tab" aria-selected="true|false" aria-controls="...">` per section, and one `role="tabpanel"` per section. Arrow keys move between tabs and wrap; Home and End go to the first and last tab (`nextTabIndex` in `src/dialog-tabs.js`). The footer stays `.modal-actions` for every section. The SSO provider form (Provider, Sign-in role) is the first user. Keep a dialog with few fields as a plain `.modal-panel`.
 
 ### 8.3 Data-display dialog
 
@@ -338,12 +342,17 @@ A module may add CSS for domain-specific layout and visualisations, but it must 
 .btn
 .card
 .tablewrap
+.tablewrap.table-clean
 .modal-backdrop
 .modal-panel
+.modal-panel.modal-wide
+.dialog-tabs
 .subtabs
 .field
 .pill
 ```
+
+The three classes added in UI 0.12.100 (`table-clean`, `modal-wide`, `dialog-tabs`) are Core's. A module uses them as they are and never restyles them.
 
 If a shared primitive is missing, raise it as a Core UI requirement instead of cloning/reimplementing the primitive in the module.
 

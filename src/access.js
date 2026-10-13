@@ -181,3 +181,52 @@ export function getCoreSessionAudit({ username = '', eventType = '', page = 1, p
 export function getCoreSessionDiagnostics() {
   return apiFetch('/api/tfd/session/diagnostics/')
 }
+
+// 0.12.100 (Core 1.17.26, AD-12): Tactical's API keys. The list needs can_list_api_keys; every change needs can_manage_api_keys.
+// Tactical answers a create with plain text and no key, so the caller re-reads the list (api-keys.js findCreatedKey).
+export function listApiKeys() {
+  return apiFetch('/accounts/apikeys/')
+}
+
+export function createApiKey(payload) {
+  return apiFetch('/accounts/apikeys/', { method: 'POST', body: JSON.stringify(payload) })
+}
+
+export function updateApiKey(id, payload) {
+  return apiFetch(`/accounts/apikeys/${encodeURIComponent(id)}/`, { method: 'PUT', body: JSON.stringify(payload) })
+}
+
+export function deleteApiKey(id) {
+  return apiFetch(`/accounts/apikeys/${encodeURIComponent(id)}/`, { method: 'DELETE' })
+}
+
+// 0.12.100 (Core 1.17.28, AD-12): Tactical's SSO providers and settings. Reads need can_list_accounts; every write is
+// superuser only in Core (sso-admin.js explains what the page shows).
+export function listSsoProviders() {
+  return apiFetch('/accounts/ssoproviders/')
+}
+
+export function addSsoProvider(payload) {
+  return apiFetch('/accounts/ssoproviders/', { method: 'POST', body: JSON.stringify(payload) })
+}
+
+export function updateSsoProvider(id, payload) {
+  return apiFetch(`/accounts/ssoproviders/${encodeURIComponent(id)}/`, { method: 'PUT', body: JSON.stringify(payload) })
+}
+
+export function deleteSsoProvider(id) {
+  return apiFetch(`/accounts/ssoproviders/${encodeURIComponent(id)}/`, { method: 'DELETE' })
+}
+
+export function getSsoSettings() {
+  return apiFetch('/accounts/ssoproviders/settings/')
+}
+
+export function saveSsoSettings(payload) {
+  return apiFetch('/accounts/ssoproviders/settings/', { method: 'POST', body: JSON.stringify(payload) })
+}
+
+// Disconnects one linked SSO account. Tactical reads the external uid and the provider name from the body.
+export function disconnectSsoAccount(account, provider) {
+  return apiFetch('/accounts/ssoproviders/account/', { method: 'DELETE', body: JSON.stringify({ account, provider }) })
+}

@@ -215,6 +215,8 @@ Core renders every module-supplied component inside an error boundary: each rout
 
 `addNavigation(item)` also accepts an optional `tacticalPermission` (UI 0.12.99): one Tactical flag name, or a list in which every flag must be true, for example `{ to: '/agents/pending', label: 'Pending actions', tacticalPermission: 'can_list_pendingactions' }`. The shell reads `context.tactical_permissions` and shows the item only while each flag is strictly `true`, the same test as `context.hasTacticalPermission(flag)`. It follows the context live, so the item appears or disappears when the role changes. A superuser gets no shortcut: Tactical's flags are Tactical's own. Without a backend-supplied context a gated item is hidden. It combines with `permission` and `permissions`, and both rules must pass. An item without the field behaves exactly as before. It is a display rule only. Tactical and Core still refuse the request.
 
+**Contract export (UI 0.12.100).** Browser contract row `ui.authenticated.navigation` lists the addNavigation item field `tacticalPermission` (shipped in UI 0.12.99): one Tactical flag, or a list in which every flag must be strictly `true` in `context.tactical_permissions`. It is read live, with no superuser shortcut, hidden outside a backend context, and additive: an item without the field behaves as before. Core writes the export row; it is the field's exact contract.
+
 Modules cannot remove navigation. `register(context)` has `addNavigation` but no `removeNavigation`, so one module cannot remove another module's items. Core removes the items of a module whose `register()` failed or timed out.
 
 ## Module router
@@ -378,6 +380,8 @@ meta: { popup: true, popupPublishers: ['checks', 'alerts'] }  // just these modu
 ```
 
 The shell loads the owner and its hard dependencies first, reads `popupPublishers` from the matched route, then loads the extra modules (each with its own hard dependencies first) before it replays the popup address, so the page mounts with every tab registered. Modules already loaded, the owner, modules with no authenticated entry, modules the person may not use and ids that are not module ids are skipped. The extra modules get no popup alias and keep every loader guard (register time limit, failure containment, route conflict checks, the reserved `/popup/` prefix). A failure in an extra module never refuses the popup; it shows in the module load list. Cost: each extra module is one more bundle request and one more `register()`, so a route that does not need them leaves the field off and loads exactly what it loaded before. Take Control and Remote Background do not set it.
+
+**Contract export (UI 0.12.100).** Browser contract row `ui.authenticated.popup` lists `route.meta.popupPublishers` (shipped in UI 0.12.97): `true`, or an array of module ids. It is opt-in per route. The shell reads it from the matched route after the owner registers and before the popup address is replayed. The route-path rule (a path under `/popup/` is refused; a route that cannot get a popup alias warns in the console) is part of the same row and shipped in UI 0.12.97. Core writes the export row; this section is the exact contract.
 
 **What a popup does not load.** Public modules, the dashboard, notice polling, header contributions and the `register()` of any other module (unless the owner's route sets `popupPublishers`, above). The shell still verifies the session, reads `GET /api/tfd/ui/context/`, and gives your module the full runtime context (`api`, `tacticalOperation`, and the rest).
 
