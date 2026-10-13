@@ -50,12 +50,42 @@ export function parsePopupHash(hash) {
   return { moduleId, path: `/${rest.join('/')}` }
 }
 
+// Why a route path cannot get a popup alias, or '' when it can (0.12.97). A route path may carry the router's own
+// parameter syntax: ':name', an optional '(...)' group and one modifier '?', '*' or '+' right after it, so
+// '/endpoints/:agentId?' is fine. Any other '?', and '#', whitespace, '..', a backslash, control and zero-width
+// characters are refused. module-loader.js repeats this rule (it must not gain relative imports); a test keeps them equal.
+export function popupRoutePathProblem(path) {
+  if (typeof path !== 'string' || !path.startsWith('/')) return 'the route path does not start with /'
+  if (path.includes('..')) return "the route path contains '..'"
+  if (/[\\#\s]/.test(path) || JUNK_PATTERN.test(path)) return 'the route path contains a backslash, #, whitespace or a control character'
+  // Take out each parameter with its optional group and modifier; a '?' left over is not a modifier.
+  if (path.replace(/:[A-Za-z0-9_]+(\([^()]*\))?[?*+]?/g, '').includes('?')) return "the route path contains a '?' that is not an optional-parameter marker"
+  return ''
+}
+
 // The router path a module route is also reachable at in popup mode: /popup/<moduleId><route path>.
 // '' when the id or the route path is not one this helper can build.
 export function popupAliasPath(moduleId, path) {
   if (typeof moduleId !== 'string' || !MODULE_ID_PATTERN.test(moduleId)) return ''
-  if (typeof path !== 'string' || !path.startsWith('/') || path.includes('..') || /[\\?#\s]/.test(path)) return ''
+  if (popupRoutePathProblem(path)) return ''
   return `/popup/${moduleId}${path}`
+}
+
+// What the popup warning prints when the hash did not resolve to a module route: the hash, the owner module id, the parsed
+// path and the popup aliases registered (from router.getRoutes()). Pure so a test can call it.
+export function popupMissDetails(hash, target, routes, loaded = []) {
+  const aliases = []
+  for (const route of Array.isArray(routes) ? routes : []) {
+    const path = typeof route?.path === 'string' ? route.path : ''
+    if (path.startsWith('/popup/') && path !== POPUP_REFUSED_PATH && !path.includes(':pathMatch')) aliases.push(path)
+  }
+  return {
+    hash: String(hash || ''),
+    moduleId: target?.moduleId || '',
+    path: target?.path || '',
+    ownerLoaded: Array.isArray(loaded) && loaded.includes(target?.moduleId),
+    popupAliases: aliases,
+  }
 }
 
 // The absolute URL of a module's popup window. The id is the calling module's, so a path cannot point at another
@@ -104,6 +134,39 @@ export function popupModuleSet(descriptors, moduleId, options = {}) {
     ordered.push(descriptor)
   }
   visit(owner, 0)
+  return ordered
+}
+
+// The popupPublishers choice on a popup route's meta (0.12.97): true loads every other enabled module the person may use,
+// an array of module ids loads just those, anything else loads nothing extra. Ids that are not module ids are dropped.
+export function popupPublishersChoice(meta) {
+  const value = meta?.popupPublishers
+  if (value === true) return true
+  if (Array.isArray(value)) return value.filter((id) => typeof id === 'string' && MODULE_ID_PATTERN.test(id))
+  return null
+}
+
+// The extra modules a popup loads after its owner has registered (0.12.97), in load order (hard dependencies first).
+// `choice` is popupPublishersChoice(meta). Skips the owner, modules already loaded, modules with no authenticated entry,
+// modules options.allowed refuses and ids that are not module ids; each extra module still brings its own hard
+// dependencies, which pass the same gate. A cycle is cut by popupModuleSet.
+export function popupPublisherSet(descriptors, ownerId, loadedIds, choice, options = {}) {
+  if (choice !== true && !Array.isArray(choice)) return []
+  const list = Array.isArray(descriptors) ? descriptors : []
+  const have = new Set(Array.isArray(loadedIds) ? loadedIds : [])
+  have.add(ownerId)
+  const wanted = choice === true
+    ? list.map((descriptor) => descriptor?.id)
+    : choice
+  const ordered = []
+  for (const id of wanted) {
+    if (typeof id !== 'string' || !MODULE_ID_PATTERN.test(id) || have.has(id)) continue
+    for (const descriptor of popupModuleSet(list, id, options)) {
+      if (have.has(descriptor.id)) continue
+      have.add(descriptor.id)
+      ordered.push(descriptor)
+    }
+  }
   return ordered
 }
 

@@ -16,7 +16,7 @@ const props = defineProps({
   readOnly: { type: Boolean, default: false },
   disabled: { type: Boolean, default: false },
 })
-const emit = defineEmits(['update:clients', 'update:sites'])
+const emit = defineEmits(['update:clients', 'update:sites', 'retry'])
 
 const clientQuery = ref('')
 const siteQuery = ref('')
@@ -49,7 +49,7 @@ function setSite(id) { if (!locked.value) emit('update:sites', toggleId(props.si
 <template>
   <div class="role-scope">
     <div v-if="loading" class="callout mono">Loading clients and sites…</div>
-    <div v-if="error" class="auth-error">{{ error }}</div>
+    <div v-if="error" class="auth-error">{{ error }} <button type="button" class="btn sm" :disabled="loading" @click="emit('retry')">Retry</button></div>
     <div v-else-if="mode === 'none' && !loading" class="state-inline warning">{{ SCOPE_HIDDEN_REASON }}. The ids below are still kept when you save.</div>
     <div v-if="truncated" class="state-inline warning">Only the first part of the directory is shown. Ids not shown are kept when you save.</div>
 

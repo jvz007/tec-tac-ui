@@ -195,6 +195,12 @@ A module that takes longer, or throws, is marked failed and Core carries on with
 
 Keep `register()` short. Register your pages, actions and widgets, and load data inside the components when they mount. Public modules (`registerPublic`) run before sign-in, so they use the fixed 30 second limit.
 
+## System name
+
+Core 1.17.23 keeps one system name, the name an authenticator app shows beside a person's account when they set up two-factor sign-in (default `Tec-Tac`, 1 to 60 characters, no colon). `register(context).context.system_name` and `GET /api/tfd/ui/context/` carry it as a string, or `null` on an older Core. It is display text only. The setup answer of `POST /api/tfd/auth/totp/enrollment/` carries it as `issuer`; the sign-in screen has no other source, so it never builds the label from the host name or the address.
+
+System Configuration (`/system/settings`) shows a System name card when Core sends `system_name` in `GET /api/tfd/system/runtime-settings/`: the current name, the default and the length limit. A superuser, or a role with `core.runtime_settings.manage`, can save a name (`PATCH {"system_name": "Acme IT"}`) or reset it (`PATCH {"system_name": null}`). Core stays the authority: its 400 and 403 messages are shown as sent. A person who set up two-factor before the change keeps their entry; only a new set-up shows the new name.
+
 ## Failure containment
 
 Core renders every module-supplied component inside an error boundary: each routed page, each header item and each dashboard widget. A throw in setup, render, a lifecycle hook, a watcher or an event handler shows a "could not load" state with a Retry button for that component only. The rest of Tec-Tac keeps working. The state clears when the route changes. Core records each capture (newest last, at most 50) in `state.moduleRuntimeErrors`, and Modules shows the provider as a runtime error. Core also sets a last-resort application error handler that logs with the `[TEC-TAC-UI]` prefix.
@@ -352,9 +358,22 @@ context.router.addRoute({
 
 The popup address uses the route path, so the module id appears twice: `/tec-tac/#/popup/take-control/take-control/12/vnc` opens `/take-control/12/vnc`.
 
+**Optional parameters (UI 0.12.97).** A route path may use the router's own parameter syntax: `':name'`, an optional `'(...)'` group and one modifier (`?`, `*` or `+`) right after it. `/endpoints/:agentId?` opens at `/tec-tac/#/popup/endpoints/endpoints/<agent id>` and, with no id, at `/tec-tac/#/popup/endpoints/endpoints`. Any other `?`, and `#`, whitespace, `..`, a backslash, control and zero-width characters, still give the route no popup alias. Before 0.12.97 the `?` of an optional parameter was refused, so such a route got no alias and its window said "This page cannot open in its own window."
+
+**A route that cannot get a popup alias is never skipped in silence.** The shell writes a `console.warn` that names the module, the route path and the reason. If a popup hash still does not match a module route after the modules loaded, or the owner module did not load, the popup window warns in the browser console with the hash, the module id, the parsed path and the popup aliases that are registered. Read that first when a window refuses.
+
 **What a popup loads.** Only the owning module's bundle and its hard dependencies from `tec_tac.json` (`dependencies`), dependencies first. `scripts/sync-modules.sh` copies those ids into the module's descriptor in `modules.json` as `dependencies`. Until that sync runs, a descriptor with no `dependencies` field loads the module alone. A hard dependency that the person may not use, or that has no authenticated entry, is left out, so your module must cope without it. Optional dependencies (`optional_dependencies`) are not loaded in a popup: check `modules.isActive(id)` and degrade without them.
 
-**What a popup does not load.** Public modules, the dashboard, notice polling, header contributions and the `register()` of any other module. The shell still verifies the session, reads `GET /api/tfd/ui/context/`, and gives your module the full runtime context (`api`, `tacticalOperation`, and the rest).
+**Modules that publish into your page (UI 0.12.97).** A page such as the endpoint dossier shows tabs that other modules publish into its placements (for example `endpoint.detail-tabs`). Those modules do not depend on yours, and the shell cannot tell who publishes into a placement before it loads them, so a popup loads them only when the owner's route asks. Add `popupPublishers` to the route's `meta`:
+
+```js
+meta: { popup: true, popupPublishers: true }            // every other enabled module the person may use
+meta: { popup: true, popupPublishers: ['checks', 'alerts'] }  // just these module ids
+```
+
+The shell loads the owner and its hard dependencies first, reads `popupPublishers` from the matched route, then loads the extra modules (each with its own hard dependencies first) before it replays the popup address, so the page mounts with every tab registered. Modules already loaded, the owner, modules with no authenticated entry, modules the person may not use and ids that are not module ids are skipped. The extra modules get no popup alias and keep every loader guard (register time limit, failure containment, route conflict checks, the reserved `/popup/` prefix). A failure in an extra module never refuses the popup; it shows in the module load list. Cost: each extra module is one more bundle request and one more `register()`, so a route that does not need them leaves the field off and loads exactly what it loaded before. Take Control and Remote Background do not set it.
+
+**What a popup does not load.** Public modules, the dashboard, notice polling, header contributions and the `register()` of any other module (unless the owner's route sets `popupPublishers`, above). The shell still verifies the session, reads `GET /api/tfd/ui/context/`, and gives your module the full runtime context (`api`, `tacticalOperation`, and the rest).
 
 **What the popup window shows.** No brand header, top bar, navigation rail, navigation menu, notice drawer, help drawer or quick actions. It keeps the toast stack (your `notifications` calls still show), the unsaved-changes dialog, the theme and text size, and session tracking. The idle timeout remains Core's rule.
 

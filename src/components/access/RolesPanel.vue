@@ -62,7 +62,9 @@ async function ensureScopeDirectory() {
   scopeLoading.value = true
   try {
     scopeRead.value = await readScopeDirectory({ context: state.context, listClients: listResourceClients, listSites: listResourceSites })
-    scopeLoaded = true
+    // Loaded only when the read worked (0.12.97). A failed read keeps Core's message on the tab and is tried again the
+    // next time the tab opens, or when the person presses Retry.
+    if (!scopeRead.value.error) scopeLoaded = true
   } finally { scopeLoading.value = false }
 }
 
@@ -366,7 +368,7 @@ onBeforeUnmount(() => { roleRequestGate.begin(); window.removeEventListener('bef
           <div class="state-inline" v-for="note in scopeNoteList" :key="note">{{ note }}</div>
           <div v-if="selected.is_superuser" class="state-inline warning">{{ SCOPE_SUPERUSER_NOTE }}</div>
           <div v-if="scopeReminder" class="state-inline warning">{{ SCOPE_LIMIT_REMINDER }}</div>
-          <RoleScopePicker :clients="scopeClients" :sites="scopeSites" :directory="scopeRead.directory" :mode="scopeRead.mode" :loading="scopeLoading" :error="scopeRead.error" :truncated="scopeRead.truncated" :read-only="scopeReadOnly" :disabled="!!selected.is_superuser" @update:clients="setScopeClients" @update:sites="setScopeSites" />
+          <RoleScopePicker :clients="scopeClients" :sites="scopeSites" :directory="scopeRead.directory" :mode="scopeRead.mode" :loading="scopeLoading" :error="scopeRead.error" :truncated="scopeRead.truncated" :read-only="scopeReadOnly" :disabled="!!selected.is_superuser" @update:clients="setScopeClients" @update:sites="setScopeSites" @retry="ensureScopeDirectory" />
         </section>
 
         <template v-else>

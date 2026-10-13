@@ -13,7 +13,7 @@ function normalizeSelectionRule(value = {}) {
   return { min, max: Number.isFinite(max) ? max : null }
 }
 
-function normalizeAction(moduleId, source, execute) {
+function normalizeAction(moduleId, source, execute, isAbandoned = null) {
   if (!source || typeof source !== 'object') throw new Error('context action registration requires an action descriptor')
   const id = String(source.id || '').trim()
   const resource = String(source.resource || '').trim()
@@ -43,6 +43,8 @@ function normalizeAction(moduleId, source, execute) {
     visible: typeof source.visible === 'function' ? source.visible : null,
     enabled: typeof source.enabled === 'function' ? source.enabled : null,
     execute: handler,
+    // The loader's isAbandoned for the module that registered the action (0.12.97); null for a registry used without it.
+    isAbandoned: typeof isAbandoned === 'function' ? isAbandoned : null,
     metadata: source.metadata && typeof source.metadata === 'object' ? { ...source.metadata } : {},
   }
 }
@@ -53,7 +55,16 @@ function normalizeAction(moduleId, source, execute) {
 export function createContextActionRegistry({ hasPermission, confirm } = {}) {
   function handlerContext(action, context) {
     if (typeof confirm !== 'function') return context
-    return { ...context, confirm: (options) => confirm(options, action.provider) }
+    return {
+      ...context,
+      confirm: (options) => {
+        // A handler of a module that failed or timed out in register() cannot open the dialog (0.12.97).
+        if (typeof action.isAbandoned === 'function' && action.isAbandoned()) {
+          return Promise.reject(new Error(`module ${action.provider} was abandoned after a failed or timed-out register(); confirm() is refused`))
+        }
+        return confirm(options, action.provider)
+      },
+    }
   }
 
   const actions = reactive(new Map())
@@ -106,11 +117,11 @@ export function createContextActionRegistry({ hasPermission, confirm } = {}) {
       .sort((a, b) => a.group.localeCompare(b.group) || a.order - b.order || a.label.localeCompare(b.label))
   }
 
-  function forModule(moduleId) {
+  function forModule(moduleId, { isAbandoned } = {}) {
     const owned = new Set()
     return Object.freeze({
       register(source, execute) {
-        const action = normalizeAction(moduleId, source, execute)
+        const action = normalizeAction(moduleId, source, execute, isAbandoned)
         const existing = actions.get(action.id)
         if (existing && existing.provider !== moduleId) throw new Error(`context action ${action.id} is already owned by ${existing.provider}`)
         actions.set(action.id, action)
@@ -159,6 +170,6 @@ export function createContextActionRegistry({ hasPermission, confirm } = {}) {
     list,
     execute,
     removeProvider,
-    snapshot: () => [...actions.values()].map(({ execute, visible, enabled, ...row }) => ({ ...row })),
+    snapshot: () => [...actions.values()].map(({ execute, visible, enabled, isAbandoned, ...row }) => ({ ...row })),
   })
 }

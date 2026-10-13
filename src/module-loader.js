@@ -182,9 +182,25 @@ export function bindTacticalOperation(operation, { moduleId, replaces, isAbandon
 // its component reads useRoute().params unchanged. Its permission is checked before it renders (AD-12). The alias rule is
 // the one in popupAliasPath (src/popup-mode.js), repeated here because this file must not gain relative imports.
 const POPUP_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$/
+// One rule for a route path, the same as popupRoutePathProblem in popup-mode.js: the router's parameter syntax
+// (':name', an optional group, a modifier '?', '*' or '+') is fine; any other '?', '#', whitespace, '..', a backslash and
+// control or zero-width characters are not (0.12.97).
+const POPUP_JUNK_PATTERN = new RegExp('[\x00-\x1f\x7f-\x9f' + String.fromCharCode(0x200b) + '-' + String.fromCharCode(0x200f, 0x2028, 0x2029, 0xfeff) + ']')
+function popupRoutePathProblem(path) {
+  if (typeof path !== 'string' || !path.startsWith('/')) return 'the route path does not start with /'
+  if (path.includes('..')) return "the route path contains '..'"
+  if (/[\\#\s]/.test(path) || POPUP_JUNK_PATTERN.test(path)) return 'the route path contains a backslash, #, whitespace or a control character'
+  if (path.replace(/:[A-Za-z0-9_]+(\([^()]*\))?[?*+]?/g, '').includes('?')) return "the route path contains a '?' that is not an optional-parameter marker"
+  return ''
+}
 function withPopupRoute(route, popup) {
-  if (route.meta?.popup !== true || typeof route.path !== 'string' || !route.path.startsWith('/')) return route
-  if (!POPUP_ID_PATTERN.test(String(popup.moduleId)) || route.path.includes('..') || /[\\?#\s]/.test(route.path)) return route
+  if (route.meta?.popup !== true) return route
+  const problem = !POPUP_ID_PATTERN.test(String(popup.moduleId)) ? 'the module id is not valid' : popupRoutePathProblem(route.path)
+  if (problem) {
+    // Never silent: a route that asks for a popup and cannot get one is named, so the window's refusal can be traced.
+    console.warn(`[TEC-TAC-UI] module ${popup.moduleId} route ${String(route.path)} has meta.popup but got no popup alias: ${problem}.`)
+    return route
+  }
   const alias = `/popup/${popup.moduleId}${route.path}`
   const existing = route.alias === undefined ? [] : [].concat(route.alias)
   const previousGuard = route.beforeEnter
@@ -468,7 +484,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
           if (typeof remove === 'function') routeRemovers.push(remove)
         },
       })
-      moduleContextActions = guardAbandoned(runtime.contextActions?.forModule(descriptor.id) || null, isAbandoned, descriptor.id)
+      moduleContextActions = guardAbandoned(runtime.contextActions?.forModule(descriptor.id, { isAbandoned }) || null, isAbandoned, descriptor.id)
       moduleContextInteractions = guardAbandoned(runtime.contextInteractions?.forModule(descriptor.id) || null, isAbandoned, descriptor.id)
       moduleResourceViews = guardAbandoned(runtime.resourceViews?.forModule(descriptor.id) || null, isAbandoned, descriptor.id)
       moduleCodeEditor = guardAbandoned(runtime.codeEditor?.forModule(descriptor.id) || null, isAbandoned, descriptor.id)

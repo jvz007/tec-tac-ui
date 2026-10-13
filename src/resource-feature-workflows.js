@@ -45,8 +45,31 @@ export async function createClientWorkflow(draft, { createResourceClient }) {
   const siteName = String(draft?.siteName ?? '').trim()
   if (!name) throw new Error('Enter the client name.')
   if (!siteName) throw new Error(FIRST_SITE_REQUIRED)
-  const row = await createResourceClient({ name, siteName })
+  const row = await createResourceClient({ name, siteName, customFields: createFieldRows(draft?.fields) })
   return { row, siteName }
+}
+
+// Add site: Core's own refusal text reaches the caller as it was sent.
+export async function createSiteWorkflow(draft, { createResourceSite }) {
+  const name = String(draft?.name ?? '').trim()
+  if (!name) throw new Error('Enter the site name.')
+  if (!draft?.client_id) throw new Error('Choose the client for the site.')
+  return createResourceSite({ clientId: draft.client_id, name, customFields: createFieldRows(draft?.fields) })
+}
+
+// What a create dialog sends from its custom-field form: [{ field_id, value }]. A field left empty (no value, an empty
+// text or an empty selection) is not sent; a checkbox that is off and a number of 0 are values and are sent. Core checks
+// the required ones.
+export function createFieldRows(fields) {
+  return (Array.isArray(fields) ? fields : [])
+    .filter((field) => field && field.value !== null && field.value !== undefined && field.value !== '' && !(Array.isArray(field.value) && !field.value.length))
+    .map((field) => ({ field_id: field.field_id, value: Array.isArray(field.value) ? [...field.value] : field.value }))
+}
+
+// The definitions a create dialog shows, read before the create, as editable rows with each default as the value.
+// A refusal or failure is thrown as Core sent it, so the dialog shows it and keeps Save off.
+export async function loadCreateFieldsWorkflow(resourceType, { listResourceCustomFieldDefinitions }) {
+  return editableCustomFieldRows(await listResourceCustomFieldDefinitions(resourceType))
 }
 
 // The notice after Add client. scopeMode is state.context.tactical_scope.mode (a display hint).

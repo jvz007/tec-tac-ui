@@ -2,7 +2,7 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { applyTacticalUiPreferences, changePasswordWorkflow, resetTotpWorkflow, revokeOthersWorkflow, saveTacticalUiWorkflow } from '../my-account-workflows'
 import { passwordFailureMessage } from '../my-account-password'
-import { clearTacticalSession } from '../api'
+import { clearTacticalSession, tecTacTotpIssuer } from '../api'
 import { useConfirm } from '../confirm-dialog'
 import { state } from '../state'
 import {
@@ -27,6 +27,8 @@ const tactical = reactive({ agent_dblclick_action: '', url_action_id: null })
 const account = computed(() => data.value?.account || {})
 const mfaStatus = computed(() => data.value?.mfa || {})
 const tacticalUi = computed(() => data.value?.tactical_ui || {})
+// The name the authenticator app lists the account as: Core's system name from the runtime context.
+const systemName = computed(() => tecTacTotpIssuer({ context: state.context }))
 const localAccount = computed(() => account.value.sso_user !== true)
 const urlActionSelected = computed(() => tactical.agent_dblclick_action === 'urlaction')
 
@@ -136,7 +138,7 @@ onMounted(load)
     <section class="card preference-card">
       <div class="cardhead"><div><span class="eyebrow">F2</span><h3>Reset two-factor</h3></div></div>
       <template v-if="localAccount && mfaStatus.totp_configured">
-        <p class="muted">Requires your current password and authenticator code. This signs out every session, then the normal Tec-Tac sign-in flow will enrol a fresh authenticator.</p>
+        <p class="muted">Requires your current password and authenticator code. This signs out every session. At your next sign-in you set up two-factor again: enter your password again to show your new authenticator code. Your authenticator lists the account as {{ systemName }}.</p>
         <label class="field"><span>Current password</span><input v-model="mfa.password" type="password" autocomplete="current-password"></label>
         <label class="field"><span>Current authenticator code</span><input v-model="mfa.code" inputmode="numeric" autocomplete="one-time-code" maxlength="12"></label>
         <div class="editor-actions"><button class="btn danger" :disabled="busy || !mfa.password || !mfa.code.trim()" @click="resetMfa">{{ busy === 'mfa' ? 'Resetting…' : 'Reset and re-enrol 2FA' }}</button></div>

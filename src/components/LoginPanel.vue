@@ -6,6 +6,7 @@ import {
   loginTacticalWithTotp,
   loginTacticalWithBackupCode,
   setupTacticalTotp,
+  tecTacTotpIssuer,
 } from '../api'
 import { copyTextWithFeedback } from '../copy-feedback'
 import { SETUP_SESSION_REQUIRED_CODE, enrollmentSetupErrorMessage } from '../mfa-enrollment'
@@ -32,6 +33,8 @@ const setupPasswordInput = ref(null)
 
 const setupKey = computed(() => setup.value?.totp_key || '')
 const setupUri = computed(() => setup.value?.qr_url || '')
+// The name Core gives the account in the authenticator app. It comes from the enrollment answer; the sign-in screen has no other source.
+const setupIssuer = computed(() => tecTacTotpIssuer({ answer: setup.value }))
 
 function normalizeError(err) {
   if (!err) return 'Authentication failed.'
@@ -317,18 +320,18 @@ function openTactical() {
 
     <form v-else-if="step === 'setup-proof'" class="login-form" @submit.prevent="beginTotpSetup">
       <div class="auth-step">
-        <span class="pill warn">SETUP SESSION</span>
+        <span class="pill">SETUP SESSION</span>
         <span class="mono">{{ username }}</span>
       </div>
 
-      <div class="state-inline warning"><b>Fresh password proof required.</b> Tactical has issued a short-lived setup credential, but Tec-Tac will not disclose an authenticator seed until you enter your current password again.</div>
+      <div class="state-inline"><b>Set up two-factor sign-in.</b> Enter your password again to show your authenticator code.</div>
       <label class="field">
         <span>Re-enter current password</span>
         <input ref="setupPasswordInput" v-model="password" type="password" autocomplete="current-password" :disabled="busy" />
       </label>
       <div v-if="error" class="auth-error" role="alert">{{ error }}</div>
       <div class="login-actions">
-        <button class="btn primary" type="submit" :disabled="busy || !password">{{ busy ? 'Preparing enrollment…' : 'Begin authenticator setup' }}</button>
+        <button class="btn primary" type="submit" :disabled="busy || !password">{{ busy ? 'Preparing your code…' : 'Show my authenticator code' }}</button>
         <button class="btn" type="button" :disabled="busy" @click="backToCredentials">Back</button>
       </div>
     </form>
@@ -344,6 +347,7 @@ function openTactical() {
           <span class="eyebrow">1 / ADD ACCOUNT</span>
           <h2>Set up your authenticator</h2>
           <p class="setup-copy">Add a new time-based account in Microsoft Authenticator, Google Authenticator, 1Password, or another TOTP-compatible app.</p>
+          <p class="setup-copy">In your authenticator the account is listed as <b>{{ setupIssuer }}</b>.</p>
         </div>
 
         <div class="totp-enrollment-card">

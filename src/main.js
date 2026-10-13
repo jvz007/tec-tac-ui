@@ -5,7 +5,7 @@ import { apiBlob, apiFetch, apiRaw, apiText, beginTacticalSso, loadStaticModuleM
 import { router } from './router'
 import { state, loadContext, recordModuleRuntimeError } from './state'
 import { loadPublicUiModules, loadUiModules, moduleIsAllowed } from './module-loader'
-import { parsePopupHash, popupHref as buildPopupHref, popupModuleSet, popupRoutePermitted, POPUP_HASH_PREFIX, POPUP_MESSAGE_NOT_POPUP, POPUP_MESSAGE_UNAVAILABLE } from './popup-mode'
+import { parsePopupHash, popupHref as buildPopupHref, popupMissDetails, popupModuleSet, popupPublisherSet, popupPublishersChoice, popupRoutePermitted, POPUP_HASH_PREFIX, POPUP_MESSAGE_NOT_POPUP, POPUP_MESSAGE_UNAVAILABLE } from './popup-mode'
 import { createTacticalOperation } from './tactical-operations'
 import { normalizeTacticalScope } from './runtime-context'
 import { createContextActionRegistry } from './context-actions'
@@ -158,49 +158,70 @@ async function bootstrap() {
     const toLoad = popupMode
       ? (popupTarget ? popupModuleSet(descriptors, popupTarget.moduleId, { allowed: (descriptor) => moduleIsAllowed(descriptor, popupGate) }) : [])
       : descriptors
-    state.moduleLoad = await loadUiModules(
-      {
-        app,
-        router,
-        state,
-        addNavigation,
-        removeNavigation,
-        api: apiFetch,
-        apiRaw,
-        apiBlob,
-        apiText,
-        hasPermission,
-        hasTacticalPermission,
-        tacticalScope,
-        tacticalOperation,
-        // Popup mode (0.12.95): popupHref is for every module; popupMode is set only in a popup window.
-        // confirm is the shell's shared service; the loader binds it to each module (0.12.96).
-        confirm: confirmService.confirm,
-        popupHref: (moduleId, path) => buildPopupHref(moduleId, path, window.location.origin),
-        popupMode: popupTarget
-          ? {
-            moduleId: popupTarget.moduleId,
-            permitted: (meta) => popupRoutePermitted(meta, { permissions: state.context.permissions || [], user: state.context.user || {}, source: state.contextSource }),
-            refuse: refusePopup,
-            deniedMessage: POPUP_MESSAGE_UNAVAILABLE,
-          }
-          : null,
-        contextActions,
-        contextInteractions,
-        resourceViews,
-        codeEditor,
-        dashboardWidgets,
-        quickActions,
-        notifications,
-        audit,
-        help,
-        header,
-        modules,
-      },
-      toLoad,
-    )
+    const loaderRuntime = {
+      app,
+      router,
+      state,
+      addNavigation,
+      removeNavigation,
+      api: apiFetch,
+      apiRaw,
+      apiBlob,
+      apiText,
+      hasPermission,
+      hasTacticalPermission,
+      tacticalScope,
+      tacticalOperation,
+      // Popup mode (0.12.95): popupHref is for every module; popupMode is set only in a popup window.
+      // confirm is the shell's shared service; the loader binds it to each module (0.12.96).
+      confirm: confirmService.confirm,
+      popupHref: (moduleId, path) => buildPopupHref(moduleId, path, window.location.origin),
+      popupMode: popupTarget
+        ? {
+          moduleId: popupTarget.moduleId,
+          permitted: (meta) => popupRoutePermitted(meta, { permissions: state.context.permissions || [], user: state.context.user || {}, source: state.contextSource }),
+          refuse: refusePopup,
+          deniedMessage: POPUP_MESSAGE_UNAVAILABLE,
+        }
+        : null,
+      contextActions,
+      contextInteractions,
+      resourceViews,
+      codeEditor,
+      dashboardWidgets,
+      quickActions,
+      notifications,
+      audit,
+      help,
+      header,
+      modules,
+    }
+    state.moduleLoad = await loadUiModules(loaderRuntime, toLoad)
+
+    // Phase 2 (0.12.97): the owner's popup route may ask for the modules that publish into its placements
+    // (meta.popupPublishers: true, or a list of module ids). The shell cannot tell who publishes where before loading, so
+    // this is the owner's opt-in. A failure in an extra module never refuses the popup. The replay below runs after both phases.
+    if (popupTarget && state.moduleLoad.loaded.includes(popupTarget.moduleId) && initialHashTarget) {
+      let choice = null
+      try {
+        const matched = router.resolve(initialHashTarget).matched
+        choice = popupPublishersChoice(matched[matched.length - 1]?.meta)
+      } catch (error) {
+        console.warn('[TEC-TAC-UI] popup: could not read the route meta for popupPublishers.', error)
+      }
+      const extra = popupPublisherSet(descriptors, popupTarget.moduleId, state.moduleLoad.loaded, choice, { allowed: (descriptor) => moduleIsAllowed(descriptor, popupGate) })
+      if (extra.length) {
+        const more = await loadUiModules(loaderRuntime, extra)
+        state.moduleLoad = {
+          loaded: [...state.moduleLoad.loaded, ...more.loaded],
+          failed: [...state.moduleLoad.failed, ...more.failed],
+          skipped: [...(state.moduleLoad.skipped || []), ...(more.skipped || [])],
+        }
+      }
+    }
 
     // A popup whose module did not load (not allowed, not installed, disabled or failed) is refused without a retry.
+    if (popupTarget && !state.moduleLoad.loaded.includes(popupTarget.moduleId)) console.warn('[TEC-TAC-UI] popup: the owner module did not load.', popupMissDetails(window.location.hash, popupTarget, router.getRoutes(), state.moduleLoad.loaded), state.moduleLoad.failed)
     if (popupTarget && !state.moduleLoad.loaded.includes(popupTarget.moduleId)) refusePopup(POPUP_MESSAGE_UNAVAILABLE)
 
     // A fresh tab may target a dynamically registered authenticated route.
@@ -211,6 +232,7 @@ async function bootstrap() {
     }
     // A popup route that did not register (no such route, or no meta.popup) lands on the popup catch-all.
     if (popupTarget && router.currentRoute.value.name === 'popup-pending' && state.popup.status !== 'refused') {
+      console.warn('[TEC-TAC-UI] popup: the popup address did not match a route that opens in a popup window.', popupMissDetails(window.location.hash, popupTarget, router.getRoutes(), state.moduleLoad.loaded))
       refusePopup(POPUP_MESSAGE_NOT_POPUP)
     }
   }

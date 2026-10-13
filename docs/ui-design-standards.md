@@ -183,31 +183,29 @@ Tec-Tac distinguishes between three dialog types. Modules must choose the correc
 
 ### 8.1 Confirmation dialog
 
-Purpose: ask the user to confirm an action.
+Purpose: ask the person to confirm an action that changes or deletes something. Johan signed this as AD-27 on 12 October 2026.
 
-Examples: delete a schedule, remove an assignment, run an immediate action.
+Examples: delete a schedule, remove an assignment, run an immediate action on many endpoints.
 
-Structure:
+A confirmation is one plain Yes or No question, asked through the shell dialog. Use `context.confirm(options)` from `register(context)`, or the `confirm` key a context action handler receives. Both open the same dialog (UI 0.12.96).
 
-```html
-<div class="modal-backdrop">
-  <div class="modal-panel">
-    <div class="cardhead">...</div>
-    <p>Explain the consequence.</p>
-    <div class="modal-actions">
-      <button class="btn">Cancel</button>
-      <button class="btn danger">Delete</button>
-    </div>
-  </div>
-</div>
+```js
+const ok = await context.confirm({ question: 'Delete policy Servers?', target: 'Servers' })
+if (!ok) return
 ```
 
 Rules:
 
-- No form fields for a normal confirmation.
-- Use typed confirmation only for genuinely dangerous/high-impact actions.
-- The safest action is visually neutral; the consequential action carries primary/warning/danger styling as appropriate.
-- Do not use `window.alert`, `window.confirm` or `window.prompt` in modules.
+- One question with Yes and No. The question names the target. For a bulk action it also says how many endpoints (`count`).
+- The title is "Are you sure?". Focus starts on No. Escape answers No.
+- No typed name, hostname, alert number or count. No form fields in a confirmation.
+- Do not use `window.alert`, `window.confirm` or `window.prompt` in modules, and do not build an OK or Cancel pair in your own markup.
+- Permissions, scope, caps and audit rows do not change. Confirming is never authorisation (AD-12).
+- These system-breaking actions keep the stricter confirmation they have today: Restore a backup, Purge storage, Delete a client or a site, and the AD-20 hand-back step on Modules. Do not copy that stricter form for anything else.
+- A module keeps its own typed confirmation until its next release adopts the shell dialog. Nobody rebuilds a module only for this.
+- The consequential choice is still the one the person has to pick on purpose: the dialog keeps No as the default.
+
+The options and the full contract are in [module-runtime-api.md](module-runtime-api.md#confirmoptions). The decision is AD-27 in `docs/review-accepted-decisions.md`.
 
 ### 8.2 Input/action dialog
 
@@ -382,6 +380,7 @@ Before shipping a module UI, confirm:
 - normal, primary, warning and destructive buttons use Core classes correctly;
 - tables use `tablewrap`, `.sub`, `.mono` and pills consistently;
 - dialogs are correctly classified as confirmation, input/action or data-display;
+- confirmations use the shell Yes or No dialog (`context.confirm`) and ask for no typed text, except the four system-breaking actions in section 8.1;
 - no native `alert/confirm/prompt` calls are introduced;
 - no custom toast system is introduced;
 - loading, empty and error states exist;

@@ -41,7 +41,7 @@ function cleanRoute(value){
 }
 const routes=new Set(fixture.routes.map(cleanRoute))
 // Routes Core added after the 1.17.2 fixture, each with the Core version that ships it.
-const addedAfterFixture=[['/api/tfd/tactical-operations/<dynamic>/<dynamic>/','1.17.7']]
+const addedAfterFixture=[['/api/tfd/tactical-operations/<dynamic>/<dynamic>/','1.17.7'],['/api/tfd/resources/custom-fields/','1.17.23']]
 for (const [route,since] of addedAfterFixture) {
   const [a,b,c]=since.split('.').map(Number)
   assert.ok(minVersion[0]>a || (minVersion[0]===a && (minVersion[1]>b || (minVersion[1]===b && minVersion[2]>=c))), `${route} needs framework ${since} or later in tec_tac_package.json`)

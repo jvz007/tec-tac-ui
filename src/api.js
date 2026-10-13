@@ -21,12 +21,14 @@ export function tecTacUiBaseUrl() {
   return new URL(basePath, window.location.origin).toString()
 }
 
-export function tecTacTotpIssuer() {
-  const url = new URL(tecTacUiBaseUrl())
-  const path = url.pathname.replace(/\/+$/, '') || '/tec-tac'
-  // otpauth labels use ':' as the issuer/account separator. Keep the issuer
-  // itself colon-free and aligned with Core's QR generation.
-  return `${url.hostname}${path}`.replaceAll(':', '-').slice(0, 160) || 'tec-tac'
+// The name an authenticator app shows beside the account (Core 1.17.23 system name). In order: the issuer in Core's
+// enrollment answer, then system_name from the runtime context, then 'Tec-Tac'. It is never built from the host or the
+// address. otpauth labels use ':' as the issuer/account separator, so the result is colon-free like Core's.
+// source: { answer, context } (either may be missing).
+export const TOTP_ISSUER_DEFAULT = 'Tec-Tac'
+export function tecTacTotpIssuer(source = {}) {
+  const clean = (value) => (typeof value === 'string' ? value.replaceAll(':', '-').trim().slice(0, 60) : '')
+  return clean(source?.answer?.issuer) || clean(source?.context?.system_name) || TOTP_ISSUER_DEFAULT
 }
 
 export function tacticalToken() {
@@ -650,11 +652,22 @@ export async function listResourceClients({ search = '', page = 1, pageSize = 10
   return apiFetch(`/api/tfd/resources/clients/?${query.toString()}`)
 }
 
-// Custom field values as Core takes them on create: [{ field_id, value }]. Anything else is dropped.
+// Custom field values as Core takes them on create: [{ field_id, value }]. Core 1.17.23 refuses a field_id that is not a
+// positive whole number with 400, so a row with any other id is dropped here (0.12.97).
 function customFieldValues(rows) {
   return (Array.isArray(rows) ? rows : [])
-    .filter((row) => row && row.field_id != null)
+    .filter((row) => row && typeof row.field_id === 'number' && Number.isInteger(row.field_id) && row.field_id > 0)
     .map((row) => ({ field_id: row.field_id, value: row.value }))
+}
+
+// The custom-field definitions a new client or site would carry, read before the create (Core 1.17.23). resourceType is
+// 'client' or 'site'; anything else is refused before a request. Answer: { resource_type, fields: [{ field_id, name, type,
+// options, required, value }] } with each field's default as value.
+export async function listResourceCustomFieldDefinitions(resourceType) {
+  if (resourceType !== 'client' && resourceType !== 'site') {
+    throw failure('Custom-field definitions are available for a client or a site only.', 0)
+  }
+  return apiFetch(`/api/tfd/resources/custom-fields/?resource_type=${resourceType}`)
 }
 
 // A plain string is still accepted (older callers): it sends the name alone, so Core names the first site

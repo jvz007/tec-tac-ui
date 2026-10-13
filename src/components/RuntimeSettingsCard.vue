@@ -5,18 +5,27 @@ import {
   canEditUploadLimit,
   getRuntimeSettingsPayload,
   normalizeRuntimeSettings,
+  normalizeSystemName,
   normalizeUploadLimit,
+  resetSystemName,
   saveRegisterTimeout,
+  saveSystemName,
   saveUploadLimit,
   uploadLimitDefaultText,
   uploadLimitRangeText,
   validateRegisterTimeout,
+  validateSystemName,
   validateUploadLimit,
 } from '../runtime-settings'
 
 const state = inject('tecTacState')
 const settings = ref(null)
 const uploadLimit = ref(null)
+const systemName = ref(null)
+const nameDraft = ref('')
+const nameSaving = ref(false)
+const nameError = ref('')
+const nameSaved = ref('')
 const changed = ref({ updated_by: null, updated_at: null })
 const loading = ref(true)
 const loadError = ref('')
@@ -45,6 +54,9 @@ const uploadValidation = computed(() => (
 const uploadDirty = computed(() => uploadLimit.value && uploadDraft.value !== uploadLimit.value.value)
 const uploadRange = computed(() => (uploadLimit.value ? uploadLimitRangeText(uploadLimit.value.minimum, uploadLimit.value.maximum) : ''))
 const uploadDefault = computed(() => (uploadLimit.value ? uploadLimitDefaultText(uploadLimit.value.default) : ''))
+const nameValidation = computed(() => validateSystemName(nameDraft.value, { maximum: systemName.value?.maximum_length }))
+const nameDirty = computed(() => systemName.value && nameDraft.value.trim() !== systemName.value.value)
+const nameIsDefault = computed(() => systemName.value && systemName.value.value === systemName.value.default)
 const formatTime = (value) => (value ? new Date(value).toLocaleString() : '—')
 
 async function load() {
@@ -56,6 +68,10 @@ async function load() {
     draft.value = settings.value ? settings.value.value : null
     uploadLimit.value = normalizeUploadLimit(payload)
     uploadDraft.value = uploadLimit.value ? uploadLimit.value.value : null
+    systemName.value = normalizeSystemName(payload)
+    nameDraft.value = systemName.value ? systemName.value.value : ''
+    // Keep the shell's copy (My Account reads it) in step with what Core holds.
+    if (systemName.value && state?.context) state.context.system_name = systemName.value.value
     changed.value = {
       updated_by: typeof payload?.updated_by === 'string' ? payload.updated_by : null,
       updated_at: typeof payload?.updated_at === 'string' ? payload.updated_at : null,
@@ -101,6 +117,25 @@ async function saveUpload() {
     uploadError.value = error?.message || 'The setting could not be saved.'
   } finally {
     uploadSaving.value = false
+  }
+}
+
+async function changeName(action) {
+  if (nameSaving.value) return
+  nameSaving.value = true
+  nameError.value = ''
+  nameSaved.value = ''
+  try {
+    if (action === 'reset') await resetSystemName()
+    else await saveSystemName(nameDraft.value)
+    // Reload, so the name shown is the one Core holds.
+    await load()
+    nameSaved.value = action === 'reset' ? 'Reset to the default name.' : 'Saved. A new authenticator set-up shows this name.'
+  } catch (error) {
+    // Core's 400 and 403 messages are shown as returned.
+    nameError.value = error?.message || 'The name could not be saved.'
+  } finally {
+    nameSaving.value = false
   }
 }
 
@@ -150,5 +185,26 @@ onMounted(load)
       <div v-if="uploadSaved" class="state-inline" role="status">Saved. The new limit applies from the next upload.</div>
     </form>
     <p v-else class="compact-copy muted">Only a superuser can change this limit.</p>
+  </section>
+  <!-- Core 1.17.23 and later. A Core that sends no system_name leaves this card out. -->
+  <section v-if="!loading && systemName" class="card runtime-settings-card mb" aria-labelledby="system-name-title">
+    <div class="cardhead"><div><span class="eyebrow">RUNTIME SETTINGS</span><h3 id="system-name-title">System name</h3></div></div>
+    <p class="compact-copy muted">The name an authenticator app shows beside your account when someone sets up two-factor sign-in. People who already set it up keep their entry. Only a new set-up shows a changed name.</p>
+    <dl class="kvlist">
+      <dt>Current name</dt><dd class="mono">{{ systemName.value }}</dd>
+      <dt>Default</dt><dd class="mono">{{ systemName.default }}</dd>
+      <dt>Length</dt><dd class="mono">1 to {{ systemName.maximum_length }} characters, no colon</dd>
+    </dl>
+    <form v-if="canEdit" class="runtime-settings-form" @submit.prevent="changeName('save')">
+      <label class="field"><span>System name</span><input v-model="nameDraft" type="text" :maxlength="systemName.maximum_length + 20" autocomplete="off" :disabled="nameSaving" aria-describedby="system-name-help"></label>
+      <p id="system-name-help" class="field-help" :class="{ dangertext: nameDirty && !nameValidation.valid }">{{ nameDirty && !nameValidation.valid ? nameValidation.message : `Up to ${systemName.maximum_length} characters. A colon is not allowed.` }}</p>
+      <div class="login-actions">
+        <button class="btn primary" type="submit" :disabled="nameSaving || !nameDirty || !nameValidation.valid">{{ nameSaving ? 'Saving…' : 'Save' }}</button>
+        <button class="btn" type="button" :disabled="nameSaving || nameIsDefault" @click="changeName('reset')">Reset to default</button>
+      </div>
+      <div v-if="nameError" class="auth-error" role="alert">{{ nameError }}</div>
+      <div v-if="nameSaved" class="state-inline" role="status">{{ nameSaved }}</div>
+    </form>
+    <p v-else class="compact-copy muted">Only a superuser, or an administrator with the core.runtime_settings.manage permission, can change this name.</p>
   </section>
 </template>

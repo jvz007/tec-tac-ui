@@ -63,6 +63,8 @@ export function emptyRuntimeContext(user = {}) {
     notice_unread_count: 0,
     module_register_timeout_seconds: DEFAULT_MODULE_REGISTER_TIMEOUT_SECONDS,
     // Set by state.js after normalizing; this file stays import-free.
+    // Core 1.17.23: the name an authenticator app shows for this system; null on an older Core.
+    system_name: null,
     server_url: '',
   }
 }
@@ -90,6 +92,7 @@ export function normalizeBackendRuntimeContext(richContext, browserUser = {}) {
     preferences_updated_at: source.preferences_updated_at || null,
     notice_unread_count: Number(source.notice_unread_count || 0),
     module_register_timeout_seconds: normalizeRegisterTimeoutSeconds(source.module_register_timeout_seconds),
+    system_name: typeof source.system_name === 'string' && source.system_name.trim() ? source.system_name : null,
     server_url: '',
   }
 }

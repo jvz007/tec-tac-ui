@@ -67,8 +67,9 @@ assert.equal(wf.SITE_ONLY_SCOPE_NOTE, 'Your role is limited to sites only, so Ta
 // The view.
 const view = fs.readFileSync(new URL('../src/views/ResourcesView.vue', import.meta.url), 'utf8')
 assert.match(view, /First site name/)
-assert.match(view, /Custom fields can be filled in right after creating\./)
-assert.match(view, /label: 'Edit fields'/)
+// 0.12.97: the create dialogs read the custom-field definitions first, so the post-create step and its line are gone.
+assert.doesNotMatch(view, /Custom fields can be filled in right after creating\./)
+assert.doesNotMatch(view, /label: 'Edit fields'/)
 assert.match(view, /createClientWorkflow\(draft,/)
 assert.match(view, /state\.context\?\.tactical_scope\?\.mode/)
 assert.match(view, /!clientDialog\.siteName\.trim\(\)/, 'Save stays disabled until the first site name is filled')

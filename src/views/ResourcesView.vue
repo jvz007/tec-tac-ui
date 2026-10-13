@@ -7,14 +7,16 @@ import {
   deleteResourceSite,
   getResourceCustomFields,
   listResourceClients,
+  listResourceCustomFieldDefinitions,
   listResourceSites,
   updateResourceClient,
   updateResourceCustomFields,
   updateResourceSite,
 } from '../api'
 import { createResourceSiteSearchCoordinator } from '../resource-site-search-state'
-import { loadRelocationSites, deleteResourceWorkflow, editableCustomFieldRows, saveCustomFieldsWorkflow, createClientWorkflow, clientCreatedNotice, FIRST_SITE_REQUIRED } from '../resource-feature-workflows'
+import { loadRelocationSites, deleteResourceWorkflow, editableCustomFieldRows, saveCustomFieldsWorkflow, createClientWorkflow, createSiteWorkflow, loadCreateFieldsWorkflow, clientCreatedNotice, FIRST_SITE_REQUIRED } from '../resource-feature-workflows'
 import { resourceReadMode, groupSitesByClient, readAllPages } from '../resource-directory-read'
+import CustomFieldInputs from '../components/CustomFieldInputs.vue'
 import { useConfirm } from '../confirm-dialog'
 import { resourceContextMenuActions, executeResourceContextMenuAction } from '../extension-surface-workflows'
 
@@ -186,11 +188,36 @@ function chooseClient(id) {
   if (selectedClientId.value === id) return
   selectedClientId.value = id
 }
-function openCreateClient() { clientDialog.value = { mode: 'create', id: null, name: '', siteName: '' } }
+// A create dialog reads the custom-field definitions first. Save waits for a good read; a failed read shows Core's message
+// with Retry, and the create is never sent without the form Core asked for.
+async function loadCreateFields(dialogRef, resourceType) {
+  const dialog = dialogRef.value
+  if (!dialog) return
+  dialog.fieldsStatus = 'loading'
+  dialog.fieldsError = ''
+  try {
+    const rows = await loadCreateFieldsWorkflow(resourceType, { listResourceCustomFieldDefinitions })
+    if (dialogRef.value !== dialog) return
+    dialog.fields = rows
+    dialog.fieldsStatus = 'ready'
+  } catch (e) {
+    if (dialogRef.value !== dialog) return
+    dialog.fields = []
+    dialog.fieldsStatus = 'error'
+    dialog.fieldsError = message(e, 'Unable to load custom fields.')
+  }
+}
+const retryCreateFields = (resourceType) => loadCreateFields(resourceType === 'site' ? siteDialog : clientDialog, resourceType)
+const createFieldsPending = (dialog) => dialog?.mode === 'create' && dialog.fieldsStatus !== 'ready'
+function openCreateClient() {
+  clientDialog.value = { mode: 'create', id: null, name: '', siteName: '', fields: [], fieldsStatus: 'loading', fieldsError: '' }
+  void loadCreateFields(clientDialog, 'client')
+}
 function openEditClient(client) { clientDialog.value = { mode: 'edit', id: client.id, name: client.name } }
 function openCreateSite() {
   if (!selectedClient.value) return
-  siteDialog.value = { mode: 'create', id: null, client_id: selectedClient.value.id, name: '' }
+  siteDialog.value = { mode: 'create', id: null, client_id: selectedClient.value.id, name: '', fields: [], fieldsStatus: 'loading', fieldsError: '' }
+  void loadCreateFields(siteDialog, 'site')
   siteClientSearch.value = selectedClient.value.name
   siteClientOptions.value = [selectedClient.value]
 }
@@ -226,6 +253,7 @@ async function loadSiteClientOptions() {
 async function saveClient() {
   const draft = clientDialog.value
   if (!draft || !draft.name.trim()) return
+  if (createFieldsPending(draft)) return
   if (draft.mode === 'create' && !draft.siteName.trim()) { error.value = FIRST_SITE_REQUIRED; return }
   saving.value = true
   error.value = ''
@@ -238,7 +266,6 @@ async function saveClient() {
     else row = await updateResourceClient(draft.id, draft.name.trim())
     clientDialog.value = null
     notice.value = draft.mode === 'create' ? clientCreatedNotice(siteName, state.context?.tactical_scope?.mode) : 'Client updated.'
-    if (draft.mode === 'create' && row?.id) noticeAction.value = { label: 'Edit fields', run: () => openCustomFields('client', { id: row.id, name: row.name || draft.name.trim() }) }
     invalidateDirectory()
     await loadClients()
     if (row?.id && clients.value.some((item) => item.id === row.id)) selectedClientId.value = row.id
@@ -249,19 +276,18 @@ async function saveClient() {
 
 async function saveSite() {
   const draft = siteDialog.value
-  if (!draft || !draft.name.trim() || !draft.client_id) return
+  if (!draft || !draft.name.trim() || !draft.client_id || createFieldsPending(draft)) return
   saving.value = true
   error.value = ''
   notice.value = ''
   noticeAction.value = null
   try {
     const row = await (draft.mode === 'create'
-      ? createResourceSite({ clientId: draft.client_id, name: draft.name.trim() })
+      ? createSiteWorkflow(draft, { createResourceSite })
       : updateResourceSite(draft.id, { clientId: draft.client_id, name: draft.name.trim() }))
     const destination = draft.client_id
     siteDialog.value = null
     notice.value = draft.mode === 'create' ? 'Site created.' : 'Site updated.'
-    if (draft.mode === 'create' && row?.id) noticeAction.value = { label: 'Edit fields', run: () => openCustomFields('site', { id: row.id, name: row.name || draft.name.trim() }) }
     // The sites live on the client rows, so the list is read again.
     invalidateDirectory()
     await loadClients()
@@ -437,9 +463,12 @@ onBeforeUnmount(() => {
         <label class="field"><span>Client name</span><input v-model="clientDialog.name" maxlength="255" autofocus @keydown.enter.prevent="saveClient"></label>
         <label v-if="clientDialog.mode==='create'" class="field"><span>First site name <small>· required</small></span><input v-model="clientDialog.siteName" maxlength="255" @keydown.enter.prevent="saveClient"></label>
         <p class="muted compact-copy">The character | is not allowed in a name. Core decides and shows its own message if a name is refused.</p>
-        <p v-if="clientDialog.mode==='create'" class="muted compact-copy">Custom fields can be filled in right after creating.</p>
+        <template v-if="clientDialog.mode==='create'">
+          <div class="section-divider">Custom fields</div>
+          <CustomFieldInputs :fields="clientDialog.fields" :status="clientDialog.fieldsStatus" :error="clientDialog.fieldsError" @retry="retryCreateFields('client')" />
+        </template>
         <p class="muted compact-copy">Core validates uniqueness and Tactical/Tec-Tac authorization. No customer-specific workflow is stored here.</p>
-        <div class="modal-actions"><button class="btn" :disabled="saving" @click="clientDialog=null">Cancel</button><button class="btn primary" :disabled="saving||!clientDialog.name.trim()||(clientDialog.mode==='create'&&!clientDialog.siteName.trim())" @click="saveClient">{{saving?'Saving…':'Save client'}}</button></div>
+        <div class="modal-actions"><button class="btn" :disabled="saving" @click="clientDialog=null">Cancel</button><button class="btn primary" :disabled="saving||!clientDialog.name.trim()||(clientDialog.mode==='create'&&!clientDialog.siteName.trim())||createFieldsPending(clientDialog)" @click="saveClient">{{saving?'Saving…':'Save client'}}</button></div>
       </section>
     </div>
 
@@ -450,9 +479,12 @@ onBeforeUnmount(() => {
         <label class="field"><span>Client</span><select v-model.number="siteDialog.client_id" :disabled="loadingSiteClientOptions"><option v-for="client in siteClientOptions" :key="client.id" :value="client.id">{{client.name}} · {{client.id}}</option></select></label>
         <label class="field"><span>Site name</span><input v-model="siteDialog.name" maxlength="255" autofocus @keydown.enter.prevent="saveSite"></label>
         <p class="muted compact-copy">The character | is not allowed in a name. Core decides and shows its own message if a name is refused.</p>
-        <p v-if="siteDialog.mode==='create'" class="muted compact-copy">Custom fields can be filled in right after creating.</p>
+        <template v-if="siteDialog.mode==='create'">
+          <div class="section-divider">Custom fields</div>
+          <CustomFieldInputs :fields="siteDialog.fields" :status="siteDialog.fieldsStatus" :error="siteDialog.fieldsError" @retry="retryCreateFields('site')" />
+        </template>
         <p class="muted compact-copy">Moving a site is permitted only when Core confirms your Tactical scope and <span class="mono">core.resources.sites.manage</span> grant.</p>
-        <div class="modal-actions"><button class="btn" :disabled="saving" @click="siteDialog=null">Cancel</button><button class="btn primary" :disabled="saving||!siteDialog.name.trim()||!siteDialog.client_id" @click="saveSite">{{saving?'Saving…':'Save site'}}</button></div>
+        <div class="modal-actions"><button class="btn" :disabled="saving" @click="siteDialog=null">Cancel</button><button class="btn primary" :disabled="saving||!siteDialog.name.trim()||!siteDialog.client_id||createFieldsPending(siteDialog)" @click="saveSite">{{saving?'Saving…':'Save site'}}</button></div>
       </section>
     </div>
 
@@ -472,16 +504,7 @@ onBeforeUnmount(() => {
         <div class="cardhead"><div><span class="eyebrow">CUSTOM FIELDS</span><h3 id="custom-fields-title">{{customFieldDialog.row.name}}</h3><p>Values are stored in Tactical. Hidden custom-field definitions are not exposed here.</p></div></div>
         <div v-if="customFieldDialog.loading" class="state-inline">Loading custom fields…</div>
         <div v-else-if="!customFieldDialog.fields.length" class="empty">No editable custom fields are configured for this resource type.</div>
-        <div v-else class="custom-field-list">
-          <label v-for="field in customFieldDialog.fields" :key="field.field_id" class="field">
-            <span>{{field.name}} <small v-if="field.required">· required</small></span>
-            <input v-if="field.type==='checkbox'" v-model="field.value" type="checkbox">
-            <select v-else-if="field.type==='single'" v-model="field.value"><option value="">—</option><option v-for="option in field.options" :key="option" :value="option">{{option}}</option></select>
-            <select v-else-if="field.type==='multiple'" v-model="field.value" multiple><option v-for="option in field.options" :key="option" :value="option">{{option}}</option></select>
-            <input v-else-if="field.type==='number'" v-model="field.value" type="number" step="any">
-            <input v-else v-model="field.value" type="text" :placeholder="field.type==='datetime'?'Tactical date/time value':''">
-          </label>
-        </div>
+        <CustomFieldInputs v-else :fields="customFieldDialog.fields" />
         <div class="modal-actions"><button class="btn" :disabled="saving" @click="customFieldDialog=null">Cancel</button><button class="btn primary" :disabled="saving||customFieldDialog.loading" @click="saveCustomFields">{{saving?'Saving…':'Save fields'}}</button></div>
       </section>
     </div>
@@ -489,5 +512,5 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.resources-grid{align-items:start}.resource-pane{min-width:0}.resource-table{max-height:62vh;overflow:auto}.resource-table table{width:100%}.resource-table tr.selected td{background:var(--surface-hover)}.resource-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}.resource-pager .row{margin:0}.resource-actions{flex-wrap:nowrap;justify-content:flex-end}.custom-field-list{display:grid;gap:12px;max-height:55vh;overflow:auto;padding-right:4px}.custom-field-list select[multiple]{min-height:110px}
+.resources-grid{align-items:start}.resource-pane{min-width:0}.resource-table{max-height:62vh;overflow:auto}.resource-table table{width:100%}.resource-table tr.selected td{background:var(--surface-hover)}.resource-pager{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px}.resource-pager .row{margin:0}.resource-actions{flex-wrap:nowrap;justify-content:flex-end}
 </style>
