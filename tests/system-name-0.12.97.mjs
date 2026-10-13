@@ -70,8 +70,10 @@ assert.ok(apiSource.includes('export function tecTacTotpIssuer'), 'still exporte
 
 // (6) Source assertions.
 const card = read('../src/components/RuntimeSettingsCard.vue')
+// 0.12.98: the name form is for a superuser only (Core 1.17.24); the register-timeout form still uses canEditRuntimeSettings.
 assert.ok(card.includes('canEditRuntimeSettings(state?.context)'))
-assert.match(card, /<form v-if="canEdit" class="runtime-settings-form" @submit\.prevent="changeName\('save'\)">/)
+assert.ok(card.includes('canEditSystemName(state?.context)'))
+assert.match(card, /<form v-if="canEditName" class="runtime-settings-form" @submit\.prevent="changeName\('save'\)">/)
 assert.match(card, /v-if="!loading && systemName"/)
 assert.ok(card.includes('Core 1.17.23'))
 assert.ok(apiSource.includes('ui_url: tecTacUiBaseUrl()'), 'setupTacticalTotp still sends ui_url for older Cores')

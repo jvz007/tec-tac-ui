@@ -1,11 +1,11 @@
 <script setup>
 // The custom-field inputs of a client or a site: one list for the Add dialogs and the Edit fields dialog (0.12.97).
 // fields: [{ field_id, name, type, options, required, value }]. The inputs change field.value in place.
-// status: 'ready' (the default) shows the list; 'loading' and 'error' show the read state, and 'error' offers Retry.
+// status: 'ready' (the default) shows the list; 'loading' shows the read state; 'error' shows one plain line and Retry (0.12.98).
+// Core's own message is not shown here, so the create dialogs never print a raw refusal.
 defineProps({
   fields: { type: Array, default: () => [] },
   status: { type: String, default: 'ready' },
-  error: { type: String, default: '' },
 })
 defineEmits(['retry'])
 </script>
@@ -14,7 +14,7 @@ defineEmits(['retry'])
   <div class="custom-field-block">
     <div v-if="status === 'loading'" class="state-inline">Loading custom fields…</div>
     <div v-else-if="status === 'error'" class="state-inline warning" role="alert">
-      <b>Custom fields could not be loaded.</b> {{ error }}
+      <span>Custom fields could not be loaded. You can add them after, with the Fields button on the row.</span>
       <div class="editor-actions"><button type="button" class="btn sm" @click="$emit('retry')">Retry</button></div>
     </div>
     <div v-else-if="fields.length" class="custom-field-list">

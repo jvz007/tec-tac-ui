@@ -188,13 +188,12 @@ function chooseClient(id) {
   if (selectedClientId.value === id) return
   selectedClientId.value = id
 }
-// A create dialog reads the custom-field definitions first. Save waits for a good read; a failed read shows Core's message
-// with Retry, and the create is never sent without the form Core asked for.
+// A create dialog reads the custom-field definitions first. The read never blocks Save (0.12.98): a failed read shows one line
+// with Retry, and the create goes ahead without custom fields (createFieldRows sends none while the list is empty).
 async function loadCreateFields(dialogRef, resourceType) {
   const dialog = dialogRef.value
   if (!dialog) return
   dialog.fieldsStatus = 'loading'
-  dialog.fieldsError = ''
   try {
     const rows = await loadCreateFieldsWorkflow(resourceType, { listResourceCustomFieldDefinitions })
     if (dialogRef.value !== dialog) return
@@ -202,27 +201,27 @@ async function loadCreateFields(dialogRef, resourceType) {
     dialog.fieldsStatus = 'ready'
   } catch (e) {
     if (dialogRef.value !== dialog) return
+    // Nothing from a list that did not load is sent: the create goes without custom fields.
     dialog.fields = []
     dialog.fieldsStatus = 'error'
-    dialog.fieldsError = message(e, 'Unable to load custom fields.')
   }
 }
 const retryCreateFields = (resourceType) => loadCreateFields(resourceType === 'site' ? siteDialog : clientDialog, resourceType)
-const createFieldsPending = (dialog) => dialog?.mode === 'create' && dialog.fieldsStatus !== 'ready'
 function openCreateClient() {
-  clientDialog.value = { mode: 'create', id: null, name: '', siteName: '', fields: [], fieldsStatus: 'loading', fieldsError: '' }
+  clientDialog.value = { mode: 'create', id: null, name: '', siteName: '', fields: [], fieldsStatus: 'loading' }
   void loadCreateFields(clientDialog, 'client')
 }
 function openEditClient(client) { clientDialog.value = { mode: 'edit', id: client.id, name: client.name } }
 function openCreateSite() {
   if (!selectedClient.value) return
-  siteDialog.value = { mode: 'create', id: null, client_id: selectedClient.value.id, name: '', fields: [], fieldsStatus: 'loading', fieldsError: '' }
+  siteDialog.value = { mode: 'create', id: null, client_id: selectedClient.value.id, name: '', fields: [], fieldsStatus: 'loading' }
   void loadCreateFields(siteDialog, 'site')
   siteClientSearch.value = selectedClient.value.name
   siteClientOptions.value = [selectedClient.value]
 }
+// The two originals decide what the Save sends: client_id only when the site moves, name only when it is renamed (CO25).
 function openEditSite(site) {
-  siteDialog.value = { mode: 'edit', id: site.id, client_id: site.client_id, name: site.name }
+  siteDialog.value = { mode: 'edit', id: site.id, client_id: site.client_id, originalClientId: site.client_id, name: site.name, originalName: site.name, error: '' }
   siteClientSearch.value = selectedClient.value?.name || ''
   siteClientOptions.value = selectedClient.value ? [selectedClient.value] : []
 }
@@ -253,7 +252,6 @@ async function loadSiteClientOptions() {
 async function saveClient() {
   const draft = clientDialog.value
   if (!draft || !draft.name.trim()) return
-  if (createFieldsPending(draft)) return
   if (draft.mode === 'create' && !draft.siteName.trim()) { error.value = FIRST_SITE_REQUIRED; return }
   saving.value = true
   error.value = ''
@@ -274,9 +272,41 @@ async function saveClient() {
   } finally { saving.value = false }
 }
 
+// Edit site (CO25): a move and a rename go in one PATCH with only the keys that changed. Nothing changed: nothing is sent.
+// Core's refusal stays in the dialog, which stays open so the person can pick another client or change the name.
+async function saveSiteEdit(draft) {
+  const name = draft.name.trim()
+  const moving = draft.client_id !== draft.originalClientId
+  const renaming = name !== draft.originalName
+  if (!moving && !renaming) { siteDialog.value = null; return }
+  saving.value = true
+  error.value = ''
+  notice.value = ''
+  noticeAction.value = null
+  draft.error = ''
+  try {
+    const patch = {}
+    if (moving) patch.clientId = draft.client_id
+    if (renaming) patch.name = name
+    await updateResourceSite(draft.id, patch)
+    const destination = draft.client_id
+    const destinationName = siteClientOptions.value.find((client) => client.id === destination)?.name || clients.value.find((client) => client.id === destination)?.name || 'the new client'
+    siteDialog.value = null
+    notice.value = moving ? `Site moved to ${destinationName}.` : 'Site updated.'
+    // The sites live on the client rows, so the list is read again.
+    invalidateDirectory()
+    await loadClients()
+    if (destination !== selectedClientId.value && clients.value.some((client) => client.id === destination)) selectedClientId.value = destination
+    else await loadSites()
+  } catch (e) {
+    if (siteDialog.value === draft) draft.error = message(e, 'Unable to save site.')
+  } finally { saving.value = false }
+}
+
 async function saveSite() {
   const draft = siteDialog.value
-  if (!draft || !draft.name.trim() || !draft.client_id || createFieldsPending(draft)) return
+  if (!draft || !draft.name.trim() || !draft.client_id) return
+  if (draft.mode === 'edit') return saveSiteEdit(draft)
   saving.value = true
   error.value = ''
   notice.value = ''
@@ -403,6 +433,8 @@ watch(clientSearch, () => {
   clientTimer = setTimeout(() => { void loadClients({ resetPage: true }) }, 300)
 })
 watch(siteSearch, () => { siteSearchCoordinator.searchChanged() })
+// Editing the destination or the name clears a refusal shown in the Edit site dialog.
+watch(() => [siteDialog.value?.client_id, siteDialog.value?.name], () => { if (siteDialog.value) siteDialog.value.error = '' })
 watch(siteClientSearch, () => {
   clearTimeout(siteClientTimer)
   siteClientTimer = setTimeout(() => { void loadSiteClientOptions() }, 300)
@@ -465,26 +497,27 @@ onBeforeUnmount(() => {
         <p class="muted compact-copy">The character | is not allowed in a name. Core decides and shows its own message if a name is refused.</p>
         <template v-if="clientDialog.mode==='create'">
           <div class="section-divider">Custom fields</div>
-          <CustomFieldInputs :fields="clientDialog.fields" :status="clientDialog.fieldsStatus" :error="clientDialog.fieldsError" @retry="retryCreateFields('client')" />
+          <CustomFieldInputs :fields="clientDialog.fields" :status="clientDialog.fieldsStatus" @retry="retryCreateFields('client')" />
         </template>
         <p class="muted compact-copy">Core validates uniqueness and Tactical/Tec-Tac authorization. No customer-specific workflow is stored here.</p>
-        <div class="modal-actions"><button class="btn" :disabled="saving" @click="clientDialog=null">Cancel</button><button class="btn primary" :disabled="saving||!clientDialog.name.trim()||(clientDialog.mode==='create'&&!clientDialog.siteName.trim())||createFieldsPending(clientDialog)" @click="saveClient">{{saving?'Saving…':'Save client'}}</button></div>
+        <div class="modal-actions"><button class="btn" :disabled="saving" @click="clientDialog=null">Cancel</button><button class="btn primary" :disabled="saving||!clientDialog.name.trim()||(clientDialog.mode==='create'&&!clientDialog.siteName.trim())" @click="saveClient">{{saving?'Saving…':'Save client'}}</button></div>
       </section>
     </div>
 
     <div v-if="siteDialog" class="modal-backdrop" @click.self="siteDialog=null">
       <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="site-resource-title">
         <div class="cardhead"><div><span class="eyebrow">{{siteDialog.mode==='create'?'CREATE SITE':'EDIT SITE'}}</span><h3 id="site-resource-title">{{siteDialog.mode==='create'?'New site':`Site ${siteDialog.id}`}}</h3></div></div>
-        <label class="field"><span>Find client</span><input v-model="siteClientSearch" placeholder="Search client name"></label>
-        <label class="field"><span>Client</span><select v-model.number="siteDialog.client_id" :disabled="loadingSiteClientOptions"><option v-for="client in siteClientOptions" :key="client.id" :value="client.id">{{client.name}} · {{client.id}}</option></select></label>
+        <label class="field"><span>{{ siteDialog.mode==='edit' ? 'Find client to move to' : 'Find client' }}</span><input v-model="siteClientSearch" placeholder="Search client name"></label>
+        <label class="field"><span>{{ siteDialog.mode==='edit' ? 'Move to client' : 'Client' }}</span><select v-model.number="siteDialog.client_id" :disabled="loadingSiteClientOptions"><option v-for="client in siteClientOptions" :key="client.id" :value="client.id">{{client.name}} · {{client.id}}</option></select></label>
         <label class="field"><span>Site name</span><input v-model="siteDialog.name" maxlength="255" autofocus @keydown.enter.prevent="saveSite"></label>
         <p class="muted compact-copy">The character | is not allowed in a name. Core decides and shows its own message if a name is refused.</p>
         <template v-if="siteDialog.mode==='create'">
           <div class="section-divider">Custom fields</div>
-          <CustomFieldInputs :fields="siteDialog.fields" :status="siteDialog.fieldsStatus" :error="siteDialog.fieldsError" @retry="retryCreateFields('site')" />
+          <CustomFieldInputs :fields="siteDialog.fields" :status="siteDialog.fieldsStatus" @retry="retryCreateFields('site')" />
         </template>
-        <p class="muted compact-copy">Moving a site is permitted only when Core confirms your Tactical scope and <span class="mono">core.resources.sites.manage</span> grant.</p>
-        <div class="modal-actions"><button class="btn" :disabled="saving" @click="siteDialog=null">Cancel</button><button class="btn primary" :disabled="saving||!siteDialog.name.trim()||!siteDialog.client_id||createFieldsPending(siteDialog)" @click="saveSite">{{saving?'Saving…':'Save site'}}</button></div>
+        <p v-if="siteDialog.mode==='edit'" class="muted compact-copy">Core decides who may move a site. The agents on the site move with it.</p>
+        <div v-if="siteDialog.mode==='edit' && siteDialog.error" class="auth-error" role="alert">{{ siteDialog.error }}</div>
+        <div class="modal-actions"><button class="btn" :disabled="saving" @click="siteDialog=null">Cancel</button><button class="btn primary" :disabled="saving||!siteDialog.name.trim()||!siteDialog.client_id" @click="saveSite">{{saving?'Saving…':'Save site'}}</button></div>
       </section>
     </div>
 

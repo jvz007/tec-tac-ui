@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { apiFetch } from './api'
+import { normalizeSessionTheme } from './runtime-context'
 
 export const DEFAULT_USER_PREFERENCES = Object.freeze({
   appearance: { theme: 'dark', font_scale: 1 },
@@ -97,8 +98,16 @@ export const preferenceState = reactive({
   error: '',
   username: '',
   updatedAt: null,
+  // Core 1.17.24 (CO9): the header theme for this session. null means the saved theme is in effect.
+  sessionTheme: null,
   preferences: normalize({ appearance: { theme: cachedTheme, font_scale: cachedFontScale } }),
 })
+
+// The theme in effect: the session theme when one is chosen, else the saved theme. Only the saved theme is written to
+// Core's preferences or to browser storage; Save preferences makes a theme permanent.
+export function effectiveTheme() {
+  return preferenceState.sessionTheme ?? preferenceState.preferences.appearance.theme
+}
 
 let saveTimer = null
 
@@ -109,6 +118,8 @@ function replacePreferences(preferences, { updatedAt = null } = {}) {
 }
 
 export async function initializeUserPreferences(context) {
+  // A page refresh keeps the session theme Core holds for this session (CO9).
+  preferenceState.sessionTheme = normalizeSessionTheme(context?.session_theme)
   const username = String(context?.user?.username || localStorage.getItem('user_name') || '').trim()
   if (!username) return preferenceState.preferences
   preferenceState.username = username
@@ -154,6 +165,31 @@ export async function saveUserPreferences(preferences = preferenceState.preferen
   } finally {
     preferenceState.saving = false
   }
+}
+
+// The header theme for this session (CO9). It applies at once and Core keeps it for a page refresh. It is never written
+// to the saved preferences, so the next autosave, the menu layout and the Preferences page keep the saved theme. If Core
+// does not take the choice, it still applies on this page load only and nothing is saved.
+export async function setSessionTheme(value) {
+  const theme = normalizeSessionTheme(value)
+  if (!theme) return effectiveTheme()
+  preferenceState.sessionTheme = theme
+  try {
+    await apiFetch('/api/tfd/session/theme/', {
+      method: 'PUT',
+      body: JSON.stringify({ theme }),
+    })
+  } catch {
+    // Kept in memory for this page load. Not saved, not kept for a refresh.
+  }
+  return effectiveTheme()
+}
+
+// Back to the saved theme. Save preferences calls this after it saves the theme on the page.
+export async function clearSessionTheme() {
+  preferenceState.sessionTheme = null
+  await apiFetch('/api/tfd/session/theme/', { method: 'DELETE' })
+  return effectiveTheme()
 }
 
 export function schedulePreferenceSave(delay = 250) {

@@ -1,6 +1,6 @@
 // 0.12.97 (Core 1.17.23): Add client and Add site read the custom-field definitions before the create and send the values
-// with it. The Edit fields step after the create is gone; the Fields buttons on existing rows stay. A failed read keeps
-// Save off and offers Retry, so a client or site is never created without the form Core asked for.
+// with it. The Edit fields step after the create is gone; the Fields buttons on existing rows stay. 0.12.98 changed the
+// failed-read rule: the read never blocks Save (see resource-create-never-blocked-0.12.98.mjs).
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
@@ -102,9 +102,6 @@ assert.match(view, /openCustomFields\('client', client\)/, 'the Fields button on
 assert.match(view, /openCustomFields\('site', site\)/, 'the Fields button on an existing site stays')
 assert.match(view, /import CustomFieldInputs from '\.\.\/components\/CustomFieldInputs\.vue'/)
 assert.equal((view.match(/<CustomFieldInputs/g) || []).length, 3, 'two create dialogs and the edit dialog share one component')
-assert.match(view, /createFieldsPending\(clientDialog\)/, 'Save waits for the read (client)')
-assert.match(view, /createFieldsPending\(siteDialog\)/, 'Save waits for the read (site)')
-assert.match(view, /if \(createFieldsPending\(draft\)\) return/)
 assert.match(view, /createSiteWorkflow\(draft, \{ createResourceSite \}\)/)
 assert.match(view, /@retry="retryCreateFields\('client'\)"/)
 assert.match(view, /@retry="retryCreateFields\('site'\)"/)

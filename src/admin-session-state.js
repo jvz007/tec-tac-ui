@@ -22,6 +22,11 @@ export function revokeSessionPrompt(row = {}) {
   return `Revoke this active login session for ${username}? The session will stop authenticating immediately.`
 }
 
+// The one Yes or No question for End all sessions (AD-27). Plain words; no typed text.
+export function revokeAllSessionsPrompt() {
+  return 'End every login session for every user? Everyone is signed out, you included. You will need to sign in again.'
+}
+
 export function revokeUserSessionsPrompt(row = {}) {
   const username = row.username || 'this user'
   if (row.current === true) {

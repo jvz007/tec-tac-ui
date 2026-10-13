@@ -14,9 +14,17 @@ The authenticated endpoint is:
 
 The current UI context also includes `preferences`, `preferences_initialized`, and `preferences_updated_at` so startup does not require an additional read request.
 
+## Session theme (Core 1.17.24)
+
+The theme chosen in the header is for this session. It applies at once and Core keeps it for a page refresh through `PUT /api/tfd/session/theme/` (body `{"theme": "light"}`, one of `dark`, `light` or `high-contrast`). `DELETE /api/tfd/session/theme/` clears it. The UI context carries it as `session_theme` (`null` when none is set).
+
+The header choice never writes `PUT /api/tfd/ui/preferences/`. The saved theme changes only when a person presses **Save preferences** on the Preferences page; that save also clears the session theme, and **Reset all** clears it too. Autosaves of other settings (the rail, categories, Favorites) keep sending the saved theme. If Core does not take a header choice, it still applies on that page load only, and nothing is saved.
+
+At sign-out and on expiry the browser also removes its cached copies of the theme, text size, rail and category state (`tec_tac_theme`, `tec_tac_font_scale`, `tec_tac_nav_rail_collapsed`, `tec_tac_nav_sections`), so the next person to sign in on the same browser does not inherit them. The per-user navigation key stays for migration.
+
 ## Current preference sections
 
-- `appearance.theme`
+- `appearance.theme` (saved; the session theme is separate)
 - `navigation.order`
 - `navigation.favorites`
 - `navigation.collapsed_sections`

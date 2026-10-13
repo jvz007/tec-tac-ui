@@ -12,7 +12,7 @@ import NoticeDrawer from './components/NoticeDrawer.vue'
 import { logoutTacticalSession } from './api'
 import { state, loadContext, recordModuleRuntimeError } from './state'
 import { requestLeave } from './unsaved'
-import { preferenceState, updateUserPreferences } from './preferences'
+import { effectiveTheme, preferenceState, setSessionTheme, updateUserPreferences } from './preferences'
 import { startSessionActivityTracking, stopSessionActivityTracking } from './session-security'
 import { coreNavigation, DEFAULT_SECTION_ORDER } from './core-navigation'
 import { appHeaderItems, navItemPermitted } from './extension-surface-workflows'
@@ -33,9 +33,10 @@ const FONT_SIZES = [
   { value: 1.2, label: 'A++', title: 'Extra large text' },
 ]
 
+// The header choice is for this session (CO9). Save preferences on the Preferences page is what keeps a theme.
 const theme = computed({
-  get: () => preferenceState.preferences.appearance.theme,
-  set: (value) => updateUserPreferences((next) => { next.appearance.theme = value; return next }),
+  get: () => effectiveTheme(),
+  set: (value) => { void setSessionTheme(value) },
 })
 const fontScale = computed({
   get: () => Number(preferenceState.preferences.appearance.font_scale || 1),

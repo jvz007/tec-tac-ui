@@ -67,7 +67,7 @@ export function createFieldRows(fields) {
 }
 
 // The definitions a create dialog shows, read before the create, as editable rows with each default as the value.
-// A refusal or failure is thrown as Core sent it, so the dialog shows it and keeps Save off.
+// A refusal or failure is thrown; the dialog shows one plain line and Retry, and the read never blocks Save (0.12.98).
 export async function loadCreateFieldsWorkflow(resourceType, { listResourceCustomFieldDefinitions }) {
   return editableCustomFieldRows(await listResourceCustomFieldDefinitions(resourceType))
 }

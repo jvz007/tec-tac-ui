@@ -2,6 +2,7 @@
 import { computed, inject, onMounted, ref } from 'vue'
 import {
   canEditRuntimeSettings,
+  canEditSystemName,
   canEditUploadLimit,
   getRuntimeSettingsPayload,
   normalizeRuntimeSettings,
@@ -39,6 +40,7 @@ const uploadError = ref('')
 const uploadSaved = ref(false)
 
 const canEdit = computed(() => canEditRuntimeSettings(state?.context))
+const canEditName = computed(() => canEditSystemName(state?.context))
 const validation = computed(() => (
   settings.value
     ? validateRegisterTimeout(draft.value, { minimum: settings.value.minimum, maximum: settings.value.maximum })
@@ -195,7 +197,7 @@ onMounted(load)
       <dt>Default</dt><dd class="mono">{{ systemName.default }}</dd>
       <dt>Length</dt><dd class="mono">1 to {{ systemName.maximum_length }} characters, no colon</dd>
     </dl>
-    <form v-if="canEdit" class="runtime-settings-form" @submit.prevent="changeName('save')">
+    <form v-if="canEditName" class="runtime-settings-form" @submit.prevent="changeName('save')">
       <label class="field"><span>System name</span><input v-model="nameDraft" type="text" :maxlength="systemName.maximum_length + 20" autocomplete="off" :disabled="nameSaving" aria-describedby="system-name-help"></label>
       <p id="system-name-help" class="field-help" :class="{ dangertext: nameDirty && !nameValidation.valid }">{{ nameDirty && !nameValidation.valid ? nameValidation.message : `Up to ${systemName.maximum_length} characters. A colon is not allowed.` }}</p>
       <div class="login-actions">
@@ -205,6 +207,6 @@ onMounted(load)
       <div v-if="nameError" class="auth-error" role="alert">{{ nameError }}</div>
       <div v-if="nameSaved" class="state-inline" role="status">{{ nameSaved }}</div>
     </form>
-    <p v-else class="compact-copy muted">Only a superuser, or an administrator with the core.runtime_settings.manage permission, can change this name.</p>
+    <p v-else class="compact-copy muted">Only a superuser can change the system name.</p>
   </section>
 </template>

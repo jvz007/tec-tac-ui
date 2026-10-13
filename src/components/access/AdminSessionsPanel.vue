@@ -1,10 +1,14 @@
 <script setup>
-import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { listActiveLoginSessions, revokeLoginSession, revokeUserLoginSessions } from '../../access'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { clearTacticalSession, coreSessionFailureCode } from '../../api'
+import { listActiveLoginSessions, revokeAllLoginSessions, revokeLoginSession, revokeUserLoginSessions } from '../../access'
 import { useConfirm } from '../../confirm-dialog'
-import { createLatestRequestGate, revokeSessionPrompt, revokeUserSessionsPrompt } from '../../admin-session-state'
+import { createLatestRequestGate, revokeAllSessionsPrompt, revokeSessionPrompt, revokeUserSessionsPrompt } from '../../admin-session-state'
 
 const confirmAction = useConfirm()
+const state = inject('tecTacState', null)
+// Only an effective superuser sees End all sessions; Core refuses everyone else regardless.
+const isSuperuser = computed(() => state?.context?.user?.superuser === true)
 const sessions = ref([])
 const loading = ref(true)
 const busyId = ref('')
@@ -83,6 +87,25 @@ async function revokeAll(row) {
   }
 }
 
+// Core ends the caller's own session too. Its answer can be the normal session-invalid 401, which api.js has already
+// handled (it cleared the browser session). That counts as done; every other failure is shown and the list stays.
+async function revokeEverything() {
+  if (!(await confirmAction({ question: revokeAllSessionsPrompt(), danger: true }))) return
+  busyId.value = 'all'
+  error.value = ''
+  try {
+    await revokeAllLoginSessions()
+  } catch (err) {
+    if (!(err?.status === 401 && coreSessionFailureCode(err?.payload))) {
+      error.value = err?.message || 'Unable to end all login sessions.'
+      busyId.value = ''
+      return
+    }
+  }
+  clearTacticalSession()
+  window.location.reload()
+}
+
 watch(search, scheduleSearch)
 onMounted(() => load(1))
 onBeforeUnmount(() => { if (searchTimer) window.clearTimeout(searchTimer) })
@@ -95,6 +118,7 @@ onBeforeUnmount(() => { if (searchTimer) window.clearTimeout(searchTimer) })
       <span class="muted mono">{{ total }} active sessions · page {{ page }}{{ pages ? ` / ${pages}` : '' }}</span>
       <span class="spacer"></span>
       <button class="btn" :disabled="loading" @click="load(page)">Refresh</button>
+      <button v-if="isSuperuser" class="btn danger" :disabled="!!busyId" @click="revokeEverything">End all sessions</button>
     </div>
 
     <div class="state-inline warning"><b>Security control.</b> Revocation deletes the underlying Tactical Knox token. A revoked session cannot continue through Tactical or Tec-Tac.</div>

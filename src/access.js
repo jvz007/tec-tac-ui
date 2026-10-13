@@ -126,6 +126,15 @@ export function revokeLoginSession(sessionId, reason = 'administrator-request') 
   })
 }
 
+// Core 1.17.24 (CQ76): ends every login session for every user, the caller's own included. Effective superuser only; Core
+// refuses anyone else with 403. include_current is always true, so the administrator is signed out too.
+export function revokeAllLoginSessions(reason = 'administrator-request') {
+  return apiFetch('/api/tfd/access/sessions/revoke-all/', {
+    method: 'POST',
+    body: JSON.stringify({ reason, include_current: true }),
+  })
+}
+
 export function revokeUserLoginSessions(userId, reason = 'administrator-request') {
   return apiFetch(`/api/tfd/access/users/${encodeURIComponent(userId)}/sessions/revoke/`, {
     method: 'POST',

@@ -199,7 +199,11 @@ Keep `register()` short. Register your pages, actions and widgets, and load data
 
 Core 1.17.23 keeps one system name, the name an authenticator app shows beside a person's account when they set up two-factor sign-in (default `Tec-Tac`, 1 to 60 characters, no colon). `register(context).context.system_name` and `GET /api/tfd/ui/context/` carry it as a string, or `null` on an older Core. It is display text only. The setup answer of `POST /api/tfd/auth/totp/enrollment/` carries it as `issuer`; the sign-in screen has no other source, so it never builds the label from the host name or the address.
 
-System Configuration (`/system/settings`) shows a System name card when Core sends `system_name` in `GET /api/tfd/system/runtime-settings/`: the current name, the default and the length limit. A superuser, or a role with `core.runtime_settings.manage`, can save a name (`PATCH {"system_name": "Acme IT"}`) or reset it (`PATCH {"system_name": null}`). Core stays the authority: its 400 and 403 messages are shown as sent. A person who set up two-factor before the change keeps their entry; only a new set-up shows the new name.
+System Configuration (`/system/settings`) shows a System name card when Core sends `system_name` in `GET /api/tfd/system/runtime-settings/`: the current name, the default and the length limit. Only a superuser can save a name (`PATCH {"system_name": "Acme IT"}`) or reset it (`PATCH {"system_name": null}`); Core 1.17.24 answers 403 to anyone else, and the page shows the name read-only to them. Core stays the authority: its 400 and 403 messages are shown as sent. A person who set up two-factor before the change keeps their entry; only a new set-up shows the new name.
+
+## Session theme
+
+Core 1.17.24 keeps the theme a person picks in the header for the session. `register(context).context.session_theme` (and `GET /api/tfd/ui/context/`) carries it as `dark`, `light`, `high-contrast` or `null` when none is chosen. It is read-only and additive: the saved theme stays in `preferences.appearance.theme`, and the theme in effect is the session theme when one is set, else the saved theme. Modules read it for display only and do not write it.
 
 ## Failure containment
 

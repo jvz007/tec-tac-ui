@@ -69,6 +69,9 @@ export function clearTacticalSession() {
   localStorage.removeItem('tec_tac_auth_stage')
   localStorage.removeItem('user_name')
   localStorage.removeItem('name')
+  // Core 1.17.24 (CO9): the browser's copy of the last user's theme and menu state must not reach the next sign-in. The
+  // per-user navigation key (tec_tac_nav_preferences:<user>) stays for the migration read.
+  for (const key of ['tec_tac_theme', 'tec_tac_font_scale', 'tec_tac_nav_rail_collapsed', 'tec_tac_nav_sections']) localStorage.removeItem(key)
 }
 
 export const TACTICAL_SESSION_INVALID_EVENT = 'tec-tac:tactical-session-invalid'
@@ -710,8 +713,10 @@ export async function createResourceSite({ clientId, name, customFields } = {}) 
   })
 }
 
-export async function updateResourceSite(siteId, { clientId, name }) {
-  const payload = { name }
+// Sends only the keys given: client_id to move the site (CO25), name to rename it. Core checks each one.
+export async function updateResourceSite(siteId, { clientId, name } = {}) {
+  const payload = {}
+  if (name !== undefined) payload.name = name
   if (clientId) payload.client_id = clientId
   return apiFetch(`/api/tfd/resources/sites/${siteId}/`, {
     method: 'PATCH',

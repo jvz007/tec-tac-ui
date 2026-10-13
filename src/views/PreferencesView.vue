@@ -1,6 +1,8 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import {
+  clearSessionTheme,
+  effectiveTheme,
   preferenceState,
   resetNavigationPreferences,
   resetUserPreferences,
@@ -12,14 +14,23 @@ import { useConfirm } from '../confirm-dialog'
 const confirmAction = useConfirm()
 
 function clone(value) { return JSON.parse(JSON.stringify(value)) }
-const draft = ref(clone(preferenceState.preferences))
+// The Theme select starts at the theme in effect (CO9). Save writes it; the header choice is cleared once it is saved.
+function draftFrom(value) {
+  const copy = clone(value)
+  copy.appearance.theme = effectiveTheme()
+  return copy
+}
+const draft = ref(draftFrom(preferenceState.preferences))
 const saved = ref('')
 const error = ref('')
 const dashboards = ref([])
 
 watch(() => preferenceState.preferences, (value) => {
-  draft.value = clone(value)
+  draft.value = draftFrom(value)
 }, { deep: true })
+watch(() => preferenceState.sessionTheme, () => {
+  draft.value.appearance.theme = effectiveTheme()
+})
 
 const favoriteCount = computed(() => draft.value.navigation?.favorites?.length || 0)
 const orderedSectionCount = computed(() => Object.keys(draft.value.navigation?.order || {}).length)
@@ -40,6 +51,8 @@ async function save() {
   saved.value = ''
   try {
     await saveUserPreferences(draft.value)
+    // The theme on this page is now saved, so the header choice for this session ends.
+    await clearSessionTheme()
     saved.value = 'Preferences saved.'
   } catch (e) {
     error.value = e?.message || 'Unable to save preferences.'
@@ -51,9 +64,10 @@ async function resetNavigation() {
   error.value = ''
   saved.value = ''
   try {
+    // The saved preferences only: a theme chosen for this session is not made permanent here.
     resetNavigationPreferences({ save: false })
-    draft.value = clone(preferenceState.preferences)
-    await saveUserPreferences(draft.value)
+    await saveUserPreferences(preferenceState.preferences)
+    draft.value = draftFrom(preferenceState.preferences)
     saved.value = 'Navigation preferences reset.'
   } catch (e) {
     error.value = e?.message || 'Unable to reset navigation preferences.'
@@ -66,7 +80,8 @@ async function resetAll() {
   saved.value = ''
   try {
     await resetUserPreferences()
-    draft.value = clone(preferenceState.preferences)
+    await clearSessionTheme()
+    draft.value = draftFrom(preferenceState.preferences)
     saved.value = 'All preferences reset.'
   } catch (e) {
     error.value = e?.message || 'Unable to reset preferences.'
@@ -89,7 +104,7 @@ onMounted(loadDashboards)
     <section class="card preference-card">
       <div class="cardhead"><div><span class="eyebrow">APPEARANCE</span><h3>Theme</h3></div></div>
       <p class="muted">Choose the Tec-Tac interface theme used after you sign in.</p>
-      <label class="field"><span>Theme</span><select v-model="draft.appearance.theme"><option value="dark">Dark</option><option value="light">Light</option><option value="high-contrast">High contrast</option></select></label>
+      <label class="field"><span>Theme (saved when you press Save preferences)</span><select v-model="draft.appearance.theme"><option value="dark">Dark</option><option value="light">Light</option><option value="high-contrast">High contrast</option></select></label>
       <label class="field"><span>Text size</span><select v-model.number="draft.appearance.font_scale"><option :value="0.9">Small</option><option :value="1">Default</option><option :value="1.1">Large</option><option :value="1.2">Extra large</option></select></label>
     </section>
 

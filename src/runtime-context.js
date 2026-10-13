@@ -42,6 +42,12 @@ export function normalizeTacticalScope(value) {
   }
 }
 
+// Core 1.17.24 (CO9): the theme this session chose from the header, or null. Only the three themes; anything else is null.
+export const SESSION_THEME_VALUES = Object.freeze(['dark', 'light', 'high-contrast'])
+export function normalizeSessionTheme(value) {
+  return SESSION_THEME_VALUES.includes(value) ? value : null
+}
+
 export function emptyRuntimeContext(user = {}) {
   return {
     user: user || {},
@@ -65,6 +71,8 @@ export function emptyRuntimeContext(user = {}) {
     // Set by state.js after normalizing; this file stays import-free.
     // Core 1.17.23: the name an authenticator app shows for this system; null on an older Core.
     system_name: null,
+    // Core 1.17.24: the session theme (read-only here; the preferences module sets it). null when none.
+    session_theme: null,
     server_url: '',
   }
 }
@@ -93,6 +101,7 @@ export function normalizeBackendRuntimeContext(richContext, browserUser = {}) {
     notice_unread_count: Number(source.notice_unread_count || 0),
     module_register_timeout_seconds: normalizeRegisterTimeoutSeconds(source.module_register_timeout_seconds),
     system_name: typeof source.system_name === 'string' && source.system_name.trim() ? source.system_name : null,
+    session_theme: normalizeSessionTheme(source.session_theme),
     server_url: '',
   }
 }
