@@ -43,7 +43,7 @@ const refused = async (promise, code) => {
   const store = {}
   const { api, calls } = fakeApi(store)
   const helper = createModulePreferencesService().forModule('endpoints', { api, isSignedOut: () => false, isAbandoned: () => false })
-  assert.deepEqual(Object.keys(helper).sort(), ['clear', 'get', 'getAll', 'remove', 'set'], 'the helper has no id argument and no extra members')
+  assert.deepEqual(Object.keys(helper).sort(), ['clear', 'flush', 'get', 'getAll', 'remove', 'set'], 'the helper has no id argument and no extra members (flush is 0.12.108)')
   assert.equal(Object.isFrozen(helper), true)
   assert.equal(await helper.set('header-collapsed', true), true)
   assert.equal(calls.at(-1).path, '/api/tfd/module-preferences/endpoints/header-collapsed/')

@@ -45,10 +45,10 @@ assert.deepEqual(PROPS, ['--tactical-loading-bar-color', '--tactical-dash-info-c
   const root = fakeRoot()
   root.props.set('--tactical-dash-info-color', 'stale')
   applyTacticalColours(root, DEFAULTS)
-  assert.equal(root.props.size, 5, 'defaults set all five')
+  assert.equal(root.props.size, 4, 'defaults set the four figure colours; the loading bar uses the theme (0.12.108)')
   assert.equal(root.props.get('--tactical-dash-info-color'), '#31CCEC', 'the stale value is replaced by the default')
   assert.equal(root.props.get('--tactical-dash-positive-color'), '#21BA45')
-  assert.equal(root.props.get('--tactical-loading-bar-color'), '#F44336')
+  assert.equal(root.props.has('--tactical-loading-bar-color'), false, "Tactical's default red is not set for the loading bar")
 }
 
 // Chosen colours are set, resolved, and every other field keeps its default.
@@ -66,7 +66,7 @@ assert.deepEqual(PROPS, ['--tactical-loading-bar-color', '--tactical-dash-info-c
 {
   const root = fakeRoot()
   applyTacticalColours(root, { dash_info_color: 'red;color:blue', dash_positive_color: 'deep-purple-3', dash_negative_color: 'url(http://x)', dash_warning_color: '<b>' })
-  assert.equal(root.log.filter(([kind]) => kind === 'set').length, 5, 'every field is set to a resolved value')
+  assert.equal(root.log.filter(([kind]) => kind === 'set').length, 4, 'every figure field is set to a resolved value (0.12.108: no loading bar)')
   assert.equal(root.props.get('--tactical-dash-info-color'), '#31CCEC')
   assert.equal(root.props.get('--tactical-dash-positive-color'), '#21BA45')
   assert.equal(root.props.get('--tactical-dash-negative-color'), '#C10015')
@@ -85,7 +85,7 @@ assert.deepEqual(PROPS, ['--tactical-loading-bar-color', '--tactical-dash-info-c
   applyTacticalColours(root, undefined)
   assert.equal(root.props.size, 0)
   applyTacticalColours(root, {})
-  assert.equal(root.props.size, 5, 'a signed-in object with empty fields gets the defaults')
+  assert.equal(root.props.size, 4, 'a signed-in object with empty fields gets the figure defaults; the loading bar uses the theme (0.12.108)')
 }
 
 // The key changes whenever a colour changes, so the one App.vue watch fires for each change and for a sign-out.

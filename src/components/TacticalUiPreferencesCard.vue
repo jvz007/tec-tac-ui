@@ -6,7 +6,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { changedFields, saveTacticalUiWorkflow, tacticalUiProblem } from '../my-account-workflows'
 import { saveMyTacticalUiPreferences } from '../account'
 import { formatWithPattern, unknownDateFormatLetters } from '../date-format'
-import { resolveTacticalColour, TACTICAL_COLOUR_FIELDS } from '../tactical-ui-apply'
+import { loadingBarUsesTheme, resolveTacticalColour, TACTICAL_COLOUR_FIELDS } from '../tactical-ui-apply'
 
 const props = defineProps({
   tacticalUi: { type: Object, default: () => ({}) },
@@ -54,9 +54,22 @@ const dateExample = computed(() => (String(form.date_format || '').trim() ? form
 // 0.12.107: letters Tec-Tac writes as they are, which Tactical may read as date parts.
 const unknownLetters = computed(() => unknownDateFormatLetters(form.date_format))
 
-// The CSS colour the shell will show for a value, or null when Tec-Tac cannot show that name.
+// The CSS colour the swatch shows. 0.12.108: the loading bar shows the theme colour for 'red', an empty value or a name Tec-Tac
+// cannot show; any other value that resolves is its own colour. Null when the shell shows nothing for this field.
 function shownColour(field) {
-  return resolveTacticalColour(String(form[field] || '').trim())
+  const text = String(form[field] || '').trim()
+  if (field === 'loading_bar_color' && loadingBarUsesTheme(text)) return 'var(--loading-bar)'
+  return resolveTacticalColour(text)
+}
+
+// The line under a colour field. 0.12.108: the loading bar says it uses the theme colour until the person chooses one.
+function colourNote(field) {
+  const text = String(form[field] || '').trim()
+  if (field === 'loading_bar_color') {
+    if (text === '' || text === TACTICAL_COLOUR_FIELDS[field].fallback) return 'Using the theme colour. Choose any other colour to use your own.'
+    return resolveTacticalColour(text) ? 'Shown as this colour.' : 'Tec-Tac does not show this name, so the theme colour is used.'
+  }
+  return resolveTacticalColour(text) ? 'Shown as this colour.' : 'Tec-Tac does not show this name, so the default colour is used.'
 }
 
 async function save() {
@@ -99,14 +112,14 @@ async function save() {
     <label class="permission-row"><input v-model="form.show_community_scripts" type="checkbox" role="switch" /><span class="permission-copy"><b>Show community scripts</b></span></label>
 
     <h4 class="tactical-ui-group">Colours</h4>
-    <p class="muted smalltext">Use a Quasar colour name such as red, or a # colour of 3, 4, 6 or 8 digits. Tec-Tac always shows these colours, Tactical's defaults included. High contrast shows its own theme colours instead.</p>
+    <p class="muted smalltext">Use a Quasar colour name such as red, or a # colour of 3, 4, 6 or 8 digits. Tec-Tac always shows the figure colours, Tactical's defaults included. The loading bar follows the theme colour until you choose one. High contrast shows its own theme colours instead.</p>
     <label v-for="field in COLOUR_FIELDS" :key="field" class="field tactical-colour-field">
       <span>{{ COLOUR_LABELS[field] }}</span>
       <span class="tactical-colour-row">
         <input v-model="form[field]" type="text" maxlength="40" autocomplete="off" :aria-describedby="`${field}-note`">
         <span class="tactical-swatch" aria-hidden="true" :style="shownColour(field) ? { background: shownColour(field) } : {}"></span>
       </span>
-      <small :id="`${field}-note`" class="muted smalltext">{{ shownColour(field) ? 'Shown as this colour.' : 'Tec-Tac does not show this name, so the default colour is used.' }}</small>
+      <small :id="`${field}-note`" class="muted smalltext">{{ colourNote(field) }}</small>
     </label>
 
     <h4 class="tactical-ui-group">Dates</h4>

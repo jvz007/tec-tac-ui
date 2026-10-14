@@ -39,8 +39,8 @@ function fakeRoot() {
     },
   }
 }
+// 0.12.108: the loading bar is not in the defaults; its default is the theme colour (removed, not set).
 const DEFAULT_PROPS = {
-  '--tactical-loading-bar-color': '#F44336',
   '--tactical-dash-info-color': '#31CCEC',
   '--tactical-dash-positive-color': '#21BA45',
   '--tactical-dash-negative-color': '#C10015',
@@ -53,7 +53,7 @@ const TACTICAL_DEFAULTS = { loading_bar_color: 'red', dash_info_color: 'info', d
   const root = fakeRoot()
   applyTacticalColours(root, TACTICAL_DEFAULTS)
   assert.deepEqual(Object.fromEntries(root.props), DEFAULT_PROPS)
-  assert.equal(root.log.filter(([kind]) => kind === 'remove').length, 0, 'nothing is removed for a signed-in person')
+  assert.deepEqual(root.log.filter(([kind]) => kind === 'remove').map(([, name]) => name), ['--tactical-loading-bar-color'], 'only the loading bar is removed for a signed-in person (0.12.108)')
 }
 
 // A signed-in person whose fields are empty (an older Core or a blank answer) gets Tactical's defaults too.
@@ -70,7 +70,7 @@ const TACTICAL_DEFAULTS = { loading_bar_color: 'red', dash_info_color: 'info', d
   assert.equal(root.props.get('--tactical-dash-info-color'), '#009688')
   assert.equal(root.props.get('--tactical-dash-negative-color'), '#ff0000')
   assert.equal(root.props.get('--tactical-dash-positive-color'), '#21BA45')
-  assert.equal(root.props.get('--tactical-loading-bar-color'), '#F44336')
+  assert.equal(root.props.has('--tactical-loading-bar-color'), false, 'the loading bar stays on the theme colour (0.12.108)')
 }
 
 // A numbered shade, a hostile string or an unknown name sets that field's Tactical default, never the raw text.
@@ -91,10 +91,10 @@ const TACTICAL_DEFAULTS = { loading_bar_color: 'red', dash_info_color: 'info', d
 for (const signedOut of [null, undefined]) {
   const root = fakeRoot()
   applyTacticalColours(root, { ...TACTICAL_DEFAULTS, dash_info_color: 'pink' })
-  assert.ok(root.props.size === 5)
+  assert.ok(root.props.size === 4)
   applyTacticalColours(root, signedOut)
   assert.equal(root.props.size, 0, `signed out (${signedOut}) removes all five`)
-  assert.equal(root.log.filter(([kind]) => kind === 'set' ).length, 5, 'only the earlier signed-in call set values')
+  assert.equal(root.log.filter(([kind]) => kind === 'set' ).length, 4, 'only the earlier signed-in call set values')
 }
 
 // The watch key: a signed-out context differs from a signed-in one with empty fields; a colour change changes it.
@@ -114,13 +114,13 @@ assert.match(styles, /:root\[data-theme="high-contrast"\] \.dashboard-core-metri
 assert.match(styles, /:root\[data-theme="high-contrast"\] \.dashboard-core-metric\.tone-positive strong\{color:var\(--ok\)\}/)
 assert.match(styles, /:root\[data-theme="high-contrast"\] \.dashboard-core-metric\.tone-negative strong\{color:var\(--danger\)\}/)
 assert.match(styles, /:root\[data-theme="high-contrast"\] \.dashboard-core-metric\.tone-warning strong\{color:var\(--warn\)\}/)
-assert.match(styles, /:root\[data-theme="high-contrast"\] \.app-loading-bar\{background:var\(--accent\)\}/)
-assert.match(styles, /\.app-loading-bar\{[^}]*background:var\(--tactical-loading-bar-color,var\(--accent\)\)/)
+assert.match(styles, /:root\[data-theme="high-contrast"\] \.app-loading-bar\{background:var\(--loading-bar\)\}/)
+assert.match(styles, /\.app-loading-bar\{[^}]*background:var\(--tactical-loading-bar-color,var\(--loading-bar\)\)/)
 
 // The My Account card says the colours always show, and that High contrast shows the theme colours.
 const card = read('../src/components/TacticalUiPreferencesCard.vue')
 assert.doesNotMatch(card, /only when it differs/, 'the old rule is gone from the card')
-assert.match(card, /Tec-Tac always shows these colours, Tactical's defaults included\. High contrast shows its own theme colours instead\./)
+assert.match(card, /Tec-Tac always shows the figure colours, Tactical's defaults included\. The loading bar follows the theme colour until you choose one\. High contrast shows its own theme colours instead\./)
 
 // The design standards say the same, and no longer describe the old rule.
 const standards = read('../docs/ui-design-standards.md')

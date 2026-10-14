@@ -5,10 +5,14 @@
 // numbered shade, deep-purple-3) is replaced by that field's Tactical default, so nothing hostile or unknown is ever set.
 // Signed out (no tactical_ui object) all five properties are removed. High contrast does not read them: src/styles.css
 // gives that theme its own rules, so a theme switch needs no JavaScript.
+// 0.12.108: the loading bar is the one exception. Its default is the theme colour (--loading-bar in src/styles.css), not
+// Tactical's red. Core sends no "saved" flag, so the name 'red', an empty value and a value Tec-Tac cannot show all mean
+// "not chosen" and the property is removed. A person who wants Tactical's red types #F44336.
 
-// Field, CSS property and Tactical's default for each colour (Tactical 1.5.2 accounts.User defaults).
+// Field, CSS property and Tactical's default for each colour (Tactical 1.5.2 accounts.User defaults). themeDefault marks a
+// field whose default is the theme colour rather than the value in fallback.
 export const TACTICAL_COLOUR_FIELDS = Object.freeze({
-  loading_bar_color: Object.freeze({ property: '--tactical-loading-bar-color', fallback: 'red' }),
+  loading_bar_color: Object.freeze({ property: '--tactical-loading-bar-color', fallback: 'red', themeDefault: true }),
   dash_info_color: Object.freeze({ property: '--tactical-dash-info-color', fallback: 'info' }),
   dash_positive_color: Object.freeze({ property: '--tactical-dash-positive-color', fallback: 'positive' }),
   dash_negative_color: Object.freeze({ property: '--tactical-dash-negative-color', fallback: 'negative' }),
@@ -85,17 +89,28 @@ export function tacticalColourKey(tacticalUi) {
   return ['signed-in', ...Object.keys(TACTICAL_COLOUR_FIELDS).map((field) => (typeof tacticalUi[field] === 'string' ? tacticalUi[field] : ''))].join('|')
 }
 
+// 0.12.108: true when the loading bar should show the theme colour: the name 'red' (Tactical's default), an empty value, or
+// a value Tec-Tac cannot show. Any other value that resolves (a name such as teal, or a # colour) is the person's choice.
+export function loadingBarUsesTheme(value) {
+  return resolveTacticalColour(value) === null || value === TACTICAL_COLOUR_FIELDS.loading_bar_color.fallback
+}
+
 // Sets the five custom properties on root for a signed-in person, each to the chosen colour or, when Tec-Tac cannot show
-// the choice, to that field's Tactical default. Without a tactical_ui object (signed out) all five are removed.
+// the choice, to that field's Tactical default. The loading bar (themeDefault) removes its property instead, so the theme
+// colour shows (0.12.108). Without a tactical_ui object (signed out) all five are removed.
 export function applyTacticalColours(root, tacticalUi) {
   if (!root || !root.style) return
   const signedIn = Boolean(tacticalUi) && typeof tacticalUi === 'object'
-  for (const [field, { property, fallback }] of Object.entries(TACTICAL_COLOUR_FIELDS)) {
+  for (const [field, { property, fallback, themeDefault }] of Object.entries(TACTICAL_COLOUR_FIELDS)) {
     if (!signedIn) {
       root.style.removeProperty(property)
       continue
     }
     const chosen = typeof tacticalUi[field] === 'string' ? tacticalUi[field] : ''
+    if (themeDefault && loadingBarUsesTheme(chosen)) {
+      root.style.removeProperty(property)
+      continue
+    }
     const css = resolveTacticalColour(chosen) || resolveTacticalColour(fallback)
     root.style.setProperty(property, css)
   }

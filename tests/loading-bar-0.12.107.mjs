@@ -206,7 +206,7 @@ assert.match(component, /class="sr-only"/, 'the screen-reader text uses the exis
 assert.match(component, /subscribeLoadingBar\(/)
 const styles = read('../src/styles.css')
 assert.match(styles, /\.app-loading-bar-host\{position:fixed;top:0;left:0;right:0;height:4px;z-index:1500;pointer-events:none/, 'a fixed strip above the top bar and the 1400 dialogs that takes no pointer')
-assert.match(styles, /\.app-loading-bar\{[^}]*background:var\(--tactical-loading-bar-color,var\(--accent\)\)/)
+assert.match(styles, /\.app-loading-bar\{[^}]*background:var\(--tactical-loading-bar-color,var\(--loading-bar\)\)/, '0.12.108: the theme token is the default')
 assert.match(styles, /@media \(prefers-reduced-motion: reduce\)\{\.app-loading-bar\{left:0;width:100%;animation:none\}\}/, 'reduced motion gives a static bar')
 const apiSource = read('../src/api.js')
 assert.match(apiSource, /const \{ quiet = false, \.\.\.options \} = rawOptions/, 'quiet is stripped in authenticatedRawRequest')

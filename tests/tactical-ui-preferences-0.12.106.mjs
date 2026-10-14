@@ -145,7 +145,7 @@ assert.match(card, /<button class="btn primary" :disabled="busy \|\| !hasChanges
 assert.doesNotMatch(card, /<button class="btn primary" :disabled="[^"]*urlActionBlocked/, 'no URL Action term on the Save button')
 // 0.12.107 (Q48): the colours always show, and the card says so.
 assert.doesNotMatch(card, /only when it differs/, 'the card no longer says the colours show only when they differ')
-assert.match(card, /Tec-Tac always shows these colours, Tactical's defaults included\. High contrast shows its own theme colours instead\./)
+assert.match(card, /Tec-Tac always shows the figure colours, Tactical's defaults included\. The loading bar follows the theme colour until you choose one\. High contrast shows its own theme colours instead\./)
 // The parent applies only after Core accepted the change: the emit comes after the awaited save, inside the try.
 assert.match(card, /try \{\s*const result = await saveTacticalUiWorkflow\([\s\S]*?emit\('saved'[\s\S]*?\} catch \(err\)/, 'emit only after Core accepted the save')
 assert.doesNotMatch(card, /block_dashboard_login/, 'block_dashboard_login is never named by the form')

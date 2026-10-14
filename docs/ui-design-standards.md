@@ -252,13 +252,13 @@ Use summary tiles sparingly. They should answer immediate operational questions,
 
 When a System Updates card has a branch as its saved source, the branch stays the headline (Discovered version, Installed, Comparison). Core 1.17.4 adds `stable_release`, and the card shows it as one secondary row, "Stable release", directly beneath the branch rows. The row shows the tag, the published date, a muted STALE pill when Core served a cached copy, the signed or unsigned badge with acceptance, and the operation. A release lookup error (`release_error`) shows as a muted line inside that row and never in the branch error area. With nothing known yet it says "Not checked yet". A Core older than 1.17.4 sends no `stable_release` key, so no row is drawn. Superusers (the same rule as the Update source control; Core 1.17.5 refuses anyone else) also get a "Use stable release" button that saves the Release source and checks again. It stages and installs nothing. Core still enforces the permission. The badge and its popover are one shared block (`ReleaseTrustBadge.vue`), used by both the release rows and this row.
 
-### 9.2 Tactical colours and dates (UI 0.12.106, colours always applied from 0.12.107)
+### 9.2 Tactical colours and dates (UI 0.12.106, colours always applied from 0.12.107, loading bar theme default from 0.12.108)
 
-The person's five Tactical colours (Core 1.17.35) are published as CSS custom properties on the document root. Since UI 0.12.107 Tec-Tac always sets them for a signed-in person, Tactical's own defaults included, so the shell shows Tactical's palette. A sign-out removes all five properties and the theme tokens take over.
+The person's five Tactical colours (Core 1.17.35) are published as CSS custom properties on the document root. Since UI 0.12.107 Tec-Tac always sets the four figure colours for a signed-in person, Tactical's own defaults included, so the shell shows Tactical's palette. Since UI 0.12.108 the loading bar is the exception: its default is the theme colour, not Tactical's red. A sign-out removes all five properties and the theme tokens take over.
 
 | Tactical field | CSS custom property | Tactical default | Theme token used when signed out | Shown in High contrast |
 | --- | --- | --- | --- | --- |
-| `loading_bar_color` | `--tactical-loading-bar-color` | `red` | `--accent` (the loading bar, section 11) | `--accent` |
+| `loading_bar_color` | `--tactical-loading-bar-color` | `red` (the name `red`, an empty or unknown value means the theme colour) | `--loading-bar` (the loading bar, section 11): soft blue in Dark, royal blue in Light, green in High contrast | `--loading-bar` (green; the saved colour is ignored) |
 | `dash_info_color` | `--tactical-dash-info-color` | `info` | `--accent` | `--accent` |
 | `dash_positive_color` | `--tactical-dash-positive-color` | `positive` | `--ok` | `--ok` |
 | `dash_negative_color` | `--tactical-dash-negative-color` | `negative` | `--danger` | `--danger` |
@@ -266,7 +266,7 @@ The person's five Tactical colours (Core 1.17.35) are published as CSS custom pr
 
 - Use a dashboard figure's colour through the `tone-*` class of its metric card (`.dashboard-core-metric.tone-info`, `tone-positive`, `tone-negative`, `tone-warning`). The CSS reads the property and falls back to the token: `color: var(--tactical-dash-info-color, var(--accent))`. Module pages do not read these properties in this release.
 - High contrast does not read the Tactical colours. `:root[data-theme="high-contrast"]` has one rule per tone class and one for the loading bar, each using the theme token, so its accessible palette holds. A theme switch needs no JavaScript.
-- A value the shell cannot show (an unknown name, a numbered Quasar shade such as `deep-purple-3`, or anything else) sets that field's Tactical default instead, so the Tactical palette still shows and nothing hostile is ever set.
+- A value the shell cannot show (an unknown name, a numbered Quasar shade such as `deep-purple-3`, or anything else) sets that field's Tactical default instead, so the Tactical palette still shows and nothing hostile is ever set. The loading bar is the exception since UI 0.12.108: there, an unshowable value removes the property, so the theme colour shows.
 - Brand names are Tactical's own Quasar brand colours: `info` `#31CCEC`, `positive` `#21BA45`, `negative` `#C10015`, `warning` `#F2C037`. Base names (`red`, `teal` and so on) are the Material 500 values Quasar uses for them. `src/tactical-ui-apply.js` holds both tables.
 - A sign-out removes all five properties. One watch in `App.vue` sets and clears them.
 
@@ -301,7 +301,7 @@ Do not leave an empty table while loading. Do not display `undefined`, `null` or
 
 Until Core ships dedicated shared state components, use the established `callout`, `state-inline` and error patterns consistently.
 
-**Top loading bar (UI 0.12.107).** While Tec-Tac is waiting on the server, a thin 4px bar sweeps across the top of the window, above the top bar and the dialogs. It takes the person's Tactical loading bar colour, and high contrast uses the theme accent. Every request made through `src/api.js` counts toward it, so a module's calls show it with no extra work. The bar appears only after a request has taken about 300 ms, and it stays for a short minimum, so quick calls do not flicker. Core's own background polls (session heartbeat, notices) never show it. With reduced motion the bar is static. It is decoration plus a screen-reader status ("Loading"); it does not replace a page's own loading state, which a page still shows in its content.
+**Top loading bar (UI 0.12.107).** While Tec-Tac is waiting on the server, a thin 4px bar sweeps across the top of the window, above the top bar and the dialogs. It takes the person's Tactical loading bar colour when they have chosen one. Until then it uses the theme's loading bar colour, `--loading-bar` (UI 0.12.108): soft blue in Dark (`#4dabf7`), royal blue in Light (`#2b5fd9`, 5.3 to 1 on the page background) and green in High contrast (`#00ff5f`, which ignores the saved colour). Tactical's default name `red` counts as not chosen, so the theme colour shows; a person who wants Tactical's red types `#F44336`. Every request made through `src/api.js` counts toward it, so a module's calls show it with no extra work. The bar appears only after a request has taken about 300 ms, and it stays for a short minimum, so quick calls do not flicker. Core's own background polls (session heartbeat, notices) never show it. With reduced motion the bar is static. It is decoration plus a screen-reader status ("Loading"); it does not replace a page's own loading state, which a page still shows in its content.
 
 ## 12. Search and filters
 

@@ -57,24 +57,38 @@ const pkg = JSON.parse(read('../package.json'))
 const manifest = JSON.parse(read('../tec_tac_package.json'))
 const lock = JSON.parse(read('../package-lock.json'))
 const version = read('../VERSION').trim()
-// 0.12.107: this test pins the release it checks, so its pins move with each release (the version, the Core requirement and
-// the notes file). Its module-preferences checks are unchanged.
-assert.equal(version, '0.12.107')
+// 0.12.108: this test pins the release it checks, so its pins move with each release (the version, the Core requirement and
+// the notes file). Its module-preferences checks are the 0.12.108 ones below.
+assert.equal(version, '0.12.108')
 assert.equal(pkg.version, version)
 assert.equal(manifest.version, version)
 assert.equal(lock.version, version)
 assert.equal(lock.packages[''].version, version)
-assert.equal(manifest.requires['tec-tac-framework'], '>=1.17.37,<2.0.0')
-const notes = read('../RELEASE_NOTES_0.12.107.md')
-assert.equal(notes.split(/\r?\n/, 1)[0], '# UI 0.12.107')
-assert.match(notes, /Requires Core 1\.17\.37 or later/)
+assert.equal(manifest.requires['tec-tac-framework'], '>=1.17.38,<2.0.0')
+const notes = read('../RELEASE_NOTES_0.12.108.md')
+assert.equal(notes.split(/\r?\n/, 1)[0], '# UI 0.12.108')
+assert.match(notes, /Requires Core 1\.17\.38 or later/)
+assert.ok(fs.existsSync(new URL('../docs/releases/RELEASE_NOTES_0.12.107.md', import.meta.url)), 'the 0.12.107 notes are archived in docs/releases')
+assert.equal(fs.existsSync(new URL('../RELEASE_NOTES_0.12.107.md', import.meta.url)), false, 'no 0.12.107 notes remain at the root')
 assert.ok(fs.existsSync(new URL('../docs/releases/RELEASE_NOTES_0.12.106.md', import.meta.url)), 'the 0.12.106 notes are archived in docs/releases')
 assert.equal(fs.existsSync(new URL('../RELEASE_NOTES_0.12.106.md', import.meta.url)), false, 'no 0.12.106 notes remain at the root')
-assert.ok(fs.existsSync(new URL('../docs/releases/RELEASE_NOTES_0.12.105.md', import.meta.url)), 'the 0.12.105 notes are archived in docs/releases')
-assert.equal(fs.existsSync(new URL('../RELEASE_NOTES_0.12.105.md', import.meta.url)), false, 'no 0.12.105 notes remain at the root')
+
+// 0.12.108: the debounce, flush(), the two plain refusals and hideControl are documented, with the release that ships them.
+for (const member of ['flush()']) assert.ok(doc.includes(member), `the doc names ${member}`)
+assert.match(source, /^\s+async flush\(/m, 'the source has flush')
+assert.ok(doc.includes('400 ms'), 'the doc gives the 400 ms window')
+assert.ok(doc.includes('2 seconds'), 'the doc gives the 2 second maximum wait')
+for (const code of ['audit_failed', 'module_not_allowed', 'hideControl']) assert.ok(doc.includes(code), `the doc names ${code}`)
+assert.ok(doc.includes('Your change was not saved. Tec-Tac could not record it, so the old value stays. Try again in a moment.'), 'the doc gives the 503 message')
+assert.ok(doc.includes('You may not use this module, so its settings are not available to you.'), 'the doc gives the 403 message')
+assert.ok(doc.includes('UI 0.12.108'), 'the doc names UI 0.12.108')
+assert.ok(doc.includes('Core 1.17.38'), 'the doc names Core 1.17.38')
+assert.match(source, /const DEBOUNCE_MS = 400/)
+assert.match(source, /const MAX_WAIT_MS = 2000/)
+assert.equal(api.split('ui.authenticated.modulePreferences').length - 1, 1, 'the runtime API page still carries the row note once')
 
 // The test script runs the new tests, in order.
-for (const name of ['tactical-ui-preferences-0.12.106', 'tactical-ui-apply-0.12.106', 'date-format-0.12.106', 'module-preferences-0.12.106', 'module-preferences-docs-0.12.106']) {
+for (const name of ['tactical-ui-preferences-0.12.106', 'tactical-ui-apply-0.12.106', 'date-format-0.12.106', 'module-preferences-0.12.106', 'module-preferences-docs-0.12.106', 'loading-bar-theme-colours-0.12.108', 'module-preferences-debounce-0.12.108']) {
   assert.ok(pkg.scripts.test.includes(`tests/${name}.mjs`), `npm test runs ${name}`)
 }
 
