@@ -64,6 +64,14 @@ export function formatWithPattern(value, pattern) {
   return String(pattern ?? '').replace(TOKEN, (token, escaped) => (escaped !== undefined ? escaped : tokenValue(token, date)))
 }
 
+// 0.12.107: the letters in a pattern, outside [escaped text], that formatWithPattern does not recognise. The formatter writes
+// them as they are, and Tactical may read them as date parts. Each letter appears once, in order. Formatting is unchanged.
+const RECOGNISED_TOKEN = /YYYY|YY|MMMM|MMM|MM|M|Do|DD|D|dddd|ddd|HH|H|hh|h|mm|m|ss|s|SSS|A|a|ZZ|Z/g
+export function unknownDateFormatLetters(pattern) {
+  const outside = String(pattern ?? '').replace(/\[[^\]]*\]/g, '').replace(RECOGNISED_TOKEN, '')
+  return [...new Set(outside.match(/[A-Za-z]/g) || [])]
+}
+
 function personalFormat() {
   try {
     const value = state.context?.tactical_ui?.date_format

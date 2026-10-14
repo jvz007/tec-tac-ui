@@ -9,6 +9,7 @@ import QuickActionsDialog from './components/QuickActionsDialog.vue'
 import ModuleErrorBoundary from './components/module-error-boundary.js'
 import HelpDrawer from './components/HelpDrawer.vue'
 import NoticeDrawer from './components/NoticeDrawer.vue'
+import LoadingBar from './components/LoadingBar.vue'
 import { logoutTacticalSession } from './api'
 import { state, loadContext, recordModuleRuntimeError } from './state'
 import { requestLeave } from './unsaved'
@@ -379,5 +380,6 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
     <QuickActionsDialog v-if="!popupLayout" v-model="quickActionsOpen" />
     <UnsavedChangesDialog />
     <ConfirmDialog v-if="confirmService" :service="confirmService" />
+    <LoadingBar />
   </div>
 </template>

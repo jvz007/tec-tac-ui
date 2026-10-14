@@ -54,6 +54,8 @@ export function createModulePreferencesService() {
   return Object.freeze({
     // api is the module's guarded api(); isSignedOut() and isAbandoned() come from the loader.
     forModule(moduleId, { api, isSignedOut, isAbandoned } = {}) {
+      // 0.12.107: a missing api is named here, at creation, instead of a raw TypeError on the first call.
+      if (typeof api !== 'function') throw new Error("modulePreferences needs the module's api helper")
       const id = String(moduleId ?? '')
       const base = `/api/tfd/module-preferences/${encodeURIComponent(id)}/`
       let shut = false

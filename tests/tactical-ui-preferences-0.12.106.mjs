@@ -140,6 +140,12 @@ assert.match(card, /<router-link to="\/preferences">Tec-Tac preferences<\/router
 assert.match(card, /Tec-Tac header theme is separate/, 'the note says the two themes are separate')
 assert.match(card, /import \{ saveMyTacticalUiPreferences \} from '\.\.\/account'/, 'the card saves through src/account.js')
 assert.match(card, /if \(busy\.value \|\| !hasChanges\.value \|\| problem\.value\) return/, 'Save is refused while nothing changed or a check fails')
+// 0.12.107 (held Medium): the saved URL Action choice does not hold Save for other fields; a URL Action change is still refused by the local check.
+assert.match(card, /<button class="btn primary" :disabled="busy \|\| !hasChanges \|\| !!problem" @click="save">/, 'Save is not held by the URL Action choice')
+assert.doesNotMatch(card, /<button class="btn primary" :disabled="[^"]*urlActionBlocked/, 'no URL Action term on the Save button')
+// 0.12.107 (Q48): the colours always show, and the card says so.
+assert.doesNotMatch(card, /only when it differs/, 'the card no longer says the colours show only when they differ')
+assert.match(card, /Tec-Tac always shows these colours, Tactical's defaults included\. High contrast shows its own theme colours instead\./)
 // The parent applies only after Core accepted the change: the emit comes after the awaited save, inside the try.
 assert.match(card, /try \{\s*const result = await saveTacticalUiWorkflow\([\s\S]*?emit\('saved'[\s\S]*?\} catch \(err\)/, 'emit only after Core accepted the save')
 assert.doesNotMatch(card, /block_dashboard_login/, 'block_dashboard_login is never named by the form')

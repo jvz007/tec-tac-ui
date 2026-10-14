@@ -334,7 +334,8 @@ export function createNotificationService({ api, router, userKey, isSignedOut } 
     }
     const startedAt = Date.now()
     try {
-      const payload = await api('/api/tfd/ui/notices/?state=unread&limit=100')
+      // 0.12.107: the background notice poll is quiet, so it never shows the top loading bar.
+      const payload = await api('/api/tfd/ui/notices/?state=unread&limit=100', { quiet: true })
       const rows = Array.isArray(payload?.notices) ? payload.notices : []
       const firstCheck = !serverPollSeeded
       // The first check reads the time of the last check before this check writes its own.

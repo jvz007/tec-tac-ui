@@ -1,3 +1,5 @@
+import { beginLoadingRequest, endLoadingRequest } from './loading-bar.js'
+
 // PROD_URL without trailing slashes, so base + '/api/...' never builds '//api'.
 export function apiBase() {
   return String(window._env_?.PROD_URL || '').replace(/\/+$/, '')
@@ -136,11 +138,16 @@ function failure(message, status, payload = null) {
 }
 
 // fetch() rejects with a TypeError (or an AbortError) when no response arrives.
-async function fetchOrFail(url, init) {
+// 0.12.107: every request counts toward the top loading bar (src/loading-bar.js), whatever its outcome, unless the internal
+// `quiet` option is set (Core's own background polls). The count changes nothing about the result, the error or the status.
+async function fetchOrFail(url, init, { quiet = false } = {}) {
+  if (!quiet) beginLoadingRequest()
   try {
     return await fetch(url, init)
   } catch (error) {
     throw decorateFailure(error, 0, null)
+  } finally {
+    if (!quiet) endLoadingRequest()
   }
 }
 
@@ -441,7 +448,9 @@ export async function validateTacticalSession() {
   throw failure(`Tactical session verification failed: ${response.status} ${response.statusText}`, response.status)
 }
 
-async function authenticatedRawRequest(path, options = {}) {
+async function authenticatedRawRequest(path, rawOptions = {}) {
+  // 0.12.107: `quiet` is internal (Core's own polls). It is stripped here and never reaches fetch().
+  const { quiet = false, ...options } = rawOptions
   const base = apiBase()
   const token = tacticalToken()
   if (!base) throw failure(NO_API_URL_MESSAGE, 0)
@@ -456,7 +465,7 @@ async function authenticatedRawRequest(path, options = {}) {
     headers: buildHeaders(options, { accept: '*/*', jsonContentType: false }),
     credentials: 'include',
     cache: options.cache || 'no-store',
-  })
+  }, { quiet: quiet === true })
 
   if (!response.ok) {
     const payload = response.status === 204 ? null : await parseResponsePayload(response.clone())

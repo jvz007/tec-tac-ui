@@ -1,9 +1,10 @@
 // 0.12.106: applies the Tactical UI preferences Core returns (Core 1.17.35). Two jobs:
 // (1) the small scalars stay in context.tactical_ui, which the module runtime reads (the choice lists are dropped);
-// (2) the five colours become CSS custom properties on the document root, only when the person's choice differs from
-// Tactical's own default. At the default the property is removed, so the theme tokens (--ok, --warn, --danger, --accent)
-// stay in charge and no parallel palette is added. Only values this file resolves are ever set; a hostile or unknown
-// string sets nothing.
+// (2) the five colours become CSS custom properties on the document root. 0.12.107: they are always set for a signed-in
+// person, Tactical's defaults included, so Tec-Tac shows Tactical's palette. A colour Tec-Tac cannot show (such as a
+// numbered shade, deep-purple-3) is replaced by that field's Tactical default, so nothing hostile or unknown is ever set.
+// Signed out (no tactical_ui object) all five properties are removed. High contrast does not read them: src/styles.css
+// gives that theme its own rules, so a theme switch needs no JavaScript.
 
 // Field, CSS property and Tactical's default for each colour (Tactical 1.5.2 accounts.User defaults).
 export const TACTICAL_COLOUR_FIELDS = Object.freeze({
@@ -29,14 +30,15 @@ export const TACTICAL_UI_CONTEXT_KEYS = Object.freeze([
   'date_format',
 ])
 
-// Brand names follow Tec-Tac's theme tokens. Base names are the Material 500 values Quasar uses for them.
-// Numbered shades (such as deep-purple-3) are not in this table, so they set nothing and the default look stays.
+// Brand names are Tactical's own Quasar brand colours (the four hex values of Tactical's quasar.variables.sass, the read-only
+// reference). Only these values are taken; no code is copied.
 const BRAND_COLOURS = Object.freeze({
-  info: 'var(--accent)',
-  positive: 'var(--ok)',
-  negative: 'var(--danger)',
-  warning: 'var(--warn)',
+  info: '#31CCEC',
+  positive: '#21BA45',
+  negative: '#C10015',
+  warning: '#F2C037',
 })
+// Base names are the Material 500 values Quasar uses for them.
 const BASE_COLOURS = Object.freeze({
   red: '#F44336',
   pink: '#E91E63',
@@ -76,18 +78,25 @@ export function resolveTacticalColour(value) {
   return null
 }
 
-// One string that changes whenever any of the five colours changes. The App.vue watch reads it.
+// A key that changes whenever a colour changes, and whenever the person signs in or out. A signed-out context (null) and a
+// signed-in one with empty fields differ, so the App.vue watch applies Tactical's defaults on sign-in.
 export function tacticalColourKey(tacticalUi) {
-  return Object.keys(TACTICAL_COLOUR_FIELDS).map((field) => (typeof tacticalUi?.[field] === 'string' ? tacticalUi[field] : '')).join('|')
+  if (!tacticalUi || typeof tacticalUi !== 'object') return 'signed-out'
+  return ['signed-in', ...Object.keys(TACTICAL_COLOUR_FIELDS).map((field) => (typeof tacticalUi[field] === 'string' ? tacticalUi[field] : ''))].join('|')
 }
 
-// Sets or removes the five custom properties on root. An object with no colours (a sign-out) removes all five.
+// Sets the five custom properties on root for a signed-in person, each to the chosen colour or, when Tec-Tac cannot show
+// the choice, to that field's Tactical default. Without a tactical_ui object (signed out) all five are removed.
 export function applyTacticalColours(root, tacticalUi) {
   if (!root || !root.style) return
+  const signedIn = Boolean(tacticalUi) && typeof tacticalUi === 'object'
   for (const [field, { property, fallback }] of Object.entries(TACTICAL_COLOUR_FIELDS)) {
-    const chosen = typeof tacticalUi?.[field] === 'string' ? tacticalUi[field] : ''
-    const css = chosen && chosen !== fallback ? resolveTacticalColour(chosen) : null
-    if (css) root.style.setProperty(property, css)
-    else root.style.removeProperty(property)
+    if (!signedIn) {
+      root.style.removeProperty(property)
+      continue
+    }
+    const chosen = typeof tacticalUi[field] === 'string' ? tacticalUi[field] : ''
+    const css = resolveTacticalColour(chosen) || resolveTacticalColour(fallback)
+    root.style.setProperty(property, css)
   }
 }

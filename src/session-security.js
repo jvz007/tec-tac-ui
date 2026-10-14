@@ -34,7 +34,8 @@ async function maybeSendActivity({ force = false } = {}) {
   // flight, markActivity() sets it again and the next interval preserves it.
   dirty = false
   try {
-    await apiFetch('/api/tfd/session/activity/', { method: 'POST' })
+    // 0.12.107: a background heartbeat, so it stays off the top loading bar (quiet).
+    await apiFetch('/api/tfd/session/activity/', { method: 'POST', quiet: true })
     lastSentAt = Date.now()
     return true
   } catch (error) {
@@ -51,7 +52,7 @@ function scheduleTimer() {
 }
 
 async function loadSessionPolicy() {
-  const response = await apiFetch('/api/tfd/session/current/')
+  const response = await apiFetch('/api/tfd/session/current/', { quiet: true })
   heartbeatSeconds = normalizeHeartbeat(response?.policy?.activity_heartbeat_seconds)
   configured = true
   scheduleTimer()

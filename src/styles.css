@@ -277,11 +277,22 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .dialog-tabs [role="tab"][aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);background:rgba(var(--accent-rgb),.12)}
 .dialog-tabs [role="tab"]:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 @media(max-width:760px){.modal-panel.modal-wide{width:100%}}
-/* 0.12.106 Tactical colours: the custom properties are set by src/tactical-ui-apply.js only when the person chose a colour; the theme token is the fallback. */
+/* 0.12.106/0.12.107 Tactical colours: src/tactical-ui-apply.js sets the custom properties for a signed-in person, Tactical's defaults included; signed out they are removed and the theme token is the fallback. High contrast keeps its own palette: its rules below read the theme tokens, not the Tactical colours. */
 .dashboard-core-metric.tone-info strong{color:var(--tactical-dash-info-color,var(--accent))}
 .dashboard-core-metric.tone-positive strong{color:var(--tactical-dash-positive-color,var(--ok))}
 .dashboard-core-metric.tone-negative strong{color:var(--tactical-dash-negative-color,var(--danger))}
 .dashboard-core-metric.tone-warning strong{color:var(--tactical-dash-warning-color,var(--warn))}
+:root[data-theme="high-contrast"] .dashboard-core-metric.tone-info strong{color:var(--accent)}
+:root[data-theme="high-contrast"] .dashboard-core-metric.tone-positive strong{color:var(--ok)}
+:root[data-theme="high-contrast"] .dashboard-core-metric.tone-negative strong{color:var(--danger)}
+:root[data-theme="high-contrast"] .dashboard-core-metric.tone-warning strong{color:var(--warn)}
+/* 0.12.107 top loading bar (src/components/LoadingBar.vue): a 4px strip fixed to the top of the window, above the top bar and
+   the dialogs, that never takes a pointer. It takes the Tactical loading bar colour; high contrast reads the theme accent. */
+.app-loading-bar-host{position:fixed;top:0;left:0;right:0;height:4px;z-index:1500;pointer-events:none;overflow:hidden}
+.app-loading-bar{position:absolute;top:0;left:0;width:30%;height:4px;background:var(--tactical-loading-bar-color,var(--accent));animation:app-loading-bar-sweep 1.2s ease-in-out infinite}
+:root[data-theme="high-contrast"] .app-loading-bar{background:var(--accent)}
+@keyframes app-loading-bar-sweep{from{left:-30%}to{left:100%}}
+@media (prefers-reduced-motion: reduce){.app-loading-bar{left:0;width:100%;animation:none}}
 .tactical-ui-group{margin:16px 0 6px;font:calc(10.5px * var(--font-scale)) var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .tactical-colour-row{display:flex;align-items:center;gap:8px}
 .tactical-colour-row input{flex:1 1 auto;min-width:0}

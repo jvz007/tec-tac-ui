@@ -5,7 +5,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { changedFields, saveTacticalUiWorkflow, tacticalUiProblem } from '../my-account-workflows'
 import { saveMyTacticalUiPreferences } from '../account'
-import { formatWithPattern } from '../date-format'
+import { formatWithPattern, unknownDateFormatLetters } from '../date-format'
 import { resolveTacticalColour, TACTICAL_COLOUR_FIELDS } from '../tactical-ui-apply'
 
 const props = defineProps({
@@ -51,6 +51,8 @@ const problem = computed(() => (hasChanges.value ? tacticalUiProblem(form, chang
 const urlActionSelected = computed(() => form.agent_dblclick_action === 'urlaction')
 const urlActionBlocked = computed(() => urlActionSelected.value && canRunUrlActions.value === false)
 const dateExample = computed(() => (String(form.date_format || '').trim() ? formatWithPattern(new Date(), form.date_format) : new Date().toLocaleString()))
+// 0.12.107: letters Tec-Tac writes as they are, which Tactical may read as date parts.
+const unknownLetters = computed(() => unknownDateFormatLetters(form.date_format))
 
 // The CSS colour the shell will show for a value, or null when Tec-Tac cannot show that name.
 function shownColour(field) {
@@ -97,7 +99,7 @@ async function save() {
     <label class="permission-row"><input v-model="form.show_community_scripts" type="checkbox" role="switch" /><span class="permission-copy"><b>Show community scripts</b></span></label>
 
     <h4 class="tactical-ui-group">Colours</h4>
-    <p class="muted smalltext">Use a Quasar colour name such as red, or a # colour of 3, 4, 6 or 8 digits. Tec-Tac uses your colour only when it differs from Tactical's default.</p>
+    <p class="muted smalltext">Use a Quasar colour name such as red, or a # colour of 3, 4, 6 or 8 digits. Tec-Tac always shows these colours, Tactical's defaults included. High contrast shows its own theme colours instead.</p>
     <label v-for="field in COLOUR_FIELDS" :key="field" class="field tactical-colour-field">
       <span>{{ COLOUR_LABELS[field] }}</span>
       <span class="tactical-colour-row">
@@ -109,9 +111,9 @@ async function save() {
 
     <h4 class="tactical-ui-group">Dates</h4>
     <label class="field"><span>Date format (empty uses the browser default)</span><input v-model="form.date_format" type="text" maxlength="30" autocomplete="off" aria-describedby="date-format-example"></label>
-    <p id="date-format-example" class="muted smalltext">Example: {{ dateExample }}. Letters: YYYY, MMM, DD, HH, mm, ss and so on. Text in [square brackets] is shown as written.</p>
+    <p id="date-format-example" class="muted smalltext">Example: {{ dateExample }}. Letters: YYYY, MMM, DD, HH, mm, ss and so on. Text in [square brackets] is shown as written.<template v-if="unknownLetters.length"> Tec-Tac shows {{ unknownLetters.join(', ') }} as written. Tactical may read them as date parts.</template></p>
 
     <p v-if="problem" class="muted smalltext tactical-ui-problem">{{ problem }}</p>
-    <div class="editor-actions"><button class="btn primary" :disabled="busy || !hasChanges || !!problem || urlActionBlocked" @click="save">{{ busy ? 'Saving…' : 'Save Tactical preferences' }}</button></div>
+    <div class="editor-actions"><button class="btn primary" :disabled="busy || !hasChanges || !!problem" @click="save">{{ busy ? 'Saving…' : 'Save Tactical preferences' }}</button></div>
   </section>
 </template>
