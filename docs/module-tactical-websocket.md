@@ -25,9 +25,41 @@ session.input('hostname\n')
 ```
 
 - `moduleId` is your own module id, or the core module you replace under AD-20. Any other id is refused before any request.
-- `kind` is `agent-terminal`. Any other kind is refused before any request.
+- `kind` is `agent-terminal` or `server-terminal` (UI 0.12.105, see below). Any other kind is refused before any request.
 - `agentId` is text of 1 to 100 characters with no control characters.
 - `open()` resolves with the session once the socket is open. It rejects with a plain message otherwise.
+
+## The server terminal (`server-terminal`, UI 0.12.105)
+
+The kind `server-terminal` opens a shell on the Tec-Tac server through Tactical's own terminal (AD-35). It needs Core 1.17.34 or
+later (`tec-tac-framework >=1.17.34,<2.0.0`). `agent-terminal` is unchanged.
+
+```js
+const session = await context.tacticalWebSocket.open('globalsettings', 'server-terminal', { signal: controller.signal })
+session.on('output', ({ output }) => appendToTerminal(output))
+session.on('close', ({ message }) => showLine(message))
+session.input('uptime
+')
+```
+
+- The ticket is `POST /api/tfd/tactical-websocket/globalsettings/server-terminal/tickets/` with the body exactly `{}`. Do not pass
+  `agentId`: the helper refuses it before any request, because Core answers 400 `invalid_ticket_request` to any key.
+- The `path` in Core's answer must be exactly `/ws/tfd/server-terminal/<ticket>/`. The address has no query, no token and no
+  subprotocol, as for `agent-terminal`.
+- There is no start frame. The shell starts when the socket is accepted. `session.start()` throws a plain error and sends nothing.
+- `session.input(text)` sends `{action: 'trmmcli.input', data: {input}}`. `session.resize(rows, cols)` sends
+  `{action: 'trmmcli.resize', data: {rows, cols}}`. `session.kill()` sends `{action: 'trmmcli.disconnect'}`. `session.close()`
+  closes the socket normally, and Tactical ends the shell. The 64 KB and size limits are the same.
+- Tactical's answer `trmmcli.output` `{data: {output, messageId}}` reaches the `output` event.
+- The helper sends nothing extra for session activity. Core counts input and resize on the server.
+- Only the module's own id may open this kind. The AD-20 replaced-module exception does not apply: the owner is the enabled core
+  module `globalsettings`, and Core allows no replacement.
+- Close codes for this kind: 4401 `signin-ended`, 4003 `not-allowed` (you are not allowed to use the server terminal, or your
+  superuser standing ended), 4502 `audit-unavailable` (Core could not record the start, so no shell started), 4503 `unavailable`,
+  1000 `normal`. 4502 and 4003 are terminal refusals. Nothing reconnects or retries.
+- Ticket refusals: 403 `superuser_required` (Only a superuser can use the server terminal.) and 403 `server_terminal_disabled`
+  (The server terminal is turned off in Tactical's global settings.). Both keep `error.status` and `error.code`, and neither is
+  retried. Hide the entry for a person who is not a superuser and where Tactical turns it off (AD-12). Hiding is not authorization.
 
 ## What happens on every open
 
@@ -94,6 +126,8 @@ The helper keeps `error.status` and `error.code` from Core. The text is plain:
 | 400 `invalid_agent_id` | Core's text: The agent id is not valid. |
 | 401 | Your Tec-Tac session ended. Sign in again. (The shell has already ended the session.) |
 | 403 `websocket_owner_required` | This module cannot open that terminal. |
+| 403 `superuser_required` | Only a superuser can use the server terminal. (`server-terminal`, UI 0.12.105) |
+| 403 `server_terminal_disabled` | The server terminal is turned off in Tactical's global settings. (`server-terminal`, UI 0.12.105) |
 | 403 `tactical_permission_denied` | Core's text, which names the Tactical permission `can_use_terminal`. |
 | 404 `object_not_found` | Core's text. |
 | 404 `websocket_kind_not_found` | Core's text. |
@@ -143,5 +177,9 @@ Core writes the export row. The row is:
   terminal tab;
 - the bound-module rule above;
 - Core 1.17.31 or later, and UI 0.12.102 or later.
+
+Since UI 0.12.105 and Core 1.17.34 the row also covers the kind `server-terminal`: the frames `trmmcli.input`, `trmmcli.resize`
+and `trmmcli.disconnect`, no start, the close codes 4502 and 4003 as terminal refusals, the two 403 ticket refusals, and the
+own-id-only rule with no AD-20 replacement. `agent-terminal` is unchanged.
 
 This UI release does not claim that the export lists the row yet. `reviews/requests/core.md` asks for it.

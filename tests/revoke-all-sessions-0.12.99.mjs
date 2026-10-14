@@ -8,7 +8,7 @@ import path from 'node:path'
 const read = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8')
 const dataUrl = (code) => `data:text/javascript;base64,${Buffer.from(code).toString('base64')}`
 const pkg = JSON.parse(read('../tec_tac_package.json'))
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.33,<2.0.0')
+assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.34,<2.0.0')
 
 // No file under src/ ever sends include_current false.
 function walk(dir, out = []) {

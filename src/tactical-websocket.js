@@ -4,6 +4,8 @@
 // Import-free: the transport, the socket class and the API base are injected, so no token, header or storage is built or
 // read here. A fresh ticket is asked for on every open; a ticket is never reused or retried. No frame is ever logged.
 // Core and Tactical decide the permission (can_use_terminal). The helper does not pre-check it.
+// 0.12.105: a per-kind table (KINDS) holds what differs between kinds: the ticket body, the socket path, the frames and the
+// close codes. 'agent-terminal' is unchanged. 'server-terminal' (AD-35, Core 1.17.34) is added beside it.
 
 const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9_-]*$/
 const TICKET_PATTERN = /^[A-Za-z0-9_-]{43}$/
@@ -22,13 +24,45 @@ const CLOSE_CODES = {
   4003: { reason: 'not-allowed', message: 'You are not allowed to use the terminal on this endpoint.' },
   4503: { reason: 'unavailable', message: "Tactical's terminal is not available right now. Try again later." },
 }
+const SERVER_CLOSE_CODES = {
+  4401: CLOSE_CODES[4401],
+  4003: { reason: 'not-allowed', message: 'You are not allowed to use the server terminal, or your superuser standing ended.' },
+  4502: { reason: 'audit-unavailable', message: 'The server terminal could not start because Core could not record it. No shell was started.' },
+  4503: CLOSE_CODES[4503],
+}
 const CLOSE_NORMAL = { reason: 'normal', message: 'The terminal closed.' }
 const CLOSE_UNEXPECTED = { reason: 'unexpected', message: 'The terminal connection closed unexpectedly.' }
 const NO_ANSWER = "Tactical's terminal did not answer. Try again."
 const NOT_OPENED = 'The terminal was not opened.'
 const BAD_ANSWER = 'Core sent an unexpected terminal answer. No terminal was opened.'
 const BAD_BASE = 'The Tactical API address is not set to an http or https address, so the terminal cannot open.'
+const NO_START = 'The server terminal starts when it opens. It has no start step.'
+const NO_AGENT = 'The server terminal is not tied to an endpoint, so it takes no agent id.'
 const NOT_OPEN = 'The terminal is not open. Open it again.'
+
+// What differs between kinds. Anything not listed here is the same for every kind.
+const KINDS = Object.freeze({
+  'agent-terminal': Object.freeze({
+    needsAgent: true,
+    body: (agentId) => ({ agent_id: agentId }),
+    path: (ticket) => `/ws/tfd/agent-terminal/${ticket}/`,
+    closeCodes: CLOSE_CODES,
+    start: (shell, runAsUser) => ({ action: 'start', shell, run_as_user: runAsUser === true }),
+    input: (text) => ({ action: 'input', data: text }),
+    resize: (rows, cols) => ({ action: 'resize', rows, cols }),
+    kill: () => ({ action: 'kill' }),
+  }),
+  'server-terminal': Object.freeze({
+    needsAgent: false,
+    body: () => ({}),
+    path: (ticket) => `/ws/tfd/server-terminal/${ticket}/`,
+    closeCodes: SERVER_CLOSE_CODES,
+    start: null,
+    input: (text) => ({ action: 'trmmcli.input', data: { input: text } }),
+    resize: (rows, cols) => ({ action: 'trmmcli.resize', data: { rows, cols } }),
+    kill: () => ({ action: 'trmmcli.disconnect' }),
+  }),
+})
 
 function refuse(message, { status = 0, code = null } = {}) {
   return Object.assign(new Error(message), { status, payload: null, code })
@@ -42,6 +76,8 @@ function ticketRefusal(error) {
   let message
   if (status === 401) message = 'Your Tec-Tac session ended. Sign in again.'
   else if (status === 403 && code === 'websocket_owner_required') message = 'This module cannot open that terminal.'
+  else if (status === 403 && code === 'superuser_required') message = 'Only a superuser can use the server terminal.'
+  else if (status === 403 && code === 'server_terminal_disabled') message = "The server terminal is turned off in Tactical's global settings."
   else if (status === 403 && code === 'tactical_permission_denied') message = coreText || 'Your Tactical role does not allow the terminal.'
   else if (status === 404 && (code === 'object_not_found' || code === 'websocket_kind_not_found')) message = coreText || 'That agent or terminal was not found.'
   else if (status === 400 && code === 'invalid_agent_id') message = coreText || 'The agent id is not valid.'
@@ -98,7 +134,7 @@ function createEvents() {
 }
 
 // One terminal. The public session has only the documented members; the socket is driven through `driver`.
-function createSession({ sessionId, socket, onGone }) {
+function createSession({ sessionId, socket, onGone, kind }) {
   const events = createEvents()
   let state = 'connecting'
   let rejectOpen = null
@@ -157,22 +193,23 @@ function createSession({ sessionId, socket, onGone }) {
     get status() { return state },
     on(name, fn) { return events.add(name, fn) },
     start({ shell = '', runAsUser = false } = {}) {
+      if (!kind.start) throw refuse(NO_START)
       if (typeof shell !== 'string') throw refuse('The shell must be text.')
       if (shell.length > MAX_SHELL) throw refuse(`The shell must be at most ${MAX_SHELL} characters.`)
       if (CONTROL.test(shell)) throw refuse('The shell must not contain control characters.')
-      sendFrame({ action: 'start', shell, run_as_user: runAsUser === true })
+      sendFrame(kind.start(shell, runAsUser))
     },
     input(text) {
       if (typeof text !== 'string' || text === '') throw refuse('The terminal input must be text, and not empty.')
       if (inputBytes(text) > MAX_INPUT_BYTES) throw refuse('The terminal input must be at most 64 KB.')
-      sendFrame({ action: 'input', data: text })
+      sendFrame(kind.input(text))
     },
     resize(rows, cols) {
       const whole = (value) => Number.isInteger(value) && value >= 1 && value <= MAX_TERMINAL_SIZE
       if (!whole(rows) || !whole(cols)) throw refuse(`The terminal rows and columns must be whole numbers from 1 to ${MAX_TERMINAL_SIZE}.`)
-      sendFrame({ action: 'resize', rows, cols })
+      sendFrame(kind.resize(rows, cols))
     },
-    kill() { sendFrame({ action: 'kill' }) },
+    kill() { sendFrame(kind.kill()) },
     // A normal close. Tactical kills the shell when the socket closes.
     close() {
       if (state === 'closed') return
@@ -197,7 +234,7 @@ function createSession({ sessionId, socket, onGone }) {
     onSocketMessage(text) { if (state === 'open') receive(text) },
     onSocketClose(code) {
       if (state === 'closed') return
-      const known = CLOSE_CODES[code]
+      const known = kind.closeCodes[code]
       const info = code === 1000 ? CLOSE_NORMAL : (known || CLOSE_UNEXPECTED)
       gone({ code, reason: known ? known.reason : info.reason, message: info.message }, { wasConnecting: state === 'connecting' })
     },
@@ -221,8 +258,10 @@ export function createTacticalWebSocket({ api, wsBase, WebSocketImpl, connectTim
 
   async function open(moduleId, kind, { agentId, signal } = {}) {
     checkModuleId(moduleId)
-    if (kind !== TERMINAL_KIND) throw refuse('The terminal kind is not one the shell knows.')
-    checkAgentId(agentId)
+    const spec = Object.hasOwn(KINDS, kind) ? KINDS[kind] : null
+    if (!spec) throw refuse('The terminal kind is not one the shell knows.')
+    if (spec.needsAgent) checkAgentId(agentId)
+    else if (agentId !== undefined) throw refuse(NO_AGENT)
     if (typeof api !== 'function') throw refuse('The terminal needs the Tec-Tac request helper.')
     if (typeof WebSocketImpl !== 'function') throw refuse('This browser cannot open a terminal socket.')
     // The API base is checked before any request, so a bad address never asks for a ticket.
@@ -233,7 +272,7 @@ export function createTacticalWebSocket({ api, wsBase, WebSocketImpl, connectTim
     const path = `/api/tfd/tactical-websocket/${encodeURIComponent(moduleId)}/${encodeURIComponent(kind)}/tickets/`
     let answer
     try {
-      answer = await api(path, { method: 'POST', body: JSON.stringify({ agent_id: agentId }), signal })
+      answer = await api(path, { method: 'POST', body: JSON.stringify(spec.body(agentId)), signal })
     } catch (error) {
       throw ticketRefusal(error)
     }
@@ -242,7 +281,7 @@ export function createTacticalWebSocket({ api, wsBase, WebSocketImpl, connectTim
     const ticketPath = answer?.path
     if (typeof ticket !== 'string' || !TICKET_PATTERN.test(ticket)) throw refuse(BAD_ANSWER)
     if (typeof sessionId !== 'string' || sessionId === '') throw refuse(BAD_ANSWER)
-    if (ticketPath !== `/ws/tfd/agent-terminal/${ticket}/`) throw refuse(BAD_ANSWER)
+    if (ticketPath !== spec.path(ticket)) throw refuse(BAD_ANSWER)
 
     const address = socketAddress(baseOf(), ticketPath)
     let socket
@@ -257,6 +296,7 @@ export function createTacticalWebSocket({ api, wsBase, WebSocketImpl, connectTim
       sessionId,
       socket,
       onGone: (done) => { live.delete(done) },
+      kind: spec,
     })
     live.add(session)
     socket.addEventListener('open', () => driver.onSocketOpen())

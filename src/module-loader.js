@@ -212,8 +212,11 @@ export function bindTacticalWebSocket(shared, { moduleId, replaces, isAbandoned 
       if (shut) throw refuseOperation(`module ${moduleId} was unloaded; tacticalWebSocket.open() is refused`)
       const replacedId = typeof replaces === 'function' ? replaces() : replaces
       const replaced = typeof replacedId === 'string' && replacedId ? replacedId : ''
-      if (targetModuleId !== moduleId && targetModuleId !== replaced) {
-        const allowed = replaced ? `"${moduleId}" or "${replaced}"` : `"${moduleId}"`
+      // 0.12.105: 'server-terminal' is owned by the enabled globalsettings module and has no AD-20 replacement, so it is
+      // allowed for the module's own id only.
+      const ownOnly = kind === 'server-terminal'
+      if (targetModuleId !== moduleId && (ownOnly || targetModuleId !== replaced)) {
+        const allowed = replaced && !ownOnly ? `"${moduleId}" or "${replaced}"` : `"${moduleId}"`
         throw refuseOperation(`Module "${moduleId}" cannot open Tactical terminals for "${String(targetModuleId)}". It may use only ${allowed}.`)
       }
       if (live.size + pending >= TERMINAL_LIMIT) {

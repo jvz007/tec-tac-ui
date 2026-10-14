@@ -53,7 +53,7 @@ const notices = read('THIRD-PARTY-NOTICES.md')
 assert.ok(notices.includes('xterm.js') && notices.includes('MIT'), 'THIRD-PARTY-NOTICES.md names xterm.js and MIT')
 assert.ok(notices.includes('5.5.0') && notices.includes('0.10.0'), 'the notices give the exact versions')
 assert.ok(notices.includes('public/licenses/xterm-LICENSE.txt'), 'the notices point to the licence file')
-const notes = read('RELEASE_NOTES_0.12.104.md')
+const notes = read('docs/releases/RELEASE_NOTES_0.12.104.md')
 assert.ok(notes.includes('xterm.js') && notes.includes('MIT'), 'the release notes name xterm.js and MIT')
 assert.ok(notes.includes('xterm-LICENSE.txt'), 'the release notes name the licence file')
 

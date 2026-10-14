@@ -151,6 +151,18 @@ session.start({ shell: '', runAsUser: false })
 
 Wait until `create()` resolves before you call `session.start()`, so the first output has a place to go.
 
+For the server terminal (kind `server-terminal`, UI 0.12.105) the pairing is the same, but the session has no start step: the
+shell starts when the socket opens, so wire `onInput` and `onResize` first and do not call `session.start()`.
+
+```js
+const session = await context.tacticalWebSocket.open('globalsettings', 'server-terminal', {})
+const terminal = await context.terminal.create(host, {
+  onInput: (data) => session.input(data),
+  onResize: ({ rows, cols }) => session.resize(rows, cols),
+})
+session.on('output', ({ output }) => terminal.write(output))
+```
+
 ## Requirements
 
 - UI 0.12.104 or later.
