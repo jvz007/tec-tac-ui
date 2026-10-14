@@ -302,6 +302,22 @@ The full rules, the frames, the close codes (4401, 4003, 4503, 1000 and the rest
 
 **Contract row (UI 0.12.102, not yet in the export).** Browser contract row `ui.authenticated.websocket` (phase `authenticated`, service `tacticalWebSocket`): operations `open`, `session.start`, `session.input`, `session.resize`, `session.kill`, `session.close` and `session.on`; events `output`, `error`, `info` and `close`; close codes 4401 (`signin-ended`), 4003 (`not-allowed`) and 4503 (`unavailable`) with the messages in `module-tactical-websocket.md`, and 1000 and any other code with the plain close messages there; the ticket route `POST /api/tfd/tactical-websocket/<module_id>/<kind>/tickets/` with exactly `{agent_id}`, and its refusals; a ticket lives 30 seconds and works once, and a new one is asked for each terminal tab; the bound-module rule above; Core 1.17.31 or later and UI 0.12.102 or later. Core writes the export row. This release does not claim the export lists it; `reviews/requests/core.md` asks for it.
 
+## Terminal widget (terminal)
+
+`context.terminal.create(host, options)` draws a terminal in the module's window with xterm.js (UI 0.12.104). The options, the
+keys, the copy and paste rules and the safety rules are in `module-terminal.md`.
+
+- The shell gives each module its own copy. `create()` and `clear()` are the only members of the scope. The shell calls `clear()`
+  when the module is unloaded or its start-up fails.
+- `create()` resolves with a handle. The handle has `write`, `writeln`, `clear`, `reset`, `focus`, `blur`, `fit`, `size`, `getText`,
+  `getSelection`, `hasSelection`, `copy`, `paste`, `setTheme`, `setOptions`, `onInput`, `onResize` and `dispose`.
+- Options: `theme`, `fontFamily`, `fontSize`, `cursorBlink`, `scrollback`, `convertEol`, `focus`, `rows`, `cols`, `ariaLabel`,
+  `onInput` and `onResize`.
+- Limits: scrollback 50000 lines at most; 8 live terminals per module; resize 1 to 1000 rows and columns.
+- `registerPublic(context)` gets no terminal.
+
+**Contract row (UI 0.12.104, not yet in the export).** Browser contract row `ui.authenticated.terminal` (phase `authenticated`, service `terminal`): operations `create`, `write`, `writeln`, `clear`, `reset`, `focus`, `blur`, `fit`, `size`, `getText`, `getSelection`, `hasSelection`, `copy`, `paste`, `setTheme`, `setOptions`, `onInput`, `onResize` and `dispose`; options `theme`, `fontFamily`, `fontSize` (8 to 32, default 14), `cursorBlink` (default true), `scrollback` (0 to 50000, default 50000), `convertEol` (default true), `focus` (default true), `rows` (default 24), `cols` (default 80), `ariaLabel`, `onInput` and `onResize`; limits scrollback 50000, 8 terminals per module, resize 1 to 1000; the scope is bound to the calling module, so no module id is passed; no `registerPublic` access; Core 1.17.33 or later and UI 0.12.104 or later. Core writes the export row. This release does not claim the export lists it; `reviews/requests/core.md` asks for it.
+
 ## hasTacticalPermission(flag)
 
 `context.hasTacticalPermission(flag)` answers whether Tactical's own role lets the signed-in user do something, for example `can_list_agents`.

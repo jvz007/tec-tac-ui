@@ -19,6 +19,7 @@ import { createQuickActionRegistry } from './quick-actions'
 import { createNotificationService } from './notifications'
 import { createModuleServiceRegistry } from './module-services'
 import { createJobFollowService } from './job-follow'
+import { createTerminalService } from './terminal-widget'
 import { createModuleStatusService } from './module-status'
 import { createAuditService } from './audit'
 import { createHelpService } from './help'
@@ -109,6 +110,9 @@ async function bootstrap() {
   const jobs = createJobFollowService({ isSignedOut, isTrustedContext: () => state.contextSource === 'backend' })
   window.addEventListener(TACTICAL_SESSION_INVALID_EVENT, () => jobs.stopAll())
   window.addEventListener('pagehide', () => jobs.stopAll())
+  // Shared terminal widget (0.12.104). xterm.js loads on the first create(), so it stays out of the main bundle. Each module
+  // gets a copy bound to its own id; the loader clears a module's terminals when it is unloaded or fails.
+  const terminal = createTerminalService()
   watch(() => state.status, (status) => {
     if (status === 'unauthenticated') {
       notifications.clearAll()
@@ -222,6 +226,7 @@ async function bootstrap() {
       header,
       services: moduleServices,
       jobs,
+      terminal,
       isSignedOut,
       tacticalWebSocket,
       modules,

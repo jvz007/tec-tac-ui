@@ -7,6 +7,9 @@ Added in UI 0.12.102. It needs Core 1.17.31 or later (`tec-tac-framework >=1.17.
 `tacticalWebSocket` is bound to each module, as `tacticalOperation` is. The Core contract row is
 `ui.authenticated.websocket`; see [the runtime API](module-runtime-api.md#tactical-terminal-socket-tacticalwebsocket).
 
+To show the session in a window, use the [terminal widget](module-terminal.md) (UI 0.12.104). It draws the output, sends typed
+input to the session and reports the size, so the session's `input` and `resize` are all a module needs to wire up.
+
 ## Open a terminal
 
 ```js

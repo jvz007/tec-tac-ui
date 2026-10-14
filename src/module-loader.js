@@ -542,6 +542,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
     let moduleServices = null
     let moduleTerminals = null
     let moduleJobs = null
+    let moduleTerminalWidgets = null
 
     // Removes everything this module contributed: registry entries, navigation
     // items and routes. Safe to run more than once.
@@ -559,6 +560,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
       try { moduleServices?.clear?.() } catch {}
       try { moduleTerminals?.close?.() } catch {}
       try { moduleJobs?.clear?.() } catch {}
+      try { moduleTerminalWidgets?.clear?.() } catch {}
       try { runtime.removeNavigation?.(descriptor.id) } catch {}
       for (const remove of routeRemovers.splice(0)) {
         try { remove() } catch {}
@@ -614,7 +616,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
       moduleServices = guardAbandoned(runtime.services?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null, isAbandoned, descriptor.id)
       // removeNavigation is Core's: the loader calls it when a module fails. A
       // module can add navigation but never remove another module's items.
-      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, tacticalWebSocket: sharedTacticalWebSocket, jobs: _sharedJobs, isSignedOut: _signedOutProbe, services: _sharedServices, ...moduleRuntime } = runtime
+      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, tacticalWebSocket: sharedTacticalWebSocket, jobs: _sharedJobs, terminal: _sharedTerminal, isSignedOut: _signedOutProbe, services: _sharedServices, ...moduleRuntime } = runtime
       const guardedApi = guardTransport(runtime, descriptor.id, replacedSnapshot.get(descriptor.id) || '')
       // Background job follow (0.12.103): bound to this module's id, its guarded api and its notifications.
       moduleJobs = guardAbandoned(runtime.jobs?.forModule?.(descriptor.id, {
@@ -622,6 +624,8 @@ export async function loadUiModules(runtime, modules, options = {}) {
         notifications: moduleNotifications,
         isAbandoned,
       }) || null, isAbandoned, descriptor.id)
+      // Shared terminal widget (0.12.104): bound to this module's id, refused after abandonment, cleared on unload.
+      moduleTerminalWidgets = guardAbandoned(runtime.terminal?.forModule?.(descriptor.id, { isAbandoned }) || null, isAbandoned, descriptor.id)
       // The terminal helper (0.12.102) is bound to this module: its own id, plus the one core module it replaces.
       const boundTerminal = sharedTacticalWebSocket && typeof sharedTacticalWebSocket.open === 'function'
         ? bindTacticalWebSocket(sharedTacticalWebSocket.open, {
@@ -657,6 +661,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
         ...boundConfirm,
         ...boundTerminalRuntime,
         ...(moduleJobs ? { jobs: moduleJobs } : {}),
+        ...(moduleTerminalWidgets ? { terminal: moduleTerminalWidgets } : {}),
         context: runtime.state.context,
         router: moduleRouter,
         addNavigation,
