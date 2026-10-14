@@ -11,7 +11,7 @@ const settings = await import(dataUrl(settingsSource))
 const pkg = JSON.parse(read('../tec_tac_package.json'))
 
 // The Core range this release needs.
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.31,<2.0.0')
+assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.32,<2.0.0')
 
 // (1) canEditSystemName is true only for an effective superuser.
 assert.equal(settings.canEditSystemName({ user: { superuser: true }, permissions: [] }), true)

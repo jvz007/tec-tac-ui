@@ -1,4 +1,4 @@
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
 import { createApp } from 'vue'
 import App from './App.vue'
 import { apiBase, apiBlob, apiFetch, apiRaw, apiText, beginTacticalSso, loadStaticModuleManifest, publicApiFetch, TACTICAL_SESSION_INVALID_EVENT } from './api'
@@ -18,6 +18,7 @@ import { createDashboardWidgetRegistry } from './dashboard-widgets'
 import { createQuickActionRegistry } from './quick-actions'
 import { createNotificationService } from './notifications'
 import { createModuleServiceRegistry } from './module-services'
+import { createJobFollowService } from './job-follow'
 import { createModuleStatusService } from './module-status'
 import { createAuditService } from './audit'
 import { createHelpService } from './help'
@@ -85,7 +86,10 @@ async function bootstrap() {
   const dashboardWidgets = createDashboardWidgetRegistry({ hasPermission })
   const quickActions = createQuickActionRegistry({ hasPermission })
   // The person key scopes the notices this browser has toasted (0.12.101). Core's user id is Tactical's own id.
-  const notifications = createNotificationService({ api: apiFetch, router, userKey: () => state.context?.user?.id })
+  // 0.12.103: nothing toasts and nothing is stored while the person is signed out (status 'unauthenticated' only: a context
+  // refresh is 'loading' and a backend outage is 'failed', and both still toast).
+  const isSignedOut = () => state.status === 'unauthenticated'
+  const notifications = createNotificationService({ api: apiFetch, router, userKey: () => state.context?.user?.id, isSignedOut })
   const audit = createAuditService(apiFetch)
   const help = createHelpService()
   const ssoProviders = createSsoProviderRegistry({
@@ -100,6 +104,17 @@ async function bootstrap() {
   const tacticalWebSocket = createTacticalWebSocket({ api: apiFetch, wsBase: () => apiBase(), WebSocketImpl: window.WebSocket })
   window.addEventListener(TACTICAL_SESSION_INVALID_EVENT, () => tacticalWebSocket.closeAll())
   window.addEventListener('pagehide', () => tacticalWebSocket.closeAll())
+  // Background job follow (0.12.103). The shell polls, so a follow outlives the module's page. Every follow stops when the
+  // sign-in ends and when the page is left.
+  const jobs = createJobFollowService({ isSignedOut, isTrustedContext: () => state.contextSource === 'backend' })
+  window.addEventListener(TACTICAL_SESSION_INVALID_EVENT, () => jobs.stopAll())
+  window.addEventListener('pagehide', () => jobs.stopAll())
+  watch(() => state.status, (status) => {
+    if (status === 'unauthenticated') {
+      notifications.clearAll()
+      jobs.stopAll()
+    }
+  }, { flush: 'sync' })
   registerCoreDashboardWidgets(dashboardWidgets, state)
   registerCoreHelpArticles(help)
 
@@ -206,6 +221,8 @@ async function bootstrap() {
       help,
       header,
       services: moduleServices,
+      jobs,
+      isSignedOut,
       tacticalWebSocket,
       modules,
     }

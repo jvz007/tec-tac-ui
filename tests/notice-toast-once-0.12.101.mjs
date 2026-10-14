@@ -357,6 +357,6 @@ const app = fs.readFileSync(new URL('../src/App.vue', import.meta.url), 'utf8')
 assert.match(app, /@click="notifications\.dismissByPerson\(toast\.id\)"/, 'the toast × marks the notice read')
 assert.doesNotMatch(app, /notifications\.dismiss\(toast\.id\)/, 'the toast × no longer uses the plain dismiss')
 const main = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
-assert.match(main, /createNotificationService\(\{ api: apiFetch, router, userKey: \(\) => state\.context\?\.user\?\.id \}\)/)
+assert.match(main, /createNotificationService\(\{ api: apiFetch, router, userKey: \(\) => state\.context\?\.user\?\.id, isSignedOut \}\)/)
 
 console.log('notice-toast-once-0.12.101: ok')

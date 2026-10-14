@@ -96,6 +96,12 @@ toast. A module does not call this; it is listed here so a module author knows w
   unread in the bell.
 - If the browser's storage is blocked, the ids stay in memory for that page only.
 
+## Signed out (UI 0.12.103)
+
+Nothing shows and nothing is sent while the person is signed out (the shell's status is `unauthenticated`). A call to `show`, `info`, `success`, `warning` or `error` returns `null`: no toast, no stored notice. The shell also drops every toast when the session ends, and the toast stack never renders on the sign-in screen. A module that is still inside `register()` when the session ends can call notifications, but nothing appears.
+
+A request that fails with status 401 means the person is signed out. Do not toast it. The sign-in screen tells the person. Keep a warning for a real failure such as a 5xx answer or a network error. While signed out, the shell refuses a module's `api`, `apiRaw`, `apiBlob` and `apiText` calls itself, with status 401 and code `signed_out`, and sends no request.
+
 ## Duration rules
 
 Default display times are:

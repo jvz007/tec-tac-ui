@@ -87,6 +87,8 @@ function markUnauthenticated(error = null) {
 if (typeof window !== 'undefined' && !window.__tecTacSessionInvalidListener) {
   window.__tecTacSessionInvalidListener = true
   window.addEventListener(TACTICAL_SESSION_INVALID_EVENT, (event) => {
+    // 0.12.103: already on the sign-in screen. The first reason stays; a later no-token 401 must not overwrite it.
+    if (state.status === 'unauthenticated') return
     const detail = event?.detail || {}
     const error = new Error(detail.message || 'Your Tactical session is no longer valid. Sign in again.')
     error.status = 401

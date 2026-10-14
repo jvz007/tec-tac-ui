@@ -233,6 +233,21 @@ Modules cannot remove navigation. `register(context)` has `addNavigation` but no
 - A route path or alias that starts with `/popup/` is refused: that prefix belongs to the shell (UI 0.12.96). The shell adds the popup address itself for a route with `meta.popup`. An alias that another path or alias already owns is refused too.
 - Every other member passes through unchanged: `push`, `replace`, `resolve`, `currentRoute`, `getRoutes` and the rest.
 
+## Signed out (UI 0.12.103)
+
+When the session ends (idle timeout, revoked, expired, sign-out), the shell shows the sign-in screen and stops serving modules:
+
+- `loadUiModules` loads no further module. The rest appear in `state.moduleLoad.skipped` with reason `signed-out`.
+- `api`, `apiRaw`, `apiBlob` and `apiText` refuse at once with an error of status `401` and code `signed_out`. No request leaves the page and no second session-invalid event is raised, so the first sign-in message ("Your Tec-Tac session expired due to inactivity. Sign in again.") stays on screen.
+- Notifications show nothing and store nothing (see `module-notifications.md`).
+- Background job follows stop without a notice (see `module-job-follow.md`).
+
+A module treats status 401 as "signed out" and stays silent. It never toasts a 401.
+
+## Background job follow (jobs)
+
+`context.jobs.follow(descriptor)` asks the shell to watch a job after the person leaves the page. See `module-job-follow.md` (UI 0.12.103).
+
 ## hasPermission(code)
 
 `context.hasPermission(code)` answers whether the signed-in user holds a Tec-Tac permission code.

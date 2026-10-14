@@ -168,6 +168,8 @@ watch(() => state.status, (status) => {
   } else {
     stopSessionActivityTracking()
     notifications?.stopServerNoticePolling?.()
+    // 0.12.103: no toast stays on the sign-in screen.
+    if (status === 'unauthenticated') notifications?.clearAll?.()
   }
 }, { immediate: true })
 function applyFontScale(value) { document.documentElement.style.setProperty('--font-scale', String(value || 1)) }
@@ -355,7 +357,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
       <div v-else-if="state.status === 'failed'" class="state-panel danger-panel"><span class="eyebrow">SESSION OR BACKEND CHECK FAILED</span><h2>Tec-Tac could not complete startup</h2><p class="mono">{{ state.error?.message }}</p><div class="row"><button class="btn" @click="retry">Retry</button><button v-if="tacticalWebUiInstalled" class="btn ghost" type="button" @click="backToTactical">Open Tactical</button></div></div>
       <ModuleErrorBoundary v-else-if="state.status === 'ready'" :provider="routeProvider" label="page" variant="page" :reset-key="route.fullPath" :recorder="recordModuleRuntimeError"><router-view /></ModuleErrorBoundary>
     </main>
-    <div v-if="notifications?.toasts?.length" class="toast-stack" role="region" aria-label="Notifications" aria-live="polite">
+    <div v-if="state.status !== 'unauthenticated' && notifications?.toasts?.length" class="toast-stack" role="region" aria-label="Notifications" aria-live="polite">
       <article v-for="toast in notifications.toasts" :key="toast.id" class="toast-card" :class="`toast-${toast.level}`" role="status">
         <div class="toast-marker" aria-hidden="true">{{ toast.level === 'success' ? '✓' : (toast.level === 'warning' ? '!' : (toast.level === 'error' ? '×' : 'i')) }}</div>
         <div class="toast-body">

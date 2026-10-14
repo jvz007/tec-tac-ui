@@ -145,12 +145,25 @@ export function guardTacticalOperationPath(path, moduleId, replacedId) {
   }
 }
 
+// 0.12.103: true when the shell says the person is signed out (status 'unauthenticated'). A runtime without isSignedOut is
+// never signed out, so older callers and tests behave as before.
+function runtimeSignedOut(runtime) {
+  try { return typeof runtime?.isSignedOut === 'function' && runtime.isSignedOut() === true } catch { return false }
+}
+
+// While signed out a module's call is refused here, with no request and no second session-invalid event. Status 401 and code
+// 'signed_out' tell the module the person is signed out; it stays silent and lets the sign-in screen speak.
+function signedOutRefusal() {
+  return Object.assign(new Error('You are signed out. Sign in again to continue.'), { status: 401, payload: null, code: 'signed_out' })
+}
+
 function guardTransport(runtime, moduleId, replacedId) {
   const out = {}
   for (const key of ['api', 'apiRaw', 'apiBlob', 'apiText']) {
     const fn = runtime[key]
     if (typeof fn !== 'function') continue
     out[key] = function guardedTransport(path, ...rest) {
+      if (runtimeSignedOut(runtime)) return Promise.reject(signedOutRefusal())
       try { guardTacticalOperationPath(path, moduleId, replacedId) } catch (error) { return Promise.reject(error) }
       return fn(path, ...rest)
     }
@@ -493,8 +506,15 @@ export async function loadUiModules(runtime, modules, options = {}) {
   for (const item of modules) replacedSnapshot.set(item?.id, replacedModuleId(item, runtime))
   Object.freeze(replacedSnapshot)
 
+  let signedOutStop = false
   for (const descriptor of modules) {
     if (!descriptor.entry) continue
+    // 0.12.103: once the session has ended nothing more loads. The rest are skipped, not failed.
+    if (signedOutStop || runtimeSignedOut(runtime)) {
+      signedOutStop = true
+      skipped.push({ id: descriptor.id, reason: 'signed-out' })
+      continue
+    }
     if (!moduleIsAllowed(descriptor, {
       permissions: runtime.state.context.permissions || [],
       permissionSet,
@@ -521,6 +541,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
     let moduleHeader = null
     let moduleServices = null
     let moduleTerminals = null
+    let moduleJobs = null
 
     // Removes everything this module contributed: registry entries, navigation
     // items and routes. Safe to run more than once.
@@ -537,6 +558,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
       try { moduleHeader?.clear?.() } catch {}
       try { moduleServices?.clear?.() } catch {}
       try { moduleTerminals?.close?.() } catch {}
+      try { moduleJobs?.clear?.() } catch {}
       try { runtime.removeNavigation?.(descriptor.id) } catch {}
       for (const remove of routeRemovers.splice(0)) {
         try { remove() } catch {}
@@ -592,7 +614,14 @@ export async function loadUiModules(runtime, modules, options = {}) {
       moduleServices = guardAbandoned(runtime.services?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null, isAbandoned, descriptor.id)
       // removeNavigation is Core's: the loader calls it when a module fails. A
       // module can add navigation but never remove another module's items.
-      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, tacticalWebSocket: sharedTacticalWebSocket, services: _sharedServices, ...moduleRuntime } = runtime
+      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, tacticalWebSocket: sharedTacticalWebSocket, jobs: _sharedJobs, isSignedOut: _signedOutProbe, services: _sharedServices, ...moduleRuntime } = runtime
+      const guardedApi = guardTransport(runtime, descriptor.id, replacedSnapshot.get(descriptor.id) || '')
+      // Background job follow (0.12.103): bound to this module's id, its guarded api and its notifications.
+      moduleJobs = guardAbandoned(runtime.jobs?.forModule?.(descriptor.id, {
+        api: guardedApi.api,
+        notifications: moduleNotifications,
+        isAbandoned,
+      }) || null, isAbandoned, descriptor.id)
       // The terminal helper (0.12.102) is bound to this module: its own id, plus the one core module it replaces.
       const boundTerminal = sharedTacticalWebSocket && typeof sharedTacticalWebSocket.open === 'function'
         ? bindTacticalWebSocket(sharedTacticalWebSocket.open, {
@@ -622,11 +651,12 @@ export async function loadUiModules(runtime, modules, options = {}) {
         : {}
       await plugin.register({
         ...moduleRuntime,
-        ...guardTransport(runtime, descriptor.id, replacedSnapshot.get(descriptor.id) || ''),
+        ...guardedApi,
         ...boundTacticalOperation,
         ...boundPopupHref,
         ...boundConfirm,
         ...boundTerminalRuntime,
+        ...(moduleJobs ? { jobs: moduleJobs } : {}),
         context: runtime.state.context,
         router: moduleRouter,
         addNavigation,

@@ -108,7 +108,7 @@ function createdSince(createdAt, checkedAt) {
   return Number.isFinite(created) && created > checkedAt
 }
 
-export function createNotificationService({ api, router, userKey } = {}) {
+export function createNotificationService({ api, router, userKey, isSignedOut } = {}) {
   const toasts = reactive([])
   const history = reactive({
     open: false,
@@ -262,7 +262,18 @@ export function createNotificationService({ api, router, userKey } = {}) {
     }
   }
 
+  // 0.12.103: while the person is signed out (status 'unauthenticated') nothing toasts and nothing is stored. A module that
+  // is still finishing register() when the session ends cannot put a notice on the sign-in screen.
+  function signedOut() {
+    try {
+      return typeof isSignedOut === 'function' && isSignedOut() === true
+    } catch {
+      return false
+    }
+  }
+
   function showForModule(moduleId, input, forcedLevel = null, persistNotice = true) {
+    if (signedOut()) return null
     const normalized = normalize(moduleId, input, forcedLevel)
     const existing = normalized.dedupeKey
       ? toasts.find((item) => item.moduleId === moduleId && item.dedupeKey === normalized.dedupeKey)
@@ -391,6 +402,12 @@ export function createNotificationService({ api, router, userKey } = {}) {
     }
   }
 
+  // Drops every toast and timer. The shell calls it when the session ends.
+  function clearAll() {
+    for (const toast of [...toasts]) dismiss(toast.id)
+    for (const id of [...timers.keys()]) clearTimer(id)
+  }
+
   function clearModule(moduleId) {
     for (const toast of [...toasts]) if (toast.moduleId === moduleId) dismiss(toast.id)
   }
@@ -502,7 +519,7 @@ export function createNotificationService({ api, router, userKey } = {}) {
   }
 
   return Object.freeze({
-    toasts, history, dismiss, invoke, forModule, setInitialUnreadCount,
+    toasts, history, dismiss, clearAll, invoke, forModule, setInitialUnreadCount,
     loadHistory, openHistory, closeHistory, markRead, dismissByPerson, markAllRead, clearRead, activateHistoryNotice,
     pollServerNotices, startServerNoticePolling, stopServerNoticePolling,
   })

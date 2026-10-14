@@ -39,7 +39,7 @@ globalThis.fetch = async (url, options = {}) => {
 const api = await import(fileUrl('../src/api.js'))
 const runtimeContext = await import(fileUrl('../src/runtime-context.js'))
 const pkg = JSON.parse(read('../tec_tac_package.json'))
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.31,<2.0.0')
+assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.32,<2.0.0')
 
 // preferences.js imports from 'vue', './api' and './runtime-context'; the absolute file URLs keep the real modules.
 const preferencesSource = read('../src/preferences.js')
