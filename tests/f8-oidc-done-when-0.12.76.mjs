@@ -96,7 +96,7 @@ const callback = fs.readFileSync(new URL('../src/views/SsoCallbackView.vue', imp
 assert.match(callback, /completeTacticalSso\(\)/)
 const nginx = fs.readFileSync(new URL('../scripts/repair-nginx.sh', import.meta.url), 'utf8')
 assert.match(nginx, /location = \/account\/provider\/callback/)
-assert.match(nginx, /return 302 \/tec-tac\/#\/sso\/callback;/)
+assert.match(nginx, /return 302 \/tec-tac\/#\/sso\/callback\\\$is_args\\\$args;/)
 const docs = fs.readFileSync(new URL('../docs/module-sso.md', import.meta.url), 'utf8')
 assert.match(docs, /session_created/)
 assert.match(docs, /external identity provider owns their MFA lifecycle/)

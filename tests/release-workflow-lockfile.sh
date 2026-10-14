@@ -2,9 +2,10 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+source "$ROOT/tests/python-bin.sh"
 
 [[ -f package-lock.json ]] || { echo '[TEST] FAIL package-lock.json is missing' >&2; exit 1; }
-python3 - <<'PY'
+"${PY}" - <<'PY'
 import json
 from pathlib import Path
 pkg=json.loads(Path('package.json').read_text())

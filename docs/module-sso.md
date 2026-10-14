@@ -31,7 +31,7 @@ Tec-Tac deliberately mirrors Tactical's own SSO flow instead of inventing a para
    - `callback_url=<Tec-Tac frontend origin>/account/provider/callback`
    - `csrfmiddlewaretoken=<browser csrftoken cookie>`
 3. Tactical/django-allauth owns the provider redirect and OIDC callback. After the provider succeeds, allauth has a temporary authenticated Django session and returns the browser to `/account/provider/callback`.
-4. The Tec-Tac nginx integration redirects that exact frontend callback to `#/sso/callback`.
+4. The Tec-Tac nginx integration redirects that exact frontend callback to `#/sso/callback`. The redirect keeps the query string, so a provider error such as `error=access_denied` reaches the callback view, which shows a fixed message and never exchanges a token. A server installed before 0.12.110 gets this only after `sudo bash scripts/repair-nginx.sh` is run again.
 5. Core UI posts to Tactical's `/accounts/ssoproviders/token/` using `credentials: include` and `X-CSRFToken`. Tactical validates the pending SSO session, creates the Knox access token, records Tactical's successful SSO login audit and invalidates the temporary Django session.
 6. Tec-Tac stores the returned Knox token inside Core UI code, verifies it against Tactical, then crosses `/api/tfd/ui/context/`. That applies Tec-Tac's normal session-security boundary and creates the standard `session_created` audit row for a new trusted session.
 

@@ -58,7 +58,7 @@ const router = fs.readFileSync(new URL('../src/router.js', import.meta.url), 'ut
 assert.match(router, /path: '\/sso\/callback'.*public: true/)
 const nginx = fs.readFileSync(new URL('../scripts/repair-nginx.sh', import.meta.url), 'utf8')
 assert.match(nginx, /location = \/account\/provider\/callback/)
-assert.match(nginx, /return 302 \/tec-tac\/#\/sso\/callback;/)
+assert.match(nginx, /return 302 \/tec-tac\/#\/sso\/callback\\\$is_args\\\$args;/)
 const docs = fs.readFileSync(new URL('../docs/module-sso.md', import.meta.url), 'utf8')
 assert.match(docs, /must not own `\/account\/provider\/callback`/i)
 assert.match(docs, /receive a Tactical access token/i)

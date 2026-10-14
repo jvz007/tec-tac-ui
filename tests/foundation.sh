@@ -2,14 +2,16 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
+# Python for the JSON checks below: the first interpreter that really runs (0.12.110).
+source "${ROOT}/tests/python-bin.sh"
 
 VERSION="$(tr -d '\r\n' < "${ROOT}/VERSION")"
-PACKAGE_VERSION="$(python3 - "${ROOT}/package.json" <<'PY_VERSION'
+PACKAGE_VERSION="$("${PY}" - "${ROOT}/package.json" <<'PY_VERSION'
 import json,sys
 print(json.load(open(sys.argv[1],encoding='utf-8'))['version'])
 PY_VERSION
 )"
-MANIFEST_VERSION="$(python3 - "${ROOT}/tec_tac_package.json" <<'PY_MANIFEST'
+MANIFEST_VERSION="$("${PY}" - "${ROOT}/tec_tac_package.json" <<'PY_MANIFEST'
 import json,sys
 print(json.load(open(sys.argv[1],encoding='utf-8'))['version'])
 PY_MANIFEST
@@ -99,7 +101,7 @@ node --check "${ROOT}/src/main.js"
 node --check "${ROOT}/src/module-loader.js"
 node --check "${ROOT}/src/router.js"
 
-python3 - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" "${VERSION}" <<'PY'
+"${PY}" - "${ROOT}/package.json" "${ROOT}/examples/reference-module/tec_tac_ui.json" "${VERSION}" <<'PY'
 import json,sys
 package=json.load(open(sys.argv[1],encoding='utf-8'))
 assert package['version']==sys.argv[3]

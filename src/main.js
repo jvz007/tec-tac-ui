@@ -141,6 +141,8 @@ async function bootstrap() {
   const initialHashTarget = window.location.hash.startsWith('#/')
     ? window.location.hash.slice(1)
     : null
+  // The path without its query, so '/sso/callback?error=...' is still the SSO callback (0.12.110).
+  const initialHashPath = initialHashTarget ? initialHashTarget.split('?')[0] : null
 
   // Popup window (0.12.95). A /popup/ hash opens one module page with no shell chrome. Only that module loads, plus its
   // hard dependencies. No public modules, no dashboard and no notice polling. A /popup/ hash that does not parse is refused.
@@ -170,7 +172,7 @@ async function bootstrap() {
 
   app.mount('#app')
   await router.isReady()
-  if (initialHashTarget?.startsWith('/public/') || initialHashTarget === '/sso/callback') await router.replace(initialHashTarget)
+  if (initialHashTarget?.startsWith('/public/') || initialHashPath === '/sso/callback') await router.replace(initialHashTarget)
 
   // Authenticated context still loads normally. Public routes render regardless
   // of whether this resolves to ready, unauthenticated, or an auth error.
@@ -267,7 +269,7 @@ async function bootstrap() {
     // A fresh tab may target a dynamically registered authenticated route.
     // The core catch-all can resolve before modules are loaded, so replay the
     // original hash after module registration to restore the intended route.
-    if (initialHashTarget && !initialHashTarget.startsWith('/public/') && initialHashTarget !== '/sso/callback') {
+    if (initialHashTarget && !initialHashTarget.startsWith('/public/') && initialHashPath !== '/sso/callback') {
       await router.replace(initialHashTarget)
     }
     // A popup route that did not register (no such route, or no meta.popup) lands on the popup catch-all.

@@ -58,7 +58,8 @@ location = /account/provider/callback {
     # Tactical allauth returns here after the identity provider. Keep the
     # callback Core-owned: modules never see the pending Django session or the
     # Knox token produced from it.
-    return 302 /tec-tac/#/sso/callback;
+    # The query string is kept, so a provider error (for example access_denied) reaches the callback view (0.12.110).
+    return 302 /tec-tac/#/sso/callback\$is_args\$args;
 }
 
 location = /tec-tac/index.html {

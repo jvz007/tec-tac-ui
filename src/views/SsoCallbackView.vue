@@ -1,9 +1,14 @@
 <script setup>
 import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { completeTacticalSso } from '../api'
+import { SSO_PROVIDER_ERROR_MESSAGE, ssoCallbackError } from '../signin-notices'
 
+const route = useRoute()
 const state = ref('working')
 const error = ref('')
+// True when the provider returned an error. Retry is not offered then: a new attempt starts from the sign-in screen.
+const providerError = ref(false)
 
 async function complete() {
   state.value = 'working'
@@ -18,8 +23,19 @@ async function complete() {
   }
 }
 
+// An error return from the provider never reaches the token exchange (0.12.110). The parameter's value is not shown.
+function start() {
+  if (ssoCallbackError(route.query, window.location.search)) {
+    providerError.value = true
+    state.value = 'failed'
+    error.value = SSO_PROVIDER_ERROR_MESSAGE
+    return
+  }
+  void complete()
+}
+
 function backToSignIn() { window.location.replace('/tec-tac/') }
-onMounted(() => { void complete() })
+onMounted(start)
 </script>
 
 <template>
@@ -37,7 +53,7 @@ onMounted(() => { void complete() })
     <template v-else>
       <h2 id="sso-callback-title">SSO sign-in could not be completed</h2>
       <p class="mono" role="alert">{{ error }}</p>
-      <div class="row"><button class="btn" type="button" @click="complete">Retry</button><button class="btn ghost" type="button" @click="backToSignIn">Back to sign in</button></div>
+      <div class="row"><button v-if="!providerError" class="btn" type="button" @click="complete">Retry</button><button class="btn ghost" type="button" @click="backToSignIn">Back to sign in</button></div>
     </template>
   </section>
 </template>

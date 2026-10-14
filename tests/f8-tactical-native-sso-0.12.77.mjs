@@ -150,6 +150,6 @@ assert.match(docs, /_allauth\/browser\/v1\/auth\/provider\/redirect/)
 assert.match(docs, /begin\(\).*backward compatibility/i)
 const nginx = fs.readFileSync(new URL('../scripts/repair-nginx.sh', import.meta.url), 'utf8')
 assert.match(nginx, /location = \/account\/provider\/callback/)
-assert.match(nginx, /return 302 \/tec-tac\/#\/sso\/callback;/)
+assert.match(nginx, /return 302 \/tec-tac\/#\/sso\/callback\\\$is_args\\\$args;/)
 
 console.log('[TEST] PASS F8 Tactical-native allauth SSO handshake')

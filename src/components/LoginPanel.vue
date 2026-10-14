@@ -1,5 +1,5 @@
 <script setup>
-import { computed, inject, nextTick, ref } from 'vue'
+import { computed, inject, nextTick, ref, watch } from 'vue'
 import {
   checkTacticalCredentials,
   clearTacticalSession,
@@ -11,6 +11,8 @@ import {
 import { copyTextWithFeedback } from '../copy-feedback'
 import { SETUP_SESSION_REQUIRED_CODE, enrollmentSetupErrorMessage, signInErrorMessage } from '../mfa-enrollment'
 import { loginSsoEntries, beginLoginSso } from '../extension-surface-workflows'
+import { state } from '../state'
+import { sessionEndedMessage } from '../signin-notices'
 import LoginSsoProviders from './LoginSsoProviders.js'
 
 const uiVersion = __TEC_TAC_UI_VERSION__
@@ -24,12 +26,20 @@ const step = ref('credentials')
 const ssoEntries = computed(() => loginSsoEntries(ssoProviders, { location: window.location, step: step.value }))
 const busy = ref(false)
 const error = ref('')
+// The reason the shell signed the person out (0.12.110). A separate notice from `error`, shown on the credentials step only,
+// and cleared by the first submit. state.error itself is never changed here.
+const sessionNoticeCleared = ref(false)
+const sessionNotice = computed(() => (sessionNoticeCleared.value ? '' : sessionEndedMessage(state.error)))
+// The Show / Hide toggle on the password fields (0.12.110). Hidden by default; every step change hides it again.
+const passwordRevealed = ref(false)
 const setup = ref(null)
 const qrSrc = ref('')
 const qrError = ref('')
 const copied = ref(false)
 const totpInput = ref(null)
 const setupPasswordInput = ref(null)
+
+watch(step, () => { passwordRevealed.value = false })
 
 const setupKey = computed(() => setup.value?.totp_key || '')
 const setupUri = computed(() => setup.value?.qr_url || '')
@@ -44,6 +54,7 @@ function normalizeError(err) {
 async function submitCredentials() {
   error.value = ''
   copied.value = false
+  sessionNoticeCleared.value = true
   if (!username.value.trim() || !password.value) {
     error.value = 'Enter both username and password.'
     return
@@ -197,10 +208,12 @@ function backToCredentials() {
   password.value = ''
   error.value = ''
   copied.value = false
+  passwordRevealed.value = false
 }
 
 function finishLogin() {
   password.value = ''
+  passwordRevealed.value = false
   twofactor.value = ''
   backupCode.value = ''
   clearQr()
@@ -235,13 +248,17 @@ function openTactical() {
     </div>
 
     <form v-if="step === 'credentials'" class="login-form" @submit.prevent="submitCredentials">
+      <div v-if="sessionNotice" class="state-inline" role="status">{{ sessionNotice }}</div>
       <label class="field">
         <span>Username</span>
         <input v-model="username" name="username" autocomplete="username" autofocus :disabled="busy" />
       </label>
       <label class="field">
         <span>Password</span>
-        <input v-model="password" name="password" type="password" autocomplete="current-password" :disabled="busy" />
+        <span class="password-field">
+          <input v-model="password" name="password" :type="passwordRevealed ? 'text' : 'password'" autocomplete="current-password" :disabled="busy" />
+          <button class="reveal-toggle" type="button" :aria-pressed="passwordRevealed ? 'true' : 'false'" :aria-label="passwordRevealed ? 'Hide password' : 'Show password'" :disabled="busy" @click="passwordRevealed = !passwordRevealed">{{ passwordRevealed ? 'Hide' : 'Show' }}</button>
+        </span>
       </label>
 
       <div v-if="error" class="auth-error" role="alert">{{ error }}</div>
@@ -325,7 +342,10 @@ function openTactical() {
       <div class="state-inline"><b>Set up two-factor sign-in.</b> Enter your password again to show your authenticator code.</div>
       <label class="field">
         <span>Re-enter current password</span>
-        <input ref="setupPasswordInput" v-model="password" type="password" autocomplete="current-password" :disabled="busy" />
+        <span class="password-field">
+          <input ref="setupPasswordInput" v-model="password" :type="passwordRevealed ? 'text' : 'password'" autocomplete="current-password" :disabled="busy" />
+          <button class="reveal-toggle" type="button" :aria-pressed="passwordRevealed ? 'true' : 'false'" :aria-label="passwordRevealed ? 'Hide password' : 'Show password'" :disabled="busy" @click="passwordRevealed = !passwordRevealed">{{ passwordRevealed ? 'Hide' : 'Show' }}</button>
+        </span>
       </label>
       <div v-if="error" class="auth-error" role="alert">{{ error }}</div>
       <div class="login-actions">

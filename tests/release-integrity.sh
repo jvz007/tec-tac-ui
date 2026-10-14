@@ -2,8 +2,9 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
+source "${ROOT}/tests/python-bin.sh"
 VERSION="$(tr -d '\r\n' < "${ROOT}/VERSION")"
-python3 - "${ROOT}/package.json" "${ROOT}/tec_tac_package.json" "${VERSION}" <<'PY_VERSION'
+"${PY}" - "${ROOT}/package.json" "${ROOT}/tec_tac_package.json" "${VERSION}" <<'PY_VERSION'
 import json,sys
 pkg=json.load(open(sys.argv[1],encoding='utf-8'))
 manifest=json.load(open(sys.argv[2],encoding='utf-8'))
@@ -25,7 +26,7 @@ CURRENT_NOTE="RELEASE_NOTES_${VERSION}.md"
 printf '%s\n' "${ROOT_NOTES[@]}" | grep -Fxq "${CURRENT_NOTE}" || \
   fail "current release note ${CURRENT_NOTE} not found"
 
-python3 - "${ROOT}" "${VERSION}" <<'PY_ARCHIVE'
+"${PY}" - "${ROOT}" "${VERSION}" <<'PY_ARCHIVE'
 from pathlib import Path
 import re,sys
 root=Path(sys.argv[1]); version=sys.argv[2]
