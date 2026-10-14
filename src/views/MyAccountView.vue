@@ -1,16 +1,16 @@
 <script setup>
 import { computed, onMounted, reactive, ref } from 'vue'
-import { applyTacticalUiPreferences, changePasswordWorkflow, resetTotpWorkflow, revokeOthersWorkflow, saveTacticalUiWorkflow } from '../my-account-workflows'
+import { applyTacticalUiPreferences, changePasswordWorkflow, resetTotpWorkflow, revokeOthersWorkflow } from '../my-account-workflows'
 import { passwordFailureMessage } from '../my-account-password'
 import { clearTacticalSession, tecTacTotpIssuer } from '../api'
 import { useConfirm } from '../confirm-dialog'
 import { state } from '../state'
+import TacticalUiPreferencesCard from '../components/TacticalUiPreferencesCard.vue'
 import {
   changeMyPassword,
   getMyAccount,
   resetMyTotp,
   revokeMyOtherSessions,
-  saveMyTacticalUiPreferences,
 } from '../account'
 
 const confirmAction = useConfirm()
@@ -22,7 +22,6 @@ const data = ref(null)
 const password = reactive({ current: '', next: '', confirm: '' })
 const passwordError = ref('')
 const mfa = reactive({ password: '', code: '' })
-const tactical = reactive({ agent_dblclick_action: '', url_action_id: null })
 
 const account = computed(() => data.value?.account || {})
 const mfaStatus = computed(() => data.value?.mfa || {})
@@ -30,7 +29,6 @@ const tacticalUi = computed(() => data.value?.tactical_ui || {})
 // The name the authenticator app lists the account as: Core's system name from the runtime context.
 const systemName = computed(() => tecTacTotpIssuer({ context: state.context }))
 const localAccount = computed(() => account.value.sso_user !== true)
-const urlActionSelected = computed(() => tactical.agent_dblclick_action === 'urlaction')
 
 function flash(message = '') { saved.value = message; error.value = '' }
 function fail(err, fallback) { error.value = err?.message || fallback; saved.value = '' }
@@ -40,8 +38,6 @@ async function load() {
   error.value = ''
   try {
     data.value = await getMyAccount()
-    tactical.agent_dblclick_action = tacticalUi.value.agent_dblclick_action || 'editagent'
-    tactical.url_action_id = tacticalUi.value.url_action_id ?? null
   } catch (err) { fail(err, 'Unable to load My Account.') }
   finally { loading.value = false }
 }
@@ -90,17 +86,11 @@ async function revokeOthers() {
   finally { busy.value = '' }
 }
 
-async function saveTacticalUi() {
-  busy.value = 'tactical'
-  error.value = ''
-  try {
-    const result = await saveTacticalUiWorkflow(tactical, { saveMyTacticalUiPreferences })
-    const preferences = result.preferences || tacticalUi.value
-    data.value = { ...data.value, tactical_ui: preferences }
-    applyTacticalUiPreferences(state.context, preferences)
-    flash(result.message)
-  } catch (err) { fail(err, 'Unable to save Tactical UI preferences.') }
-  finally { busy.value = '' }
+// 0.12.106: the card saves through Core and calls this only after Core accepted the change, so nothing is applied on a refusal.
+function onTacticalUiSaved(preferences, message) {
+  data.value = { ...data.value, tactical_ui: preferences }
+  applyTacticalUiPreferences(state.context, preferences)
+  flash(message)
 }
 
 onMounted(load)
@@ -153,13 +143,6 @@ onMounted(load)
       <div class="editor-actions"><button class="btn" :disabled="busy" @click="revokeOthers">{{ busy === 'sessions' ? 'Signing out…' : 'Sign out my other sessions' }}</button></div>
     </section>
 
-    <section class="card preference-card">
-      <div class="cardhead"><div><span class="eyebrow">F4</span><h3>Tactical agent action</h3></div><span class="pill ok">TACTICAL</span></div>
-      <p class="muted">These values are stored on your Tactical user account and are used by Tactical's agent table.</p>
-      <label class="field"><span>Agent double-click action</span><select v-model="tactical.agent_dblclick_action"><option v-for="item in tacticalUi.agent_dblclick_choices || []" :key="item.value" :value="item.value">{{ item.label }}</option></select></label>
-      <label v-if="urlActionSelected" class="field"><span>Default URL Action</span><select v-model="tactical.url_action_id" :disabled="!tacticalUi.can_run_url_actions"><option :value="null">None</option><option v-for="item in tacticalUi.url_actions || []" :key="item.id" :value="item.id">{{ item.name }}</option></select></label>
-      <p v-if="urlActionSelected && !tacticalUi.can_run_url_actions" class="muted smalltext">Your Tactical role does not permit URL Actions.</p>
-      <div class="editor-actions"><button class="btn primary" :disabled="busy || (urlActionSelected && !tacticalUi.can_run_url_actions)" @click="saveTacticalUi">{{ busy === 'tactical' ? 'Saving…' : 'Save Tactical preferences' }}</button></div>
-    </section>
+    <TacticalUiPreferencesCard :tactical-ui="tacticalUi" @saved="onTacticalUiSaved" />
   </div>
 </template>

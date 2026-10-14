@@ -1,4 +1,5 @@
 <script setup>
+import { formatDateTime } from '../date-format'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   getBackupRestoreDestinations,
@@ -39,7 +40,7 @@ function fmtBytes(value) {
   while (n >= 1024 && i < units.length - 1) { n /= 1024; i++ }
   return `${n < 10 && i ? n.toFixed(1) : Math.round(n)} ${units[i]}`
 }
-function fmtDate(value) { return value ? new Date(value).toLocaleString() : '—' }
+function fmtDate(value) { return value ? formatDateTime(value) : '—' }
 function clearValidation() { validation.value = null; validationJobId.value = ''; confirmRestore.value = false }
 function selectBackup(refValue) { selectedBackupRef.value = refValue; clearValidation() }
 

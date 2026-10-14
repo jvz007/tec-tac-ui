@@ -1,4 +1,5 @@
 <script setup>
+import { formatDateTime } from '../date-format'
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   checkOnlineSystemUpdate,
@@ -450,7 +451,7 @@ async function refreshOnline() {
 function formatCheckedAt(value) {
   if (!value) return 'Never'
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString()
+  return Number.isNaN(date.getTime()) ? String(value) : formatDateTime(date)
 }
 
 async function unlockAdvanced() {

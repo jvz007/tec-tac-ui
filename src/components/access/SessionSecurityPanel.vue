@@ -1,4 +1,5 @@
 <script setup>
+import { formatDateTime } from '../../date-format'
 import { computed, inject, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import {
   getCoreCurrentSession,
@@ -254,7 +255,7 @@ async function selectSection(id) {
 
 function when(value) {
   if (!value) return '—'
-  try { return new Date(value).toLocaleString() } catch { return String(value) }
+  try { return formatDateTime(value) } catch { return String(value) }
 }
 
 function eventSummary(row) {

@@ -1,4 +1,5 @@
 <script setup>
+import { formatDateTime } from '../date-format'
 import { computed, inject, onMounted, ref } from 'vue'
 import {
   canEditRuntimeSettings,
@@ -59,7 +60,7 @@ const uploadDefault = computed(() => (uploadLimit.value ? uploadLimitDefaultText
 const nameValidation = computed(() => validateSystemName(nameDraft.value, { maximum: systemName.value?.maximum_length }))
 const nameDirty = computed(() => systemName.value && nameDraft.value.trim() !== systemName.value.value)
 const nameIsDefault = computed(() => systemName.value && systemName.value.value === systemName.value.default)
-const formatTime = (value) => (value ? new Date(value).toLocaleString() : '—')
+const formatTime = (value) => (value ? formatDateTime(value) : '—')
 
 async function load() {
   loading.value = true

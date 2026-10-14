@@ -1,4 +1,5 @@
 <script setup>
+import { formatDateTime } from '../date-format'
 import { computed, inject, onMounted, ref } from 'vue'
 import { downloadDeveloperContracts, getDeveloperContracts } from '../contracts'
 import { browserContractRows } from '../public-contract-browser'
@@ -41,7 +42,7 @@ onMounted(refresh)
   <div v-if="loading" class="callout mono">Loading live contract registry…</div>
   <template v-else-if="data">
     <div class="grid g4 mb"><article class="tile"><div class="lbl">Core</div><div class="big">{{data.counts?.core||0}}</div><div class="brk">Python contracts</div></article><article class="tile"><div class="lbl">Capabilities</div><div class="big">{{data.counts?.capabilities||0}}</div><div class="brk">cross-module</div></article><article class="tile"><div class="lbl">Scheduler</div><div class="big">{{data.counts?.scheduler_actions||0}}</div><div class="brk">registered actions</div></article><article class="tile"><div class="lbl">HTTP</div><div class="big">{{data.counts?.http||0}}</div><div class="brk">API routes</div></article></div>
-    <div class="contracts-toolbar"><div><span class="label">FRAMEWORK</span><b class="mono">{{data.framework_version}}</b><span class="muted smalltext">Generated {{new Date(data.generated_at).toLocaleString()}}</span></div><label class="search contracts-search"><span class="sr-only">Search contracts</span><input v-model="query" placeholder="Search contracts, modules, permissions…"></label><button class="btn sm" @click="refresh">Refresh</button></div>
+    <div class="contracts-toolbar"><div><span class="label">FRAMEWORK</span><b class="mono">{{data.framework_version}}</b><span class="muted smalltext">Generated {{formatDateTime(data.generated_at)}}</span></div><label class="search contracts-search"><span class="sr-only">Search contracts</span><input v-model="query" placeholder="Search contracts, modules, permissions…"></label><button class="btn sm" @click="refresh">Refresh</button></div>
     <div class="callout contract-rules"><b>Integration boundary</b><span>Python <span class="mono">tec_tac.*</span> contracts inside the backend; HTTP only from browser/external processes. Optional integrations must soft-fail.</span></div>
 
     <div class="section-divider">Core Python contracts</div>

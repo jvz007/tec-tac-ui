@@ -1,7 +1,9 @@
 import { h } from 'vue'
 
-function metricCard(label, value, detail) {
-  return h('div', { class: 'dashboard-core-metric' }, [
+// 0.12.106: tone colours the figure with a Tactical colour property (info, positive, negative or warning). The CSS falls back
+// to the theme token, so nothing changes until the person picks a colour.
+function metricCard(label, value, detail, tone) {
+  return h('div', { class: tone ? `dashboard-core-metric tone-${tone}` : 'dashboard-core-metric' }, [
     h('span', { class: 'label' }, label),
     h('strong', String(value ?? '—')),
     detail ? h('small', detail) : null,
@@ -21,8 +23,8 @@ export function registerCoreDashboardWidgets(registry, state) {
       name: 'CoreSessionDashboardWidget',
       setup() {
         return () => h('div', { class: 'dashboard-core-widget' }, [
-          metricCard('User', state.context.user?.display_name || state.context.user?.username || '—', state.context.user?.username || ''),
-          metricCard('Role', state.context.user?.role || (state.context.user?.superuser ? 'Superuser' : '—')),
+          metricCard('User', state.context.user?.display_name || state.context.user?.username || '—', state.context.user?.username || '', 'info'),
+          metricCard('Role', state.context.user?.role || (state.context.user?.superuser ? 'Superuser' : '—'), undefined, 'info'),
         ])
       },
     },
@@ -38,9 +40,9 @@ export function registerCoreDashboardWidgets(registry, state) {
       name: 'CoreModuleDashboardWidget',
       setup() {
         return () => h('div', { class: 'dashboard-core-widget triple' }, [
-          metricCard('Loaded', state.moduleLoad?.loaded?.length || 0),
-          metricCard('Failed', state.moduleLoad?.failed?.length || 0),
-          metricCard('Skipped', state.moduleLoad?.skipped?.length || 0),
+          metricCard('Loaded', state.moduleLoad?.loaded?.length || 0, undefined, 'positive'),
+          metricCard('Failed', state.moduleLoad?.failed?.length || 0, undefined, 'negative'),
+          metricCard('Skipped', state.moduleLoad?.skipped?.length || 0, undefined, 'warning'),
         ])
       },
     },
@@ -56,8 +58,8 @@ export function registerCoreDashboardWidgets(registry, state) {
       name: 'CoreAccessDashboardWidget',
       setup() {
         return () => h('div', { class: 'dashboard-core-widget' }, [
-          metricCard('Permissions', state.context.permissions?.length || 0, state.context.user?.superuser ? 'superuser' : 'effective grants'),
-          metricCard('Modules', state.context.modules?.length || 0, 'discovered'),
+          metricCard('Permissions', state.context.permissions?.length || 0, state.context.user?.superuser ? 'superuser' : 'effective grants', 'info'),
+          metricCard('Modules', state.context.modules?.length || 0, 'discovered', 'info'),
         ])
       },
     },

@@ -15,6 +15,7 @@ import { requestLeave } from './unsaved'
 import { effectiveTheme, preferenceState, setSessionTheme, updateUserPreferences } from './preferences'
 import { startSessionActivityTracking, stopSessionActivityTracking } from './session-security'
 import { coreNavigation, DEFAULT_SECTION_ORDER } from './core-navigation'
+import { applyTacticalColours, tacticalColourKey } from './tactical-ui-apply'
 import { appHeaderItems, navItemPermitted } from './extension-surface-workflows'
 
 const route = useRoute()
@@ -174,6 +175,11 @@ watch(() => state.status, (status) => {
 }, { immediate: true })
 function applyFontScale(value) { document.documentElement.style.setProperty('--font-scale', String(value || 1)) }
 watch(fontScale, applyFontScale, { immediate: true })
+// 0.12.106: the person's Tactical colours. One watch sets and clears them, so a sign-out (the context is replaced by the
+// empty one) removes them and the next person on this browser starts clean.
+watch(() => tacticalColourKey(state.context?.tactical_ui), () => {
+  applyTacticalColours(document.documentElement, state.context?.tactical_ui)
+}, { immediate: true })
 
 function toggleRail() { railCollapsed.value = !railCollapsed.value }
 function sectionCollapsed(section) { return collapsedSections.value?.[section] === true }

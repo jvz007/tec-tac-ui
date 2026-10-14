@@ -1,4 +1,5 @@
 <script setup>
+import { formatDateTime } from '../date-format'
 import { computed, inject, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useConfirm } from '../confirm-dialog'
@@ -902,7 +903,7 @@ async function loadJobHistory(page=historyPage.value){
     if(historySelectedId.value&&!jobHistory.value.some(x=>x.id===historySelectedId.value))historySelectedId.value=null
   }catch(e){error.value=e?.message||'Unable to load module history.'}finally{historyLoading.value=false}
 }
-function historyTime(value){return value?new Date(value).toLocaleString():'—'}
+function historyTime(value){return value?formatDateTime(value):'—'}
 function historyModules(job){return (job.module_ids?.length?job.module_ids:[job.plugin_id]).filter(Boolean).join(', ')||'—'}
 
 function chooseHotfixFile(){ hotfixFileInput.value?.click() }

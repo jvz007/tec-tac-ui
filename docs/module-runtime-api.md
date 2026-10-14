@@ -2,7 +2,7 @@
 
 Tec-Tac authenticated UI modules receive Core-owned request helpers in `register(context)`. Modules must use these helpers instead of reading `localStorage.access_token`, constructing Tactical `Authorization` headers, or duplicating session-expiry handling.
 
-The `resourceViews` registry also takes grid columns at `endpoint.grid-columns` (UI 0.12.93); see `module-resource-views.md`. This page also covers [the module router](#module-router), [`hasPermission(code)`](#haspermissioncode), [navigation](#navigation-permissions) and [`codeEditor.languages`](#codeeditorlanguages). Modules can also publish and call browser operations through `services`; see `module-services.md` (UI 0.12.101). A module can open a Tactical terminal through `tacticalWebSocket`; see [Tactical terminal socket](#tactical-terminal-socket-tacticalwebsocket) and `module-tactical-websocket.md` (UI 0.12.102).
+The `resourceViews` registry also takes grid columns at `endpoint.grid-columns` (UI 0.12.93); see `module-resource-views.md`. The module user preferences helper (`context.modulePreferences`, UI 0.12.106) is in [Module user preferences](#module-user-preferences-modulepreferences) and `module-preferences.md`. This page also covers [the module router](#module-router), [`hasPermission(code)`](#haspermissioncode), [navigation](#navigation-permissions) and [`codeEditor.languages`](#codeeditorlanguages). Modules can also publish and call browser operations through `services`; see `module-services.md` (UI 0.12.101). A module can open a Tactical terminal through `tacticalWebSocket`; see [Tactical terminal socket](#tactical-terminal-socket-tacticalwebsocket) and `module-tactical-websocket.md` (UI 0.12.102).
 
 
 ## Authenticated runtime context
@@ -243,6 +243,12 @@ When the session ends (idle timeout, revoked, expired, sign-out), the shell show
 - Background job follows stop without a notice (see `module-job-follow.md`).
 
 A module treats status 401 as "signed out" and stays silent. It never toasts a 401.
+
+## Module user preferences (modulePreferences)
+
+UI 0.12.106, Core 1.17.35 or later. `context.modulePreferences` keeps one small per-person choice through Core: `get(name, fallback)`, `getAll()`, `set(name, value)` and `remove(name)`. The module id is bound to the module that receives the helper, so a module reads and writes only its own preferences. A replacement module (AD-20) has no exception. Names and values are checked before any request. Signed-out, abandoned and unloaded calls are refused. Nothing is cached or stored in the browser. `registerPublic(context)` does not get it. The full rules, limits and refusals are in `module-preferences.md`.
+
+**Contract row (UI 0.12.106, not yet in the export).** Browser contract row `ui.authenticated.modulePreferences` (phase `authenticated`, service `modulePreferences`): operations `get`, `getAll`, `set` and `remove`; own id only; the limits and refusals in `module-preferences.md`; Core 1.17.35 or later and UI 0.12.106 or later; no `registerPublic` access. Core writes the export row. This release does not claim the export lists it; `reviews/requests/core.md` asks for it.
 
 ## Background job follow (jobs)
 

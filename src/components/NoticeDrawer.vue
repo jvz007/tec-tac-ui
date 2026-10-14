@@ -1,4 +1,5 @@
 <script setup>
+import { formatDateTime } from '../date-format'
 import { computed, inject } from 'vue'
 
 const notifications = inject('tecTacNotifications', null)
@@ -16,7 +17,7 @@ function when(value) {
   if (diff < minute) return 'just now'
   if (diff < 60 * minute) return `${Math.floor(diff / minute)}m ago`
   if (diff < 24 * 60 * minute) return `${Math.floor(diff / (60 * minute))}h ago`
-  return date.toLocaleString()
+  return formatDateTime(date)
 }
 async function changeFilter(filter) { await notifications?.loadHistory?.({ filter }) }
 </script>

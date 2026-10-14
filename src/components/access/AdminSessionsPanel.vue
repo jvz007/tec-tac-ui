@@ -1,4 +1,5 @@
 <script setup>
+import { formatDateTime } from '../../date-format'
 import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { clearTacticalSession, coreSessionFailureCode } from '../../api'
 import { listActiveLoginSessions, revokeAllLoginSessions, revokeLoginSession, revokeUserLoginSessions } from '../../access'
@@ -23,7 +24,7 @@ const requestGate = createLatestRequestGate()
 
 function when(value) {
   if (!value) return '—'
-  try { return new Date(value).toLocaleString() } catch { return value }
+  try { return formatDateTime(value) } catch { return value }
 }
 
 async function load(targetPage = page.value) {

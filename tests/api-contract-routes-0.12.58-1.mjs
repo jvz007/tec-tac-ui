@@ -46,6 +46,10 @@ for (const route of ['/api/tfd/access/sessions/revoke-all/','/api/tfd/session/th
 // 0.12.102: the fixture is 1.17.31, which adds the terminal ticket route (Core 1.17.31, urls.py).
 assert.equal(fixture.core_version, '1.17.31')
 assert.ok(routes.has('/api/tfd/tactical-websocket/<dynamic>/<dynamic>/tickets/'), 'the terminal ticket route must be in the fixture')
+// 0.12.106: Core 1.17.35 adds the module preference routes (framwork/tec_tac/urls.py: module-preferences/<str:module_id>/ and
+// module-preferences/<str:module_id>/<str:name>/). The fixture stays the 1.17.31 export; these two are added here, by name.
+routes.add('/api/tfd/module-preferences/<dynamic>/')
+routes.add('/api/tfd/module-preferences/<dynamic>/<dynamic>/')
 const missing=[]
 for (const raw of used) {
   const normalized=cleanUsed(raw)

@@ -97,8 +97,9 @@ function decodeToFixedPoint(text) {
 const JUNK_PATTERN = /[\u0000-\u001f\u007f-\u009f\u200b-\u200f\u2028\u2029\ufeff]/g
 function stripJunk(text) { return text.replace(JUNK_PATTERN, '') }
 
-// The module ids named by a tactical-operations or tactical-websocket path, with the route each came from, or null when the
-// path cannot be read safely (callers treat null as a refusal). 0.12.102 adds the ticket route.
+// The module ids named by a tactical-operations, tactical-websocket or module-preferences path, with the route each came from, or
+// null when the path cannot be read safely (callers treat null as a refusal). 0.12.102 adds the ticket route; 0.12.106 adds
+// module-preferences.
 function operationTargets(text) {
   const decoded = decodeToFixedPoint(stripJunk(text))
   if (decoded === null) return null
@@ -112,7 +113,7 @@ function operationTargets(text) {
       out.push(part.toLowerCase())
     }
     for (let i = 0; i + 2 < out.length; i += 1) {
-      if (out[i] === 'tfd' && (out[i + 1] === 'tactical-operations' || out[i + 1] === 'tactical-websocket')) {
+      if (out[i] === 'tfd' && (out[i + 1] === 'tactical-operations' || out[i + 1] === 'tactical-websocket' || out[i + 1] === 'module-preferences')) {
         found.push({ id: out[i + 2].split(';')[0], route: out[i + 1] })
       }
     }
@@ -121,7 +122,8 @@ function operationTargets(text) {
 }
 
 // Refuses a path that reaches /api/tfd/tactical-operations/<id>/... or /api/tfd/tactical-websocket/<id>/... for an id
-// other than the module's own or the one it replaces. Fails closed.
+// other than the module's own or the one it replaces, and /api/tfd/module-preferences/<id>/... for any id but its own
+// (0.12.106: no replacement exception for preferences). Fails closed.
 export function guardTacticalOperationPath(path, moduleId, replacedId) {
   if (path === undefined || path === null) return
   let text
@@ -137,6 +139,11 @@ export function guardTacticalOperationPath(path, moduleId, replacedId) {
     throw refuseOperation(`Module "${moduleId}" used a path the shell cannot read safely. The call is refused.`)
   }
   for (const found of [...targets, ...(operationTargets(cleaned.split(/[?#]/)[0]) || [])]) {
+    // 0.12.106: a module's preferences are its own. A replacement has no exception (Core keeps them per module id).
+    if (found.route === 'module-preferences') {
+      if (found.id !== own) throw refuseOperation(`Module "${moduleId}" cannot read or change preferences for "${found.id}". It may use only "${moduleId}".`)
+      continue
+    }
     if (found.id !== own && found.id !== replaced) {
       const allowed = replacedId ? `"${moduleId}" or "${replacedId}"` : `"${moduleId}"`
       const what = found.route === 'tactical-websocket' ? 'open Tactical terminals' : 'run Tactical operations'
@@ -546,6 +553,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
     let moduleTerminals = null
     let moduleJobs = null
     let moduleTerminalWidgets = null
+    let moduleModulePreferences = null
 
     // Removes everything this module contributed: registry entries, navigation
     // items and routes. Safe to run more than once.
@@ -564,6 +572,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
       try { moduleTerminals?.close?.() } catch {}
       try { moduleJobs?.clear?.() } catch {}
       try { moduleTerminalWidgets?.clear?.() } catch {}
+      try { moduleModulePreferences?.clear?.() } catch {}
       try { runtime.removeNavigation?.(descriptor.id) } catch {}
       for (const remove of routeRemovers.splice(0)) {
         try { remove() } catch {}
@@ -619,7 +628,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
       moduleServices = guardAbandoned(runtime.services?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null, isAbandoned, descriptor.id)
       // removeNavigation is Core's: the loader calls it when a module fails. A
       // module can add navigation but never remove another module's items.
-      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, tacticalWebSocket: sharedTacticalWebSocket, jobs: _sharedJobs, terminal: _sharedTerminal, isSignedOut: _signedOutProbe, services: _sharedServices, ...moduleRuntime } = runtime
+      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, tacticalWebSocket: sharedTacticalWebSocket, jobs: _sharedJobs, terminal: _sharedTerminal, isSignedOut: _signedOutProbe, modulePreferences: _sharedModulePreferences, services: _sharedServices, ...moduleRuntime } = runtime
       const guardedApi = guardTransport(runtime, descriptor.id, replacedSnapshot.get(descriptor.id) || '')
       // Background job follow (0.12.103): bound to this module's id, its guarded api and its notifications.
       moduleJobs = guardAbandoned(runtime.jobs?.forModule?.(descriptor.id, {
@@ -629,6 +638,13 @@ export async function loadUiModules(runtime, modules, options = {}) {
       }) || null, isAbandoned, descriptor.id)
       // Shared terminal widget (0.12.104): bound to this module's id, refused after abandonment, cleared on unload.
       moduleTerminalWidgets = guardAbandoned(runtime.terminal?.forModule?.(descriptor.id, { isAbandoned }) || null, isAbandoned, descriptor.id)
+      // Module user preferences (0.12.106): bound to this module's id and guarded api, refused when signed out, abandoned or unloaded.
+      // Its methods refuse by rejecting (the helper checks isAbandoned itself), so guardAbandoned is not applied here.
+      moduleModulePreferences = runtime.modulePreferences?.forModule?.(descriptor.id, {
+        api: guardedApi.api,
+        isSignedOut: () => runtimeSignedOut(runtime),
+        isAbandoned,
+      }) || null
       // The terminal helper (0.12.102) is bound to this module: its own id, plus the one core module it replaces.
       const boundTerminal = sharedTacticalWebSocket && typeof sharedTacticalWebSocket.open === 'function'
         ? bindTacticalWebSocket(sharedTacticalWebSocket.open, {
@@ -665,6 +681,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
         ...boundTerminalRuntime,
         ...(moduleJobs ? { jobs: moduleJobs } : {}),
         ...(moduleTerminalWidgets ? { terminal: moduleTerminalWidgets } : {}),
+        ...(moduleModulePreferences ? { modulePreferences: moduleModulePreferences } : {}),
         context: runtime.state.context,
         router: moduleRouter,
         addNavigation,

@@ -1,4 +1,5 @@
 <script setup>
+import { formatDateTime } from '../date-format'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { getSystemDiagnostics } from '../api'
 import { cspViolations } from '../csp-violations'
@@ -56,7 +57,7 @@ function expandAll() {
   expanded.value = next
 }
 function collapseAll() { expanded.value = new Set() }
-function fmtTime(value) { return value ? new Date(value).toLocaleString() : '—' }
+function fmtTime(value) { return value ? formatDateTime(value) : '—' }
 function pretty(value) { return JSON.stringify(value ?? {}, null, 2) }
 
 async function load({ live = false } = {}) {

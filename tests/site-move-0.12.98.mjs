@@ -24,7 +24,7 @@ const pkg = JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import
 const view = fs.readFileSync(new URL('../src/views/ResourcesView.vue', import.meta.url), 'utf8')
 
 // The Core range this release needs.
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.34,<2.0.0')
+assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.35,<2.0.0')
 
 // (1) A changed client sends PATCH with client_id only; with a rename too, name goes as well.
 await api.updateResourceSite(7, { clientId: 3 })

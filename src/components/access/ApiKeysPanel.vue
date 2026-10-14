@@ -1,4 +1,5 @@
 <script setup>
+import { formatDateTime } from '../../date-format'
 import { computed, inject, onMounted, reactive, ref } from 'vue'
 import { useConfirm } from '../../confirm-dialog'
 import { copyTextWithFeedback } from '../../copy-feedback'
@@ -54,7 +55,7 @@ const filtered = computed(() => {
 
 function formatExpiry(iso) {
   const date = new Date(iso)
-  return Number.isNaN(date.getTime()) ? String(iso) : date.toLocaleString()
+  return Number.isNaN(date.getTime()) ? String(iso) : formatDateTime(date)
 }
 
 async function load() {

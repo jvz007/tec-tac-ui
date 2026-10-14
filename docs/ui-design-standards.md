@@ -252,6 +252,25 @@ Use summary tiles sparingly. They should answer immediate operational questions,
 
 When a System Updates card has a branch as its saved source, the branch stays the headline (Discovered version, Installed, Comparison). Core 1.17.4 adds `stable_release`, and the card shows it as one secondary row, "Stable release", directly beneath the branch rows. The row shows the tag, the published date, a muted STALE pill when Core served a cached copy, the signed or unsigned badge with acceptance, and the operation. A release lookup error (`release_error`) shows as a muted line inside that row and never in the branch error area. With nothing known yet it says "Not checked yet". A Core older than 1.17.4 sends no `stable_release` key, so no row is drawn. Superusers (the same rule as the Update source control; Core 1.17.5 refuses anyone else) also get a "Use stable release" button that saves the Release source and checks again. It stages and installs nothing. Core still enforces the permission. The badge and its popover are one shared block (`ReleaseTrustBadge.vue`), used by both the release rows and this row.
 
+### 9.2 Tactical colours and dates (UI 0.12.106)
+
+The person's five Tactical colours (Core 1.17.35) are published as CSS custom properties on the document root. Tec-Tac sets a property only when the person's choice differs from Tactical's own default. At the default the property is removed, so the theme tokens stay in charge and no second palette is added.
+
+| Tactical field | CSS custom property | Tactical default | Theme token used when unset |
+| --- | --- | --- | --- |
+| `loading_bar_color` | `--tactical-loading-bar-color` | `red` | none yet (no loading bar; see the release notes) |
+| `dash_info_color` | `--tactical-dash-info-color` | `info` | `--accent` |
+| `dash_positive_color` | `--tactical-dash-positive-color` | `positive` | `--ok` |
+| `dash_negative_color` | `--tactical-dash-negative-color` | `negative` | `--danger` |
+| `dash_warning_color` | `--tactical-dash-warning-color` | `warning` | `--warn` |
+
+- Use a dashboard figure's colour through the `tone-*` class of its metric card (`.dashboard-core-metric.tone-info`, `tone-positive`, `tone-negative`, `tone-warning`). The CSS reads the property and falls back to the token: `color: var(--tactical-dash-info-color, var(--accent))`. Module pages do not read these properties in this release.
+- A value the shell cannot show (an unknown name, a numbered Quasar shade, or anything else) sets nothing, so the default look stays.
+- Brand names map to the theme tokens (`info`, `positive`, `negative`, `warning`). Base names (`red`, `teal` and so on) map to the Material 500 values Quasar uses for them. `src/tactical-ui-apply.js` holds both tables.
+- A sign-out removes all five properties. One watch in `App.vue` sets and clears them.
+
+Dates on Core's pages come from one helper, `formatDateTime(value)` in `src/date-format.js`. It uses the person's Tactical date format (`context.tactical_ui.date_format`) when one is set, with Quasar-style tokens (`YYYY`, `MMM`, `DD`, `Do`, `dddd`, `HH`, `hh`, `mm`, `ss`, `SSS`, `A`, `a`, `Z`, `ZZ`) and `[escaped text]`, and it falls back to the browser's `toLocaleString()` when the format is empty. An invalid date shows the raw value. Do not call `toLocaleString()` on a date in a Core page. Module pages keep `context.dateTimeFormat` (the server default) in this release.
+
 ## 10. Notices, errors and toasts
 
 For transient user feedback from a module, use the Core `notifications` runtime service. Do not implement module-specific toast markup.

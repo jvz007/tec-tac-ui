@@ -277,3 +277,14 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .dialog-tabs [role="tab"][aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);background:rgba(var(--accent-rgb),.12)}
 .dialog-tabs [role="tab"]:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
 @media(max-width:760px){.modal-panel.modal-wide{width:100%}}
+/* 0.12.106 Tactical colours: the custom properties are set by src/tactical-ui-apply.js only when the person chose a colour; the theme token is the fallback. */
+.dashboard-core-metric.tone-info strong{color:var(--tactical-dash-info-color,var(--accent))}
+.dashboard-core-metric.tone-positive strong{color:var(--tactical-dash-positive-color,var(--ok))}
+.dashboard-core-metric.tone-negative strong{color:var(--tactical-dash-negative-color,var(--danger))}
+.dashboard-core-metric.tone-warning strong{color:var(--tactical-dash-warning-color,var(--warn))}
+.tactical-ui-group{margin:16px 0 6px;font:calc(10.5px * var(--font-scale)) var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
+.tactical-colour-row{display:flex;align-items:center;gap:8px}
+.tactical-colour-row input{flex:1 1 auto;min-width:0}
+.tactical-swatch{display:inline-block;flex:0 0 26px;width:26px;height:26px;border:1px solid var(--line-2);border-radius:2px;background:var(--surface-2)}
+.tactical-colour-field small{display:block;margin-top:4px}
+.tactical-ui-problem{color:var(--warn)}

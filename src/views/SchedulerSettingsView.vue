@@ -1,4 +1,5 @@
 <script setup>
+import { formatDateTime } from '../date-format'
 import { computed, onMounted, ref } from 'vue'
 import { getSchedulerConfig, getSchedulerHealth, runSchedulerSelfTest, updateSchedulerConfig } from '../scheduler'
 import { authorizationRevokedState } from '../scheduler-health'
@@ -7,7 +8,7 @@ const config=ref(null), health=ref(null), loading=ref(true), refreshing=ref(fals
 const configDraft=ref(48)
 const healthState=computed(()=>health.value?.tick_health || 'unknown')
 const revokedState=computed(()=>authorizationRevokedState(health.value))
-function nextLabel(iso){return iso?new Date(iso).toLocaleString():'—'}
+function nextLabel(iso){return iso?formatDateTime(iso):'—'}
 function statusClass(v){return v==='succeeded'||v==='healthy'?'ok':v==='failed'||v==='degraded'?'danger':v==='running'||v==='queued'||v==='unknown'?'warn':''}
 async function load({quiet=false}={}){
   if(quiet) refreshing.value=true; else loading.value=true

@@ -20,6 +20,7 @@ import { createNotificationService } from './notifications'
 import { createModuleServiceRegistry } from './module-services'
 import { createJobFollowService } from './job-follow'
 import { createTerminalService } from './terminal-widget'
+import { createModulePreferencesService } from './module-preferences'
 import { createModuleStatusService } from './module-status'
 import { createAuditService } from './audit'
 import { createHelpService } from './help'
@@ -228,6 +229,8 @@ async function bootstrap() {
       jobs,
       terminal,
       isSignedOut,
+      // Module user preferences (0.12.106, Core 1.17.35): bound per module by the loader; the factory holds no state.
+      modulePreferences: createModulePreferencesService(),
       tacticalWebSocket,
       modules,
     }
