@@ -6,7 +6,8 @@
 // The contract row ui.authenticated.modulePreferences is written by Core (reviews/requests/core.md).
 // 0.12.108 (Core 1.17.38): set() and remove() on one name within 400 ms are merged into one request carrying the last
 // operation, with a 2 second maximum wait so a held-down toggle still saves. Every caller of a merged write gets the same
-// outcome. get() and getAll() see a write that has not finished yet, so the screen and the store agree. flush() sends the
+// rejection, and a resolved value of its own call's type (0.12.109): a set() superseded by a remove() resolves undefined,
+// a remove() superseded by a set() resolves false. get() and getAll() see a write that has not finished yet, so the screen and the store agree. flush() sends the
 // waiting writes now. Core's 503 audit_failed and 403 module_not_allowed are refused in plain words (hideControl on 403).
 
 // Core's limits (framwork/tec_tac/module_preferences.py): one name 1 to 64 characters, a value at most 4 KiB when stored
@@ -131,6 +132,7 @@ export function createModulePreferencesService() {
       }
 
       // Adds a set or a remove for one name. A write still waiting absorbs it, so one request carries the last operation.
+      // Each caller keeps the operation of its own call (0.12.109), so its resolved value can be of that type.
       function queue(name, op, value) {
         let list = writes.get(name)
         if (!list) {
@@ -145,7 +147,7 @@ export function createModulePreferencesService() {
         write.op = op
         write.value = value
         return new Promise((resolve, reject) => {
-          write.callers.push({ resolve, reject })
+          write.callers.push({ op, resolve, reject })
           arm(name, write)
         })
       }
@@ -182,7 +184,15 @@ export function createModulePreferencesService() {
         return settle(name, write, null, write.op === 'set' ? response?.value : response?.deleted === true)
       }
 
-      // Takes a write out of the pending view and gives every caller of it the same outcome.
+      // The resolved value a caller gets for a merged write (0.12.109). A caller whose operation was the last one gets Core's
+      // answer. A set() superseded by a remove() gets undefined (it stored nothing); a remove() superseded by a set() gets
+      // false (it removed nothing this time).
+      function ownResult(caller, write, value) {
+        if (caller.op === write.op) return value
+        return caller.op === 'set' ? undefined : false
+      }
+
+      // Takes a write out of the pending view and gives every caller of it the same rejection, or its own result.
       function settle(name, write, error, value) {
         const list = writes.get(name)
         const index = list ? list.indexOf(write) : -1
@@ -194,7 +204,7 @@ export function createModulePreferencesService() {
         write.callers = []
         for (const caller of callers) {
           if (error) caller.reject(error)
-          else caller.resolve(value)
+          else caller.resolve(ownResult(caller, write, value))
         }
       }
 
@@ -212,14 +222,15 @@ export function createModulePreferencesService() {
           return { ...(await readAll()) }
         },
         // Stores one value and resolves with what Core stored. 0.12.108: the request waits about 400 ms for a later write to
-        // the same name; a merged call resolves with the same result.
+        // the same name. 0.12.109: when a later remove supersedes it, this call resolves undefined.
         async set(name, value) {
           gate('set')
           const key = checkName(name)
           checkValue(value)
           return queue(key, 'set', value)
         },
-        // Removes one preference. Resolves true when Core removed a row. 0.12.108: debounced like set().
+        // Removes one preference. Resolves true when Core removed a row. 0.12.108: debounced like set(). 0.12.109: when a later
+        // set supersedes it, this call resolves false.
         async remove(name) {
           gate('remove')
           const key = checkName(name)

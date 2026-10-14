@@ -91,7 +91,7 @@ test('ten set() calls inside the window send one PUT with the last value, and ev
   }
 })
 
-test('a set then a remove on one name sends one DELETE, and both callers get the same result', async () => {
+test('a set then a remove on one name sends one DELETE; the set caller resolves undefined, the remove caller Core\'s answer (0.12.109)', async () => {
   mock.timers.enable({ apis: ['setTimeout', 'Date'] })
   try {
     const { helper, calls, store } = helperFor({ store: { theme: 'old' } })
@@ -102,8 +102,10 @@ test('a set then a remove on one name sends one DELETE, and both callers get the
     const [a, b] = await done
     assert.equal(calls.length, 1, 'one request')
     assert.equal(calls[0].method, 'DELETE')
-    assert.equal(a, true, 'the set caller gets the same outcome as the remove')
-    assert.equal(b, true)
+    // 0.12.109: the set was superseded by the remove, so it stored nothing and resolves undefined. The remove is the last
+    // operation, so it gets Core's answer (true: Core removed the row).
+    assert.equal(a, undefined, 'the superseded set resolves undefined (0.12.109; 0.12.108 gave true)')
+    assert.equal(b, true, 'the remove caller gets the boolean Core answered')
     assert.equal(Object.prototype.hasOwnProperty.call(store, 'theme'), false)
   } finally {
     mock.timers.reset()

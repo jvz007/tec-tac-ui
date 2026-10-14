@@ -25,7 +25,9 @@ All five are asynchronous and reject when refused.
 
 A toggle that the person clicks many times should not write many times. `set()` and `remove()` on the same name within 400 ms become one request, which carries the last operation: the last value, or a remove if remove came last. The window restarts with each call, but a write is never held more than 2 seconds from its first call, so a held-down control still saves while it is held.
 
-- Every call whose write was merged gets the same outcome: the same resolved value, or the same rejection.
+- Every call whose write was merged gets the same rejection. A call that resolves gets a value of its own call's type (UI 0.12.109). The last operation in the window decides it:
+  - When the last operation is a `set()`, every `set()` in the window resolves with the value Core stored. Every `remove()` in the window resolves `false`, because the later set replaced it and it removed nothing.
+  - When the last operation is a `remove()`, every `remove()` in the window resolves `true` or `false` as Core answered. Every `set()` in the window resolves `undefined`, because it stored nothing.
 - Different names are independent; each has its own window.
 - `get()` and `getAll()` see a write that has not finished yet, so the screen and the stored value agree. A waiting remove reads as absent.
 - Validation (name, value, size and depth) runs when the call is made, before anything waits. A refused name or value is rejected at once and nothing is sent.

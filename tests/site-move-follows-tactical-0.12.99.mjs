@@ -6,7 +6,7 @@ import fs from 'node:fs'
 
 const read = (rel) => fs.readFileSync(new URL(rel, import.meta.url), 'utf8')
 const view = read('../src/views/ResourcesView.vue')
-assert.equal(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], '>=1.17.38,<2.0.0')
+assert.equal(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], '>=1.17.39,<2.0.0')
 
 function fn(name) {
   const start = view.indexOf(`async function ${name}(`)

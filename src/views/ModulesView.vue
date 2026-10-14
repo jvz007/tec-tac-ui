@@ -7,6 +7,7 @@ import { createLatestRequestGate } from '../admin-session-state'
 import { loadLatestHotfixRows } from '../module-hotfix-loader'
 import { checkIntakeMetadata, orderGroupsByDependency, pairIntakeFiles } from '../module-intake'
 import { categoryBadge, categoryNote, categorySearchText, CATEGORY_FILTERS, filterByCategory } from '../module-category'
+import { releaseLabels, skippedRows, skippedSummary } from '../module-repository-info'
 import { confirmationRequired, dependantLines, handBackDisableLines, handBackEnableLines, handBackRequiredPayload, handBackWarning, installConfirmSummary, jobSwitchLines, emptySecondConfirmationText, secondConfirmationRequired, secondConfirmationRequiredPayload, secondConfirmationText, isReplacementProblem, replacedByLabel, replacementConfirmLines, replacementListChangedText, replacementProblemText, replacementSummary, replacesLabel, satisfiedByLine, willDisableIds } from '../module-replacement'
 import {
   addModuleRepository,
@@ -1213,7 +1214,7 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
         <td><b>{{ item.name || item.id }}</b><span class="sub mono">{{ item.id }}</span></td>
         <td class="mono">{{ item.installed_version || '—' }}</td>
         <td class="mono">{{ item.latest_version || '—' }}</td>
-        <td><span>{{ item.selected_repository_name || 'local only' }}</span><span v-if="item.selected_repository_trust" class="sub mono">{{ item.selected_repository_trust }}</span></td>
+        <td><span>{{ item.selected_repository_name || 'local only' }}</span><span v-if="item.selected_repository_trust" class="sub mono">{{ item.selected_repository_trust }}</span><span v-if="releaseLabels(item).length" class="release-labels"><span v-for="(label, i) in releaseLabels(item)" :key="i" class="pill">{{ label }}</span></span></td>
         <td><span v-if="item.compatible===true" class="pill ok">compatible</span><span v-else-if="item.compatible===false" class="pill danger">blocked</span><span v-else class="pill">unknown</span></td>
         <td><span v-if="item.source_conflict" class="pill danger">source unavailable</span><span v-else-if="item.update_available" class="pill warn">update available</span><span v-else-if="item.installed" class="pill ok">up to date</span><span v-else class="pill">available</span></td>
         <td class="catalog-action"><button class="btn sm" :class="item.update_available?'primary':''" :disabled="!canManage || !item.latest_version || item.compatible===false || item.source_conflict || inspecting" @click="requestStageOnline(item)">{{ item.installed ? (item.update_available ? 'Download update' : 'Reinstall') : 'Download & inspect' }}</button></td>
@@ -1228,7 +1229,7 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
         <div v-if="!repositories.length" class="state-inline"><b>No module repositories configured.</b> Add an official, internal, or custom repository to populate the online catalog.</div>
         <div v-else class="tablewrap"><table><thead><tr><th>Repository</th><th>Trust</th><th>Priority</th><th>State</th><th>Sync</th><th>Modules</th><th></th></tr></thead><tbody>
           <tr v-for="repo in repositories" :key="repo.id" class="clickrow" :class="{selected:selectedRepositoryId===repo.id}" @click="editRepository(repo)">
-            <td><b>{{ repo.name }}</b><span class="sub mono">{{ repo.id }}</span></td><td><span class="pill">{{ repo.trust }}</span></td><td class="mono">{{ repo.priority }}</td><td><span class="pill" :class="repo.enabled?'ok':'warn'">{{ repo.enabled?'enabled':'disabled' }}</span></td><td><span class="pill" :class="{ok:repo.sync?.status==='ok',danger:repo.sync?.status==='error',warn:repo.sync?.status==='never'}">{{ repo.sync?.status || 'never' }}</span><span v-if="repo.sync?.error" class="sub dangertext">{{ repo.sync.error }}</span></td><td class="mono">{{ repo.sync?.module_count || 0 }}</td><td><button class="btn sm" :disabled="!canManage || repositoryBusy || !repo.enabled" @click.stop="syncRepository(repo)">Sync</button></td>
+            <td><b>{{ repo.name }}</b><span class="sub mono">{{ repo.id }}</span></td><td><span class="pill">{{ repo.trust }}</span></td><td class="mono">{{ repo.priority }}</td><td><span class="pill" :class="repo.enabled?'ok':'warn'">{{ repo.enabled?'enabled':'disabled' }}</span></td><td><span class="pill" :class="{ok:repo.sync?.status==='ok',danger:repo.sync?.status==='error',warn:repo.sync?.status==='never'}">{{ repo.sync?.status || 'never' }}</span><span v-if="repo.sync?.error" class="sub dangertext">{{ repo.sync.error }}</span><span v-if="skippedSummary(repo.sync)" class="sub">{{ skippedSummary(repo.sync) }}</span></td><td class="mono">{{ repo.sync?.module_count || 0 }}</td><td><button class="btn sm" :disabled="!canManage || repositoryBusy || !repo.enabled" @click.stop="syncRepository(repo)">Sync</button></td>
           </tr>
         </tbody></table></div>
       </section>
@@ -1239,6 +1240,14 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
         <div class="field-grid"><label class="field"><span>Priority</span><input v-model.number="repositoryDraft.priority" type="number" min="0" max="10000"></label><label class="field"><span>Trust</span><select v-model="repositoryDraft.trust"><option value="official">Official</option><option value="internal">Internal</option><option value="custom">Custom</option></select></label></div>
         <label class="checkline"><input v-model="repositoryDraft.enabled" type="checkbox"> Enabled</label>
         <div v-if="selectedRepository?.sync?.error" class="state-inline denied mt"><b>Last sync failed.</b> {{ selectedRepository.sync.error }}</div>
+        <div v-if="skippedSummary(selectedRepository?.sync)" class="repo-skipped">
+          <div class="section-divider">Skipped entries</div>
+          <div class="muted smalltext">{{ skippedSummary(selectedRepository.sync) }}</div>
+          <div v-for="(row, i) in skippedRows(selectedRepository.sync)" :key="i" class="repo-skipped-row">
+            <div class="smalltext"><span class="muted">Index</span> <span class="mono">{{ row.index }}</span> · <span class="mono">{{ row.id }}</span> · <span class="mono">{{ row.version }}</span></div>
+            <div class="reason">{{ row.reason }}</div>
+          </div>
+        </div>
         <div class="editor-actions"><button class="btn primary" :disabled="!canManage || repositoryBusy || !repositoryDraft.name || !repositoryDraft.url" @click="saveRepository">Save</button><button class="btn" @click="cancelRepositoryEdit">Cancel</button><button v-if="selectedRepository" class="btn danger" :disabled="!canManage || repositoryBusy" @click="removeRepository(selectedRepository)">Remove</button></div>
       </aside>
     </div>
