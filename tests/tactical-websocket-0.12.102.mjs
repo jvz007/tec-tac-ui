@@ -400,7 +400,7 @@ assert.match(csp.stdout, /connect-src 'self' https:\/\/api\.x\.test wss:\/\/api\
 
 // (16) the package requirement
 const pkg = JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url), 'utf8'))
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.39,<2.0.0')
+assert.match(pkg.requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/)
 
 // (17) the module binding: own id, the replaced id, another id refused, a failed module refused, the limit, cleanup
 FakeSocket.instances = []

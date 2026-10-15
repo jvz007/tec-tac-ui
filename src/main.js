@@ -20,6 +20,7 @@ import { createNotificationService } from './notifications'
 import { createModuleServiceRegistry } from './module-services'
 import { createJobFollowService } from './job-follow'
 import { createTerminalService } from './terminal-widget'
+import { sharedComponents } from './shared-components'
 import { createModulePreferencesService } from './module-preferences'
 import { createModuleStatusService } from './module-status'
 import { createAuditService } from './audit'
@@ -231,6 +232,9 @@ async function bootstrap() {
       jobs,
       terminal,
       isSignedOut,
+      // Shared SearchSelect and TagEditor (0.12.111): pure render components, handed to authenticated modules as context.components
+      // through ...moduleRuntime. The public loader builds its own runtime and does not name them.
+      components: sharedComponents,
       // Module user preferences (0.12.106, Core 1.17.35): bound per module by the loader; the factory holds no state.
       modulePreferences: createModulePreferencesService(),
       tacticalWebSocket,

@@ -7,7 +7,7 @@ import { createLatestRequestGate } from '../admin-session-state'
 import { loadLatestHotfixRows } from '../module-hotfix-loader'
 import { checkIntakeMetadata, orderGroupsByDependency, pairIntakeFiles } from '../module-intake'
 import { categoryBadge, categoryNote, categorySearchText, CATEGORY_FILTERS, filterByCategory } from '../module-category'
-import { releaseLabels, skippedRows, skippedSummary } from '../module-repository-info'
+import { installedOnlyRows, onlineAvailability, releaseLabels, skippedRows, skippedSummary } from '../module-repository-info'
 import { confirmationRequired, dependantLines, handBackDisableLines, handBackEnableLines, handBackRequiredPayload, handBackWarning, installConfirmSummary, jobSwitchLines, emptySecondConfirmationText, secondConfirmationRequired, secondConfirmationRequiredPayload, secondConfirmationText, isReplacementProblem, replacedByLabel, replacementConfirmLines, replacementListChangedText, replacementProblemText, replacementSummary, replacesLabel, satisfiedByLine, willDisableIds } from '../module-replacement'
 import {
   addModuleRepository,
@@ -68,6 +68,8 @@ const hotfixRowsRequestGate = createLatestRequestGate()
 let hotfixPollTimer = null
 const onlineCatalog = ref([])
 const onlineQuery = ref('')
+const onlineInfo = ref(null)
+const installedOnly = ref([])
 const repositoryBusy = ref(false)
 const catalogBusy = ref(false)
 const selectedRepositoryId = ref(null)
@@ -325,6 +327,8 @@ async function loadOnlineCatalog() {
   try {
     const payload = await listOnlineModuleCatalog()
     onlineCatalog.value = payload.modules || []
+    onlineInfo.value = onlineAvailability(payload)
+    installedOnly.value = installedOnlyRows(payload)
     if (payload.repositories) repositories.value = payload.repositories
   } catch (e) {
     error.value = e.message || 'Unable to load online module catalog.'
@@ -1208,7 +1212,11 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
       <p class="compact-copy muted">Installed modules stay pinned to their recorded repository source. Tec-Tac will not silently switch an installed module to another repository.</p>
     </section>
     <div class="toolbar"><label class="compact-input"><input v-model="onlineQuery" placeholder="Search online catalog…"></label><span class="muted mono">{{ filteredOnline.length }} shown</span><span class="spacer"></span><button class="btn sm" :disabled="catalogBusy" @click="loadOnlineCatalog">{{ catalogBusy ? 'Loading…' : 'Refresh catalog' }}</button></div>
-    <div v-if="!repositories.length" class="state-inline warning"><b>No repositories configured.</b> Add a module repository before using the online catalog.</div>
+    <div v-if="onlineInfo?.repositoriesLine" class="muted mono smalltext online-sync-line">{{ onlineInfo.repositoriesLine }}</div>
+    <div v-if="onlineInfo?.message && !onlineCatalog.length" class="state-inline" :class="{warning: ['no_repository','not_synced','sync_failed'].includes(onlineInfo.state)}">{{ onlineInfo.message }}</div>
+    <div v-else-if="!onlineInfo && !repositories.length" class="state-inline warning"><b>No repositories configured.</b> Add a module repository before using the online catalog.</div>
+    <div v-else-if="onlineInfo && !onlineCatalog.length"></div>
+    <div v-else-if="onlineInfo && !filteredOnline.length" class="state-inline">No modules match your search.</div>
     <div v-else class="tablewrap"><table><thead><tr><th>Module</th><th>Installed</th><th>Available</th><th>Source</th><th>Compatibility</th><th>Status</th><th></th></tr></thead><tbody>
       <tr v-for="item in filteredOnline" :key="item.id">
         <td><b>{{ item.name || item.id }}</b><span class="sub mono">{{ item.id }}</span></td>
@@ -1220,6 +1228,10 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
         <td class="catalog-action"><button class="btn sm" :class="item.update_available?'primary':''" :disabled="!canManage || !item.latest_version || item.compatible===false || item.source_conflict || inspecting" @click="requestStageOnline(item)">{{ item.installed ? (item.update_available ? 'Download update' : 'Reinstall') : 'Download & inspect' }}</button></td>
       </tr>
     </tbody></table></div>
+    <section v-if="installedOnly.length" class="online-installed-only">
+      <h4 class="eyebrow">Installed here, not in any repository</h4>
+      <ul class="muted"><li v-for="(row, i) in installedOnly" :key="i"><b>{{ row.name !== '—' ? row.name : row.id }}</b> <span class="mono">{{ row.id }}</span> <span class="mono">{{ row.installed_version }}</span> <span>{{ row.installed_source }}</span></li></ul>
+    </section>
   </template>
 
   <template v-else-if="activeTab==='repositories'">

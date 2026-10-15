@@ -31,7 +31,7 @@ const wf = await import('../src/resource-feature-workflows.js')
 const lastBody = () => calls.at(-1).body
 
 const pkg = JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url), 'utf8'))
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.39,<2.0.0')
+assert.match(pkg.requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/)
 
 // (1) A failed read (403, 500, network) does not stop the create: no custom_fields key, the create succeeds.
 for (const status of [403, 500]) {

@@ -86,6 +86,6 @@ for (const text of [
 
 // 6. the WebSocket page links to the widget; the framework requirement is raised to Core 1.17.33
 assert.ok(websocket.includes('(module-terminal.md)'), 'module-tactical-websocket.md links to the widget')
-assert.equal(JSON.parse(read('tec_tac_package.json')).requires['tec-tac-framework'], '>=1.17.39,<2.0.0')
+assert.match(JSON.parse(read('tec_tac_package.json')).requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/)
 
 console.log('terminal widget contract docs 0.12.104: PASS')

@@ -128,8 +128,15 @@ export function createResourceViewRegistry({ hasPermission, timeoutSeconds } = {
       return Promise.resolve(failed('failed'))
     }
     const controller = new AbortController()
-    const onHostAbort = () => controller.abort()
-    if (hostSignal?.aborted) controller.abort()
+    // A host abort settles this column as failed at once (not after the time limit) and tells the loader. A late answer from
+    // the module is ignored, because the race is already settled.
+    let settleAborted
+    const aborted = new Promise((resolve) => { settleAborted = resolve })
+    const onHostAbort = () => {
+      controller.abort()
+      settleAborted(failed('failed'))
+    }
+    if (hostSignal?.aborted) onHostAbort()
     else hostSignal?.addEventListener?.('abort', onHostAbort, { once: true })
     let timer
     const timeout = new Promise((resolve) => {
@@ -155,7 +162,7 @@ export function createResourceViewRegistry({ hasPermission, timeoutSeconds } = {
         return failed('failed')
       }
     })()
-    return Promise.race([work, timeout]).finally(() => {
+    return Promise.race([work, timeout, aborted]).finally(() => {
       clearTimeout(timer)
       hostSignal?.removeEventListener?.('abort', onHostAbort)
     })

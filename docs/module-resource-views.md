@@ -137,7 +137,7 @@ Rules:
 - `load(agentIds, { resource, placement, context, signal })` returns an object keyed by agent id. It runs once per page, with string ids and no duplicates. An id you were not given is dropped from the answer.
 - The host pages at most **100 ids** per call. Asking for more is a developer error and throws a `RangeError`.
 - Columns load in parallel, so one slow column never delays another.
-- A thrown error, a rejection or an answer that is not an object gives the status `failed`. Hitting the time limit gives `timeout` and aborts `signal`. The limit is the module register time limit from the runtime context (30 seconds by default). In both cases the host shows a quiet dash. An agent id missing from a good answer also shows a dash.
+- A thrown error, a rejection or an answer that is not an object gives the status `failed`. Hitting the time limit gives `timeout` and aborts `signal`. When the host aborts the call (the `signal` passed to `loadGridColumns`), that column settles as `failed` at once, without waiting for the time limit, and a late answer from `load` is ignored (the status values stay `ready`, `failed` and `timeout`). The limit is the module register time limit from the runtime context (30 seconds by default). In both cases the host shows a quiet dash. An agent id missing from a good answer also shows a dash.
 - Permission is checked when the columns are listed and again just before `load` runs. A column the user may not see is not listed and is not called (AD-12).
 
 Host side (Endpoints). The module-scoped `resourceViews` object offers two more methods:

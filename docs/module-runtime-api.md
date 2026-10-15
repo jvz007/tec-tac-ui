@@ -326,6 +326,20 @@ keys, the copy and paste rules and the safety rules are in `module-terminal.md`.
 
 **Contract row (UI 0.12.104, not yet in the export).** Browser contract row `ui.authenticated.terminal` (phase `authenticated`, service `terminal`): operations `create`, `write`, `writeln`, `clear`, `reset`, `focus`, `blur`, `fit`, `size`, `getText`, `getSelection`, `hasSelection`, `copy`, `paste`, `setTheme`, `setOptions`, `onInput`, `onResize` and `dispose`; options `theme`, `fontFamily`, `fontSize` (8 to 32, default 14), `cursorBlink` (default true), `scrollback` (0 to 50000, default 50000), `convertEol` (default true), `focus` (default true), `rows` (default 24), `cols` (default 80), `ariaLabel`, `onInput` and `onResize`; limits scrollback 50000, 8 terminals per module, resize 1 to 1000; the scope is bound to the calling module, so no module id is passed; no `registerPublic` access; Core 1.17.33 or later and UI 0.12.104 or later. Core writes the export row. This release does not claim the export lists it; `reviews/requests/core.md` asks for it.
 
+## Shared components (components)
+
+`context.components.SearchSelect` and `context.components.TagEditor` give a module the board's script and report picker (P6) and
+argument entry (P7) as ready Vue components (UI 0.12.111). The props, events, keys and limits are in `module-components.md`.
+
+- They are render-function components: use `context.Vue.h(SearchSelect, props)`. They hold only the typed text and the open list;
+  the value stays with the module (`update:modelValue`).
+- `SearchSelect` also emits `select(option)` so a module can fill default arguments and a timeout when a script is chosen.
+  `TagEditor` also emits `reject({ value, reason })`.
+- Limits: 300 rows in the list, 200 values per tag editor, 500 characters per value.
+- The object is frozen. `registerPublic(context)` gets no components.
+
+**Contract row (UI 0.12.111, not yet in the export).** Browser contract row `ui.authenticated.components` (phase `authenticated`, services `SearchSelect` and `TagEditor`): `SearchSelect` props `modelValue`, `options`, `placeholder`, `inputId`, `ariaLabel`, `disabled`, `clearable`, `emptyText`, `favouriteLabel` and `allLabel`, events `update:modelValue` and `select`, at most 300 rows; `TagEditor` props `modelValue`, `placeholder`, `ariaLabel`, `disabled`, `readonly`, `maxItems` (default 200), `maxLength` (default 500), `commaAdds` (default true) and `validate`, events `update:modelValue` and `reject`; no `registerPublic` access; Core 1.17.41 or later and UI 0.12.111 or later. Core writes the export row. This release does not claim the export lists it; `reviews/requests/core.md` asks for it.
+
 ## hasTacticalPermission(flag)
 
 `context.hasTacticalPermission(flag)` answers whether Tactical's own role lets the signed-in user do something, for example `can_list_agents`.

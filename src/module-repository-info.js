@@ -40,3 +40,38 @@ export function releaseLabels(item) {
   if (item?.recommended === false) labels.push('not recommended')
   return labels
 }
+
+// Core 1.17.41: GET /api/tfd/modules/catalog/online/ keeps modules[] as the modules a repository offers and adds
+// availability { state, enabled_repositories, synced_repositories, installed_only_count, message } and installed_only[]
+// ({ id, name, installed_version, installed_source }). Both are display only. An older Core sends neither key, and then
+// onlineAvailability returns null and installedOnlyRows returns an empty list, so the tab behaves as it did before.
+export const INSTALLED_ONLY_LIMIT = 200
+
+// { state, message, repositoriesLine } or null when Core sent no availability object. message is the string Core wrote ('' when
+// it sent none or sent something that is not a string). repositoriesLine is 'N of M repositories synced' only when both counts
+// are whole numbers.
+export function onlineAvailability(payload) {
+  const a = payload?.availability
+  if (!a || typeof a !== 'object' || Array.isArray(a)) return null
+  const state = typeof a.state === 'string' ? a.state : ''
+  const message = typeof a.message === 'string' && a.message.trim() ? a.message : ''
+  const synced = a.synced_repositories
+  const enabled = a.enabled_repositories
+  const whole = (v) => typeof v === 'number' && Number.isInteger(v) && v >= 0
+  const repositoriesLine = whole(synced) && whole(enabled) ? `${synced} of ${enabled} repositories synced` : ''
+  return { state, message, repositoriesLine }
+}
+
+// The installed-only note: one row per module installed here that no repository offers, in the order Core sent, at most 200.
+// A null or missing field shows as a dash; a value that is not text or a number also shows as a dash. Nothing is escaped:
+// the view shows each string as text.
+export function installedOnlyRows(payload) {
+  const list = Array.isArray(payload?.installed_only) ? payload.installed_only : []
+  const text = (v) => (typeof v === 'string' ? (v === '' ? '—' : v) : typeof v === 'number' && Number.isFinite(v) ? String(v) : '—')
+  return list.slice(0, INSTALLED_ONLY_LIMIT).map((entry) => ({
+    id: text(entry?.id),
+    name: text(entry?.name),
+    installed_version: text(entry?.installed_version),
+    installed_source: text(entry?.installed_source),
+  }))
+}

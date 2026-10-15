@@ -376,7 +376,7 @@ A module may add CSS for domain-specific layout and visualisations, but it must 
 
 The three classes added in UI 0.12.100 (`table-clean`, `modal-wide`, `dialog-tabs`) are Core's. A module uses them as they are and never restyles them.
 
-If a shared primitive is missing, raise it as a Core UI requirement instead of cloning/reimplementing the primitive in the module.
+If a shared primitive is missing, raise it as a Core UI requirement instead of cloning/reimplementing the primitive in the module. Two exist since UI 0.12.111: the searchable select (`context.components.SearchSelect`, pattern P6) and the tag editor (`context.components.TagEditor`, pattern P7). Use them instead of a private picker or tag editor; see section 22.
 
 ## 18. Recommended module page skeleton
 
@@ -435,3 +435,21 @@ User-facing Help is a Core-owned surface.
 - Keep developer documentation in repository `docs/`; keep end-user operational guidance in the Help article contract.
 
 See `docs/module-help.md`.
+
+## 22. Shared SearchSelect and TagEditor (P6 and P7)
+
+Core UI 0.12.111 gives authenticated modules two components through `context.components`, built to the brand board
+(`docs/ui-brand-board/`). Pattern **P6** is the script and report picker; pattern **P7** is argument entry.
+
+- Use `SearchSelect` wherever a person picks one item from a list that can grow (scripts, reports, policies). It searches name,
+  description and extra search text, lists favourites first, shows a second line and a chip, and fills nothing by itself: listen to
+  `select(option)` to set default arguments and a timeout.
+- Use `TagEditor` wherever a person enters a list of short text values (script arguments, environment variables, email recipients).
+  Turn `commaAdds` off when a value may contain a comma.
+- The keys follow the board's behaviour table: Escape closes the open list first and does not reach an enclosing popup.
+- Both use the existing tokens and the sizes `calc(Npx * var(--font-scale))` and `var(--label)`. A module does not copy their
+  classes (`tt-combo`, `tt-input`, `tt-star`, `tt-chip`, `tt-tagbox`, `tt-tag`, `tt-field`, `tt-help`, `tt-error`) under its own prefix.
+- Adoption is at the module's next release (the AD-27 rule). Nobody rebuilds only for this.
+
+The props, events and limits are in `docs/module-components.md`. Size, density and radius tokens and a wider kit (table, form row,
+editor window, stepper) are not built; they wait for Johan (Q57).
