@@ -13,7 +13,7 @@ const lock = JSON.parse(read('../package-lock.json'))
 const version = read('../VERSION').trim()
 
 assert.match(manifest.requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/, 'the Core requirement is a Core 1.17 release or later, below 2.0.0')
-assert.match(version, /^0\.12\.\d+$/, 'the UI version is a 0.12 patch release')
+assert.match(version, /^0\.12\.\d+(-\d+)?$/, 'the UI version is a 0.12 patch release')
 assert.equal(pkg.version, version)
 assert.equal(manifest.version, version)
 assert.equal(lock.version, version)

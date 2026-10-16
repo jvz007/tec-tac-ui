@@ -8,7 +8,7 @@
 #
 # The Tactical API sits on a different origin from the UI (for example
 # api.tcrm.example.com), so connect-src 'self' alone would break every call. The
-# API origin comes from PROD_URL in Tactical's env-config.js.
+# API origin comes from PROD_URL in the env-config.js the page loads (see tec_tac_csp_env_config_path).
 
 # Bracket expressions put ']' first so IPv6 hosts like [::1] are accepted.
 # Matched against the lower-cased value, so HTTPS://API.X.test is accepted. A
@@ -139,4 +139,23 @@ tec_tac_csp_from_env_config() {
   fi
   origin="$(tec_tac_csp_origin "${url}")" || { _tec_tac_csp_warn "PROD_URL is not an http(s) URL; no Content-Security-Policy written."; return 0; }
   tec_tac_csp_nginx_line "${mode}" "${origin}"
+}
+
+# The env-config.js to read the API origin from: the file the browser really loads for <script src="/env-config.js">.
+# - Integrated layout (Tactical's frontend root exists): nginx serves /env-config.js from that root, so it is Tactical's file. The UI's
+#   own file sits at /tec-tac/env-config.js, which nothing loads, so it is never used here, even when Tactical's file is unusable.
+# - Standalone layout (no Tactical frontend root): the host's root is the UI root, so the UI's file is the one served.
+# Prints nothing when that one file has no usable PROD_URL: a policy built from any other file could block the real API origin.
+tec_tac_csp_env_config_path() {
+  local ui_root="${1:-}" frontend_root="${2:-}" file=""
+  if [[ -n "${frontend_root}" && -d "${frontend_root}" ]]; then
+    file="${frontend_root}/env-config.js"
+  elif [[ -n "${ui_root}" ]]; then
+    file="${ui_root}/env-config.js"
+  fi
+  if [[ -n "${file}" && -f "${file}" ]] && tec_tac_csp_read_prod_url "${file}" >/dev/null; then
+    printf '%s
+' "${file}"
+  fi
+  return 0
 }

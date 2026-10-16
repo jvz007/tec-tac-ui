@@ -29,10 +29,22 @@ if [[ ! -f "${FRONTEND_CONF}" ]]; then
   FRONTEND_CONF="$(readlink -f "${candidate}")"
 fi
 
-# Content-Security-Policy. The API origin comes from PROD_URL in Tactical's
-# env-config.js. When it cannot be read, no policy is written: a policy without
-# the API origin would break every API call.
-CSP_LINE="$(tec_tac_csp_from_env_config "${TEC_TAC_CSP_MODE}" "${FRONTEND_ROOT}/env-config.js")"
+# Content-Security-Policy. The API origin comes from PROD_URL in the file the browser loads for <script src="/env-config.js">: Tactical's
+# ${TACTICAL_FRONTEND_ROOT:-/var/www/rmm/dist}/env-config.js in the integrated layout this script sets up. The UI's own file is served at
+# /tec-tac/env-config.js, which the page never fetches, so it is not used there. When that file cannot be read, no policy is written:
+# a policy without the real API origin would break every API call.
+CSP_ENV_CONFIG="$(tec_tac_csp_env_config_path "${UI_ROOT}" "${FRONTEND_ROOT}")"
+if [[ -n "${CSP_ENV_CONFIG}" ]]; then
+  log "Reading the API origin for the CSP from ${CSP_ENV_CONFIG}, the file the page loads as /env-config.js."
+  if [[ "${CSP_ENV_CONFIG}" != "${UI_ROOT}/env-config.js" && -f "${UI_ROOT}/env-config.js" ]]; then
+    ui_url="$(tec_tac_csp_read_prod_url "${UI_ROOT}/env-config.js" || true)"
+    page_url="$(tec_tac_csp_read_prod_url "${CSP_ENV_CONFIG}" || true)"
+    [[ "${ui_url%/}" == "${page_url%/}" ]] || log "Note: ${UI_ROOT}/env-config.js names ${ui_url:-no address}, but the page loads ${CSP_ENV_CONFIG} (${page_url}). The policy follows the page."
+  fi
+else
+  CSP_ENV_CONFIG="${FRONTEND_ROOT}/env-config.js"
+fi
+CSP_LINE="$(tec_tac_csp_from_env_config "${TEC_TAC_CSP_MODE}" "${CSP_ENV_CONFIG}")"
 if [[ -n "${CSP_LINE}" ]]; then
   log "Content-Security-Policy mode: ${TEC_TAC_CSP_MODE}."
   if [[ "${TEC_TAC_CSP_MODE}" == "enforce" ]]; then

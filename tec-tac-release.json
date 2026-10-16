@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.112",
+  "version": "0.12.113",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -28,13 +28,13 @@
     },
     {
       "path": "README.md",
-      "size": 31468,
-      "sha256": "1612e28a90a20fc2a7bb107b4c803f2feb0914c1150862bb169ce4d9c2a81a2c"
+      "size": 34347,
+      "sha256": "28da8f0c070c3353f4e865cc5b55ef9960e456db428ac8693d3ce100f7e3d036"
     },
     {
-      "path": "RELEASE_NOTES_0.12.112.md",
-      "size": 15853,
-      "sha256": "0170b3023a2509d80e7dc2618f3f8339d4f9cf3ad54e95f9fee0d3a152978877"
+      "path": "RELEASE_NOTES_0.12.113.md",
+      "size": 7582,
+      "sha256": "ad816e7050c3df62a5c679775dbbf30c44f3af91fe90cba4e67a0443401f4ee0"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -44,7 +44,7 @@
     {
       "path": "VERSION",
       "size": 9,
-      "sha256": "d3a5b98ad0a20c73053bbf2f3c1ff0f25b096ccd97f038d607ccde2df9696593"
+      "sha256": "fc9cb255b4fbc084df60cf050780d0d66a2ba0ce0a99aad26f770c23edd8ecfc"
     },
     {
       "path": "docs/context-actions.md",
@@ -390,6 +390,16 @@
       "path": "docs/releases/RELEASE_NOTES_0.12.111.md",
       "size": 7467,
       "sha256": "5d376dbec281a1b507cbee03ae695e1ee845c527f53342c48721197b8ebc2ac9"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.112.md",
+      "size": 15853,
+      "sha256": "0170b3023a2509d80e7dc2618f3f8339d4f9cf3ad54e95f9fee0d3a152978877"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.113.md",
+      "size": 4672,
+      "sha256": "69ded8ada39dc9930a6837f8c3684c19c32ec3862bd60862dfa48d393db4d9aa"
     },
     {
       "path": "docs/releases/RELEASE_NOTES_0.12.14.md",
@@ -974,12 +984,12 @@
     {
       "path": "package-lock.json",
       "size": 44828,
-      "sha256": "b1db714e71f5a3aaaf90c72a69c525def7f011abeee1965b002902d9b791b12c"
+      "sha256": "97b17ed2165b3382588f8a12f78b8761d067f3d012b56b9dbd13e47ae343036a"
     },
     {
       "path": "package.json",
-      "size": 8050,
-      "sha256": "b9226b49556dfba4cba92a4e8c3da40d1a3648b332c0cd2a87db0ff0f5343760"
+      "size": 8193,
+      "sha256": "7e8fc5c938d7599934d3638aa3b6b056f01bea0d7654cf622993db5a29799409"
     },
     {
       "path": "public/licenses/xterm-LICENSE.txt",
@@ -993,8 +1003,8 @@
     },
     {
       "path": "scripts/install.sh",
-      "size": 3553,
-      "sha256": "893c92529320eb3ac18299dfbc72831b6594c9516a48afe023589631f1f60934"
+      "size": 8967,
+      "sha256": "d850ffb8c7c831d93a1ef29a45f865a57675b3d512d944fbc60eba279a3f22fd"
     },
     {
       "path": "scripts/preflight-signing-tree.sh",
@@ -1003,8 +1013,8 @@
     },
     {
       "path": "scripts/repair-nginx.sh",
-      "size": 5620,
-      "sha256": "ae6d3734cccbe79ffc1a3aa4c2113aeab9122bef53c3495f009948beb00fd1a1"
+      "size": 6616,
+      "sha256": "4383efacefc5a807f774f8815664231b8cd276ce55638c7ab136957b3e31d499"
     },
     {
       "path": "scripts/sync-modules.sh",
@@ -1018,8 +1028,8 @@
     },
     {
       "path": "scripts/tec-tac-csp.sh",
-      "size": 6624,
-      "sha256": "e1f040abe53e8b07a2cf48309d9de27036514340f392f11fc4c26183b2b200dc"
+      "size": 7710,
+      "sha256": "0748bf951bd011d742fb711a591f60a91943055d8afb74deb02986ff058dcf87"
     },
     {
       "path": "scripts/uninstall.sh",
@@ -1779,7 +1789,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "8357d0e07df76382a7519959ab5606b4bdd10900aa7233c8781ee85d34001f31"
+      "sha256": "2c54bb01979f7fa76f3b7c555e935c730ef924919f888a0ebe2a8d7bf4160a16"
     },
     {
       "path": "tests/access-panels-reload-0.12.101.mjs",
@@ -1868,8 +1878,8 @@
     },
     {
       "path": "tests/core-requirement-0.12.109.mjs",
-      "size": 2552,
-      "sha256": "9da6e256199b5489341f3db711c129538873d8c102f2ea2dd44d4acbcf7d5291"
+      "size": 2559,
+      "sha256": "f2d117ac5ba501fd8f26fd5b00b3b8469c0b2ddfd962c373321049096555745c"
     },
     {
       "path": "tests/core-requirement-0.12.111.mjs",
@@ -1877,9 +1887,14 @@
       "sha256": "30562e086271322a336f1bbcc25a427e976cb4a071e93ccf6bc4f8614ec4c80b"
     },
     {
-      "path": "tests/core-requirement-0.12.112.mjs",
-      "size": 2071,
-      "sha256": "303029979d9a7205174feaef330a379b267aa917ea57a5990c3943c6dd687b54"
+      "path": "tests/core-requirement-0.12.113.mjs",
+      "size": 2079,
+      "sha256": "9cd979ad42f7792b70056e2cef470f7034a25469964edd3d8695519277ef6662"
+    },
+    {
+      "path": "tests/csp-env-config-source-0.12.113.sh",
+      "size": 5007,
+      "sha256": "dd0cdb2345693f9aacca99be78718429cc85fddb1af5095f6d924e8fc3f5bb41"
     },
     {
       "path": "tests/csp-match-helper-0.12.83.mjs",
@@ -2072,9 +2087,19 @@
       "sha256": "59bae5432363555bf1a1f5d32a9fe5cece4935217a8d3a226ed47a190e79d3a4"
     },
     {
+      "path": "tests/installer-env-config-0.12.113.mjs",
+      "size": 1649,
+      "sha256": "27e5775cd829760ffeee1ca36811a774b5a1fc52b24f7bb9343d41e1616bb1eb"
+    },
+    {
+      "path": "tests/installer-env-config-0.12.113.sh",
+      "size": 12299,
+      "sha256": "4f4ca2f9ef51e49eba41666b6e52d5d5f941c30ca7a32988a2ef15dde7668f49"
+    },
+    {
       "path": "tests/installer-refusal-0.12.112.sh",
-      "size": 4564,
-      "sha256": "41eff7315bd71c8dd0d97b34dcc412ea015e7452aa2d26ff97d68a2ea003e4dc"
+      "size": 4885,
+      "sha256": "a3fecff34f21389fa263895e1450a286a40526330aceb72d9c7e7a22669c5e2f"
     },
     {
       "path": "tests/installer-refusal-view-0.12.112.mjs",
@@ -2168,8 +2193,8 @@
     },
     {
       "path": "tests/module-preferences-docs-0.12.106.mjs",
-      "size": 6965,
-      "sha256": "071a80251fd4eb9f745bc5f1f700c421010516e482d0575ba49315c0ce156381"
+      "size": 6972,
+      "sha256": "d18c00eb789db5c6373eb8ee4463618f8d691109eeea49cb502b94499d4aacb1"
     },
     {
       "path": "tests/module-preferences-merged-result-0.12.109.mjs",
@@ -2533,8 +2558,8 @@
     },
     {
       "path": "tests/tactical-scope-context-0.12.93.mjs",
-      "size": 5335,
-      "sha256": "5e81f175faee0d0875715498dcacf5453e963b1bad9535a51d727c634483aff0"
+      "size": 5342,
+      "sha256": "3682e7a939959ae274c5a4941a45a77ae5382f27278ae761b4d252cf203b4bfc"
     },
     {
       "path": "tests/tactical-ui-apply-0.12.106.mjs",

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # 0.12.112 (Core 1.17.43 request): scripts/install.sh exits 78 and prints '[TEC-TAC-INSTALL] REFUSED: <reason>' on stderr when it
-# refuses before the first change to the live deployment (missing env-config.js, missing npm, failed staged sync-modules.sh
+# refuses before the first change to the live deployment (missing TEC_TAC_API_URL since 0.12.113, missing npm, failed staged sync-modules.sh
 # preflight). Every other failure keeps exit 1. No 78 may come after the first live change. Runs a copy of install.sh with only
 # the root test swapped, in a temp tree. The text of SystemUpdatesView is checked by a node assertion.
 set -u
@@ -51,7 +51,8 @@ done
 
 run() { # run <frontend> <path> [extra env...]
   local frontend="$1" path="$2"; shift 2
-  env HOME="${WORK}" PATH="${path}" TEC_TAC_CONFIG_FILE="${CONF}" TEC_TAC_UI_DEPLOY_ROOT="${DEPLOY}" TACTICAL_FRONTEND_ROOT="${frontend}" "$@" \
+  # 0.12.113: a valid TEC_TAC_API_URL is given unless API_URL_ENV is set (to empty) by the caller of run()
+  env -u TEC_TAC_API_URL HOME="${WORK}" PATH="${path}" TEC_TAC_CONFIG_FILE="${CONF}" TEC_TAC_UI_DEPLOY_ROOT="${DEPLOY}" TACTICAL_FRONTEND_ROOT="${frontend}" ${API_URL_ENV-TEC_TAC_API_URL=https://api.example.test} "$@" \
     bash "${TREE}/scripts/install.sh" > "${WORK}/out" 2> "${WORK}/err"
   return $?
 }
@@ -66,8 +67,8 @@ expect() { # expect <status> <marker yes|no> <label>
   fi
 }
 
-# (1) env-config.js missing: 78
-run "${FRONTEND_NONE}" "${WORK}/stubs:${BASE_PATH}"; expect 78 yes "missing env-config.js"
+# (1) no TEC_TAC_API_URL anywhere: 78 (0.12.113 replaced the missing-Tactical-env-config.js refusal; see installer-env-config-0.12.113.sh)
+API_URL_ENV= run "${FRONTEND_NONE}" "${WORK}/stubs:${BASE_PATH}"; expect 78 yes "missing TEC_TAC_API_URL"
 [ ! -e "${WORK}/deploy" ] || fail "a refusal created the deploy base"
 
 # (2) npm missing: 78

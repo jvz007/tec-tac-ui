@@ -59,7 +59,7 @@ const lock = JSON.parse(read('../package-lock.json'))
 const version = read('../VERSION').trim()
 // 0.12.108: this test pins the release it checks, so its pins move with each release (the version, the Core requirement and
 // the notes file). Its module-preferences checks are the 0.12.108 ones below.
-assert.match(version, /^0\.12\.\d+$/)
+assert.match(version, /^0\.12\.\d+(-\d+)?$/)
 assert.equal(pkg.version, version)
 assert.equal(manifest.version, version)
 assert.equal(lock.version, version)

@@ -190,7 +190,7 @@ npm install
 npm run dev
 ```
 
-The production build uses Tactical's `/env-config.js` to discover the Tactical API URL.
+The production build reads the Tactical API URL from `window._env_.PROD_URL`, set by `/env-config.js`. On a server that runs Tactical's frontend, `index.html` loads Tactical's own `/env-config.js`. On a standalone host, the UI root serves the file `scripts/install.sh` writes (see "The Tactical API address").
 
 ## Build
 
@@ -223,9 +223,37 @@ The installer builds the Vue application and deploys it to:
 /var/lib/tec-tac/ui/tec-tac/
 ```
 
+### The Tactical API address (`env-config.js`, 0.12.113)
+
+The installer writes `/var/lib/tec-tac/ui/tec-tac/env-config.js` (the UI root) on every install and update. On a standalone host that is the file the login page reads. On a Tactical-hosted server the page loads Tactical's `/env-config.js` instead, and the UI's file is served only at `/tec-tac/env-config.js`, which nothing loads. The file holds the one setting the login page needs:
+
+```js
+window._env_ = {
+  PROD_URL: "https://api.example.com"
+};
+```
+
+Give the installer the address in `TEC_TAC_API_URL`:
+
+```bash
+sudo env TEC_TAC_API_URL="https://api.example.com" bash scripts/install.sh
+```
+
+The installer uses the first of these it finds: (1) `TEC_TAC_API_URL` in the environment, (2) `TEC_TAC_API_URL=` in `/opt/tec-tac/etc/tec-tac.conf`, (3) the `PROD_URL` of the `env-config.js` it wrote last time, (4) the `PROD_URL` in Tactical's own `env-config.js` (read only: only the value is used, and Tactical's file is never copied, changed or deployed). Step 3 keeps updates started by Core working, because Core does not pass `TEC_TAC_*` variables to the installer. Every value must pass the same check, and the install output names the source used. With no address anywhere, or an invalid one in Tactical's file, the installer stops before anything changes and says so: System Updates shows "Update refused, nothing was changed".
+
+The address must start with `http://` or `https://`, have a host, and contain no spaces, quotes, backslashes, angle brackets, user name, query or fragment. A path is allowed. Trailing slashes are removed. A server installed before 0.12.113 needs the address once: add `TEC_TAC_API_URL=https://<your API host>` to `/opt/tec-tac/etc/tec-tac.conf`, or run the installer by hand with the variable set.
+
+After the install, check the file is served as itself and not as the index page:
+
+```bash
+curl -ksS https://portal.example.com/env-config.js
+```
+
+It must return the `window._env_` lines above. If it returns HTML, the web server falls back to the index page for that path. A standalone Tec-Tac host must serve `/env-config.js` from the UI root as a real file, with no `try_files` fallback to `index.html` and with `Cache-Control: no-store`, so a changed address is not held back by a browser cache. `scripts/repair-nginx.sh` only adds the `/tec-tac/` include to Tactical's frontend server block. It does not manage a separate standalone vhost, and `install.sh` skips it, with a log line, when no Tactical frontend server block exists.
+
 It installs `/etc/nginx/snippets/tec-tac.conf` and adds one include to Tactical's frontend nginx server block so `/tec-tac/` is served from this persistent path. It does not edit Tactical tracked source files or the Tec-Tac backend repo. After a Tactical update, `sudo bash scripts/repair-nginx.sh` restores the nginx include if necessary without rebuilding the UI.
 
-The snippet also sends a Content-Security-Policy header for `/tec-tac/` (0.12.81; report-only by default from 0.12.83). `scripts/tec-tac-csp.sh` builds it from the Tactical API origin, which `repair-nginx.sh` reads from `PROD_URL` in `${TACTICAL_FRONTEND_ROOT:-/var/www/rmm/dist}/env-config.js`. If that value cannot be read, the script logs a warning and writes no policy, because a policy without the API origin would break every API call. Set these in `/opt/tec-tac/etc/tec-tac.conf`, then run `sudo bash scripts/repair-nginx.sh`:
+The snippet also sends a Content-Security-Policy header for `/tec-tac/` (0.12.81; report-only by default from 0.12.83). `scripts/tec-tac-csp.sh` builds it from the Tactical API origin, which `repair-nginx.sh` reads from `PROD_URL` in the `env-config.js` the page really loads: `${TACTICAL_FRONTEND_ROOT:-/var/www/rmm/dist}/env-config.js` when Tactical's frontend exists, and the UI's own `env-config.js` only when it does not. If that value cannot be read, the script logs a warning and writes no policy, because a policy without the API origin would break every API call. Set these in `/opt/tec-tac/etc/tec-tac.conf`, then run `sudo bash scripts/repair-nginx.sh`:
 
 - `TEC_TAC_CSP_MODE`: `report-only` (default), `enforce` or `off`. Report-only sends `Content-Security-Policy-Report-Only`: the browser blocks nothing and writes a `[Report Only]` line to the console for anything the policy would block. Switch to `enforce` only after every installed module page has been loaded in report-only with no `[Report Only]` lines in the console. An unknown value falls back to report-only.
 - `TEC_TAC_CSP_CONNECT_EXTRA`, `TEC_TAC_CSP_FRAME_EXTRA`, `TEC_TAC_CSP_IMG_EXTRA`: space-separated hosts that widen `connect-src`, `frame-src` and `img-src`.

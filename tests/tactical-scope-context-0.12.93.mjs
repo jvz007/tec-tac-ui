@@ -72,5 +72,5 @@ assert.ok(docs.includes('context.context.tactical_scope'))
 const pkg = JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url), 'utf8'))
 assert.match(pkg.requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/)
 // Later releases move the version on; this release's manifest is 0.12.93 or any later patch.
-assert.match(pkg.version, /^0\.12\.(9[3-9]|[1-9]\d{2,})$/)
+assert.match(pkg.version, /^0\.12\.(9[3-9]|[1-9]\d{2,})(-\d+)?$/)
 console.log('tactical-scope-context-0.12.93 ok')
