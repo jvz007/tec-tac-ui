@@ -29,8 +29,10 @@ set -o errtrace
 [[ ${EUID} -eq 0 ]] || fail "Run as root."
 command -v npm >/dev/null 2>&1 || refuse "npm is required to build tec-tac-ui."
 
-# The Tactical API URL for /env-config.js (0.12.113). The UI installer owns that file; Tactical's own env-config.js is never the source.
-# Sources, in order: the caller's TEC_TAC_API_URL, TEC_TAC_API_URL in tec-tac.conf, the PROD_URL of the file this installer wrote last time.
+# The Tactical API URL for /env-config.js (0.12.113). The UI installer owns the deployed file.
+# Sources, in order: (1) the caller's TEC_TAC_API_URL, (2) TEC_TAC_API_URL in tec-tac.conf, (3) the PROD_URL of the env-config.js this
+# installer wrote last time (the installed ${TARGET_ROOT}/env-config.js), (4) the PROD_URL in Tactical's own env-config.js. Source 4 is
+# read only: only the checked value is used, and Tactical's file is never copied, changed or deployed.
 API_URL_RE='^https?://([A-Za-z0-9.-]+|\[[0-9A-Fa-f:.]+\])(:[0-9]{1,5})?(/[A-Za-z0-9._~%/+-]*)?$'
 # Prints the cleaned URL, or fails when the value is not an absolute http(s) URL made of plain characters.
 clean_api_url() {
@@ -110,6 +112,21 @@ if ! TEC_TAC_UI_ROOT="${STAGE_ROOT}" bash "${UI_SOURCE_ROOT}/scripts/sync-module
   refuse "The extension UI preflight failed on the staged build. The installed UI was not changed."
 fi
 
+# Is this a Tactical-integrated host? Decided before the first live change, so a host that needs the nginx include but has no block to
+# put it in is refused here with nothing changed. repair-nginx.sh would only fail after the live swap.
+# Standalone = no Tactical nginx block AND no Tactical frontend root. The test mirrors repair-nginx.sh: Tactical's frontend.conf,
+# or an enabled block that serves Tactical's dist root.
+FRONTEND_NGINX_CONF="${TACTICAL_FRONTEND_NGINX_CONF:-/etc/nginx/sites-available/frontend.conf}"
+NGINX_SITES_ENABLED="${TEC_TAC_NGINX_SITES_ENABLED:-/etc/nginx/sites-enabled}"
+HAS_TACTICAL_NGINX=0
+if [[ -f "${FRONTEND_NGINX_CONF}" ]]; then
+  HAS_TACTICAL_NGINX=1
+elif grep -RIlq --include='*.conf' -E 'root[[:space:]]+/var/www/rmm/dist[[:space:]]*;' "${NGINX_SITES_ENABLED}" 2>/dev/null; then
+  HAS_TACTICAL_NGINX=1
+elif [[ -d "${TACTICAL_FRONTEND_ROOT}" ]]; then
+  refuse "Tactical's frontend is at ${TACTICAL_FRONTEND_ROOT}, but no Tactical nginx server block was found. Set TACTICAL_FRONTEND_NGINX_CONF to Tactical's frontend.conf, or TEC_TAC_NGINX_SITES_ENABLED to the folder of enabled nginx sites, and run the update again. Nothing was changed."
+fi
+
 mkdir -p "${DEPLOY_BASE}"
 BACKUP=""
 if [[ -d "${TARGET_ROOT}" ]]; then
@@ -142,14 +159,7 @@ fi
 # Install/repair only the small nginx integration. The built UI itself is now
 # outside Tactical's /var/www/rmm/dist tree and therefore survives upgrades.
 # A standalone host has no Tactical frontend server block, so there is nothing to add the include to: skip repair-nginx.sh there.
-# The test mirrors repair-nginx.sh: Tactical's frontend.conf, or an enabled block that serves Tactical's dist root.
-FRONTEND_NGINX_CONF="${TACTICAL_FRONTEND_NGINX_CONF:-/etc/nginx/sites-available/frontend.conf}"
-HAS_TACTICAL_NGINX=0
-if [[ -f "${FRONTEND_NGINX_CONF}" ]]; then
-  HAS_TACTICAL_NGINX=1
-elif grep -RIlq --include='*.conf' -E 'root[[:space:]]+/var/www/rmm/dist[[:space:]]*;' "${TEC_TAC_NGINX_SITES_ENABLED:-/etc/nginx/sites-enabled}" 2>/dev/null; then
-  HAS_TACTICAL_NGINX=1
-fi
+# HAS_TACTICAL_NGINX was decided before the first live change (see above).
 if [[ "${HAS_TACTICAL_NGINX}" -eq 1 ]]; then
   TEC_TAC_UI_ROOT="${TARGET_ROOT}" TEC_TAC_UI_DEPLOY_BASE="${DEPLOY_BASE}" \
     bash "${UI_SOURCE_ROOT}/scripts/repair-nginx.sh"

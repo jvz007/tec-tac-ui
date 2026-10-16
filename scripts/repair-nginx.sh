@@ -9,6 +9,7 @@ source "${HERE}/tec-tac-csp.sh"
 DEPLOY_BASE="${TEC_TAC_UI_DEPLOY_BASE}"
 UI_ROOT="${TEC_TAC_UI_ROOT:-${TEC_TAC_UI_DEPLOY_ROOT}}"
 FRONTEND_CONF="${TACTICAL_FRONTEND_NGINX_CONF:-/etc/nginx/sites-available/frontend.conf}"
+NGINX_SITES_ENABLED="${TEC_TAC_NGINX_SITES_ENABLED:-/etc/nginx/sites-enabled}"
 SNIPPET_DIR="${TEC_TAC_NGINX_SNIPPET_DIR:-/etc/nginx/snippets}"
 SNIPPET_FILE="${SNIPPET_DIR}/tec-tac.conf"
 INCLUDE_LINE="    include ${SNIPPET_FILE};"
@@ -24,8 +25,8 @@ command -v nginx >/dev/null 2>&1 || fail "nginx is not installed."
 # Tactical currently creates /etc/nginx/sites-available/frontend.conf. If a
 # future version moves it, locate the enabled server that serves its dist root.
 if [[ ! -f "${FRONTEND_CONF}" ]]; then
-  candidate="$(grep -RIl --include='*.conf' -E 'root[[:space:]]+/var/www/rmm/dist[[:space:]]*;' /etc/nginx/sites-enabled 2>/dev/null | head -n1 || true)"
-  [[ -n "${candidate}" ]] || fail "Could not locate Tactical frontend nginx server block. Set TACTICAL_FRONTEND_NGINX_CONF explicitly."
+  candidate="$(grep -RIl --include='*.conf' -E 'root[[:space:]]+/var/www/rmm/dist[[:space:]]*;' "${NGINX_SITES_ENABLED}" 2>/dev/null | head -n1 || true)"
+  [[ -n "${candidate}" ]] || fail "Could not locate Tactical frontend nginx server block. Set TACTICAL_FRONTEND_NGINX_CONF explicitly, or TEC_TAC_NGINX_SITES_ENABLED to the folder of enabled nginx sites (looked in ${NGINX_SITES_ENABLED})."
   FRONTEND_CONF="$(readlink -f "${candidate}")"
 fi
 

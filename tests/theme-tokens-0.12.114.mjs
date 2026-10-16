@@ -119,4 +119,11 @@ if (!fs.existsSync(modulesDir)) {
   console.log(`theme-tokens-0.12.114: scanned ${scanned} module UI files`)
 }
 
+// 0.12.115: the sort arrows are CSS escapes (review of 0.12.114), and styles.css holds no stray control byte.
+const BS = String.fromCharCode(92)
+assert.ok(css.includes('.tt-table th[aria-sort]::after{content:" ' + BS + '25B2"'), 'the ascending arrow is the escape 25B2')
+assert.ok(css.includes('.tt-table th[aria-sort="descending"]::after{content:" ' + BS + '25BC"'), 'the descending arrow is the escape 25BC')
+for (const ch of css) { const c = ch.charCodeAt(0); assert.ok(c > 31 || c === 9 || c === 10 || c === 13, 'styles.css has no control characters other than tab, newline and CR') }
+assert.ok(!css.includes(String.fromCharCode(21)), 'no 0x15 byte is left in styles.css')
+
 console.log('theme-tokens-0.12.114: PASS')

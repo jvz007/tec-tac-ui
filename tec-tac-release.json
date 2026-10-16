@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.114",
+  "version": "0.12.115",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,9 +32,9 @@
       "sha256": "28da8f0c070c3353f4e865cc5b55ef9960e456db428ac8693d3ce100f7e3d036"
     },
     {
-      "path": "RELEASE_NOTES_0.12.114.md",
-      "size": 5418,
-      "sha256": "3aa5ef18b9079c000aee9a7cc3b2111aafd7f2024dbdc9687d7bc970b786a278"
+      "path": "RELEASE_NOTES_0.12.115.md",
+      "size": 4653,
+      "sha256": "d1c920d3a815977ef5f6c04ca62a9a885505474f64ca61e0a8e45329e4a5a0d0"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -44,7 +44,7 @@
     {
       "path": "VERSION",
       "size": 9,
-      "sha256": "8ab458fc2985ca8522a412957a1ac27641ea8a8a23d6b2a9b4fbe7594fb28a90"
+      "sha256": "b028aaae62211f66ae9673a0ae325d755e6fec7cf70664c6b6c969b366147443"
     },
     {
       "path": "docs/context-actions.md",
@@ -400,6 +400,11 @@
       "path": "docs/releases/RELEASE_NOTES_0.12.113.md",
       "size": 7582,
       "sha256": "ad816e7050c3df62a5c679775dbbf30c44f3af91fe90cba4e67a0443401f4ee0"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.114.md",
+      "size": 5418,
+      "sha256": "3aa5ef18b9079c000aee9a7cc3b2111aafd7f2024dbdc9687d7bc970b786a278"
     },
     {
       "path": "docs/releases/RELEASE_NOTES_0.12.14.md",
@@ -984,12 +989,12 @@
     {
       "path": "package-lock.json",
       "size": 44828,
-      "sha256": "2eb4ac052468341582ab3499e11888846b974ab1345d7cca86dc62a5fc8eac25"
+      "sha256": "f46eb5396ea2cb7f92971d3b3ee125ff64e1764e222876a1cd7100c9f2d6118d"
     },
     {
       "path": "package.json",
-      "size": 8355,
-      "sha256": "03bdd302ab65cfac12edf86c2c17b7c2394c0b1dbaac5fc1c2d5575930dc81e8"
+      "size": 8485,
+      "sha256": "935411e7f86d6c7a004ab24ce8b2a067cc5e993805793e9ed08b6573a9dc6d23"
     },
     {
       "path": "public/licenses/xterm-LICENSE.txt",
@@ -1003,8 +1008,8 @@
     },
     {
       "path": "scripts/install.sh",
-      "size": 8967,
-      "sha256": "d850ffb8c7c831d93a1ef29a45f865a57675b3d512d944fbc60eba279a3f22fd"
+      "size": 9923,
+      "sha256": "2c230f571fda5c7d140f2a190f85fa074ee41fb9ddc35ffe653378fbc33b43b0"
     },
     {
       "path": "scripts/preflight-signing-tree.sh",
@@ -1013,8 +1018,8 @@
     },
     {
       "path": "scripts/repair-nginx.sh",
-      "size": 6616,
-      "sha256": "4383efacefc5a807f774f8815664231b8cd276ce55638c7ab136957b3e31d499"
+      "size": 6799,
+      "sha256": "1ee349dfe8163b7dbb5348fe238658e3322cac861b070f87e7bb8defb82a1d36"
     },
     {
       "path": "scripts/sync-modules.sh",
@@ -1658,8 +1663,8 @@
     },
     {
       "path": "src/styles.css",
-      "size": 108748,
-      "sha256": "75229647fee2e986c646675ae3199ae0562e29d2e5b5afe9d3f206b6882ce416"
+      "size": 108752,
+      "sha256": "30c9d4b329a9dc21480927f605310f721d499b717ad6c2423da2e08d89d6dcb3"
     },
     {
       "path": "src/system-trust-popover-state.js",
@@ -1799,7 +1804,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "30631e25047cf0fd28ee97179d942ff2ed0169bacda3daf04371b691d8638770"
+      "sha256": "9f55dbb84e597e6b8ae8efaa8566c28d44d957b67f31309aea501ab22c9db417"
     },
     {
       "path": "tests/access-panels-reload-0.12.101.mjs",
@@ -1902,9 +1907,9 @@
       "sha256": "9cd979ad42f7792b70056e2cef470f7034a25469964edd3d8695519277ef6662"
     },
     {
-      "path": "tests/core-requirement-0.12.114.mjs",
-      "size": 2212,
-      "sha256": "047c8f9f8dfaef62948320823ca3a71997a5ca6c91d8bd57209d89ffe97668d2"
+      "path": "tests/core-requirement-0.12.115.mjs",
+      "size": 2549,
+      "sha256": "62f8057250c2fe673efaaa740be4b61da1c1c490844ec3778086cd60f82f4a1e"
     },
     {
       "path": "tests/csp-env-config-source-0.12.113.sh",
@@ -2108,8 +2113,18 @@
     },
     {
       "path": "tests/installer-env-config-0.12.113.sh",
-      "size": 12299,
-      "sha256": "4f4ca2f9ef51e49eba41666b6e52d5d5f941c30ca7a32988a2ef15dde7668f49"
+      "size": 12556,
+      "sha256": "153a4b066e229c172703f90c59101ca0226e6c3f64ef01d6ec92e7551034c167"
+    },
+    {
+      "path": "tests/installer-header-0.12.115.sh",
+      "size": 1996,
+      "sha256": "17c5f1e741bc542b3980c16fcf972a6614837063e7fa0448f85465a8f2cc1470"
+    },
+    {
+      "path": "tests/installer-nginx-block-0.12.115.sh",
+      "size": 7322,
+      "sha256": "d1d306f764405da180d4710638acfcbc9267e8a51f7b9dab97031ba7ba0c28b4"
     },
     {
       "path": "tests/installer-refusal-0.12.112.sh",
@@ -2497,6 +2512,11 @@
       "sha256": "bb27dc6a286b38a5f9ed5c5fb847c7e03b7130ce779e19881416ac99a49ae352"
     },
     {
+      "path": "tests/sort-arrows-0.12.115.mjs",
+      "size": 2257,
+      "sha256": "3c4d959ac6a991f398bef75b64563a30fdd7cdd62d88e9ae4336d3e8672cf8ee"
+    },
+    {
       "path": "tests/sso-admin-page-0.12.100.mjs",
       "size": 10336,
       "sha256": "6cadfa2f4523c27ca6f795ef0453faeb42c481644dae7a3ff8e98b22b3174f61"
@@ -2643,8 +2663,8 @@
     },
     {
       "path": "tests/theme-tokens-0.12.114.mjs",
-      "size": 7832,
-      "sha256": "de020520fd10e8a15f682ed84d5a8c97090657c654d68c1612860a4d9f257b6f"
+      "size": 8511,
+      "sha256": "9578d9273053034e55afb6b49addd19d5563e92cc886ee9e8ed0c5bc2cadef48"
     },
     {
       "path": "tests/topbar-stacking-0.12.94.mjs",

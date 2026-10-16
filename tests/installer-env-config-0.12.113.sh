@@ -63,9 +63,11 @@ for d in "${dirs[@]}"; do
   BASE_PATH="${BASE_PATH:+${BASE_PATH}:}${d}"
 done
 
+# 0.12.115: a host with a Tactical frontend root and no nginx block is refused, so the default run has a frontend.conf; case (10) overrides it.
+echo 'server { }' > "${WORK}/default-frontend.conf"
 run() { # run [env...]; uses the global CONF
   env -u TEC_TAC_API_URL HOME="${WORK}" PATH="${WORK}/stubs:${BASE_PATH}" TEC_TAC_CONFIG_FILE="${CONF}" TEC_TAC_UI_DEPLOY_ROOT="${DEPLOY}" \
-    TACTICAL_FRONTEND_ROOT="${FRONTEND}" "$@" \
+    TACTICAL_FRONTEND_ROOT="${FRONTEND}" TACTICAL_FRONTEND_NGINX_CONF="${WORK}/default-frontend.conf" "$@" \
     bash "${TREE}/scripts/install.sh" > "${WORK}/out" 2> "${WORK}/err"
   return $?
 }
