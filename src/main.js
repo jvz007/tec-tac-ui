@@ -31,6 +31,10 @@ import { registerCoreHelpArticles } from './help/core-articles'
 import { registerCoreDashboardWidgets } from './dashboard-core-widgets'
 import { initializeUserPreferences } from './preferences'
 import { installCspViolationRecorder } from './csp-violations'
+import { createModuleDialogService, dialogTimeoutMs } from './module-dialogs'
+import { createRowMenuService } from './row-menu'
+import { createSignInLandingRegistry, createSignInLandingRunner } from './sign-in-landing'
+import { requestLeave, unsavedState } from './unsaved'
 import './styles.css'
 
 // Installed before anything mounts so an early violation is not missed.
@@ -115,10 +119,37 @@ async function bootstrap() {
   // Shared terminal widget (0.12.104). xterm.js loads on the first create(), so it stays out of the main bundle. Each module
   // gets a copy bound to its own id; the loader clears a module's terminals when it is unloaded or fails.
   const terminal = createTerminalService()
+  // Module dialogs (0.12.112): one at a time, never in a popup window or while signed out. Closed at sign-out, when the session
+  // ends and when the page is left, without asking the module's beforeClose().
+  const dialogs = createModuleDialogService({
+    isPopup: () => window.location.hash.startsWith(POPUP_HASH_PREFIX) || state.popup?.active === true,
+    isSignedOut,
+    isTrustedContext: () => state.contextSource === 'backend',
+    timeoutSeconds: () => state.context?.module_register_timeout_seconds,
+  })
+  window.addEventListener(TACTICAL_SESSION_INVALID_EVENT, () => dialogs.closeAll())
+  window.addEventListener('pagehide', () => dialogs.closeAll())
+  // Module row menu (0.12.112): one at a time, never in a popup window or while signed out. Closed with the dialogs.
+  const rowMenu = createRowMenuService({
+    isPopup: () => window.location.hash.startsWith(POPUP_HASH_PREFIX) || state.popup?.active === true,
+    isSignedOut,
+    isTrustedContext: () => state.contextSource === 'backend',
+  })
+  window.addEventListener(TACTICAL_SESSION_INVALID_EVENT, () => rowMenu.closeAll())
+  window.addEventListener('pagehide', () => rowMenu.closeAll())
+  // Sign-in landing (0.12.112). The check gets this signal; it aborts when the sign-in ends, so a check still waiting stops.
+  const signInLanding = createSignInLandingRegistry()
+  const landingController = new AbortController()
+  window.addEventListener(TACTICAL_SESSION_INVALID_EVENT, () => landingController.abort())
+  window.addEventListener('pagehide', () => landingController.abort())
+  const runSignInLandingOnce = createSignInLandingRunner()
   watch(() => state.status, (status) => {
     if (status === 'unauthenticated') {
       notifications.clearAll()
       jobs.stopAll()
+      dialogs.closeAll()
+      rowMenu.closeAll()
+      landingController.abort()
     }
   }, { flush: 'sync' })
   registerCoreDashboardWidgets(dashboardWidgets, state)
@@ -138,6 +169,8 @@ async function bootstrap() {
   app.provide('tecTacSsoProviders', ssoProviders)
   app.provide('tecTacHeader', header)
   app.provide('tecTacConfirm', confirmService)
+  app.provide('tecTacModuleDialogs', dialogs)
+  app.provide('tecTacRowMenu', rowMenu)
   app.use(router)
   const initialHashTarget = window.location.hash.startsWith('#/')
     ? window.location.hash.slice(1)
@@ -229,6 +262,10 @@ async function bootstrap() {
       help,
       header,
       services: moduleServices,
+      // Module dialogs and the sign-in landing check (0.12.112): bound per module by the loader; never given to registerPublic. rowMenu (0.12.112) follows the same rule.
+      dialogs,
+      signInLanding,
+      rowMenu,
       jobs,
       terminal,
       isSignedOut,
@@ -280,6 +317,26 @@ async function bootstrap() {
     if (popupTarget && router.currentRoute.value.name === 'popup-pending' && state.popup.status !== 'refused') {
       console.warn('[TEC-TAC-UI] popup: the popup address did not match a route that opens in a popup window.', popupMissDetails(window.location.hash, popupTarget, router.getRoutes(), state.moduleLoad.loaded))
       refusePopup(POPUP_MESSAGE_NOT_POPUP)
+    }
+
+    // Sign-in landing (0.12.112): after the modules loaded and the entry route was replayed, once per page load. A popup never
+    // runs it; a deep link, a bookmarked page or a reload on another page is never redirected (the runner decides).
+    if (!popupMode) {
+      await runSignInLandingOnce({
+        checks: signInLanding.list(),
+        initialTarget: initialHashTarget,
+        popup: false,
+        signedIn: state.status === 'ready',
+        trusted: state.contextSource === 'backend',
+        router,
+        isDirty: () => unsavedState.dirty,
+        requestLeave,
+        hasPermission,
+        dialogs,
+        timeoutMs: dialogTimeoutMs(state.context?.module_register_timeout_seconds),
+        signal: landingController.signal,
+        context: state.context,
+      })
     }
   }
 }

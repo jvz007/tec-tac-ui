@@ -42,6 +42,10 @@ One control that picks one item from a list and searches as you type.
 | `emptyText` | `No matches. Check the spelling.` | Line shown when the search matches nothing. |
 | `favouriteLabel` | `Favourites` | Heading of the favourites group. |
 | `allLabel` | `All` | Heading of the other group. |
+| `serverSearch` | `false` | Server mode (0.12.112). The module owns the search: the component skips its own filter and the 300-row cap. See "Server search and paging". |
+| `loading` | `false` | Shows one quiet "Loading…" line in the list and sets `aria-busy`. |
+| `hasMore` | `false` | The module has more rows to load. Used with the `more` event. |
+| `selectedLabel` | none | Text to show for the chosen value when it is not in the loaded rows. |
 
 Option fields: `value` (any value you can compare with `===`), `label` (what the input shows once chosen), `description` (a
 second line, quiet colour), `favourite` (`true` puts the row in the favourites group with a star), `chip` (a short tag such as
@@ -52,6 +56,8 @@ the shell or report type), `chipTone` (`shell`, `accent`, `ok`, `warn` or `dange
 |---|---|---|
 | `update:modelValue` | the chosen `value`, or `null` after clear | An item is chosen or cleared. |
 | `select` | the chosen option object, or `null` after clear | The same moment. Use it to fill default arguments and a timeout when a script is chosen (P6). |
+| `search` | the typed text (empty when the list opens) | Server mode only. The component emits on every change; the module debounces. |
+| `more` | none | Server mode only. The list reached its last row or its end and `hasMore` is `true`. |
 
 Rules:
 
@@ -72,6 +78,37 @@ Rules:
   "Showing the first 300. Keep typing to narrow it."
 - The list is placed from the input's rectangle with `position: fixed`, above or below as there is room, so a scrolling dialog
   such as `.modal-wide` does not cut it off.
+
+### Server search and paging (0.12.112)
+
+For a list too long to load at once, such as thousands of agents, the module searches and pages on the server. Every prop and
+event below is off by default, so a picker that does not use them behaves exactly as before.
+
+- `serverSearch` turns server mode on. The component does not filter the options and does not apply the 300-row cap. It shows
+  the options exactly as given, up to **1000 loaded rows** (`SELECT_LIMITS.maxServerRows`), and then the line
+  "Showing the first 1000 loaded. Keep typing to narrow it."
+- `search` carries the typed text. The component emits on every change and when the list opens (then the text is empty). The
+  module debounces and loads. Typing never changes `modelValue`: the value stays with the module.
+- `loading` shows one "Loading…" line (`SELECT_LIMITS.loadingText`) after the rows, or alone when there are none, and sets
+  `aria-busy`. While it is `true`, "No matches" is not shown.
+- `hasMore` with `more`: when `hasMore` is `true` and the highlight reaches the last row, or the list is scrolled to its end,
+  `more` fires once. It does not fire again until `options` changes or `loading` goes back to `false`. The module appends the
+  next page to `options`.
+- `selectedLabel` is the label for a chosen value that is not in the loaded rows (the person picked it on an earlier search).
+  Without it the input would be empty. Text only.
+- Static lists keep the local filter and the 300-row cap.
+
+```js
+h(SearchSelect, {
+  serverSearch: true, options: rows, loading: busy, hasMore: next !== null,
+  modelValue: agentId, selectedLabel: agentName,
+  onSearch: (text) => debouncedLoad(text), onMore: () => loadNextPage(),
+  'onUpdate:modelValue': (v) => { agentId = v },
+})
+```
+
+Contract row `ui.authenticated.components` gains these props and events. They are not yet in the export; Core writes the row
+(`reviews/requests/core.md`).
 
 ## TagEditor (P7)
 
@@ -111,6 +148,7 @@ Rules:
 | Limit | Value | Constant |
 |---|---|---|
 | Rows in the SearchSelect list | 300 | `SELECT_LIMITS.maxRows` |
+| Loaded rows in a server-mode list | 1000 | `SELECT_LIMITS.maxServerRows` |
 | Values in a TagEditor | 200 | `TAG_LIMITS.maxItems` |
 | Characters in one tag | 500 | `TAG_LIMITS.maxLength` |
 

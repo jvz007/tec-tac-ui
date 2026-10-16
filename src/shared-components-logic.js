@@ -8,6 +8,10 @@ export const SELECT_LIMITS = Object.freeze({
   emptyText: 'No matches. Check the spelling.',
   favouriteLabel: 'Favourites',
   allLabel: 'All',
+  // 0.12.112 server mode: the module owns the search and the paging, so the list shows the rows as given, up to this many loaded rows.
+  maxServerRows: 1000,
+  serverCapText: 'Showing the first 1000 loaded. Keep typing to narrow it.',
+  loadingText: 'Loading…',
 })
 
 export const TAG_LIMITS = Object.freeze({
@@ -46,11 +50,14 @@ export function groupOptions(options, { favouriteLabel = SELECT_LIMITS.favourite
 
 // What the list shows: filtered, grouped and capped at maxRows. flat is the keyboard order (favourites first), and the
 // number of rows in the groups equals flat.length. capped is true when rows were left out.
-export function visibleOptions(options, query, { maxRows = SELECT_LIMITS.maxRows, favouriteLabel, allLabel } = {}) {
-  const matched = filterOptions(options, query)
+// serverSearch (0.12.112): the module has already searched, so the local filter is skipped and the cap is maxServerRows
+// (1000 loaded rows) instead of maxRows. Without it nothing changes.
+export function visibleOptions(options, query, { maxRows, favouriteLabel, allLabel, serverSearch = false } = {}) {
+  const matched = serverSearch === true ? cleanOptions(options) : filterOptions(options, query)
   const groups = groupOptions(matched, { favouriteLabel, allLabel })
   const ordered = groups.flatMap((group) => group.options)
-  const limit = Number.isInteger(maxRows) && maxRows > 0 ? maxRows : SELECT_LIMITS.maxRows
+  const fallback = serverSearch === true ? SELECT_LIMITS.maxServerRows : SELECT_LIMITS.maxRows
+  const limit = Number.isInteger(maxRows) && maxRows > 0 ? maxRows : fallback
   const capped = ordered.length > limit
   const flat = ordered.slice(0, limit)
   const keep = new Set(flat)
@@ -58,6 +65,38 @@ export function visibleOptions(options, query, { maxRows = SELECT_LIMITS.maxRows
     .map((group) => ({ ...group, options: group.options.filter((option) => keep.has(option)) }))
     .filter((group) => group.options.length)
   return { groups: kept, flat, capped }
+}
+
+// Server mode: the label shown for the chosen value. A chosen option in the current page wins; a value that is not in the page
+// shows selectedLabel (text only); nothing chosen shows nothing.
+export function chosenDisplayLabel(chosenOption, modelValue, selectedLabel) {
+  if (chosenOption) return String(chosenOption.label ?? '')
+  if (modelValue === null || modelValue === undefined) return ''
+  return typeof selectedLabel === 'string' ? selectedLabel : ''
+}
+
+// Whether the list asks the module for the next page. Only in server mode, only when the module said there is more, never
+// while loading, and only once for one set of options (asked is true after the first request until the options change or
+// loading ends). The trigger is the highlight reaching the last row, or the list scrolled to its end.
+export function wantsMore({ serverSearch = false, hasMore = false, loading = false, asked = false, count = 0, highlight = -1, atEnd = false } = {}) {
+  if (serverSearch !== true || hasMore !== true || loading === true || asked === true) return false
+  if (atEnd === true) return true
+  return count > 0 && highlight === count - 1
+}
+
+// Component definitions are frozen all the way down, so a module cannot change what another module receives. Only plain
+// objects and arrays are frozen. A function is left alone: the props name constructors such as Array and String, and the
+// built-in globals must never be frozen.
+export function deepFreeze(value, seen = new WeakSet()) {
+  if (value === null || typeof value !== 'object' || seen.has(value)) return value
+  const proto = Object.getPrototypeOf(value)
+  if (!Array.isArray(value) && proto !== Object.prototype && proto !== null) return value
+  seen.add(value)
+  for (const key of Reflect.ownKeys(value)) {
+    const descriptor = Object.getOwnPropertyDescriptor(value, key)
+    if (descriptor && 'value' in descriptor) deepFreeze(descriptor.value, seen)
+  }
+  return Object.freeze(value)
 }
 
 const enabledAt = (flat, index) => index >= 0 && index < flat.length && flat[index]?.disabled !== true

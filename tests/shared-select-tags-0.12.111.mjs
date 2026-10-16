@@ -192,8 +192,8 @@ html = await render(comps.TagEditor, {})
 assert.match(html, /class="tt-tagbox"/, 'no value renders an empty box')
 
 // ---- the component definitions ----
-assert.deepEqual(Object.keys(comps.SearchSelect.props).sort(), ['allLabel', 'ariaLabel', 'clearable', 'disabled', 'emptyText', 'favouriteLabel', 'inputId', 'modelValue', 'options', 'placeholder'])
-assert.deepEqual(comps.SearchSelect.emits, ['update:modelValue', 'select'])
+assert.deepEqual(Object.keys(comps.SearchSelect.props).sort(), ['allLabel', 'ariaLabel', 'clearable', 'disabled', 'emptyText', 'favouriteLabel', 'hasMore', 'inputId', 'loading', 'modelValue', 'options', 'placeholder', 'selectedLabel', 'serverSearch'])  // 0.12.112 adds the four server-mode props
+assert.deepEqual(comps.SearchSelect.emits, ['update:modelValue', 'select', 'search', 'more'])  // 0.12.112 adds search and more
 assert.equal(comps.SearchSelect.props.clearable.default, false)
 assert.deepEqual(Object.keys(comps.TagEditor.props).sort(), ['ariaLabel', 'commaAdds', 'disabled', 'maxItems', 'maxLength', 'modelValue', 'placeholder', 'readonly', 'validate'])
 assert.deepEqual(comps.TagEditor.emits, ['update:modelValue', 'reject'])

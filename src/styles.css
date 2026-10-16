@@ -340,3 +340,18 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .tactical-swatch{display:inline-block;flex:0 0 26px;width:26px;height:26px;border:1px solid var(--line-2);border-radius:2px;background:var(--surface-2)}
 .tactical-colour-field small{display:block;margin-top:4px}
 .tactical-ui-problem{color:var(--warn)}
+
+/* 0.12.112 module dialog host (src/components/ModuleDialogHost.vue, docs/module-dialogs.md) and the sign-in layer order.
+   The module dialog sits in Quick Actions' layer (1100), above popovers and every module. The unsaved-changes prompt sits above
+   it (1300) and the shell's Yes or No confirm above both (1400). Existing tokens only; sizes scale with --font-scale. */
+.modal-backdrop.module-dialog-backdrop{z-index:1100}
+.module-dialog-panel{max-height:calc(100vh - 40px);display:flex;flex-direction:column;overflow:hidden}
+.module-dialog-panel:focus{outline:none}
+.module-dialog-head{align-items:flex-start}
+.module-dialog-head h3{word-break:break-word}
+.module-dialog-body{min-height:0;flex:1 1 auto;overflow:auto}
+.module-dialog-error{margin:10px 0 0}
+.modal-backdrop.unsaved-backdrop{z-index:1300}
+/* 0.12.112 module row menu (src/row-menu.js, docs/module-row-menu.md). The same menu as .resource-menu (1000), in its own layer:
+   above a module dialog (1100), under toasts (1200), the unsaved prompt (1300) and the confirm (1400). */
+.resource-menu.row-menu-layer{z-index:1150}

@@ -10,10 +10,23 @@ TACTICAL_FRONTEND_ROOT="${TACTICAL_FRONTEND_ROOT:-/var/www/rmm/dist}"
 
 log() { printf '[TEC-TAC-UI] %s\n' "$*"; }
 fail() { printf '[TEC-TAC-UI] ERROR: %s\n' "$*" >&2; exit 1; }
+# A refusal before the first change to the live deployment. Exit status 78 tells Core's update helper that nothing changed,
+# so it keeps the installed version and runs no rollback. Never call refuse() after "mkdir -p DEPLOY_BASE": the helper reads
+# any 78 as "nothing changed". Everything after the first live change keeps fail() and exit 1.
+refuse() {
+  printf '[TEC-TAC-UI] ERROR: %s\n' "$*" >&2
+  printf '[TEC-TAC-INSTALL] REFUSED: %s\n' "$*" >&2
+  exit 78
+}
+# Any other failing command (npm ci, the build, and everything after the backup) ends with status 1, never with the child's own
+# status: a child that happened to end with 78 must not read as a refusal. refuse() above is the only place that uses 78.
+on_error() { printf '[TEC-TAC-UI] ERROR: a command failed at line %s.\n' "$1" >&2; exit 1; }
+trap 'on_error "${LINENO}"' ERR
+set -o errtrace
 
 [[ ${EUID} -eq 0 ]] || fail "Run as root."
-[[ -f "${TACTICAL_FRONTEND_ROOT}/env-config.js" ]] || fail "Tactical frontend env-config.js not found under ${TACTICAL_FRONTEND_ROOT}."
-command -v npm >/dev/null 2>&1 || fail "npm is required to build tec-tac-ui."
+[[ -f "${TACTICAL_FRONTEND_ROOT}/env-config.js" ]] || refuse "Tactical frontend env-config.js not found under ${TACTICAL_FRONTEND_ROOT}."
+command -v npm >/dev/null 2>&1 || refuse "npm is required to build tec-tac-ui."
 
 log "Building tec-tac-ui $(cat "${UI_SOURCE_ROOT}/VERSION")."
 cd "${UI_SOURCE_ROOT}"
@@ -32,7 +45,10 @@ cp -a "${UI_SOURCE_ROOT}/dist/." "${STAGE_ROOT}/"
 cp -a "${UI_SOURCE_ROOT}/VERSION" "${STAGE_ROOT}/VERSION"
 cp -a "${UI_SOURCE_ROOT}/package.json" "${STAGE_ROOT}/package.json"
 log "Preflighting extension UI modules against staged deployment."
-TEC_TAC_UI_ROOT="${STAGE_ROOT}" bash "${UI_SOURCE_ROOT}/scripts/sync-modules.sh"
+# set -e would exit with the child's own status here, so the refusal is explicit: nothing live has changed yet.
+if ! TEC_TAC_UI_ROOT="${STAGE_ROOT}" bash "${UI_SOURCE_ROOT}/scripts/sync-modules.sh"; then
+  refuse "The extension UI preflight failed on the staged build. The installed UI was not changed."
+fi
 
 mkdir -p "${DEPLOY_BASE}"
 BACKUP=""

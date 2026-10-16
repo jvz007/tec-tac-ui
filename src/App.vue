@@ -6,6 +6,8 @@ import UnsavedChangesDialog from './components/UnsavedChangesDialog.vue'
 import ConfirmDialog from './components/ConfirmDialog.vue'
 import { useConfirm } from './confirm-dialog'
 import QuickActionsDialog from './components/QuickActionsDialog.vue'
+import ModuleDialogHost from './components/ModuleDialogHost.vue'
+import RowMenuHost from './components/RowMenuHost.vue'
 import ModuleErrorBoundary from './components/module-error-boundary.js'
 import HelpDrawer from './components/HelpDrawer.vue'
 import NoticeDrawer from './components/NoticeDrawer.vue'
@@ -27,6 +29,7 @@ const notifications = inject('tecTacNotifications', null)
 const help = inject('tecTacHelp', null)
 const header = inject('tecTacHeader', null)
 const confirmService = inject('tecTacConfirm', null)
+const moduleDialogs = inject('tecTacModuleDialogs', null)
 const confirmAction = useConfirm()
 const FONT_SIZES = [
   { value: 0.9, label: 'A−', title: 'Small text' },
@@ -244,7 +247,15 @@ function openInNewTab(item) {
   window.open(target.href, '_blank', 'noopener,noreferrer')
   closeNavContextMenu()
 }
-function handleGlobalKey(event) { if (event.key === 'Escape') { closeNavContextMenu(); quickActionsOpen.value = false; help?.close?.(); notifications?.closeHistory?.() } }
+// 0.12.112: while a module dialog is the top layer, Escape belongs to it. The dialog host stops that key before it gets here.
+function handleGlobalKey(event) {
+  if (event.key !== 'Escape') return
+  closeNavContextMenu()
+  if (moduleDialogs?.isOpen?.()) return
+  quickActionsOpen.value = false
+  help?.close?.()
+  notifications?.closeHistory?.()
+}
 
 async function retry() {
   await loadContext()
@@ -378,6 +389,8 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
     <NoticeDrawer v-if="!popupLayout" />
     <HelpDrawer v-if="!popupLayout" />
     <QuickActionsDialog v-if="!popupLayout" v-model="quickActionsOpen" />
+    <ModuleDialogHost v-if="!popupLayout" />
+    <RowMenuHost v-if="!popupLayout" />
     <UnsavedChangesDialog />
     <ConfirmDialog v-if="confirmService" :service="confirmService" />
     <LoadingBar />

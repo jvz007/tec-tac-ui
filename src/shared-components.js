@@ -7,14 +7,17 @@ import {
   SELECT_LIMITS,
   TAG_LIMITS,
   addTag,
+  chosenDisplayLabel,
   cleanOptions,
   comboKey,
+  deepFreeze,
   firstEnabled,
   removeLastTag,
   removeTagAt,
   splitTyped,
   tagKey,
   visibleOptions,
+  wantsMore,
 } from './shared-components-logic.js'
 
 export { SELECT_LIMITS, TAG_LIMITS }
@@ -37,10 +40,12 @@ export const SearchSelectList = defineComponent({
     flat: { type: Array, default: () => [] },
     highlight: { type: Number, default: -1 },
     capped: { type: Boolean, default: false },
+    capText: { type: String, default: SELECT_LIMITS.capText },
+    loading: { type: Boolean, default: false },
     emptyText: { type: String, default: SELECT_LIMITS.emptyText },
     listStyle: { type: Object, default: () => ({}) },
   },
-  emits: ['choose'],
+  emits: ['choose', 'end'],
   setup(props, { emit }) {
     // The press chooses and never moves the focus away from the input. A press on the scrollbar keeps the focus too.
     const onMousedown = (event) => {
@@ -49,6 +54,11 @@ export const SearchSelectList = defineComponent({
       if (!row) return
       const index = Number(row.dataset.i)
       if (Number.isInteger(index)) emit('choose', index)
+    }
+    // Scrolled to the end of the list: the select may ask its module for the next page.
+    const onScroll = (event) => {
+      const el = event.target
+      if (el && el.scrollHeight - el.scrollTop - el.clientHeight <= 2) emit('end')
     }
     return () => {
       const showHeaders = props.groups.some((group) => group.key === 'favourites')
@@ -77,9 +87,10 @@ export const SearchSelectList = defineComponent({
           ]))
         }
       }
-      if (!children.length) children.push(h('li', { class: 'none', role: 'presentation' }, props.emptyText))
-      if (props.capped) children.push(h('li', { class: 'none', role: 'presentation' }, SELECT_LIMITS.capText))
-      return h('ul', { id: props.listId, role: 'listbox', style: props.listStyle, onMousedown }, children)
+      if (!children.length && !props.loading) children.push(h('li', { class: 'none', role: 'presentation' }, props.emptyText))
+      if (props.capped) children.push(h('li', { class: 'none', role: 'presentation' }, props.capText))
+      if (props.loading) children.push(h('li', { class: 'none', role: 'presentation', 'data-loading': 'true' }, SELECT_LIMITS.loadingText))
+      return h('ul', { id: props.listId, role: 'listbox', style: props.listStyle, 'aria-busy': props.loading ? 'true' : undefined, onMousedown, onScroll }, children)
     }
   },
 })
@@ -97,8 +108,15 @@ export const SearchSelect = defineComponent({
     emptyText: { type: String, default: SELECT_LIMITS.emptyText },
     favouriteLabel: { type: String, default: SELECT_LIMITS.favouriteLabel },
     allLabel: { type: String, default: SELECT_LIMITS.allLabel },
+    // Server mode (0.12.112), all off by default. The module owns the search and the paging: serverSearch skips the local
+    // filter and the 300-row cap, search reports the typed text, loading shows one quiet line, hasMore with more asks for the
+    // next page once, and selectedLabel names a chosen value that is not in the loaded rows.
+    serverSearch: { type: Boolean, default: false },
+    loading: { type: Boolean, default: false },
+    hasMore: { type: Boolean, default: false },
+    selectedLabel: { type: String, default: undefined },
   },
-  emits: ['update:modelValue', 'select'],
+  emits: ['update:modelValue', 'select', 'search', 'more'],
   setup(props, { emit }) {
     const listId = nextId('tt-combo')
     const root = ref(null)
@@ -110,12 +128,31 @@ export const SearchSelect = defineComponent({
     const listStyle = ref({})
 
     const chosen = computed(() => cleanOptions(props.options).find((option) => option.value === props.modelValue && props.modelValue !== null && props.modelValue !== undefined) || null)
-    const chosenLabel = computed(() => (chosen.value ? String(chosen.value.label ?? '') : ''))
-    // Opening shows the full list; typing filters it.
+    const chosenLabel = computed(() => chosenDisplayLabel(chosen.value, props.modelValue, props.selectedLabel))
+    // Opening shows the full list; typing filters it (in server mode the module filters and the rows are shown as given).
     const view = computed(() => visibleOptions(props.options, typed.value ? text.value : '', {
       favouriteLabel: props.favouriteLabel,
       allLabel: props.allLabel,
+      serverSearch: props.serverSearch,
     }))
+    const capText = computed(() => (props.serverSearch ? SELECT_LIMITS.serverCapText : SELECT_LIMITS.capText))
+
+    // Server mode: the module hears every change of the typed text and every opening of the list (the text is empty on opening).
+    const emitSearch = (value) => { if (props.serverSearch) emit('search', value) }
+    // The next page is asked for once for one set of options, until the options change or loading ends.
+    let asked = false
+    const maybeMore = (atEnd) => {
+      if (!open.value) return
+      if (wantsMore({ serverSearch: props.serverSearch, hasMore: props.hasMore, loading: props.loading, asked, count: view.value.flat.length, highlight: highlight.value, atEnd })) {
+        asked = true
+        emit('more')
+      }
+    }
+    watch(() => props.options, () => { asked = false })
+    watch(() => props.loading, (now, before) => { if (before && !now) asked = false })
+    watch(highlight, () => maybeMore(false))
+    // New rows from the module can leave the highlight past the end: put it back on the first enabled row.
+    watch(() => view.value.flat.length, (count) => { if (open.value && highlight.value >= count) highlight.value = firstEnabled(view.value.flat) })
     const chosenIndex = computed(() => (chosen.value ? view.value.flat.indexOf(chosen.value) : -1))
 
     watch(chosenLabel, (label) => { if (!open.value) text.value = label }, { immediate: true })
@@ -151,6 +188,7 @@ export const SearchSelect = defineComponent({
       placeList()
       watchPlacement(true)
       scrollToHighlight()
+      emitSearch('')
     }
     const closeList = () => {
       if (open.value) watchPlacement(false)
@@ -188,6 +226,7 @@ export const SearchSelect = defineComponent({
       }
       highlight.value = firstEnabled(view.value.flat)
       scrollToHighlight()
+      emitSearch(text.value)
     }
     const onKeydown = (event) => {
       if (props.disabled || event.isComposing) return
@@ -215,6 +254,7 @@ export const SearchSelect = defineComponent({
           'aria-expanded': open.value ? 'true' : 'false',
           'aria-controls': listId,
           'aria-autocomplete': 'list',
+          'aria-busy': open.value && props.loading ? 'true' : undefined,
           'aria-activedescendant': open.value && highlight.value >= 0 ? `${listId}-o${highlight.value}` : undefined,
           'aria-label': props.ariaLabel,
           placeholder: props.placeholder || undefined,
@@ -243,9 +283,12 @@ export const SearchSelect = defineComponent({
             flat: view.value.flat,
             highlight: highlight.value,
             capped: view.value.capped,
+            capText: capText.value,
+            loading: props.loading,
             emptyText: props.emptyText,
             listStyle: listStyle.value,
             onChoose: (index) => choose(view.value.flat[index]),
+            onEnd: () => maybeMore(true),
           })
           : h('ul', { id: listId, role: 'listbox', hidden: true }),
       ])
@@ -346,5 +389,6 @@ export const TagEditor = defineComponent({
   },
 })
 
-// What register(context).components holds. Frozen, so a module cannot change what another module receives.
-export const sharedComponents = Object.freeze({ SearchSelect, TagEditor })
+// What register(context).components holds. Frozen all the way down (each component's options object and its props), so a
+// module cannot change what another module receives.
+export const sharedComponents = Object.freeze({ SearchSelect: deepFreeze(SearchSelect), TagEditor: deepFreeze(TagEditor) })

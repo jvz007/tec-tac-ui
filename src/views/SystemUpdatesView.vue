@@ -971,6 +971,7 @@ onBeforeUnmount(() => {
       </div>
       <div class="module-meta"><span>Stage</span><b class="mono">{{ job.stage }}</b></div>
       <div class="module-meta"><span>Version</span><b class="mono">{{ job.installed_version }} → {{ job.version }}</b></div>
+      <div v-if="job.rollback?.reason === 'installer-refused'" class="state-inline warning">Update refused, nothing was changed</div>
       <div v-if="job.rollback?.performed" class="state-inline" :class="job.rollback.status === 'succeeded' ? 'warning' : 'denied'">Rollback {{ job.rollback.status }}<span v-if="job.rollback.version"> · restored {{ job.rollback.version }}</span></div>
       <div v-if="job.error" class="state-inline denied mt"><b>{{ job.error_type }}:</b> {{ job.error }}</div>
       <div v-if="systemJobFailureTail.length" class="state-inline denied mt"><b>Final lifecycle output</b><pre class="job-log">{{ systemJobFailureTail.join('\n') }}</pre></div>

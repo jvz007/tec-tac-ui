@@ -3,7 +3,7 @@ import { discardAndContinue, saveAndContinue, stayOnPage, unsavedState } from '.
 </script>
 
 <template>
-  <div v-if="unsavedState.dialogOpen" class="modal-backdrop" role="presentation" @click.self="stayOnPage">
+  <div v-if="unsavedState.dialogOpen" class="modal-backdrop unsaved-backdrop" role="presentation" @click.self="stayOnPage">
     <section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="unsaved-dialog-title">
       <div class="cardhead">
         <div>

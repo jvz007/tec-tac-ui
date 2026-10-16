@@ -7,7 +7,7 @@ import { createLatestRequestGate } from '../admin-session-state'
 import { loadLatestHotfixRows } from '../module-hotfix-loader'
 import { checkIntakeMetadata, orderGroupsByDependency, pairIntakeFiles } from '../module-intake'
 import { categoryBadge, categoryNote, categorySearchText, CATEGORY_FILTERS, filterByCategory } from '../module-category'
-import { installedOnlyRows, onlineAvailability, releaseLabels, skippedRows, skippedSummary } from '../module-repository-info'
+import { installedOnlyRows, onlineAvailability, releaseLabels, skippedRows, skippedSummary, syncScheduleInfo } from '../module-repository-info'
 import { confirmationRequired, dependantLines, handBackDisableLines, handBackEnableLines, handBackRequiredPayload, handBackWarning, installConfirmSummary, jobSwitchLines, emptySecondConfirmationText, secondConfirmationRequired, secondConfirmationRequiredPayload, secondConfirmationText, isReplacementProblem, replacedByLabel, replacementConfirmLines, replacementListChangedText, replacementProblemText, replacementSummary, replacesLabel, satisfiedByLine, willDisableIds } from '../module-replacement'
 import {
   addModuleRepository,
@@ -126,6 +126,9 @@ const filtered = computed(() => filterByCategory(modules.value, categoryFilter.v
 const filteredOnline = computed(() => onlineCatalog.value.filter((x) => !onlineQuery.value.trim() || [x.id, x.name, x.installed_version, x.latest_version, x.selected_repository_name].some((v) => String(v || '').toLowerCase().includes(onlineQuery.value.toLowerCase()))))
 const updatesAvailable = computed(() => onlineCatalog.value.filter((x) => x.update_available).length)
 const repositoryErrors = computed(() => repositories.value.filter((x) => x.sync?.status === 'error').length)
+// 0.12.112: Core 1.17.42 sends sync_schedule with the repositories. undefined (an older Core) hides the card.
+const syncSchedule = ref(undefined)
+const syncInfo = computed(() => syncScheduleInfo(syncSchedule.value, (value) => formatDateTime(value)))
 const selectedRepository = computed(() => repositories.value.find((x) => x.id === selectedRepositoryId.value) || null)
 const selected = computed(() => modules.value.find((x) => x.id === selectedId.value) || null)
 const selectedHistory = computed(() => jobHistory.value.find((x) => x.id === historySelectedId.value) || null)
@@ -316,6 +319,7 @@ async function loadRepositories() {
   try {
     const payload = await listModuleRepositories()
     repositories.value = payload.repositories || []
+    syncSchedule.value = payload && typeof payload === 'object' && Object.prototype.hasOwnProperty.call(payload, 'sync_schedule') ? payload.sync_schedule : undefined
     if (selectedRepositoryId.value && !repositories.value.some((x) => x.id === selectedRepositoryId.value)) selectedRepositoryId.value = null
   } catch (e) {
     error.value = e.message || 'Unable to load module repositories.'
@@ -1238,10 +1242,22 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
     <div class="repository-layout">
       <section>
         <div class="toolbar"><span class="muted mono">{{ repositories.length }} repositories</span><span class="spacer"></span><button class="btn" :disabled="!canManage || repositoryBusy" @click="syncAllRepositories">Sync all</button><button class="btn primary" :disabled="!canManage || repositoryBusy" @click="newRepository">Add repository</button></div>
+        <!-- 0.12.112: the daily sync (Core 1.17.42). Shown only when Core sends sync_schedule. Display only, nothing reads it to decide. -->
+        <section v-if="syncInfo" class="card mb repository-sync-card" aria-labelledby="repository-sync-title">
+          <div class="cardhead"><div><span class="eyebrow">SCHEDULE</span><h3 id="repository-sync-title">Daily sync</h3></div><span v-if="!syncInfo.notSetUp" class="pill" :class="syncInfo.state === 'On' ? 'ok' : 'warn'">{{ syncInfo.state }}</span></div>
+          <p v-if="syncInfo.notSetUp" class="compact-copy muted">{{ syncInfo.message }}</p>
+          <template v-else>
+            <dl class="kvlist">
+              <template v-for="line in syncInfo.lines" :key="line.label"><dt>{{ line.label }}</dt><dd class="mono">{{ line.value }}</dd></template>
+              <template v-if="syncInfo.status"><dt>Last result</dt><dd><span class="pill">{{ syncInfo.status }}</span></dd></template>
+            </dl>
+            <p class="compact-copy muted">{{ syncInfo.note }}</p>
+          </template>
+        </section>
         <div v-if="!repositories.length" class="state-inline"><b>No module repositories configured.</b> Add an official, internal, or custom repository to populate the online catalog.</div>
         <div v-else class="tablewrap"><table><thead><tr><th>Repository</th><th>Trust</th><th>Priority</th><th>State</th><th>Sync</th><th>Modules</th><th></th></tr></thead><tbody>
           <tr v-for="repo in repositories" :key="repo.id" class="clickrow" :class="{selected:selectedRepositoryId===repo.id}" @click="editRepository(repo)">
-            <td><b>{{ repo.name }}</b><span class="sub mono">{{ repo.id }}</span></td><td><span class="pill">{{ repo.trust }}</span></td><td class="mono">{{ repo.priority }}</td><td><span class="pill" :class="repo.enabled?'ok':'warn'">{{ repo.enabled?'enabled':'disabled' }}</span></td><td><span class="pill" :class="{ok:repo.sync?.status==='ok',danger:repo.sync?.status==='error',warn:repo.sync?.status==='never'}">{{ repo.sync?.status || 'never' }}</span><span v-if="repo.sync?.error" class="sub dangertext">{{ repo.sync.error }}</span><span v-if="skippedSummary(repo.sync)" class="sub">{{ skippedSummary(repo.sync) }}</span></td><td class="mono">{{ repo.sync?.module_count || 0 }}</td><td><button class="btn sm" :disabled="!canManage || repositoryBusy || !repo.enabled" @click.stop="syncRepository(repo)">Sync</button></td>
+            <td><b>{{ repo.name }}</b><span class="sub mono">{{ repo.id }}</span></td><td><span class="pill">{{ repo.trust }}</span></td><td class="mono">{{ repo.priority }}</td><td><span class="pill" :class="repo.enabled?'ok':'warn'">{{ repo.enabled?'enabled':'disabled' }}</span><span v-if="!repo.enabled" class="sub">Enable it to sync.</span></td><td><span class="pill" :class="{ok:repo.sync?.status==='ok',danger:repo.sync?.status==='error',warn:repo.sync?.status==='never'}">{{ repo.sync?.status || 'never' }}</span><span v-if="repo.sync?.error" class="sub dangertext">{{ repo.sync.error }}</span><span v-if="skippedSummary(repo.sync)" class="sub">{{ skippedSummary(repo.sync) }}</span></td><td class="mono">{{ repo.sync?.module_count || 0 }}</td><td><button class="btn sm" :disabled="!canManage || repositoryBusy || !repo.enabled" @click.stop="syncRepository(repo)">Sync</button></td>
           </tr>
         </tbody></table></div>
       </section>

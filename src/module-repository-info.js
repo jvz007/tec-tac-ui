@@ -75,3 +75,45 @@ export function installedOnlyRows(payload) {
     installed_source: text(entry?.installed_source),
   }))
 }
+
+// 0.12.112: the daily sync card on the Repositories tab (Core 1.17.42). GET /api/tfd/modules/repositories/ carries sync_schedule:
+// { enabled, time, timezone, next_run_at, last_run_at, last_run_status }, or null when the schedule does not exist. An older
+// Core sends no sync_schedule key: this returns null and the card is not shown. Display only: nothing reads it to decide a
+// button, a filter or a request. formatDate turns a timestamp into the person's date format (the view passes formatDateTime).
+// Returns plain strings; the view shows them with {{ }} only.
+export const SYNC_NOT_SET_UP = 'The daily sync is not set up yet.'
+export const SYNC_NOTE = 'The daily sync runs enabled repositories only.'
+const NOT_YET = 'Not yet'
+
+function validTimestamp(value) {
+  return typeof value === 'string' && value.trim() !== '' && !Number.isNaN(Date.parse(value))
+}
+
+export function syncScheduleInfo(sync, formatDate = (value) => String(value)) {
+  if (sync === undefined) return null
+  if (sync === null || typeof sync !== 'object' || Array.isArray(sync)) {
+    return { notSetUp: true, message: SYNC_NOT_SET_UP, state: '', lines: [], status: '', note: '' }
+  }
+  const when = (value) => {
+    if (!validTimestamp(value)) return NOT_YET
+    try {
+      return String(formatDate(value))
+    } catch {
+      return NOT_YET
+    }
+  }
+  const time = typeof sync.time === 'string' ? sync.time : ''
+  const zone = typeof sync.timezone === 'string' ? sync.timezone : ''
+  return {
+    notSetUp: false,
+    message: '',
+    state: sync.enabled === true ? 'On' : 'Off',
+    lines: [
+      { label: 'Time', value: [time, zone].filter(Boolean).join(' ') || '—' },
+      { label: 'Next sync', value: when(sync.next_run_at) },
+      { label: 'Last sync', value: when(sync.last_run_at) },
+    ],
+    status: typeof sync.last_run_status === 'string' ? sync.last_run_status : '',
+    note: SYNC_NOTE,
+  }
+}

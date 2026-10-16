@@ -336,9 +336,12 @@ argument entry (P7) as ready Vue components (UI 0.12.111). The props, events, ke
 - `SearchSelect` also emits `select(option)` so a module can fill default arguments and a timeout when a script is chosen.
   `TagEditor` also emits `reject({ value, reason })`.
 - Limits: 300 rows in the list, 200 values per tag editor, 500 characters per value.
-- The object is frozen. `registerPublic(context)` gets no components.
+- The object is frozen, and so is each component's definition (its options and props), all the way down (UI 0.12.112). `registerPublic(context)` gets no components.
+- `SearchSelect` has a server mode for lists too long to load at once (UI 0.12.112): `serverSearch`, `loading`, `hasMore`, `selectedLabel` and the events `search` and `more`. All are off by default. See `module-components.md`, "Server search and paging".
 
 **Contract row (UI 0.12.111, not yet in the export).** Browser contract row `ui.authenticated.components` (phase `authenticated`, services `SearchSelect` and `TagEditor`): `SearchSelect` props `modelValue`, `options`, `placeholder`, `inputId`, `ariaLabel`, `disabled`, `clearable`, `emptyText`, `favouriteLabel` and `allLabel`, events `update:modelValue` and `select`, at most 300 rows; `TagEditor` props `modelValue`, `placeholder`, `ariaLabel`, `disabled`, `readonly`, `maxItems` (default 200), `maxLength` (default 500), `commaAdds` (default true) and `validate`, events `update:modelValue` and `reject`; no `registerPublic` access; Core 1.17.41 or later and UI 0.12.111 or later. Core writes the export row. This release does not claim the export lists it; `reviews/requests/core.md` asks for it.
+
+**Contract row addition (UI 0.12.112, not yet in the export).** `ui.authenticated.components` gains `SearchSelect` props `serverSearch`, `loading`, `hasMore` and `selectedLabel` (all default false or none) and events `search` and `more`; in server mode the list shows up to 1000 loaded rows with no local filter. Core writes the export row. This release does not claim the export lists it.
 
 ## hasTacticalPermission(flag)
 
@@ -408,6 +411,24 @@ Rules:
 - The dialog does not change who may do what. Permissions, scope, caps and audit rows stay as they are. Hiding or confirming is never authorisation.
 - A context action handler receives the same helper as `context.confirm` (see [context-actions.md](context-actions.md)).
 - Your own typed or custom confirmation dialog keeps working until you move to this one.
+
+## Module dialogs (dialogs)
+
+UI 0.12.112. `context.dialogs` opens one dialog above the page, in Quick Actions' layer (1100). The shell draws the panel, the title, the close button, the focus trap and Escape; the module draws the content. `register(descriptor)` names a dialog, and `open('<local id>')` or `open(descriptor)` opens it. A dialog is bound to the module that receives it: its own id only, one at a time, refused in a popup window, while signed out, outside a backend context and after the module is abandoned or unloaded. Escape, the close button and a backdrop click ask the module's `beforeClose()` first. The full rules, the descriptor fields and the limits are in [module-dialogs.md](module-dialogs.md).
+
+**Contract row (UI 0.12.112, not yet in the export).** Browser contract row `ui.authenticated.dialogs` (phase `authenticated`, service `dialogs`): `register` and `open` with the descriptor fields `id`, `title`, `size` (`'default'` or `'wide'`), `mount(element, { close })` and `beforeClose()`; one dialog at a time; layer 1100; no `registerPublic` access. Core 1.17.42 or later and UI 0.12.112 or later. Core writes the export row. This release does not claim the export lists it.
+
+## Sign-in landing (signInLanding)
+
+UI 0.12.112. `context.signInLanding.register({ id, permission, check })` lets a module ask the shell to send the person somewhere right after sign-in: a route of its own or of Core, or one of its own dialogs (`{ dialog: '<module id>.<dialog id>' }`). The checks run once per page load, in module load order, only on the default landing (`/` or `/dashboards`), never in a popup window, on a public or sso page, while signed out, or for a deep link. The first check that answers acts. Sign-out aborts the check's `AbortSignal`. Unsaved changes win. The rules are in [module-sign-in-landing.md](module-sign-in-landing.md).
+
+**Contract row (UI 0.12.112, not yet in the export).** Browser contract row `ui.authenticated.signInLanding` (phase `authenticated`, service `signInLanding`): `register({ id, permission, check })`, one registration per module; a check returns nothing, a route path or `{ dialog }`; the route and dialog rules in `module-sign-in-landing.md`; Core 1.17.42 or later and UI 0.12.112 or later; no `registerPublic` access. Core writes the export row. This release does not claim the export lists it.
+
+## Row menu (rowMenu)
+
+UI 0.12.112. `context.rowMenu.open({ event, element, label, items })` shows the shell's right-click menu for a module table, at the pointer or, for the Menu key and Shift+F10, under the focused row. Each item is `{ id, label, hint, danger, disabled, reason, run }`. `context.rowMenu.shouldHandle(event)` leaves a right-click on a text field to the browser. The menu holds at most 40 items, shows every label, hint and reason as plain text, and sits in layer 1150: above a module dialog (1100), under toasts (1200), the unsaved-changes prompt (1300) and the Yes or No confirm (1400). It is bound to the module that receives it: `run()` errors are contained and warned, no item runs after the module is unloaded, one menu is open at a time, and `open()` is refused in a popup window, while signed out and outside a signed-in session. A denied action is left out by the module (AD-12); a disabled one shows its `reason`. The rules and an example are in [module-row-menu.md](module-row-menu.md).
+
+**Contract row (UI 0.12.112, not yet in the export).** Browser contract row `ui.authenticated.rowMenu` (phase `authenticated`, service `rowMenu`): `open({ event, element, label, items })` and `shouldHandle(event)`; item fields `id`, `label`, `hint`, `danger`, `disabled`, `reason` and `run`; at most 40 items; layer 1150; no `registerPublic` access. Core 1.17.43 or later and UI 0.12.112 or later. Core writes the export row. This release does not claim the export lists it.
 
 ## Popup mode
 

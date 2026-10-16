@@ -12,6 +12,8 @@ const props = defineProps({
   // The element that had focus when the menu opened. Focus goes back to it when the menu closes.
   opener: { default: null },
   label: { type: String, default: 'Actions' },
+  // 0.12.112: 'module' puts the menu in the module row-menu layer (1150), above a module dialog. The default is unchanged.
+  layer: { type: String, default: '' },
 })
 const emit = defineEmits(['close', 'select'])
 
@@ -87,7 +89,7 @@ onBeforeUnmount(() => {
 
 <template>
   <Teleport to="body">
-    <div ref="root" class="resource-menu" role="menu" :aria-label="label" :style="{ left: `${position.x}px`, top: `${position.y}px` }" @click.stop @contextmenu.prevent>
+    <div ref="root" class="resource-menu" :class="{ 'row-menu-layer': layer === 'module' }" role="menu" :aria-label="label" :style="{ left: `${position.x}px`, top: `${position.y}px` }" @click.stop @contextmenu.prevent>
       <template v-for="entry in entries" :key="entry.id">
         <div v-if="entry.divider" class="resource-menu-divider" role="separator"></div>
         <button
@@ -99,7 +101,7 @@ onBeforeUnmount(() => {
           :aria-disabled="entry.disabled ? 'true' : undefined"
           :title="entry.disabled ? entry.reason : entry.label"
           @click="choose(entry)"
-        ><span>{{ entry.label }}</span><small v-if="entry.disabled && entry.reason">{{ entry.reason }}</small></button>
+        ><span>{{ entry.label }}</span><small v-if="entry.disabled && entry.reason">{{ entry.reason }}</small><small v-else-if="entry.hint">{{ entry.hint }}</small></button>
       </template>
     </div>
   </Teleport>

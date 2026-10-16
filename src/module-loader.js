@@ -269,7 +269,8 @@ function cleanupStore(runtime) {
 }
 
 // Registries whose removeProvider(moduleId) the unload calls after the module's own cleanup. services is one of them.
-const PROVIDER_REGISTRIES = ['contextActions', 'contextInteractions', 'resourceViews', 'dashboardWidgets', 'help', 'services']
+// 0.12.112: dialogs (closes the module's open dialog), signInLanding (drops the module's check) and rowMenu (closes the module's menu) are more.
+const PROVIDER_REGISTRIES = ['contextActions', 'contextInteractions', 'resourceViews', 'dashboardWidgets', 'help', 'services', 'dialogs', 'signInLanding', 'rowMenu']
 
 // Unloads a module that is switched off while the page is open: its cleanup (registry entries, navigation, routes and
 // terminals), then each registry's removeProvider. Safe to run twice; an unknown id does nothing. Returns true when a
@@ -554,6 +555,9 @@ export async function loadUiModules(runtime, modules, options = {}) {
     let moduleJobs = null
     let moduleTerminalWidgets = null
     let moduleModulePreferences = null
+    let moduleDialogs = null
+    let moduleSignInLanding = null
+    let moduleRowMenu = null
 
     // Removes everything this module contributed: registry entries, navigation
     // items and routes. Safe to run more than once.
@@ -573,6 +577,9 @@ export async function loadUiModules(runtime, modules, options = {}) {
       try { moduleJobs?.clear?.() } catch {}
       try { moduleTerminalWidgets?.clear?.() } catch {}
       try { moduleModulePreferences?.clear?.() } catch {}
+      try { moduleDialogs?.clear?.() } catch {}
+      try { moduleSignInLanding?.clear?.() } catch {}
+      try { moduleRowMenu?.clear?.() } catch {}
       try { runtime.removeNavigation?.(descriptor.id) } catch {}
       for (const remove of routeRemovers.splice(0)) {
         try { remove() } catch {}
@@ -628,7 +635,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
       moduleServices = guardAbandoned(runtime.services?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null, isAbandoned, descriptor.id)
       // removeNavigation is Core's: the loader calls it when a module fails. A
       // module can add navigation but never remove another module's items.
-      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, tacticalWebSocket: sharedTacticalWebSocket, jobs: _sharedJobs, terminal: _sharedTerminal, isSignedOut: _signedOutProbe, modulePreferences: _sharedModulePreferences, services: _sharedServices, ...moduleRuntime } = runtime
+      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, tacticalWebSocket: sharedTacticalWebSocket, jobs: _sharedJobs, terminal: _sharedTerminal, isSignedOut: _signedOutProbe, modulePreferences: _sharedModulePreferences, services: _sharedServices, dialogs: _sharedDialogs, signInLanding: _sharedSignInLanding, rowMenu: _sharedRowMenu, ...moduleRuntime } = runtime
       const guardedApi = guardTransport(runtime, descriptor.id, replacedSnapshot.get(descriptor.id) || '')
       // Background job follow (0.12.103): bound to this module's id, its guarded api and its notifications.
       moduleJobs = guardAbandoned(runtime.jobs?.forModule?.(descriptor.id, {
@@ -645,6 +652,12 @@ export async function loadUiModules(runtime, modules, options = {}) {
         isSignedOut: () => runtimeSignedOut(runtime),
         isAbandoned,
       }) || null
+      // Module dialogs (0.12.112): bound to this module's id; refused after abandonment or unload, and closed on unload.
+      moduleDialogs = runtime.dialogs?.forModule?.(descriptor.id, { isAbandoned }) || null
+      // Sign-in landing check (0.12.112): one registration per module, bound to its id; dropped on cleanup and unload.
+      moduleSignInLanding = runtime.signInLanding?.forModule?.(descriptor.id, { isAbandoned }) || null
+      // Row menu (0.12.112): bound to this module's id; refused after abandonment or unload, and closed on unload.
+      moduleRowMenu = runtime.rowMenu?.forModule?.(descriptor.id, { isAbandoned }) || null
       // The terminal helper (0.12.102) is bound to this module: its own id, plus the one core module it replaces.
       const boundTerminal = sharedTacticalWebSocket && typeof sharedTacticalWebSocket.open === 'function'
         ? bindTacticalWebSocket(sharedTacticalWebSocket.open, {
@@ -682,6 +695,9 @@ export async function loadUiModules(runtime, modules, options = {}) {
         ...(moduleJobs ? { jobs: moduleJobs } : {}),
         ...(moduleTerminalWidgets ? { terminal: moduleTerminalWidgets } : {}),
         ...(moduleModulePreferences ? { modulePreferences: moduleModulePreferences } : {}),
+        ...(moduleDialogs ? { dialogs: moduleDialogs } : {}),
+        ...(moduleSignInLanding ? { signInLanding: moduleSignInLanding } : {}),
+        ...(moduleRowMenu ? { rowMenu: moduleRowMenu } : {}),
         context: runtime.state.context,
         router: moduleRouter,
         addNavigation,
