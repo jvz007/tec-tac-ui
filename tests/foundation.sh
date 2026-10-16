@@ -624,7 +624,7 @@ echo "[TEST] PASS RBAC permission editor workflow"
 
 # 0.12.6 solid Core notification toast surface
 TOAST_CSS="${ROOT}/src/styles.css"
-grep -Fq '.toast-card{pointer-events:auto;display:grid;grid-template-columns:30px minmax(0,1fr) 28px;gap:10px;align-items:start;padding:12px;border:1px solid var(--line);border-left-width:4px;border-radius:10px;background:var(--surface);' "${TOAST_CSS}" || fail "toast card does not use the opaque Core surface token"
+grep -Fq '.toast-card{pointer-events:auto;display:grid;grid-template-columns:30px minmax(0,1fr) 28px;gap:10px;align-items:start;padding:12px;border:1px solid var(--line);border-left-width:4px;border-radius:3px;background:var(--surface);' "${TOAST_CSS}" || fail "toast card does not use the opaque Core surface token"
 grep -Fq '.toast-info{border-left-color:var(--accent)}' "${TOAST_CSS}" || fail "info toast semantic edge missing"
 grep -Fq '.toast-success{border-left-color:var(--ok)}' "${TOAST_CSS}" || fail "success toast semantic edge missing"
 grep -Fq '.toast-warning{border-left-color:var(--warn)}' "${TOAST_CSS}" || fail "warning toast semantic edge missing"

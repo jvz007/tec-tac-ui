@@ -343,6 +343,8 @@ argument entry (P7) as ready Vue components (UI 0.12.111). The props, events, ke
 
 **Contract row addition (UI 0.12.112, not yet in the export).** `ui.authenticated.components` gains `SearchSelect` props `serverSearch`, `loading`, `hasMore` and `selectedLabel` (all default false or none) and events `search` and `more`; in server mode the list shows up to 1000 loaded rows with no local filter. Core writes the export row. This release does not claim the export lists it.
 
+**Contract row addition (UI 0.12.114, not yet in the export).** `ui.authenticated.components` gains the components `DataTable` (props `columns`, `rows`, `rowKey`, `selectedKey`, `sortKey`, `sortDir`, `loading`, `emptyTitle`, `emptyText`, `footer`, `ariaLabel`, `cell`; events `sort`, `select`, `rowmenu`, `activate`), `FormRow` (props `label`, `hint`, `help`, `error`, `forId`), `EditorWindow` (props `title`, `dirty`, `canSave`, `saving`, `status`; events `save`, `discard`, `close`) and `Stepper` (props `steps`, `current`, `ariaLabel`; event `select`), and `SearchSelect` the props `required`, `invalid` and `describedBy` (all off by default). The browser contract also gains CSS rows: the tokens `--text-body`, `--text-ws`, `--text-sm`, `--text-xs`, `--cell-y`, `--cell-x`, `--ctl-y`, `--ctl-x`, `--radius-control`, `--radius-panel` and `--label-track-ws`, and the opt-in scope class `tt-ws`. `registerPublic(context)` still gets no components. Core writes the export row. This release does not claim the export lists it.
+
 ## hasTacticalPermission(flag)
 
 `context.hasTacticalPermission(flag)` answers whether Tactical's own role lets the signed-in user do something, for example `can_list_agents`.

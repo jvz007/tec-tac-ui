@@ -78,7 +78,7 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 
 <template>
   <div v-if="current" class="modal-backdrop module-dialog-backdrop" role="presentation" @click.self="dismiss">
-    <section ref="panel" class="modal-panel module-dialog-panel" :class="{ 'modal-wide': current.size === 'wide' }" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1">
+    <section ref="panel" class="modal-panel module-dialog-panel tt-ws" :class="{ 'modal-wide': current.size === 'wide' }" role="dialog" aria-modal="true" :aria-labelledby="titleId" tabindex="-1">
       <div class="cardhead module-dialog-head">
         <div><span class="eyebrow mono">{{ current.moduleId }}</span><h3 :id="titleId">{{ current.title }}</h3></div>
         <button class="iconbtn" type="button" title="Close" aria-label="Close dialog" @click="dismiss">×</button>

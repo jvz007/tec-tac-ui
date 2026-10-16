@@ -1,13 +1,16 @@
-# Shared components for modules (SearchSelect and TagEditor)
+# Shared components for modules (SearchSelect, TagEditor and the kit)
 
 Core UI 0.12.111 gives every authenticated module two components, so no module needs a private script picker or tag editor.
 They follow the brand board patterns **P6** (script and report picker) and **P7** (argument entry), in
 `docs/ui-brand-board/`.
 
+Core UI 0.12.114 adds four more: **DataTable** (P1), **FormRow** (P3), **EditorWindow** (P2) and **Stepper** (P5). They are described
+after TagEditor, under "The component kit".
+
 ```js
 export default {
   register(context) {
-    const { SearchSelect, TagEditor } = context.components
+    const { SearchSelect, TagEditor, DataTable, FormRow, EditorWindow, Stepper } = context.components
     // use them in a render function: context.Vue.h(SearchSelect, { ... })
   },
 }
@@ -42,6 +45,9 @@ One control that picks one item from a list and searches as you type.
 | `emptyText` | `No matches. Check the spelling.` | Line shown when the search matches nothing. |
 | `favouriteLabel` | `Favourites` | Heading of the favourites group. |
 | `allLabel` | `All` | Heading of the other group. |
+| `required` | `false` | Sets `aria-required="true"` on the combobox input (0.12.114). |
+| `invalid` | `false` | Sets `aria-invalid="true"` on the input and shows the invalid border (0.12.114). |
+| `describedBy` | none | Sets `aria-describedby` on the input to this id, or to several ids separated by spaces (0.12.114). |
 | `serverSearch` | `false` | Server mode (0.12.112). The module owns the search: the component skips its own filter and the 300-row cap. See "Server search and paging". |
 | `loading` | `false` | Shows one quiet "Loading…" line in the list and sets `aria-busy`. |
 | `hasMore` | `false` | The module has more rows to load. Used with the `more` event. |
@@ -143,6 +149,97 @@ Rules:
 - A value is shown in the mono font exactly as it will be sent. Clicking the box puts the cursor in the input.
 - The box is `.tt-tagbox`, so inside a `.tt-field` the input stays borderless (the field rule applies to direct children only).
 
+## The component kit (0.12.114)
+
+Four components for the screens the board calls P1, P2, P3 and P5. They are render-function components like the two above, they
+keep no value of their own, and every label, title and cell is text (markup in a value stays visible as typed). They carry the
+`tt-ws` work-surface scope, so they use the board's density without the module adding anything. Class names are the board's:
+`tt-panel`, `tt-tablewrap`, `tt-table`, `tt-frow`, `tt-ctl`, `tt-win`, `tt-steps` and the parts inside them. A module does not
+redefine them. **No component confirms or discards anything.** When a person closes a window with unsaved changes, the module asks
+one plain Yes or No through `context.confirm`.
+
+### DataTable (P1)
+
+A table in a panel. The module owns the rows and the order; the component draws them and reports what the person did.
+
+| Prop | Default | Meaning |
+|---|---|---|
+| `columns` | `[]` | `[{ key, label, sortable, align, width }]`. `align` is `left`, `right` or `center`. `width` is a number with `px` or `%`. At most 40 columns. |
+| `rows` | `[]` | The row objects. At most 2000 are drawn, and the footer then says "Showing the first 2000 rows." |
+| `rowKey` | none | The row field that identifies a row. Without it the position is used. A missing or repeated key never breaks the table. |
+| `selectedKey` | `null` | The `rowKey` value of the selected row. |
+| `sortKey` | `null` | The column the rows are sorted by. It gets `aria-sort` and an arrow. |
+| `sortDir` | `null` | `ascending` or `descending`. |
+| `loading` | `false` | Shows five skeleton rows and sets `aria-busy`. |
+| `emptyTitle` | `Nothing to show` | Heading of the empty state (no rows, not loading). |
+| `emptyText` | none | One line under the heading. |
+| `footer` | none | One line under the table, for example a count. |
+| `ariaLabel` | none | Accessible name of the table. |
+| `cell` | none | `cell(row, column)` returns text or vnodes for one cell. Without it the cell shows `row[column.key]` as text. A function that throws shows an empty cell. |
+
+| Event | Arguments | When |
+|---|---|---|
+| `sort` | `key`, `dir` | A sortable header was clicked, or Enter or Space was pressed on it. `dir` is the direction the click asks for: `ascending`, then `descending`, then `null` for no sort. The module sorts and passes `sortKey` and `sortDir` back. |
+| `select` | `row` | A row was clicked, or Space was pressed on it. |
+| `activate` | `row` | A row was double clicked, or Enter was pressed on it. |
+| `rowmenu` | `row`, `event` | A right click on a row. The browser menu is replaced. Open `context.rowMenu` here. |
+
+Keys: Tab reaches the selected row (or the first), ArrowUp and ArrowDown move between rows, Home and End jump to the ends. The
+header stays in view while the table scrolls.
+
+### FormRow (P3)
+
+One settings row: the label in a 220px column and the control beside it. Under 760px the label stacks above the control. The
+control goes in the default slot.
+
+| Prop | Default | Meaning |
+|---|---|---|
+| `label` | none | The label text. |
+| `hint` | none | A small line under the label. |
+| `help` | none | A line under the control, in `.tt-help`. Its id is `forId + "-hint"`. |
+| `error` | none | The error line under the control, shown with the leading cross and `role="alert"`. Its id is `forId + "-error"`. |
+| `forId` | none | The `id` of the control, so the label names it. Give the control `aria-describedby` with the two ids above. |
+
+### EditorWindow (P2)
+
+The window for editing one item: a header with the title, a properties column, a content area and a footer with the status, the
+Discard button and the Save button.
+
+| Prop | Default | Meaning |
+|---|---|---|
+| `title` | none | The window title. |
+| `dirty` | `false` | Shows "Unsaved changes" and turns on Discard changes. |
+| `canSave` | `false` | The module sets this when there is something valid to save. Save and Ctrl+S need it. |
+| `saving` | `false` | Shows "Saving" and turns Save and Discard off. |
+| `status` | none | The footer status line (read out politely). |
+
+| Area | Where |
+|---|---|
+| `actions` (slot) | Header buttons, left of the close button. |
+| `properties` (slot) | The left column. Leave it out for a single content area. |
+| `content` (slot, or the default slot) | The main area. |
+| `footer` (slot) | Footer buttons, left of Discard and Save. |
+
+| Event | When |
+|---|---|
+| `save` | The Save button, or Ctrl+S (Cmd+S), when `canSave` is true and `saving` is false. Ctrl+S never opens the browser's save dialog. |
+| `discard` | The Discard changes button. |
+| `close` | The close button, or Escape. Escape stops here, so a module dialog below does not also close. When `dirty` is true the module asks one Yes or No before it closes. |
+
+### Stepper (P5)
+
+A numbered list of steps for a create flow.
+
+| Prop | Default | Meaning |
+|---|---|---|
+| `steps` | `[]` | `[{ key, label, state }]`. `state` is `done` or `error`; leave it out for a step still to do. At most 12 steps. |
+| `current` | none | The `key` of the current step. It gets `aria-current="step"`. |
+| `ariaLabel` | `Steps` | Accessible name of the list. |
+
+| Event | Arguments | When |
+|---|---|---|
+| `select` | `key` | An earlier step was chosen. Later steps and the current step never emit, so Back never loses values and nobody skips ahead. |
+
 ## Limits
 
 | Limit | Value | Constant |
@@ -151,10 +248,13 @@ Rules:
 | Loaded rows in a server-mode list | 1000 | `SELECT_LIMITS.maxServerRows` |
 | Values in a TagEditor | 200 | `TAG_LIMITS.maxItems` |
 | Characters in one tag | 500 | `TAG_LIMITS.maxLength` |
+| Rows drawn by DataTable | 2000 | `KIT_LIMITS.maxRows` |
+| Columns in DataTable | 40 | `KIT_LIMITS.maxColumns` |
+| Steps in Stepper | 12 | `KIT_LIMITS.maxSteps` |
 
 ## Contract row
 
-Browser contract row `ui.authenticated.components` (phase `authenticated`, services `SearchSelect` and `TagEditor`). Core writes
+Browser contract row `ui.authenticated.components` (phase `authenticated`, services `SearchSelect` and `TagEditor`; since UI 0.12.114 also `DataTable`, `FormRow`, `EditorWindow` and `Stepper`). Core writes
 the export row; see `module-runtime-api.md`.
 
 ## Adoption

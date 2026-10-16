@@ -1,5 +1,7 @@
 # Tec-Tac UI Design Standards
 
+**Visual spec:** the brand board, `docs/ui-brand-board/tec-tac-ui-brand-board.html` (patterns P1 to P10, the type table and the open decisions). **Order of authority:** `src/styles.css` first, then this file, then the board. Where they differ, the stylesheet is what ships.
+
 **Status:** Canonical UI contract for Tec-Tac Core and authenticated modules  
 **Applies to:** Core views, module views, dialogs, resource contributions, settings pages, tables, forms and interactive controls  
 **Goal:** A user should not be able to tell which team or module author built a screen from its visual language or interaction model.
@@ -376,7 +378,7 @@ A module may add CSS for domain-specific layout and visualisations, but it must 
 
 The three classes added in UI 0.12.100 (`table-clean`, `modal-wide`, `dialog-tabs`) are Core's. A module uses them as they are and never restyles them.
 
-If a shared primitive is missing, raise it as a Core UI requirement instead of cloning/reimplementing the primitive in the module. Two exist since UI 0.12.111: the searchable select (`context.components.SearchSelect`, pattern P6) and the tag editor (`context.components.TagEditor`, pattern P7). Use them instead of a private picker or tag editor; see section 22.
+If a shared primitive is missing, raise it as a Core UI requirement instead of cloning/reimplementing the primitive in the module. Two exist since UI 0.12.111: the searchable select (`context.components.SearchSelect`, pattern P6) and the tag editor (`context.components.TagEditor`, pattern P7). Use them instead of a private picker or tag editor; see section 22. Four more exist since UI 0.12.114 (table, form row, editor window, stepper); see section 24.
 
 ## 18. Recommended module page skeleton
 
@@ -451,5 +453,47 @@ Core UI 0.12.111 gives authenticated modules two components through `context.com
   classes (`tt-combo`, `tt-input`, `tt-star`, `tt-chip`, `tt-tagbox`, `tt-tag`, `tt-field`, `tt-help`, `tt-error`) under its own prefix.
 - Adoption is at the module's next release (the AD-27 rule). Nobody rebuilds only for this.
 
-The props, events and limits are in `docs/module-components.md`. Size, density and radius tokens and a wider kit (table, form row,
-editor window, stepper) are not built; they wait for Johan (Q57).
+The props, events and limits are in `docs/module-components.md`. Johan answered Q57 on 16 October 2026 (build it), and UI 0.12.114
+builds the size, density and radius tokens (section 23) and the wider kit (section 24). Q57 closes when 0.13.0 ships, after the
+theme system has been checked on the dev server.
+
+## 23. Size, density and radius tokens
+
+UI 0.12.114 adds tokens to `:root` in `src/styles.css`, next to the colour tokens. They are additive. `--label` (10px scaled), `--label-track` (.16em) and `--font-scale` keep their values, because modules already read them.
+
+| Token | Value | Use |
+|---|---|---|
+| `--text-body` | 15.5px scaled | Core page text |
+| `--text-ws` | 12.1px scaled | Work-surface text: tables, forms, buttons |
+| `--text-sm` | 11px scaled | Help lines, small labels |
+| `--text-xs` | 10.5px scaled | Status lines, footers |
+| `--cell-y`, `--cell-x` | 7px, 8px | Table cell padding |
+| `--ctl-y`, `--ctl-x` | 6px, 8px | Input, select and textarea padding |
+| `--radius-control` | 2px | Buttons and inputs |
+| `--radius-panel` | 3px | Panels, windows, toasts |
+| `--label-track-ws` | .08em | Label and header tracking on work surfaces |
+
+"Scaled" means `calc(Npx * var(--font-scale))`, so the text-size setting moves it. Every font size you write goes through `--font-scale` or one of these tokens, never a raw `px` value.
+
+**The work-surface scope, `tt-ws`.** Inside an element with the class `tt-ws`: text is 12.1px scaled; `.tablewrap` header and body cells use 7px 8px with .08em header tracking; `.field>span` labels are 10px (`--label`) with .08em; inputs, selects and textareas are 12.1px with 6px 8px padding; `.btn` and `.btn.sm` are 12.1px with 5px 9px padding. Outside `tt-ws` nothing changes.
+
+- **Applied for you:** the module dialog host panel (`context.dialogs`) and the four kit components carry `tt-ws`.
+- **Opt in:** a module adds `tt-ws` to its own markup, at its next release. The shell does not add it to the routed page, so no existing module screen changes look.
+- **Core pages stay as they are.** Core's own pages keep 15.5px text, and the sign-in and setup pages keep their 11.6px labels.
+- **Buttons.** Core's filled `.btn` stays the secondary button (Johan, 16 October 2026). No `tt-ws` rule changes a background. Script Manager's transparent button moves to it when Script Manager adopts the kit.
+- **Toasts.** Toast cards have 3px corners and the toast action button 2px, to match panels and controls. Nothing else about toasts changed.
+
+## 24. The component kit
+
+Four components, built on `shared-components.js` the same way as `SearchSelect` and `TagEditor`. Props, events and limits are in `docs/module-components.md`.
+
+| Component | Board pattern | What it gives you |
+|---|---|---|
+| `DataTable` | P1 list page | A sticky-header table in a panel: sortable columns with `aria-sort`, a selected row, arrow-key row focus, a right-click row event, skeleton rows while loading, an empty state and a footer line. Cells come from a `cell(row, column)` function and are text. |
+| `FormRow` | P3 settings form | A 220px label column and a control column, with help and an error line (leading cross). It stacks under 760px. |
+| `EditorWindow` | P2 item editor | A header with the title and "Unsaved changes", a properties column, a content area, and a footer with status, Discard changes and Save. Ctrl+S saves. Escape and the close button close. |
+| `Stepper` | P5 create flow | A numbered list with `aria-current="step"`. Only earlier steps can be chosen, so Back never loses values. |
+
+**The confirmation rule (AD-27).** No component confirms or discards by itself. `EditorWindow` emits `close` and `discard`. When the window is dirty, the module asks one plain Yes or No through `context.confirm`. Nobody types a name, a hostname or a count to confirm.
+
+**Use them, do not copy them.** A module does not rebuild a table, form row, editor window or stepper under its own prefix, and does not redefine their classes (`tt-panel`, `tt-tablewrap`, `tt-table`, `tt-frow`, `tt-ctl`, `tt-win`, `tt-steps` and their parts). Adoption is at the module's next release (the AD-27 rule). Script Manager and Report Manager move onto the kit in their own releases.

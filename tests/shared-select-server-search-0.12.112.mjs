@@ -267,7 +267,8 @@ function mount(extra = {}) {
   const code = src.split('\n').filter((line) => !line.trim().startsWith('//')).join(' ')
   assert.equal(/v-html|innerHTML|insertAdjacentHTML|template:/.test(code), false)
   assert.equal(/localStorage|sessionStorage|fetch\(|XMLHttpRequest/.test(code), false)
-  assert.ok(src.includes('sharedComponents = Object.freeze({ SearchSelect: deepFreeze(SearchSelect), TagEditor: deepFreeze(TagEditor) })'))
+  // 0.12.114 grew the object to six members (shared-kit-0.12.114.mjs pins them); the first two are unchanged
+  assert.ok(/sharedComponents = Object\.freeze\(\{\s+SearchSelect: deepFreeze\(SearchSelect\),\s+TagEditor: deepFreeze\(TagEditor\),/.test(src))
   const doc = read('../docs/module-components.md')
   for (const name of ['serverSearch', 'loading', 'hasMore', 'selectedLabel', '`search`', '`more`', 'Server search and paging', 'SELECT_LIMITS.maxServerRows']) assert.ok(doc.includes(name), `the doc names ${name}`)
   const api = read('../docs/module-runtime-api.md')

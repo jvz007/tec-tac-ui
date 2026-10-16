@@ -19,6 +19,7 @@ import {
   visibleOptions,
   wantsMore,
 } from './shared-components-logic.js'
+import { DataTable, EditorWindow, FormRow, Stepper } from './shared-kit.js'
 
 export { SELECT_LIMITS, TAG_LIMITS }
 
@@ -115,6 +116,11 @@ export const SearchSelect = defineComponent({
     loading: { type: Boolean, default: false },
     hasMore: { type: Boolean, default: false },
     selectedLabel: { type: String, default: undefined },
+    // 0.12.114, all off by default: required sets aria-required, invalid sets aria-invalid and the field's invalid border,
+    // describedBy sets aria-describedby to that id. They change nothing when absent.
+    required: { type: Boolean, default: false },
+    invalid: { type: Boolean, default: false },
+    describedBy: { type: String, default: undefined },
   },
   emits: ['update:modelValue', 'select', 'search', 'more'],
   setup(props, { emit }) {
@@ -257,6 +263,9 @@ export const SearchSelect = defineComponent({
           'aria-busy': open.value && props.loading ? 'true' : undefined,
           'aria-activedescendant': open.value && highlight.value >= 0 ? `${listId}-o${highlight.value}` : undefined,
           'aria-label': props.ariaLabel,
+          'aria-required': props.required ? 'true' : undefined,
+          'aria-invalid': props.invalid ? 'true' : undefined,
+          'aria-describedby': props.describedBy || undefined,
           placeholder: props.placeholder || undefined,
           disabled: props.disabled,
           autocomplete: 'off',
@@ -391,4 +400,12 @@ export const TagEditor = defineComponent({
 
 // What register(context).components holds. Frozen all the way down (each component's options object and its props), so a
 // module cannot change what another module receives.
-export const sharedComponents = Object.freeze({ SearchSelect: deepFreeze(SearchSelect), TagEditor: deepFreeze(TagEditor) })
+// 0.12.114 adds the kit (shared-kit.js): DataTable, FormRow, EditorWindow and Stepper.
+export const sharedComponents = Object.freeze({
+  SearchSelect: deepFreeze(SearchSelect),
+  TagEditor: deepFreeze(TagEditor),
+  DataTable: deepFreeze(DataTable),
+  FormRow: deepFreeze(FormRow),
+  EditorWindow: deepFreeze(EditorWindow),
+  Stepper: deepFreeze(Stepper),
+})
