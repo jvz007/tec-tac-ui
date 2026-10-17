@@ -325,14 +325,14 @@ const check = (value, log = []) => ({ moduleId: 'welcome', id: 'landing', permis
 {
   const doc = read('../docs/module-sign-in-landing.md')
   assert.ok(doc.startsWith('# Sign-in landing'))
-  for (const needle of ['ui.authenticated.signInLanding', 'requestLeave', 'router.replace', 'one-shot', 'AbortSignal', 'not yet in the export', 'context.module_register_timeout_seconds', 'UI Q66', 'UI Q67']) {
+  for (const needle of ['ui.authenticated.signInLanding', 'requestLeave', 'router.replace', 'one-shot', 'AbortSignal', '1.17.50-0.12.115', 'context.module_register_timeout_seconds', 'UI Q66', 'UI Q67']) {
     assert.ok(doc.includes(needle), `the landing doc names ${needle}`)
   }
   const api = read('../docs/module-runtime-api.md')
-  const notes = api.split('\n').filter((line) => line.startsWith('**Contract row (UI 0.12.112, not yet in the export).** Browser contract row `ui.authenticated.signInLanding`'))
+  const notes = api.split('\n').filter((line) => line.startsWith('**Contract row (UI 0.12.112, listed in the public contract export from 1.17.50-0.12.115).** Browser contract row `ui.authenticated.signInLanding`'))
   assert.equal(notes.length, 1, 'one signInLanding contract-row note in the runtime page')
-  assert.ok(notes[0].includes('does not claim the export lists it'))
-  assert.ok(notes[0].includes('Core writes the export row'))
+  assert.ok(!notes[0].includes('does not claim the export lists it'))
+  assert.ok(notes[0].includes('Core lists it in the public contract export from 1.17.50-0.12.115'))
   assert.ok(api.includes('## Sign-in landing (signInLanding)'))
 }
 

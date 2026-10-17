@@ -558,6 +558,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
     let moduleDialogs = null
     let moduleSignInLanding = null
     let moduleRowMenu = null
+    let moduleFilterEditor = null
 
     // Removes everything this module contributed: registry entries, navigation
     // items and routes. Safe to run more than once.
@@ -580,6 +581,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
       try { moduleDialogs?.clear?.() } catch {}
       try { moduleSignInLanding?.clear?.() } catch {}
       try { moduleRowMenu?.clear?.() } catch {}
+      try { moduleFilterEditor?.clear?.() } catch {}
       try { runtime.removeNavigation?.(descriptor.id) } catch {}
       for (const remove of routeRemovers.splice(0)) {
         try { remove() } catch {}
@@ -635,7 +637,7 @@ export async function loadUiModules(runtime, modules, options = {}) {
       moduleServices = guardAbandoned(runtime.services?.forModule(descriptor.id, { permissions: descriptor.permissions || [] }) || null, isAbandoned, descriptor.id)
       // removeNavigation is Core's: the loader calls it when a module fails. A
       // module can add navigation but never remove another module's items.
-      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, tacticalWebSocket: sharedTacticalWebSocket, jobs: _sharedJobs, terminal: _sharedTerminal, isSignedOut: _signedOutProbe, modulePreferences: _sharedModulePreferences, services: _sharedServices, dialogs: _sharedDialogs, signInLanding: _sharedSignInLanding, rowMenu: _sharedRowMenu, ...moduleRuntime } = runtime
+      const { removeNavigation: _coreOnly, tacticalOperation: sharedTacticalOperation, popupMode: _popupOnly, popupHref: sharedPopupHref, confirm: sharedConfirm, tacticalWebSocket: sharedTacticalWebSocket, jobs: _sharedJobs, terminal: _sharedTerminal, isSignedOut: _signedOutProbe, modulePreferences: _sharedModulePreferences, services: _sharedServices, dialogs: _sharedDialogs, signInLanding: _sharedSignInLanding, rowMenu: _sharedRowMenu, filterEditor: _sharedFilterEditor, ...moduleRuntime } = runtime
       const guardedApi = guardTransport(runtime, descriptor.id, replacedSnapshot.get(descriptor.id) || '')
       // Background job follow (0.12.103): bound to this module's id, its guarded api and its notifications.
       moduleJobs = guardAbandoned(runtime.jobs?.forModule?.(descriptor.id, {
@@ -685,8 +687,22 @@ export async function loadUiModules(runtime, modules, options = {}) {
       const boundConfirm = typeof sharedConfirm === 'function'
         ? { confirm: bindConfirm(sharedConfirm, { moduleId: descriptor.id, isAbandoned }) }
         : {}
+      // FilterEditor (0.12.116): the module's own context.components, the six shared members unchanged plus a FilterEditor fixed to this
+      // module's id (never a prop), so it cannot read another module's fields, values or sets. Built with the module's guarded api and
+      // bound confirm; refused after abandonment or unload; its timers and requests stop on cleanup.
+      moduleFilterEditor = _sharedFilterEditor?.forModule?.(descriptor.id, {
+        api: guardedApi.api,
+        confirm: boundConfirm.confirm,
+        getUserId: () => runtime.state?.context?.user?.id,
+        isSignedOut: () => runtimeSignedOut(runtime),
+        isAbandoned,
+      }) || null
+      const moduleComponents = moduleFilterEditor
+        ? { components: Object.freeze({ ...(runtime.components || {}), FilterEditor: moduleFilterEditor.component }) }
+        : {}
       await plugin.register({
         ...moduleRuntime,
+        ...moduleComponents,
         ...guardedApi,
         ...boundTacticalOperation,
         ...boundPopupHref,

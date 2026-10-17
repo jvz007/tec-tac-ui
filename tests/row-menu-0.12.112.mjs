@@ -268,14 +268,14 @@ const item = (id, extra = {}) => ({ id, label: id.toUpperCase(), run() {}, ...ex
 {
   const doc = read('../docs/module-row-menu.md')
   assert.ok(doc.startsWith('# Module row menu'))
-  for (const needle of ['ui.authenticated.rowMenu', 'rowMenu.open', 'shouldHandle', 'not yet in the export', '1150', '40', 'registerPublic', 'hint', 'reason', 'Shift+F10', 'plain text', 'AD-12']) {
+  for (const needle of ['ui.authenticated.rowMenu', 'rowMenu.open', 'shouldHandle', '1.17.50-0.12.115', '1150', '40', 'registerPublic', 'hint', 'reason', 'Shift+F10', 'plain text', 'AD-12']) {
     assert.ok(doc.includes(needle), `the row menu doc names ${needle}`)
   }
   const api = read('../docs/module-runtime-api.md')
   assert.ok(api.includes('## Row menu (rowMenu)'))
-  const notes = api.split('\n').filter((line) => line.startsWith('**Contract row (UI 0.12.112, not yet in the export).** Browser contract row `ui.authenticated.rowMenu`'))
+  const notes = api.split('\n').filter((line) => line.startsWith('**Contract row (UI 0.12.112, listed in the public contract export from 1.17.50-0.12.115).** Browser contract row `ui.authenticated.rowMenu`'))
   assert.equal(notes.length, 1)
-  assert.ok(notes[0].includes('does not claim the export lists it'))
+  assert.ok(!notes[0].includes('does not claim the export lists it'))
 }
 
 console.log('row-menu-0.12.112: PASS')

@@ -50,6 +50,12 @@ assert.ok(routes.has('/api/tfd/tactical-websocket/<dynamic>/<dynamic>/tickets/')
 // module-preferences/<str:module_id>/<str:name>/). The fixture stays the 1.17.31 export; these two are added here, by name.
 routes.add('/api/tfd/module-preferences/<dynamic>/')
 routes.add('/api/tfd/module-preferences/<dynamic>/<dynamic>/')
+// 0.12.116: Core 1.17.50 adds the filter set routes (framwork/tec_tac/urls.py: filter-sets/, filter-sets/fields/, filter-sets/<uuid:set_id>/ and
+// filter-values/). Added here by name, like the preference routes.
+routes.add('/api/tfd/filter-sets/')
+routes.add('/api/tfd/filter-sets/fields/')
+routes.add('/api/tfd/filter-sets/<dynamic>/')
+routes.add('/api/tfd/filter-values/')
 const missing=[]
 for (const raw of used) {
   const normalized=cleanUsed(raw)

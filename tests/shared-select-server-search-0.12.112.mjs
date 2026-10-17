@@ -272,7 +272,7 @@ function mount(extra = {}) {
   const doc = read('../docs/module-components.md')
   for (const name of ['serverSearch', 'loading', 'hasMore', 'selectedLabel', '`search`', '`more`', 'Server search and paging', 'SELECT_LIMITS.maxServerRows']) assert.ok(doc.includes(name), `the doc names ${name}`)
   const api = read('../docs/module-runtime-api.md')
-  assert.ok(api.includes('Contract row addition (UI 0.12.112, not yet in the export)'))
+  assert.ok(api.includes('Contract row addition (UI 0.12.112, listed in the public contract export from 1.17.50-0.12.115)'))
   // nothing in modules/ passes the new names today, so nothing changes for them
   const modulesRoot = new URL('../../../modules/', import.meta.url)
   if (fs.existsSync(modulesRoot)) {

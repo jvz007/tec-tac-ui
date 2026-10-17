@@ -168,7 +168,7 @@ const loaderSource = fs.readFileSync(new URL('../src/module-loader.js', import.m
 assert.match(loaderSource, /moduleServices = guardAbandoned\(runtime\.services\?\.forModule\(descriptor\.id, \{ permissions: descriptor\.permissions \|\| \[\] \}\) \|\| null, isAbandoned, descriptor\.id\)/)
 assert.match(loaderSource, /try \{ moduleServices\?\.clear\?\.\(\) \} catch \{\}/)
 // 0.12.112: dialogs and signInLanding are stripped in the same destructuring, so the services key is still removed from moduleRuntime.
-assert.match(loaderSource, /services: _sharedServices, dialogs: _sharedDialogs, signInLanding: _sharedSignInLanding, rowMenu: _sharedRowMenu, \.\.\.moduleRuntime/)
+assert.match(loaderSource, /services: _sharedServices, dialogs: _sharedDialogs, signInLanding: _sharedSignInLanding, rowMenu: _sharedRowMenu, filterEditor: _sharedFilterEditor, \.\.\.moduleRuntime/)
 assert.match(loaderSource, /        services: moduleServices,\n      \}\)/)
 
 // (10) the shell creates the registry with the same permission and flag checks as the rest of the shell

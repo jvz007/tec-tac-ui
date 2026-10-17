@@ -21,6 +21,7 @@ import { createModuleServiceRegistry } from './module-services'
 import { createJobFollowService } from './job-follow'
 import { createTerminalService } from './terminal-widget'
 import { sharedComponents } from './shared-components'
+import { createFilterEditorService } from './filter-editor'
 import { createModulePreferencesService } from './module-preferences'
 import { createModuleStatusService } from './module-status'
 import { createAuditService } from './audit'
@@ -274,6 +275,8 @@ async function bootstrap() {
       components: sharedComponents,
       // Module user preferences (0.12.106, Core 1.17.35): bound per module by the loader; the factory holds no state.
       modulePreferences: createModulePreferencesService(),
+      // FilterEditor (0.12.116, Core 1.17.50): bound per module by the loader, which adds it to that module's context.components.
+      filterEditor: createFilterEditorService(),
       tacticalWebSocket,
       modules,
     }

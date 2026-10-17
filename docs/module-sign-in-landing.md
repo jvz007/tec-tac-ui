@@ -4,7 +4,7 @@ A module can ask the shell to send a person somewhere after sign-in. The typical
 
 The landing hook arrived in UI 0.12.112. A module built before that release still loads and works, and it keeps its own page as the fallback until it adopts the hook.
 
-**Contract row (UI 0.12.112, not yet in the export).** Browser contract row `ui.authenticated.signInLanding` (phase `authenticated`, service `signInLanding`): `register({ id, permission, check })`; a check returns nothing, a route path, or `{ dialog: '<module id>.<dialog id>' }`; the rules below. Core writes the export row. This release does not claim the export lists it, so the row is named as "not yet in the export" until Core writes it (`reviews/requests/core.md`).
+**Contract row (UI 0.12.112, listed in the public contract export from 1.17.50-0.12.115).** Browser contract row `ui.authenticated.signInLanding` (phase `authenticated`, service `signInLanding`): `register({ id, permission, check })`; a check returns nothing, a route path, or `{ dialog: '<module id>.<dialog id>' }`; the rules below. Core lists it in the public contract export from 1.17.50-0.12.115.
 
 ## Register
 

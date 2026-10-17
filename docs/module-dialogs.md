@@ -4,7 +4,7 @@ A module can open a dialog above the page, in the same layer as Quick Actions. T
 
 Dialogs arrived in UI 0.12.112. A module built before that release still loads and works. The `dialogs` object is simply there in `register(context)`, and nothing you already ship changes.
 
-**Contract row (UI 0.12.112, not yet in the export).** Browser contract row `ui.authenticated.dialogs` (phase `authenticated`, service `dialogs`): `register(descriptor)` and `open(id or descriptor)`, descriptor fields `id`, `title`, `size` (`'default'` or `'wide'`), `mount(element, { close })` and `beforeClose()`; one dialog at a time; layer 1100. Core writes the export row. This release does not claim the export lists it, so the row is named as "not yet in the export" until Core writes it (`reviews/requests/core.md`).
+**Contract row (UI 0.12.112, listed in the public contract export from 1.17.50-0.12.115).** Browser contract row `ui.authenticated.dialogs` (phase `authenticated`, service `dialogs`): `register(descriptor)` and `open(id or descriptor)`, descriptor fields `id`, `title`, `size` (`'default'` or `'wide'`), `mount(element, { close })` and `beforeClose()`; one dialog at a time; layer 1100. Core lists it in the public contract export from 1.17.50-0.12.115.
 
 ## The API
 

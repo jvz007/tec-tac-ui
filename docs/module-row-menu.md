@@ -4,7 +4,7 @@ A module table can show a right-click menu without drawing its own. The shell pl
 
 The row menu arrived in UI 0.12.112. A module built before that release still loads and works. `rowMenu` is simply there in `register(context)`, and a menu you draw yourself keeps working.
 
-**Contract row (UI 0.12.112, not yet in the export).** Browser contract row `ui.authenticated.rowMenu` (phase `authenticated`, service `rowMenu`): `open({ event, element, label, items })` and `shouldHandle(event)`; item fields `id`, `label`, `hint`, `danger`, `disabled`, `reason` and `run`; at most 40 items; layer 1150; no `registerPublic` access. Core writes the export row. This release does not claim the export lists it, so the row is named as "not yet in the export" until Core writes it (`reviews/requests/core.md`).
+**Contract row (UI 0.12.112, listed in the public contract export from 1.17.50-0.12.115).** Browser contract row `ui.authenticated.rowMenu` (phase `authenticated`, service `rowMenu`): `open({ event, element, label, items })` and `shouldHandle(event)`; item fields `id`, `label`, `hint`, `danger`, `disabled`, `reason` and `run`; at most 40 items; layer 1150; no `registerPublic` access. Core lists it in the public contract export from 1.17.50-0.12.115.
 
 ## The API
 

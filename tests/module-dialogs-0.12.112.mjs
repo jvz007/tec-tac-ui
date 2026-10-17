@@ -346,14 +346,14 @@ const make = (over = {}) => createModuleDialogService({
 {
   const doc = read('../docs/module-dialogs.md')
   assert.ok(doc.startsWith('# Module dialogs'))
-  for (const needle of ['ui.authenticated.dialogs', 'context.dialogs.open', 'context.dialogs.register', 'beforeClose', 'one dialog at a time', 'modal-wide', '1100', 'popup', 'context.module_register_timeout_seconds', 'not yet in the export']) {
+  for (const needle of ['ui.authenticated.dialogs', 'context.dialogs.open', 'context.dialogs.register', 'beforeClose', 'one dialog at a time', 'modal-wide', '1100', 'popup', 'context.module_register_timeout_seconds', '1.17.50-0.12.115']) {
     assert.ok(doc.includes(needle), `the dialog doc names ${needle}`)
   }
   const api = read('../docs/module-runtime-api.md')
-  const notes = api.split('\n').filter((line) => line.startsWith('**Contract row (UI 0.12.112, not yet in the export).** Browser contract row `ui.authenticated.dialogs`'))
+  const notes = api.split('\n').filter((line) => line.startsWith('**Contract row (UI 0.12.112, listed in the public contract export from 1.17.50-0.12.115).** Browser contract row `ui.authenticated.dialogs`'))
   assert.equal(notes.length, 1, 'one dialogs contract-row note in the runtime page')
-  assert.ok(notes[0].includes('Core writes the export row'))
-  assert.ok(notes[0].includes('does not claim the export lists it'))
+  assert.ok(notes[0].includes('Core lists it in the public contract export from 1.17.50-0.12.115'))
+  assert.ok(!notes[0].includes('does not claim the export lists it'))
   assert.ok(api.includes('## Module dialogs (dialogs)'), 'the runtime page has a section for the dialogs')
 }
 

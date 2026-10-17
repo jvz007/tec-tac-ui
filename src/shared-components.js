@@ -401,6 +401,8 @@ export const TagEditor = defineComponent({
 // What register(context).components holds. Frozen all the way down (each component's options object and its props), so a
 // module cannot change what another module receives.
 // 0.12.114 adds the kit (shared-kit.js): DataTable, FormRow, EditorWindow and Stepper.
+// 0.12.116: this object stays these six. FilterEditor (filter-editor.js) is bound to one module, so the loader adds it to each
+// module's own copy of context.components. registerPublic still gets no components.
 export const sharedComponents = Object.freeze({
   SearchSelect: deepFreeze(SearchSelect),
   TagEditor: deepFreeze(TagEditor),

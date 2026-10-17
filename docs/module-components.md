@@ -113,8 +113,7 @@ h(SearchSelect, {
 })
 ```
 
-Contract row `ui.authenticated.components` gains these props and events. They are not yet in the export; Core writes the row
-(`reviews/requests/core.md`).
+Contract row `ui.authenticated.components` gains these props and events. They are listed in the public contract export from 1.17.50-0.12.115.
 
 ## TagEditor (P7)
 
@@ -252,9 +251,29 @@ A numbered list of steps for a create flow.
 | Columns in DataTable | 40 | `KIT_LIMITS.maxColumns` |
 | Steps in Stepper | 12 | `KIT_LIMITS.maxSteps` |
 
+## FilterEditor (universal filters)
+
+Core UI 0.12.116 adds one more member to `context.components`: **FilterEditor**, the shared filter editor. It is a render-function
+component like the others, but unlike them it is **bound to your module**: each module receives its own copy, fixed to its own id, so
+there is no module id prop and a module cannot read another module's fields, values or sets. The six other members are the same
+objects as before.
+
+```js
+h(FilterEditor, {
+  viewKey: 'agents', modelValue: definition,
+  'onUpdate:modelValue': (v) => { definition = v },
+  onApply: ({ definition, filterSetId }) => reload(definition, filterSetId),
+})
+```
+
+- Props: `viewKey` (required, a lower-case slug of 1 to 61 characters), `modelValue` (a definition or `null`) and `disabled`.
+- Events: `update:modelValue` (the definition) and `apply` (`{ definition, filterSetId }`, exactly one of them set; both `null` means no filter).
+- It reads Core's fields, values and saved-sets routes only, builds every operator and value picker from Core's own answer, and saves
+  Only me sets. The full description, the limits and Core's refusals are in `module-filters.md`. Needs Core 1.17.50 or later.
+
 ## Contract row
 
-Browser contract row `ui.authenticated.components` (phase `authenticated`, services `SearchSelect` and `TagEditor`; since UI 0.12.114 also `DataTable`, `FormRow`, `EditorWindow` and `Stepper`). Core writes
+Browser contract row `ui.authenticated.components` (phase `authenticated`, services `SearchSelect` and `TagEditor`; since UI 0.12.114 also `DataTable`, `FormRow`, `EditorWindow` and `Stepper`; since UI 0.12.116 also `FilterEditor`, which is not yet in the export). Core writes
 the export row; see `module-runtime-api.md`.
 
 ## Adoption
