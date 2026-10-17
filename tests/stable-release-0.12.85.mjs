@@ -192,7 +192,8 @@ assert.doesNotMatch(script, /localStorage|sessionStorage|Authorization/)
 assert.match(read('../VERSION').trim(), /^0\.12\.\d+/)
 const pkg = JSON.parse(read('../tec_tac_package.json'))
 assert.match(pkg.requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/)
-assert.match(read('../package.json'), /discovered-version-0\.12\.84\.mjs && node tests\/stable-release-0\.12\.85\.mjs/)
+// 0.12.117: the test list lives in tests/run-all.mjs; the two tests still run one after the other.
+assert.match((await import('./run-all.mjs')).ENTRIES.join(' && '), /discovered-version-0\.12\.84\.mjs && node tests\/stable-release-0\.12\.85\.mjs/)
 assert.ok(fs.existsSync(new URL('../docs/releases/RELEASE_NOTES_0.12.85.md', import.meta.url)))
 
 // The component compiles.

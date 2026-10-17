@@ -15,7 +15,7 @@ Date: 17 October 2026. Requires Core 1.17.50 or later (raised from 1.17.49, the 
 ## For module authors
 
 - `context.components` is now each module's own frozen object: the six members you already had (`SearchSelect`, `TagEditor`, `DataTable`, `FormRow`, `EditorWindow`, `Stepper`) are the same objects as before, plus `FilterEditor`. Nothing you use changes.
-- `FilterEditor` is **bound to your module**. There is no module id prop, and a module cannot read another module's fields, values or sets. A replacement module gets its own filters, the same as `modulePreferences`.
+- `FilterEditor` is **bound to your module**. There is no module id prop, and the editor only ever uses your module's own id. This is not a sandbox: the shared api helpers still reach Core's filter routes, and Core, not the editor, decides what the signed-in person may read for any module id (corrected in 0.12.117). A replacement module gets its own filters, the same as `modulePreferences`.
 - Props: `viewKey` (required), `modelValue`, `disabled`. Events: `update:modelValue` and `apply`. `apply` sends `{ definition, filterSetId }` with exactly one set. Both `null` means no filter: never send an empty definition, because Core matches nothing for a filter with no rules.
 - `registerPublic` still gets no components. Full description: `docs/module-filters.md`.
 - **The surface is not yet in the export.** Core lists it in the public contract export after its next export of Core and UI. A module adopts the editor at its own release. Endpoints and Groups already have requests for it. Nothing in `modules/` changes in this release.

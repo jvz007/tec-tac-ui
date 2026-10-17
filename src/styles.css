@@ -422,7 +422,7 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 /* 0.12.112 module row menu (src/row-menu.js, docs/module-row-menu.md). The same menu as .resource-menu (1000), in its own layer:
    above a module dialog (1100), under toasts (1200), the unsaved prompt (1300) and the confirm (1400). */
 .resource-menu.row-menu-layer{z-index:1150}
-/* ==== FilterEditor (0.12.116, docs/module-filters.md). The editor root carries the tt-ws class; every rule is under .tt-filter; tokens only. ==== */
+/* ==== FilterEditor (0.12.116, date and number controls 0.12.117, docs/module-filters.md). The editor root carries the tt-ws class; every rule is under .tt-filter; tokens only. ==== */
 .tt-filter{display:flex;flex-direction:column;gap:10px;min-width:0}
 .tt-filter-sets{display:flex;flex-direction:column;gap:6px}
 .tt-filter-setrow,.tt-filter-head,.tt-filter-add,.tt-filter-actions,.tt-filter-panel{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
@@ -432,10 +432,11 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .tt-filter-group.is-nested{margin-left:14px;background:var(--surface-2);border-color:var(--line-2)}
 .tt-filter-rule{display:grid;grid-template-columns:minmax(120px,1fr) minmax(120px,1fr) minmax(160px,2fr) auto;gap:8px;align-items:start}
 .tt-filter-value{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tt-filter-pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
 .tt-filter-select{width:100%;border:1px solid var(--line-2);border-radius:2px;background:var(--input-bg);color:var(--ink);padding:var(--ctl-y) var(--ctl-x);font-family:inherit;font-size:var(--text-ws);outline:none}
 .tt-filter-select:focus{border-color:var(--accent);box-shadow:0 0 0 1px rgba(var(--accent-rgb),.25)}
 .tt-filter-select:disabled{opacity:.58;cursor:not-allowed}
 .tt-filter-panel .tt-filter-name{flex:1 1 200px;width:auto;min-width:160px}
 .tt-filter-panel .tt-filter-wide{flex-basis:100%}
-@media (max-width:640px){.tt-filter-rule{grid-template-columns:minmax(0,1fr)}.tt-filter-group.is-nested{margin-left:6px}}
+@media (max-width:640px){.tt-filter-rule{grid-template-columns:minmax(0,1fr)}.tt-filter-pair{grid-template-columns:minmax(0,1fr)}.tt-filter-group.is-nested{margin-left:6px}}
 /* ==== end of FilterEditor ==== */

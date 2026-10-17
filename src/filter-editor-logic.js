@@ -1,3 +1,5 @@
+// 0.12.117 adds the `date` and `number` field kinds (Core 1.17.52, core.filter_sets 1.1.0). Their operators come from the field's own
+// `operators` list and the relative units from the answer's `relative_units`: nothing here names an operator label or a unit limit.
 // 0.12.116: the pure rules behind FilterEditor (Core 1.17.50, core.filter_sets 1.0.0, docs/filter-sets.md). No Vue and no
 // requests here. The editor builds only from the descriptor Core sends (fields, operators, value sources, limits): this file
 // never invents a field or an operator. A definition is {version: 1, match: 'all'|'any', rules: [...]}; a rule is
@@ -33,7 +35,16 @@ export const FILTER_TEXT = Object.freeze({
   emptyGroup: 'Add a rule to this group or remove it.',
   chooseField: 'Choose a field.',
   networkFailed: 'Tec-Tac could not be reached. Check your connection and try again.',
+  utcDay: 'Days are UTC days. "17 October" means 17 October 00:00 to 24:00 UTC, not South African time.',
 })
+
+export const DATE_MIN = '1970-01-01'
+export const DATE_MAX = '2100-12-31'
+export const NUMBER_MAGNITUDE = 10 ** 15
+// The operator ids the editor can draw for each kind (Core's vocabulary, docs/filter-sets.md). An id outside the set is left out.
+const DATE_OPERATORS = new Set(['equals', 'not_equals', 'before', 'after', 'on_or_before', 'on_or_after', 'between', 'in_the_last', 'not_in_the_last'])
+const NUMBER_OPERATORS = new Set(['equals', 'not_equals', 'greater_than', 'less_than', 'at_least', 'at_most', 'between'])
+const RELATIVE_OPERATORS = new Set(['in_the_last', 'not_in_the_last'])
 
 const OPERATOR_PICKER = new Set(['equals', 'not_equals'])
 
@@ -80,6 +91,22 @@ function limitFrom(value, fallback) {
   return positiveInt(value) ? value : fallback
 }
 
+// The answer's relative_units as [{id, max_amount}], exactly as Core sent them. A bad entry is left out; none means none.
+function relativeUnitsOf(answer) {
+  const out = []
+  if (!Array.isArray(answer?.relative_units)) return out
+  for (const raw of answer.relative_units) {
+    if (!raw || typeof raw.id !== 'string' || !raw.id.trim() || !positiveInt(raw.max_amount)) continue
+    const id = stripControl(raw.id, 40).trim()
+    if (id && !out.some((unit) => unit.id === id)) out.push(Object.freeze({ id, max_amount: raw.max_amount }))
+  }
+  return out
+}
+
+function finiteOrNull(value) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
 // Core's GET /api/tfd/filter-sets/fields/ answer, reduced to what the editor uses. A field or operator with a bad shape is
 // left out (Core already checked them; this only keeps the render safe).
 export function normaliseDescriptor(answer) {
@@ -94,14 +121,27 @@ export function normaliseDescriptor(answer) {
     valueLength: limitFrom(limits.value_length, FILTER_LIMITS.valueLength),
   }
   if (answer.available !== true || !Array.isArray(answer.fields)) return out
+  const units = relativeUnitsOf(answer)
   for (const raw of answer.fields) {
     if (!raw || typeof raw !== 'object' || typeof raw.id !== 'string' || !raw.id) continue
-    const kind = ['text', 'id', 'bool'].includes(raw.kind) ? raw.kind : null
+    const kind = ['text', 'id', 'bool', 'date', 'number'].includes(raw.kind) ? raw.kind : null
     if (!kind) continue
+    const dated = kind === 'date' || kind === 'number'
+    const known = kind === 'date' ? DATE_OPERATORS : NUMBER_OPERATORS
+    // A date or number field uses only its own list. Without relative_units there is no unit to offer, so the two relative operators go.
     const operators = (Array.isArray(raw.operators) ? raw.operators : [])
       .filter((op) => op && typeof op.id === 'string' && op.id)
+      .filter((op) => !dated || (known.has(op.id) && !(kind === 'date' && !units.length && RELATIVE_OPERATORS.has(op.id))))
       .map((op) => ({ id: op.id, label: cleanLabel(op.label, op.id) }))
     if (!operators.length) continue
+    if (dated) {
+      const c = raw.constraints && typeof raw.constraints === 'object' ? raw.constraints : {}
+      const constraints = kind === 'number'
+        ? Object.freeze({ integer: c.integer === true, minimum: finiteOrNull(c.minimum), maximum: finiteOrNull(c.maximum) })
+        : Object.freeze({ storedAs: c.stored_as === 'date' ? 'date' : 'datetime' })
+      out.fields.push(Object.freeze({ id: raw.id, label: cleanLabel(raw.label, raw.id), kind, operators, source: 'none', options: [], constraints, units: kind === 'date' ? units : [] }))
+      continue
+    }
     const values = raw.values && typeof raw.values === 'object' ? raw.values : {}
     const source = ['distinct', 'static', 'none'].includes(values.source) && kind !== 'bool' ? values.source : 'none'
     const options = source === 'static' && Array.isArray(values.options)
@@ -134,6 +174,12 @@ export function defaultOperator(field) {
 export function valueMode(field, operatorId) {
   if (!field) return { type: 'text', control: 'box' }
   if (field.kind === 'bool') return { type: 'bool', control: 'choice' }
+  if (field.kind === 'date') {
+    if (operatorId === 'between') return { type: 'date-range', control: 'date-range' }
+    if (RELATIVE_OPERATORS.has(operatorId)) return { type: 'relative', control: 'relative' }
+    return { type: 'date', control: 'date' }
+  }
+  if (field.kind === 'number') return operatorId === 'between' ? { type: 'number-range', control: 'number-range' } : { type: 'number', control: 'number' }
   if (OPERATOR_PICKER.has(operatorId)) {
     const type = field.kind === 'id' ? 'id' : 'text'
     if (field.source === 'distinct') return { type, control: 'picker-distinct' }
@@ -197,10 +243,19 @@ export function addLimit(tree, path, what, limits = FILTER_LIMITS) {
   return ''
 }
 
-// The empty value for a field and an operator: null for a Yes/No choice or a picked id, otherwise an empty box.
+// The unit a relative rule starts with: days when Core lists it, else the first one Core listed.
+export function defaultUnit(field) {
+  const units = field?.units || []
+  return (units.find((unit) => unit.id === 'days') || units[0])?.id || ''
+}
+
+// The empty value for a field and an operator: null for a Yes/No choice or a picked id, an empty pair for a range, an empty amount
+// with the default unit for a relative rule, otherwise an empty box.
 export function freshValue(field, operatorId) {
   const mode = valueMode(field, operatorId)
   if (mode.type === 'bool') return null
+  if (mode.type === 'date-range' || mode.type === 'number-range') return { from: '', to: '' }
+  if (mode.type === 'relative') return { amount: '', unit: defaultUnit(field) }
   return mode.type === 'id' && mode.control.startsWith('picker') ? null : ''
 }
 
@@ -266,13 +321,52 @@ export function setRuleOperator(tree, path, field, operatorId) {
   })
 }
 
+// Number text as it is entered: digits, one leading minus and one point. Everything else (letters, 'e', spaces, control characters) goes.
+export function cleanNumberText(value) {
+  if (typeof value === 'number') return Number.isFinite(value) ? numberText(value) : ''
+  const raw = typeof value === 'string' ? value : ''
+  let out = ''
+  let point = false
+  let seen = false
+  for (const ch of raw) {
+    if (ch >= '0' && ch <= '9') { out += ch; seen = true } else if (ch === '-' && !out && !seen) out = '-'
+    else if (ch === '.' && !point) { point = true; out += '.' }
+  }
+  return out.slice(0, 24)
+}
+
+// A finite number as plain digits (never an exponent), so a saved 0.0000001 is drawn as typed text that the pattern accepts.
+export function numberText(n) {
+  if (!Number.isFinite(n)) return ''
+  if (Object.is(n, -0)) return '0'
+  const text = String(n)
+  if (!/e/i.test(text)) return text
+  return n.toFixed(20).replace(/0+$/, '').replace(/\.$/, '')
+}
+
+const cleanDay = (value) => stripControl(typeof value === 'string' ? value : '', 10)
+const isPlain = (value) => Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+
 // A typed or picked value, cleaned as it is entered. A box for a whole number keeps digits only. A picked value may carry a label.
 // box: true when a failed values read turned the picker into a plain box (an id field then takes digits, like a box).
 export function setRuleValue(tree, path, field, value, label, { box = false } = {}) {
   return edit(tree, path, (rule) => {
     if (rule.kind !== 'rule') return
     const mode = valueMode(field, rule.operator)
-    if (mode.type === 'bool') rule.value = value === true || value === false ? value : null
+    if (mode.type === 'date') rule.value = cleanDay(value)
+    else if (mode.type === 'number') rule.value = cleanNumberText(value)
+    else if (mode.type === 'date-range' || mode.type === 'number-range') {
+      // A range takes {from} or {to} or both; the side not given keeps what it had.
+      const clean = mode.type === 'date-range' ? cleanDay : cleanNumberText
+      const now = isPlain(rule.value) ? rule.value : { from: '', to: '' }
+      const given = isPlain(value) ? value : {}
+      rule.value = { from: 'from' in given ? clean(given.from) : String(now.from ?? ''), to: 'to' in given ? clean(given.to) : String(now.to ?? '') }
+    } else if (mode.type === 'relative') {
+      const now = isPlain(rule.value) ? rule.value : { amount: '', unit: defaultUnit(field) }
+      const given = isPlain(value) ? value : {}
+      const unit = 'unit' in given && (field?.units || []).some((u) => u.id === given.unit) ? given.unit : now.unit
+      rule.value = { amount: 'amount' in given ? String(given.amount ?? '').replace(/[^0-9]/g, '').slice(0, 7) : String(now.amount ?? ''), unit }
+    } else if (mode.type === 'bool') rule.value = value === true || value === false ? value : null
     else if (mode.type === 'id') {
       if (mode.control === 'box' || box) rule.value = String(value ?? '').replace(/[^0-9]/g, '').slice(0, 15)
       else rule.value = wholeNumber(value)
@@ -285,9 +379,74 @@ export function setRuleValue(tree, path, field, value, label, { box = false } = 
 // ---- checking a draft ----
 
 // One rule's value as Core wants it, or {problem}. A text value is trimmed.
+// A day as strict YYYY-MM-DD: a real calendar day from 1970-01-01 to 2100-12-31, or null.
+export function strictDay(value) {
+  if (typeof value !== 'string' || !/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(value)) return null
+  if (value < DATE_MIN || value > DATE_MAX) return null
+  const [y, m, d] = value.split('-').map(Number)
+  const date = new Date(Date.UTC(y, m - 1, d))
+  return date.getUTCFullYear() === y && date.getUTCMonth() === m - 1 && date.getUTCDate() === d ? value : null
+}
+
+// A number as Core validates it: a JSON number from plain text (no exponent, NaN or infinity), at most 10**15 in size, no decimal on
+// an integer field, inside the field's minimum and maximum. Returns {value} or {problem}.
+function strictNumber(raw, field) {
+  const name = field.label
+  const c = field.constraints || {}
+  if (typeof raw === 'number' && !Number.isFinite(raw)) return { problem: `${name} must be a number, for example 12 or -3.5.` }
+  const text = typeof raw === 'number' ? numberText(raw) : (typeof raw === 'string' ? raw.trim() : '')
+  if (!text) return { problem: `Enter a number for ${name}.` }
+  if (!/^-?[0-9]+(\.[0-9]+)?$/.test(text)) return { problem: `${name} must be a number made of digits, with an optional minus sign and decimal point, for example 12 or -3.5.` }
+  if (c.integer === true && text.includes('.')) return { problem: `${name} must be a whole number.` }
+  let n = Number(text)
+  if (!Number.isFinite(n) || Math.abs(n) > NUMBER_MAGNITUDE) return { problem: `${name} may not be larger than ${NUMBER_MAGNITUDE} or smaller than -${NUMBER_MAGNITUDE}.` }
+  if (Object.is(n, -0)) n = 0
+  if (typeof c.minimum === 'number' && n < c.minimum) return { problem: `${name} must be at least ${c.minimum}.` }
+  if (typeof c.maximum === 'number' && n > c.maximum) return { problem: `${name} must be at most ${c.maximum}.` }
+  return { value: n }
+}
+
+function strictDayFor(raw, name) {
+  if (raw === null || raw === undefined || raw === '') return { problem: `Choose a day for ${name}.` }
+  const day = strictDay(raw)
+  return day ? { value: day } : { problem: `${name} must be a real day from ${DATE_MIN} to ${DATE_MAX}, written as YYYY-MM-DD with no time.` }
+}
+
+function relativeValue(field, raw) {
+  const name = field.label
+  const now = isPlain(raw) ? raw : {}
+  const unit = (field.units || []).find((u) => u.id === now.unit)
+  if (!unit) return { problem: `Choose a unit for ${name}.` }
+  const text = typeof now.amount === 'number' ? (Number.isInteger(now.amount) ? String(now.amount) : 'x') : (typeof now.amount === 'string' ? now.amount.trim() : '')
+  if (!text) return { problem: `Enter an amount for ${name}.` }
+  const amount = /^[0-9]{1,9}$/.test(text) ? Number(text) : 0
+  if (amount < 1 || amount > unit.max_amount) return { problem: `The amount for ${name} must be a whole number from 1 to ${unit.max_amount} ${unit.id}.` }
+  return { value: { amount, unit: unit.id } }
+}
+
 export function ruleValue(field, rule, limits = FILTER_LIMITS) {
   const mode = valueMode(field, rule.operator)
   const name = field.label
+  if (mode.type === 'date') return strictDayFor(rule.value, name)
+  if (mode.type === 'number') return strictNumber(rule.value, field)
+  if (mode.type === 'relative') return relativeValue(field, rule.value)
+  if (mode.type === 'date-range' || mode.type === 'number-range') {
+    const pair = isPlain(rule.value) ? rule.value : {}
+    const empty = (v) => v === null || v === undefined || (typeof v === 'string' && !v.trim())
+    if (empty(pair.from) || empty(pair.to)) return { problem: `Enter both ends of the range for ${name}.` }
+    if (mode.type === 'date-range') {
+      const from = strictDayFor(pair.from, name)
+      if (from.problem) return from
+      const to = strictDayFor(pair.to, name)
+      if (to.problem) return to
+      return from.value > to.value ? { problem: `The first day for ${name} may not be after the last day.` } : { value: { from: from.value, to: to.value } }
+    }
+    const from = strictNumber(pair.from, field)
+    if (from.problem) return from
+    const to = strictNumber(pair.to, field)
+    if (to.problem) return to
+    return from.value > to.value ? { problem: `The first number for ${name} may not be larger than the last.` } : { value: { from: from.value, to: to.value } }
+  }
   if (mode.type === 'bool') {
     return rule.value === true || rule.value === false ? { value: rule.value } : { problem: `Choose a value for ${name}.` }
   }
@@ -302,6 +461,23 @@ export function ruleValue(field, rule, limits = FILTER_LIMITS) {
   if (!trimmed) return { problem: `Choose a value for ${name}.` }
   if (trimmed.length > limits.valueLength) return { problem: `The value for ${name} may have at most ${limits.valueLength} characters.` }
   return { value: trimmed }
+}
+
+// The help lines under a date or number rule. The labels are the route's own, never typed here.
+export function valueHelp(field, operatorId) {
+  if (!field || (field.kind !== 'date' && field.kind !== 'number')) return []
+  const lines = []
+  const mode = valueMode(field, operatorId)
+  if (mode.type === 'date' || mode.type === 'date-range') lines.push(FILTER_TEXT.utcDay)
+  const label = (id) => field.operators.find((op) => op.id === id)?.label
+  const negative = operatorId === 'not_equals' || operatorId === 'not_in_the_last'
+  if (negative) {
+    lines.push(`A row with no ${field.label} value matches "${label(operatorId)}".`)
+  } else {
+    const names = ['not_equals', ...(field.kind === 'date' ? ['not_in_the_last'] : [])].map(label).filter(Boolean)
+    lines.push(`A row with no ${field.label} value does not match this rule.${names.length ? ` It matches only ${names.map((n) => `"${n}"`).join(' and ')}.` : ''}`)
+  }
+  return lines
 }
 
 // Walks a draft. Returns {definition, problems}: definition is null when the tree is empty or any problem exists.
@@ -343,9 +519,27 @@ export function definitionKey(definition) {
 
 // ---- a saved definition back into a draft ----
 
+// A saved date or number value as draft text, or undefined when its shape does not fit the field kind and the operator.
+function savedDatedValue(field, operatorId, value) {
+  const mode = valueMode(field, operatorId)
+  const num = (n) => (typeof n === 'number' && Number.isFinite(n) ? numberText(n) : undefined)
+  if (mode.type === 'date') return typeof value === 'string' ? value : undefined
+  if (mode.type === 'number') return num(value)
+  if (mode.type === 'date-range') return isPlain(value) && typeof value.from === 'string' && typeof value.to === 'string' ? { from: value.from, to: value.to } : undefined
+  if (mode.type === 'number-range') {
+    if (!isPlain(value)) return undefined
+    const from = num(value.from)
+    const to = num(value.to)
+    return from === undefined || to === undefined ? undefined : { from, to }
+  }
+  if (mode.type === 'relative') return isPlain(value) && Number.isInteger(value.amount) && typeof value.unit === 'string' ? { amount: String(value.amount), unit: value.unit } : undefined
+  return undefined
+}
+
 // A saved definition as a draft, or null when it cannot be drawn: wrong shape, too big, or any withheld value (a set the
 // person does not own is never drawn in 0.12.116).
-export function draftFromDefinition(definition, limits = FILTER_LIMITS) {
+export function draftFromDefinition(definition, limits = FILTER_LIMITS, fields = null) {
+  const map = fields instanceof Map ? fields : (Array.isArray(fields) ? fieldMap(fields) : null)
   if (!definition || typeof definition !== 'object' || !Array.isArray(definition.rules)) return null
   let bad = false
   const read = (group, level) => {
@@ -355,6 +549,13 @@ export function draftFromDefinition(definition, limits = FILTER_LIMITS) {
       if (!node || typeof node !== 'object') { bad = true; continue }
       if (node.kind === 'group' && Array.isArray(node.rules)) { rules.push(read(node, level + 1)); continue }
       if (node.kind !== 'rule' || typeof node.field !== 'string' || typeof node.operator !== 'string' || node.withheld === true) { bad = true; continue }
+      const field = map ? map.get(node.field) : null
+      if (field && (field.kind === 'date' || field.kind === 'number')) {
+        const dated = savedDatedValue(field, node.operator, node.value)
+        if (dated === undefined) { bad = true; continue }
+        rules.push({ kind: 'rule', field: node.field, operator: node.operator, value: dated })
+        continue
+      }
       const value = node.value
       if (!(typeof value === 'string' || typeof value === 'boolean' || positiveInt(value))) { bad = true; continue }
       rules.push({ kind: 'rule', field: node.field, operator: node.operator, value })

@@ -46,9 +46,10 @@ export default {
 | `update:modelValue` | event | The definition, each time the rules are complete (or `null` when there are none). |
 | `apply` | event | The person pressed Apply. The payload is `{ definition, filterSetId }`, and exactly one of the two is set (see below). |
 
-There is **no module id prop**. The loader fixes the editor to your module's own id, so a module cannot read another module's fields,
-values or sets. A replacement module registers its own `<id>.filter_fields` and gets its own filters; there is no exception for
-replaced modules, the same as `modulePreferences`.
+There is **no module id prop**. The loader fixes the editor to your module's own id, and the editor only ever uses that id. This is
+not a sandbox: the shared api helpers still reach Core's filter routes, and Core, not the editor, decides what the signed-in person
+may read for any module id. A replacement module registers its own `<id>.filter_fields` and gets its own filters; there is no
+exception for replaced modules, the same as `modulePreferences`.
 
 ### What `apply` sends you
 
@@ -87,6 +88,39 @@ Every call goes through your module's own `api()`, so a signed-out person makes 
   text box and says "The list of values could not load. Type the value instead." It never reads another source.
 - **An unfinished rule** shows "Choose a value for <field>." and keeps Apply off.
 
+## Date and number fields
+
+Since UI 0.12.117 the editor draws two more field kinds, `date` and `number`. **They need Core 1.17.52 or later**
+(`core.filter_sets` 1.1.0). **A module declares such a field only once UI 0.12.117 is installed.** Before that, the editor
+drops a field kind it does not know, so the person would see no filter for it.
+
+The editor takes everything from the fields answer. The operators are the ones in that field's own `operators` list (the top-level
+`operators` key stays the six text operators). It reads `constraints` (a number's `integer`, `minimum` and `maximum`) and the
+top-level `relative_units` (`[{id, max_amount}]`). It never assumes a unit or a limit. An operator it cannot draw is left out of that
+field. If the answer has no `relative_units`, `in_the_last` and `not_in_the_last` are left out of date fields. A field left with no
+operator is dropped. Date and number fields use no value list.
+
+| Field and operator | Control | Value sent to Core |
+|---|---|---|
+| date, any single-day operator (`equals`, `not_equals`, `before`, `after`, `on_or_before`, `on_or_after`) | a date box (the browser's picker, 1970-01-01 to 2100-12-31) | `"2026-10-17"`, strict `YYYY-MM-DD`, a real day |
+| date, `between` | two date boxes, From and To | `{"from": "2026-10-01", "to": "2026-10-17"}`, both days present, From not after To |
+| date, `in_the_last` and `not_in_the_last` | an amount box and a unit list built from `relative_units` | `{"amount": 7, "unit": "days"}`, a whole amount from 1 to that unit's `max_amount` |
+| number, any single-value operator | a number box (step 1 for an `integer` field, otherwise any step; `minimum` and `maximum` from the field) | a JSON number, never text |
+| number, `between` | two number boxes | `{"from": 1, "to": 10}`, JSON numbers, From not larger than To |
+
+The unit shows as Core sent its id and starts as `days` when Core lists it, otherwise the first unit. A number is plain digits with an
+optional minus sign and one decimal point: no exponent, no `NaN`, no infinity, at most 10**15 in size, no decimal on an `integer`
+field, and inside `minimum` and `maximum`. A zero or a negative number is a good value. Each refusal is a plain sentence that names
+the field and the limit, and Apply stays off until the rules are complete. Changing the operator inside the same control keeps the
+value; changing between controls starts it again.
+
+**Days are UTC days.** "17 October" means 17 October 00:00 to 24:00 UTC, not South African time. The help under every day rule says so.
+**A row with no value** never matches a positive operator. It does match the field's own "not equals" and, for a date, "not in the
+last" operator. The help under a date or number rule quotes those labels from the route, so a module's own wording shows.
+
+A saved set with a date or number rule is drawn back as it was saved. A saved rule whose value does not fit its field kind makes the
+whole set undrawable, as before. A set from another person is still listed, not drawn.
+
 ## Groups and limits
 
 Every group has Match ALL or ANY. Add rule and Add group are on every group. The limits come from Core's answer and the buttons turn
@@ -101,7 +135,8 @@ off with a plain reason:
 | Characters in a set name | 160 |
 | Sets for one person, module and view key | 100 |
 
-An empty group asks the person to add a rule or remove it. An empty filter applies as `null`.
+An empty group asks the person to add a rule or remove it. An empty filter applies as `null`. The limits of a date or a number rule
+(the day range, the largest amount, the number range) are in "Date and number fields" below. Core's answer sets them, not this file.
 
 ## Saved sets: Only me
 

@@ -96,7 +96,8 @@ globalThis.fetch = async (url, options) => { seen.push({ url, options }); return
 
 // (6) Requirement, notes, test wiring.
 assert.match(JSON.parse(read('../tec_tac_package.json')).requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/)
-assert.match(read('../package.json'), /stable-release-0\.12\.85\.mjs && node tests\/update-source-superuser-0\.12\.86\.mjs/)
+// 0.12.117: the test list lives in tests/run-all.mjs; the two tests still run one after the other.
+assert.match((await import('./run-all.mjs')).ENTRIES.join(' && '), /stable-release-0\.12\.85\.mjs && node tests\/update-source-superuser-0\.12\.86\.mjs/)
 assert.ok(fs.existsSync(new URL('../docs/releases/RELEASE_NOTES_0.12.86.md', import.meta.url)))
 // (7) Help article.
 assert.match(read('../src/help/articles/system-updates.md'), /Only a superuser can change it/)

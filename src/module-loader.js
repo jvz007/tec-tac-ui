@@ -688,8 +688,9 @@ export async function loadUiModules(runtime, modules, options = {}) {
         ? { confirm: bindConfirm(sharedConfirm, { moduleId: descriptor.id, isAbandoned }) }
         : {}
       // FilterEditor (0.12.116): the module's own context.components, the six shared members unchanged plus a FilterEditor fixed to this
-      // module's id (never a prop), so it cannot read another module's fields, values or sets. Built with the module's guarded api and
-      // bound confirm; refused after abandonment or unload; its timers and requests stop on cleanup.
+      // module's id (never a prop). The editor only ever uses that id; Core decides what the person may read for any module id, so this
+      // is not a sandbox. Built with the module's guarded api and bound confirm; refused after abandonment or unload; its timers and
+      // requests stop on cleanup.
       moduleFilterEditor = _sharedFilterEditor?.forModule?.(descriptor.id, {
         api: guardedApi.api,
         confirm: boundConfirm.confirm,

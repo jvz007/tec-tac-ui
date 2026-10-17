@@ -89,9 +89,11 @@ assert.match(source, /const DEBOUNCE_MS = 400/)
 assert.match(source, /const MAX_WAIT_MS = 2000/)
 assert.equal(api.split('ui.authenticated.modulePreferences').length - 1, 1, 'the runtime API page still carries the row note once')
 
-// The test script runs the new tests, in order.
+// The test list (tests/run-all.mjs since 0.12.117) runs the new tests.
+const { ENTRIES } = await import('./run-all.mjs')
+const testList = ENTRIES.join(' && ')
 for (const name of ['tactical-ui-preferences-0.12.106', 'tactical-ui-apply-0.12.106', 'date-format-0.12.106', 'module-preferences-0.12.106', 'module-preferences-docs-0.12.106', 'loading-bar-theme-colours-0.12.108', 'module-preferences-debounce-0.12.108']) {
-  assert.ok(pkg.scripts.test.includes(`tests/${name}.mjs`), `npm test runs ${name}`)
+  assert.ok(testList.includes(`tests/${name}.mjs`), `npm test runs ${name}`)
 }
 
 console.log('module-preferences-docs-0.12.106: PASS')

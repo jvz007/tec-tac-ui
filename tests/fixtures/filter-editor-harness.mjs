@@ -110,3 +110,36 @@ export async function mountComponent(component, props = {}, listeners = {}) {
   await flush()
   return { root, unmount: () => app.unmount() }
 }
+
+// 0.12.117: a second fixture with date and number fields (odd labels on purpose, so a test proves none is hard-coded in the editor) and
+// the relative units as Core sends them. FIELDS above stays as it was.
+export const RELATIVE_UNITS = [{ id: 'minutes', max_amount: 525600 }, { id: 'hours', max_amount: 8760 }, { id: 'days', max_amount: 3650 }]
+export const DN_FIELDS = {
+  module: 'agents',
+  available: true,
+  fields: [
+    {
+      id: 'last_seen', label: 'Last seen', kind: 'date', values: { source: 'none' }, constraints: { stored_as: 'datetime' },
+      operators: [
+        { id: 'equals', label: 'Seen on' }, { id: 'not_equals', label: 'Not seen on' }, { id: 'before', label: 'Seen before' }, { id: 'after', label: 'Seen after' },
+        { id: 'on_or_before', label: 'Seen on or before' }, { id: 'on_or_after', label: 'Seen on or after' }, { id: 'between', label: 'Seen between' },
+        { id: 'in_the_last', label: 'Seen within the last' }, { id: 'not_in_the_last', label: 'Not seen within the last' }, { id: 'sometime', label: 'Sometime' },
+      ],
+    },
+    {
+      id: 'pending', label: 'Pending actions', kind: 'number', values: { source: 'none' }, constraints: { integer: true, minimum: 0, maximum: 1000 },
+      operators: [
+        { id: 'equals', label: 'Is exactly' }, { id: 'not_equals', label: 'Is not exactly' }, { id: 'greater_than', label: 'More than' }, { id: 'less_than', label: 'Fewer than' },
+        { id: 'at_least', label: 'At least' }, { id: 'at_most', label: 'At most' }, { id: 'between', label: 'In between' },
+      ],
+    },
+    {
+      id: 'score', label: 'Score', kind: 'number', values: { source: 'none' }, constraints: { integer: false, minimum: null, maximum: null },
+      operators: [{ id: 'equals', label: 'Equals' }, { id: 'between', label: 'Between' }],
+    },
+    { id: 'hostname', label: 'Hostname', kind: 'text', operators: [{ id: 'equals', label: 'Equals' }, { id: 'contains', label: 'Contains' }], values: { source: 'distinct' } },
+  ],
+  operators: [],
+  relative_units: RELATIVE_UNITS,
+  limits: { rules: 50, groups: 20, depth: 3, value_length: 200 },
+}

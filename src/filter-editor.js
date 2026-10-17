@@ -1,7 +1,10 @@
 // 0.12.116: FilterEditor, the one filter editor a module page mounts (Core 1.17.50, core.filter_sets 1.0.0, docs/module-filters.md).
+// 0.12.117 adds date and number fields (Core 1.17.52, core.filter_sets 1.1.0): a date, a day range, a relative amount and unit, a
+// number and a number range, all drawn from the field's own operators and the route's relative_units.
 // A render-function component with no template strings, so modules need no compiler. It is bound to one module by
-// createFilterEditorService().forModule(): the module id is the loader's descriptor id, never a prop, so a module cannot read
-// another module's fields, values or sets. It builds only from what Core sends (the fields answer); it never invents a field or an
+// createFilterEditorService().forModule(): the editor only ever uses the module id the loader fixed, and there is no module id prop.
+// This is not a sandbox: the shared api helpers still reach Core's filter routes, and Core, not the editor, decides what the signed-in
+// person may read for any module id. It builds only from what Core sends (the fields answer); it never invents a field or an
 // operator and never sends a lookup, a row key or SQL. Every label is a text node, never raw HTML. Nothing is kept in browser
 // storage. Calls go through the module's guarded api(), so a signed-out person makes no request.
 import { defineComponent, h, onBeforeUnmount, onMounted, ref, watch } from 'vue'
@@ -41,7 +44,10 @@ import {
   toDefinition,
   updateBody,
   validViewKey,
+  valueHelp,
   valueMode,
+  DATE_MAX,
+  DATE_MIN,
 } from './filter-editor-logic.js'
 
 export { FILTER_LIMITS, FILTER_TEXT }
@@ -197,11 +203,23 @@ function makeFilterEditor({ id, call, confirm, getUserId, track }) {
       onBeforeUnmount(() => { dispose(); untrack() })
 
       // One request with an abort handle, so leaving the page or the module being unloaded stops it.
-      function request(path, options = {}) {
+      // A request with a key (the sets read) first aborts the earlier request with the same key.
+      const keyed = new Map()
+      function request(path, options = {}, key = '') {
         const controller = typeof AbortController === 'function' ? new AbortController() : null
         if (controller) controllers.add(controller)
+        if (key) {
+          try { keyed.get(key)?.abort() } catch { /* already done */ }
+          if (controller) keyed.set(key, controller)
+        }
         return call(path, controller ? { ...options, signal: controller.signal } : options)
-          .finally(() => { if (controller) controllers.delete(controller) })
+          .finally(() => { if (controller) { controllers.delete(controller); if (keyed.get(key) === controller) keyed.delete(key) } })
+      }
+      // Stops the fields and sets reads still in flight. Saves, renames and deletes use call() directly and are not touched.
+      const abortReads = () => {
+        for (const controller of [...controllers]) { try { controller.abort() } catch { /* already done */ } }
+        controllers.clear()
+        keyed.clear()
       }
       const fields = () => (descriptor.value ? descriptor.value.fields : [])
       const limits = () => descriptor.value?.limits || FILTER_LIMITS
@@ -215,7 +233,7 @@ function makeFilterEditor({ id, call, confirm, getUserId, track }) {
         setsMessage.value = ''
         const url = `${SETS_URL}?module=${encodeURIComponent(id)}&view_key=${encodeURIComponent(props.viewKey)}`
         try {
-          const answer = await request(url)
+          const answer = await request(url, {}, 'sets')
           if (gone || !gate.isCurrent('sets', seq)) return
           sets.value = normaliseSets(answer)
           if (active.value && !sets.value.some((set) => set.id === active.value.id)) active.value = null
@@ -227,12 +245,16 @@ function makeFilterEditor({ id, call, confirm, getUserId, track }) {
 
       function applyModel(model) {
         if (model === null || model === undefined) { draft.value = emptyDefinition(); return }
-        const tree = draftFromDefinition(model, limits())
+        const tree = draftFromDefinition(model, limits(), mapOfFields())
         if (!tree) { draft.value = emptyDefinition(); notice.value = 'The filter given to this editor could not be shown.'; return }
         draft.value = tree
       }
 
       async function load() {
+        // A new view key: nothing read for the old one may fill the list or be picked again. This runs before any await.
+        gate.invalidate('sets')
+        abortReads()
+        setsMessage.value = ''
         active.value = null
         panel.value = null
         sets.value = []
@@ -265,7 +287,7 @@ function makeFilterEditor({ id, call, confirm, getUserId, track }) {
         if (state.value !== 'ready') return
         const now = checked()
         const mine = now.problems.length ? '\u0000' : definitionKey(now.definition)
-        const tree = model === null || model === undefined ? emptyDefinition() : draftFromDefinition(model, limits())
+        const tree = model === null || model === undefined ? emptyDefinition() : draftFromDefinition(model, limits(), mapOfFields())
         const theirs = tree ? definitionKey(toDefinition(tree, mapOfFields(), limits()).definition) : '\u0001'
         if (mine === theirs) return
         applyModel(model)
@@ -311,7 +333,7 @@ function makeFilterEditor({ id, call, confirm, getUserId, track }) {
           notice.value = `"${set.name}"${set.owner ? ` by ${set.owner}` : ''} is selected. Its rules are not shown here. Apply uses it as it is.`
           return
         }
-        const tree = draftFromDefinition(set.definition, limits())
+        const tree = draftFromDefinition(set.definition, limits(), mapOfFields())
         if (!tree) { active.value = null; notice.value = 'This set could not be shown here.'; return }
         draft.value = tree
         const result = toDefinition(tree, mapOfFields(), limits())
@@ -434,9 +456,75 @@ function makeFilterEditor({ id, call, confirm, getUserId, track }) {
         const result = ruleValue(field, rule, limits())
         const errorId = `${base}-e-${key}`
         const problem = result.problem || ''
-        const common = { 'aria-label': `Value for ${field.label}`, 'aria-invalid': problem ? 'true' : undefined, 'aria-describedby': problem ? errorId : undefined }
+        const helpLines = valueHelp(field, rule.operator)
+        const helpId = `${base}-h-${key}`
+        const describedBy = [problem ? errorId : '', helpLines.length ? helpId : ''].filter(Boolean).join(' ') || undefined
+        const common = { 'aria-label': `Value for ${field.label}`, 'aria-invalid': problem ? 'true' : undefined, 'aria-describedby': describedBy }
+        const dayInput = (suffix, label, current, onChange) => h('input', {
+          ...common,
+          'aria-label': label,
+          id: `${base}-v-${key}${suffix}`,
+          class: 'tt-input',
+          type: 'date',
+          min: DATE_MIN,
+          max: DATE_MAX,
+          disabled: props.disabled,
+          value: typeof current === 'string' ? current : '',
+          onInput: (event) => onChange(event.target.value),
+        })
+        const constraints = field.constraints || {}
+        const numberInput = (suffix, label, current, onChange) => h('input', {
+          ...common,
+          'aria-label': label,
+          id: `${base}-v-${key}${suffix}`,
+          class: 'tt-input',
+          type: 'number',
+          step: constraints.integer === true ? '1' : 'any',
+          min: typeof constraints.minimum === 'number' ? String(constraints.minimum) : undefined,
+          max: typeof constraints.maximum === 'number' ? String(constraints.maximum) : undefined,
+          inputmode: constraints.integer === true ? 'numeric' : 'decimal',
+          autocomplete: 'off',
+          disabled: props.disabled,
+          value: current === null || current === undefined ? '' : String(current),
+          onInput: (event) => onChange(event.target.value),
+        })
+        const pair = rule.value && typeof rule.value === 'object' ? rule.value : {}
         let control
-        if (mode.control === 'choice') {
+        if (mode.control === 'date') {
+          control = dayInput('', `Value for ${field.label}`, rule.value, (raw) => commit(setRuleValue(draft.value, path, field, raw)))
+        } else if (mode.control === 'date-range') {
+          control = h('div', { class: 'tt-filter-pair' }, [
+            dayInput('-from', `${field.label} from`, pair.from, (raw) => commit(setRuleValue(draft.value, path, field, { from: raw }))),
+            dayInput('-to', `${field.label} to`, pair.to, (raw) => commit(setRuleValue(draft.value, path, field, { to: raw }))),
+          ])
+        } else if (mode.control === 'number') {
+          control = numberInput('', `Value for ${field.label}`, rule.value, (raw) => commit(setRuleValue(draft.value, path, field, raw)))
+        } else if (mode.control === 'number-range') {
+          control = h('div', { class: 'tt-filter-pair' }, [
+            numberInput('-from', `${field.label} from`, pair.from, (raw) => commit(setRuleValue(draft.value, path, field, { from: raw }))),
+            numberInput('-to', `${field.label} to`, pair.to, (raw) => commit(setRuleValue(draft.value, path, field, { to: raw }))),
+          ])
+        } else if (mode.control === 'relative') {
+          const unit = field.units.find((u) => u.id === pair.unit)
+          control = h('div', { class: 'tt-filter-pair' }, [
+            h('input', {
+              ...common,
+              'aria-label': `Amount for ${field.label}`,
+              id: `${base}-v-${key}-amount`,
+              class: 'tt-input',
+              type: 'number',
+              step: '1',
+              min: '1',
+              max: unit ? String(unit.max_amount) : undefined,
+              inputmode: 'numeric',
+              autocomplete: 'off',
+              disabled: props.disabled,
+              value: pair.amount === null || pair.amount === undefined ? '' : String(pair.amount),
+              onInput: (event) => commit(setRuleValue(draft.value, path, field, { amount: event.target.value })),
+            }),
+            select(`${base}-v-${key}-unit`, `Unit for ${field.label}`, pair.unit || '', field.units.map((u) => ({ value: u.id, label: u.id })), (raw) => commit(setRuleValue(draft.value, path, field, { unit: raw })), props.disabled),
+          ])
+        } else if (mode.control === 'choice') {
           const text = rule.value === true ? 'true' : (rule.value === false ? 'false' : '')
           control = select(`${base}-v-${key}`, `Value for ${field.label}`, text, [{ value: '', label: 'Choose Yes or No' }, { value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }], (raw) => commit(setRuleValue(draft.value, path, field, raw === 'true' ? true : (raw === 'false' ? false : null))), props.disabled)
         } else if (mode.control.startsWith('picker') && !(mode.control === 'picker-distinct' && failed.value[field.id])) {
@@ -475,6 +563,7 @@ function makeFilterEditor({ id, call, confirm, getUserId, track }) {
         return h('div', { class: 'tt-filter-value' }, [
           control,
           fallback ? h('span', { class: 'tt-help', role: 'status' }, FILTER_TEXT.valuesFailed) : null,
+          helpLines.length ? h('span', { class: 'tt-help', id: helpId }, helpLines.join(' ')) : null,
           problem ? h('span', { class: 'tt-error', id: errorId, role: 'alert' }, problem) : null,
         ])
       }
