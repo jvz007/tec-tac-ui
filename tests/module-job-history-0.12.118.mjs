@@ -3,6 +3,7 @@
 // not mounted here). The browser checks (headers readable across origins, the real download) are on the dev-server checklist.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 const read = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8')
 globalThis.localStorage = { getItem: (key) => (key === 'access_token' ? 'tok-secret-1' : null), setItem() {}, removeItem() {} }
@@ -160,7 +161,7 @@ assert.match(windowSource, /if \(!gate\.isCurrent\(request\) \|\| props\.job\.id
 assert.match(history, /if \(!gate\.isCurrent\(request\)\) return/, 'a slower list answer is dropped')
 
 // ---- the tab is hidden without module management rights ----
-const view = read('../src/views/ModulesView.vue')
+const view = moduleManagerSource()
 assert.match(view, /<button v-if="canManage" :class="\{active:activeTab==='history'\}"/, 'the History tab button needs canManage')
 assert.match(view, /<template v-else-if="activeTab==='history' && canManage">/, 'and so does its content')
 assert.match(history, /if \(!props\.canManage\) return/, 'the component loads nothing without it')

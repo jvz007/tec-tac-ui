@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { createLatestRequestGate } from '../src/admin-session-state.js'
 import { loadLatestHotfixRows } from '../src/module-hotfix-loader.js'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 function deferred() {
   let resolve, reject
@@ -34,7 +35,7 @@ assert.equal((await fresh).stale, false)
 oldError.reject(new Error('old module failed'))
 assert.equal((await old).stale, true, 'stale hotfix error must not publish')
 
-const source = fs.readFileSync(new URL('../src/views/ModulesView.vue', import.meta.url), 'utf8')
+const source = moduleManagerSource()
 assert.match(source, /loadLatestHotfixRows/)
 assert.match(source, /isSelected:\(id\)=>hotfixSelectedModuleId\.value===id/)
 assert.match(source, /onBeforeUnmount\(\(\) => \{ hotfixRowsRequestGate\.begin\(\)/)

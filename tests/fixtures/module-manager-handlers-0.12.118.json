@@ -1,0 +1,354 @@
+{
+ "source": "ModulesView.vue template at 0.12.118 (commit d50b556)",
+ "handlers": [
+  {
+   "event": "override",
+   "expr": "onLicenceOverride"
+  },
+  {
+   "event": "click",
+   "expr": "activeTab='installed'"
+  },
+  {
+   "event": "click",
+   "expr": "activeTab='online'"
+  },
+  {
+   "event": "click",
+   "expr": "activeTab='repositories'"
+  },
+  {
+   "event": "click",
+   "expr": "activeTab='hotfixes'"
+  },
+  {
+   "event": "click",
+   "expr": "activeTab='history'"
+  },
+  {
+   "event": "change",
+   "expr": "filesChosen"
+  },
+  {
+   "event": "click",
+   "expr": "pick"
+  },
+  {
+   "event": "keydown.enter.prevent",
+   "expr": "pick"
+  },
+  {
+   "event": "keydown.space.prevent",
+   "expr": "pick"
+  },
+  {
+   "event": "dragenter.prevent",
+   "expr": "dropActive=true"
+  },
+  {
+   "event": "dragover.prevent",
+   "expr": "dropActive=true"
+  },
+  {
+   "event": "dragleave.prevent",
+   "expr": "dropActive=false"
+  },
+  {
+   "event": "drop.prevent",
+   "expr": "onDrop"
+  },
+  {
+   "event": "click.stop",
+   "expr": "pick"
+  },
+  {
+   "event": "click",
+   "expr": "movePending(index,-1)"
+  },
+  {
+   "event": "click",
+   "expr": "movePending(index,1)"
+  },
+  {
+   "event": "click",
+   "expr": "removePending(index)"
+  },
+  {
+   "event": "click",
+   "expr": "clearPending"
+  },
+  {
+   "event": "click",
+   "expr": "inspectPending"
+  },
+  {
+   "event": "dragstart",
+   "expr": "dragStart(row.id)"
+  },
+  {
+   "event": "drop.prevent",
+   "expr": "dropOn(row.id)"
+  },
+  {
+   "event": "click",
+   "expr": "moveInspected(row.id,-1)"
+  },
+  {
+   "event": "click",
+   "expr": "moveInspected(row.id,1)"
+  },
+  {
+   "event": "click",
+   "expr": "clearStaged"
+  },
+  {
+   "event": "click",
+   "expr": "install"
+  },
+  {
+   "event": "keydown.esc.stop.prevent",
+   "expr": "query=''"
+  },
+  {
+   "event": "click",
+   "expr": "refresh(selectedId)"
+  },
+  {
+   "event": "select",
+   "expr": "(row) => selectedId = row.id"
+  },
+  {
+   "event": "activate",
+   "expr": "(row) => selectedId = row.id"
+  },
+  {
+   "event": "rowmenu",
+   "expr": "(row) => selectedId = row.id"
+  },
+  {
+   "event": "sort",
+   "expr": "(key, dir) => setSort(installedSort, key, dir)"
+  },
+  {
+   "event": "click",
+   "expr": "openSelectedModule"
+  },
+  {
+   "event": "click",
+   "expr": "setVisibility(selected,false)"
+  },
+  {
+   "event": "click",
+   "expr": "setVisibility(selected,true)"
+  },
+  {
+   "event": "click",
+   "expr": "ask(selected,'disable')"
+  },
+  {
+   "event": "click",
+   "expr": "ask(selected,'enable')"
+  },
+  {
+   "event": "click",
+   "expr": "ask(selected,'remove')"
+  },
+  {
+   "event": "click",
+   "expr": "syncAllRepositories"
+  },
+  {
+   "event": "click",
+   "expr": "loadOnlineCatalog"
+  },
+  {
+   "event": "sort",
+   "expr": "(key, dir) => setSort(onlineSort, key, dir)"
+  },
+  {
+   "event": "click",
+   "expr": "newRepository"
+  },
+  {
+   "event": "select",
+   "expr": "editRepository"
+  },
+  {
+   "event": "activate",
+   "expr": "editRepository"
+  },
+  {
+   "event": "rowmenu",
+   "expr": "editRepository"
+  },
+  {
+   "event": "sort",
+   "expr": "(key, dir) => setSort(repositorySort, key, dir)"
+  },
+  {
+   "event": "click.self",
+   "expr": "cancelRepositoryEdit"
+  },
+  {
+   "event": "keydown.esc.stop.prevent",
+   "expr": "cancelRepositoryEdit"
+  },
+  {
+   "event": "click",
+   "expr": "saveRepository"
+  },
+  {
+   "event": "click",
+   "expr": "cancelRepositoryEdit"
+  },
+  {
+   "event": "click",
+   "expr": "removeRepository(selectedRepository)"
+  },
+  {
+   "event": "change",
+   "expr": "hotfixFileChanged"
+  },
+  {
+   "event": "click",
+   "expr": "chooseHotfixFile"
+  },
+  {
+   "event": "keydown.enter.prevent",
+   "expr": "chooseHotfixFile"
+  },
+  {
+   "event": "click",
+   "expr": "inspectHotfix"
+  },
+  {
+   "event": "click",
+   "expr": "discardHotfixStage"
+  },
+  {
+   "event": "click",
+   "expr": "applyHotfix"
+  },
+  {
+   "event": "change",
+   "expr": "loadHotfixRows(hotfixSelectedModuleId)"
+  },
+  {
+   "event": "click",
+   "expr": "rollbackHotfix(row)"
+  },
+  {
+   "event": "click",
+   "expr": "reloadTecTac"
+  },
+  {
+   "event": "click.self",
+   "expr": "closeReinstallConfirm"
+  },
+  {
+   "event": "click",
+   "expr": "confirmReinstall"
+  },
+  {
+   "event": "click",
+   "expr": "closeReinstallConfirm"
+  },
+  {
+   "event": "click.self",
+   "expr": "closeInstallConfirm"
+  },
+  {
+   "event": "click",
+   "expr": "confirmInstall"
+  },
+  {
+   "event": "click",
+   "expr": "closeInstallConfirm"
+  },
+  {
+   "event": "click.self",
+   "expr": "closeConfirm"
+  },
+  {
+   "event": "click",
+   "expr": "confirmHandBack"
+  },
+  {
+   "event": "click",
+   "expr": "closeConfirm"
+  },
+  {
+   "event": "click",
+   "expr": "confirmSwitchAction"
+  },
+  {
+   "event": "click",
+   "expr": "confirmAction"
+  }
+ ],
+ "models": [
+  {
+   "mods": "",
+   "target": "query"
+  },
+  {
+   "mods": "",
+   "target": "categoryFilter"
+  },
+  {
+   "mods": "",
+   "target": "onlineQuery"
+  },
+  {
+   "mods": "",
+   "target": "repositoryDraft.name"
+  },
+  {
+   "mods": "",
+   "target": "repositoryDraft.url"
+  },
+  {
+   "mods": ".number",
+   "target": "repositoryDraft.priority"
+  },
+  {
+   "mods": "",
+   "target": "repositoryDraft.trust"
+  },
+  {
+   "mods": "",
+   "target": "repositoryDraft.enabled"
+  },
+  {
+   "mods": "",
+   "target": "hotfixSelectedModuleId"
+  },
+  {
+   "mods": "",
+   "target": "cascade"
+  },
+  {
+   "mods": "",
+   "target": "switchAck"
+  }
+ ],
+ "disabled": [
+  "!canManage || jobRunning || inspecting",
+  "index===0",
+  "index===pendingFiles.length-1",
+  "inspecting || intakeBlocked || !!staged",
+  "index===orderedRows.length-1",
+  "jobRunning || installing",
+  "!plan?.valid || !orderedRows.length || jobRunning || installing",
+  "!canManage||jobRunning",
+  "!canManage || repositoryBusy",
+  "catalogBusy",
+  "!canManage || repositoryBusy || !repositoryDraft.name || !repositoryDraft.url",
+  "hotfixInspecting||hotfixJobRunning",
+  "hotfixJobRunning",
+  "hotfixJobRunning||index!==hotfixRows.length-1",
+  "inspecting || jobRunning",
+  "handBackBusy",
+  "!switchAck"
+ ]
+}

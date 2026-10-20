@@ -1,6 +1,7 @@
 // 0.12.83: runtime settings moved from Modules to System Configuration (/system/settings).
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 globalThis.window = { _env_: { PROD_URL: 'https://rmm.example.test' }, dispatchEvent() {}, addEventListener() {} }
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
@@ -31,7 +32,7 @@ const router = read('../src/router.js')
 assert.match(router, /path: '\/system\/settings', name: 'system-settings', component: SystemSettingsView, meta: \{ title: 'System Configuration' \}/)
 for (const path of ['/system/scheduler', '/system/updates', '/system/storage', '/system/diagnostics', '/system/backups']) assert.ok(router.includes(`path: '${path}'`))
 
-assert.doesNotMatch(read('../src/views/ModulesView.vue'), /RuntimeSettingsCard/)
+assert.doesNotMatch(moduleManagerSource(), /RuntimeSettingsCard/)
 const view = read('../src/views/SystemSettingsView.vue')
 assert.match(view, /import RuntimeSettingsCard from '\.\.\/components\/RuntimeSettingsCard\.vue'/)
 assert.match(view, /<RuntimeSettingsCard v-if="allowed" \/>/)

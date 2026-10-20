@@ -1,6 +1,7 @@
 // 0.12.91: AD-21 module category badge and filter on the Modules page (Core 1.17.13).
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 const { categoryBadge, categoryFilterKey, CATEGORY_FILTERS, filterByCategory, categoryNote, categorySearchText } = await import('../src/module-category.js')
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
@@ -64,7 +65,7 @@ assert.deepEqual(categoryNote({ category: 'core', category_warning: 42 }), [])
 const helper = read('../src/module-category.js')
 assert.ok(!/^import /m.test(helper), 'import-free')
 assert.ok(!/fetch|localStorage|sessionStorage|Authorization/.test(helper))
-const view = read('../src/views/ModulesView.vue')
+const view = moduleManagerSource()
 assert.match(view, /from '\.\.\/module-category'/)
 // 0.12.118: the Installed list is a kit DataTable (P1); the Category column and its pill are defined in src/module-manager-tables.js.
 const tables = read('../src/module-manager-tables.js')

@@ -2,13 +2,18 @@
 // 0.12.118: the Module Manager History tab (Core 1.17.60). Brand board P1 list page on the shared kit DataTable: search,
 // filters, count and paging footer, Enter or double-click to open. A row has no log text and no path. The tab is shown only to
 // people who can manage modules (the parent decides; this component also loads nothing without canManage).
+// 0.12.119 (Q83): a Log source select. Module and hotfix jobs is the list as it was. System updates lists the finished jobs Core sends
+// with the System Updates status; Server maintenance lists Core's maintenance jobs. Each opens its own log in the same window. The
+// three logs are not merged.
 import { computed, h, onMounted, ref } from 'vue'
 import { DataTable } from '../../shared-kit.js'
 import { formatDateTime } from '../../date-format'
 import { createLatestRequestGate } from '../../admin-session-state'
 import { listModuleJobHistory } from '../../modules'
+import { getSystemUpdateStatus, listMaintenanceJobs } from '../../api'
 import { jobSwitchLines } from '../../module-replacement'
 import { NO_LOG_TEXT, historyErrorSentence, historyMeta, historyRows } from '../../module-job-history'
+import { LOG_SOURCES, maintenanceRows, sourceLabel, systemLogErrorSentence, systemUpdateRows } from '../../system-job-logs'
 import ModuleJobLogWindow from './ModuleJobLogWindow.vue'
 
 const props = defineProps({ canManage: { type: Boolean, default: false } })
@@ -19,6 +24,10 @@ const meta = ref({ page: 1, pages: 0, total: 0 })
 const loading = ref(false)
 const error = ref('')
 const openJob = ref(null)
+const source = ref('module')
+const otherRows = ref([])
+const otherLoading = ref(false)
+const otherError = ref('')
 const filters = ref({ module: '', action: '', status: '', kind: '' })
 const applied = ref({ module: '', action: '', status: '', kind: '' })
 const gate = createLatestRequestGate()
@@ -67,6 +76,36 @@ function clear() {
   apply()
 }
 function open(row) { if (row?.hasLog) openJob.value = row }
+// System updates and Server maintenance: one read each, no paging (Core sends at most 12 and at most 100).
+async function loadOther() {
+  const current = source.value
+  if (!props.canManage || current === 'module') return
+  const request = gate.begin()
+  otherLoading.value = true
+  otherError.value = ''
+  try {
+    const rows = current === 'system-update' ? systemUpdateRows(await getSystemUpdateStatus()) : maintenanceRows(await listMaintenanceJobs({ limit: 100 }))
+    if (!gate.isCurrent(request) || source.value !== current) return
+    otherRows.value = rows
+  } catch (e) {
+    if (!gate.isCurrent(request) || source.value !== current) return
+    otherRows.value = []
+    otherError.value = systemLogErrorSentence(e, current)
+  } finally {
+    if (gate.isCurrent(request) && source.value === current) otherLoading.value = false
+  }
+}
+function changeSource() {
+  gate.begin()
+  openJob.value = null
+  loading.value = false
+  otherLoading.value = false
+  otherRows.value = []
+  otherError.value = ''
+  if (source.value === 'module') load(1)
+  else loadOther()
+}
+function refreshCurrent() { if (source.value === 'module') load(meta.value.page); else loadOther() }
 function go(page) {
   if (loading.value || page < 1 || (meta.value.pages && page > meta.value.pages)) return
   load(page)
@@ -93,17 +132,22 @@ function cell(row, column) {
   }
 }
 const footer = computed(() => {
+  if (source.value === 'system-update') return `${otherRows.value.length} finished update job${otherRows.value.length === 1 ? '' : 's'}`
+  if (source.value === 'maintenance') return `${otherRows.value.length} server maintenance job${otherRows.value.length === 1 ? '' : 's'}`
   const pages = meta.value.pages > 1 ? ` · page ${meta.value.page} of ${meta.value.pages}` : ''
   return `${meta.value.total} lifecycle record${meta.value.total === 1 ? '' : 's'}${pages}`
 })
 const filtered = computed(() => Object.values(applied.value).some(Boolean))
-defineExpose({ reload: () => load(meta.value.page) })
+defineExpose({ reload: () => refreshCurrent() })
 onMounted(() => load(1))
 </script>
 
 <template>
   <section class="mm-history" aria-label="Module job history">
     <form class="toolbar mm-filters" role="search" @submit.prevent="apply">
+      <label class="compact-input"><span class="sr-only">Log source</span>
+        <select v-model="source" aria-label="Log source" @change="changeSource"><option v-for="item in LOG_SOURCES" :key="item.key" :value="item.key">{{ item.label }}</option></select></label>
+      <template v-if="source === 'module'">
       <label class="compact-input"><span class="sr-only">Module</span><input v-model="filters.module" type="text" placeholder="Module id…" autocomplete="off"></label>
       <label class="compact-input"><span class="sr-only">Action</span>
         <select v-model="filters.action" @change="apply"><option value="">Any action</option><option v-for="a in ACTIONS" :key="a" :value="a">{{ a }}</option></select></label>
@@ -113,9 +157,26 @@ onMounted(() => load(1))
         <select v-model="filters.kind" @change="apply"><option value="">Modules and hotfixes</option><option value="module">Modules</option><option value="hotfix">Hotfixes</option></select></label>
       <button class="btn" type="submit" :disabled="loading">Apply</button>
       <button v-if="filtered || filters.module || filters.action || filters.status || filters.kind" class="btn" type="button" @click="clear">Clear</button>
-      <button class="btn" type="button" :disabled="loading" @click="load(meta.page)">Refresh</button>
+      </template>
+      <button class="btn" type="button" :disabled="source === 'module' ? loading : otherLoading" @click="refreshCurrent">Refresh</button>
     </form>
-    <div v-if="error" class="state-inline denied" role="alert">{{ error }}</div>
+    <template v-if="source !== 'module'">
+      <div v-if="otherError" class="state-inline denied" role="alert">{{ otherError }}</div>
+      <DataTable
+        v-else
+        :columns="columns"
+        :rows="otherRows"
+        row-key="id"
+        :loading="otherLoading && !otherRows.length"
+        :empty-title="source === 'system-update' ? 'No finished system updates' : 'No server maintenance jobs'"
+        :empty-text="source === 'system-update' ? 'Core lists a system update here once it has finished.' : 'Jobs appear here after Core runs a server maintenance action.'"
+        :footer="footer"
+        :aria-label="sourceLabel(source)"
+        :cell="cell"
+        @activate="open"
+      />
+    </template>
+    <div v-else-if="error" class="state-inline denied" role="alert">{{ error }}</div>
     <DataTable
       v-else
       :columns="columns"
@@ -129,10 +190,10 @@ onMounted(() => load(1))
       :cell="cell"
       @activate="open"
     />
-    <div v-if="!error && meta.pages > 1" class="toolbar mt">
+    <div v-if="source === 'module' && !error && meta.pages > 1" class="toolbar mt">
       <span class="muted mono">Page {{ meta.page }} / {{ meta.pages }}</span>
       <div class="row"><button class="btn sm" :disabled="loading || meta.page <= 1" @click="go(meta.page - 1)">Previous</button><button class="btn sm" :disabled="loading || meta.page >= meta.pages" @click="go(meta.page + 1)">Next</button></div>
     </div>
-    <ModuleJobLogWindow v-if="openJob" :job="openJob" @close="openJob = null" />
+    <ModuleJobLogWindow v-if="openJob" :job="openJob" :source="source" @close="openJob = null" />
   </section>
 </template>

@@ -2,6 +2,7 @@
 // Pure helpers in src/module-repository-info.js; the view shows every Core string with {{ }} and never v-html.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 const read = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8')
 const { onlineAvailability, installedOnlyRows, INSTALLED_ONLY_LIMIT } = await import(new URL('../src/module-repository-info.js', import.meta.url).href)
@@ -44,7 +45,7 @@ assert.deepEqual(installedOnlyRows({ installed_only: 'x' }), [], 'not a list')
 assert.deepEqual(installedOnlyRows(undefined), [])
 
 // (c) the view
-const view = read('../src/views/ModulesView.vue')
+const view = moduleManagerSource()
 const start = view.indexOf("activeTab==='online'")
 const tabStart = view.indexOf('<template v-else-if="activeTab===\'online\'">')
 const tabEnd = view.indexOf('<template v-else-if="activeTab===\'repositories\'">')

@@ -1,6 +1,7 @@
 // 0.12.89: confirm before a replacement switches a module off (AD-20, Core 1.17.11).
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 globalThis.localStorage = { getItem: (key) => (key === 'access_token' ? 'abc123' : null), setItem() {}, removeItem() {} }
 globalThis.window = { _env_: { PROD_URL: 'https://rmm.example.test' }, dispatchEvent() {} }
@@ -104,7 +105,7 @@ assert.ok(!s.lines.join('\n').includes('disable the core module first'))
 assert.ok(!replacementSummary({ id: 'pm', replaces: 'patching', replacement: { honoured: false, reason: 'target-enabled' } }).lines.join('\n').includes('Core kept'))
 
 // Source: the view asks before Enable and Install, and never uses v-html.
-const view = fs.readFileSync(new URL('../src/views/ModulesView.vue', import.meta.url), 'utf8')
+const view = moduleManagerSource()
 assert.match(view, /setModuleEnabled\(item\.id, true, false, willDisableIds\(item\.will_disable\)\)/)
 assert.match(view, /replacementConfirmLines\(confirmTarget\.value\.id, confirmTarget\.value\.will_disable\)/)
 assert.match(view, /const summary = installConfirmSummary\(plan\.value\)\n\s*if \(summary\.ids\.length\) \{\n\s*installConfirm\.value = [^\n]*\n\s*return\n\s*\}\n\s*await runInstall\(\[\]\)/)
@@ -112,7 +113,8 @@ assert.match(view, /const summary = installConfirmSummary\(plan\.value\)\n\s*if 
 assert.match(view, /installModuleArtifact\(\n\s*group\.staged\.upload_id,[\s\S]*?\border,\n\s*sendIds,/)
 assert.match(view, /confirmationRequired\(e\)/)
 assert.match(view, /v-if="installConfirm"/)
-assert.match(view, /@click="confirmInstall"/)
+assert.match(view, /@click="emit\('confirmInstall'\)"/)
+assert.match(view, /@confirm-install="confirmInstall"/)
 assert.match(view, /satisfiedFor\(selected,id\)/)
 assert.ok(!/v-html/.test(view))
 const pkg = JSON.parse(fs.readFileSync(new URL('../tec_tac_package.json', import.meta.url), 'utf8'))

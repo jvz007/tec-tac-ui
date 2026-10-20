@@ -69,6 +69,15 @@ if (fs.existsSync(exportFile)) {
   }
 }
 for (const route of exportRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
+// 0.12.119: the two server-maintenance job routes the History tab reads (Core 1.17.16, in the signed 1.17.65 export), added by name.
+const maintenanceRoutes=['/api/tfd/system/maintenance/jobs/','/api/tfd/system/maintenance/jobs/<dynamic>/']
+for (const route of maintenanceRoutes) routes.add(route)
+if (fs.existsSync(exportFile)) {
+  const exportText=fs.readFileSync(exportFile,'utf8')
+  for (const route of ['/api/tfd/system/maintenance/jobs/','/api/tfd/system/maintenance/jobs/<uuid:job_id>/']) assert.ok(exportText.includes('`'+route+'`'), `the 1.17.65 export lists ${route}`)
+}
+for (const route of maintenanceRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
+
 const missing=[]
 for (const raw of used) {
   const normalized=cleanUsed(raw)

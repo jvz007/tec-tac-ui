@@ -7,13 +7,19 @@ import { createLatestRequestGate } from '../admin-session-state'
 import { DataTable } from '../shared-kit'
 import ModuleJobHistory from '../components/modules/ModuleJobHistory.vue'
 import LicenceOverride from '../components/modules/LicenceOverride.vue'
+import ModuleActionDialogs from '../components/modules/ModuleActionDialogs.vue'
+import ModuleDetailPanel from '../components/modules/ModuleDetailPanel.vue'
+import ModuleHotfixes from '../components/modules/ModuleHotfixes.vue'
+import ModuleInstallReview from '../components/modules/ModuleInstallReview.vue'
+import ModuleJobPanel from '../components/modules/ModuleJobPanel.vue'
+import ModulePackageIntake from '../components/modules/ModulePackageIntake.vue'
 import { INSTALLED_COLUMNS, ONLINE_COLUMNS, REPOSITORY_COLUMNS, installedCell, onlineCell, repositoryCell, sortRows } from '../module-manager-tables'
 import { readLicenceRefusal } from '../licensing'
 import { loadLatestHotfixRows } from '../module-hotfix-loader'
 import { checkIntakeMetadata, orderGroupsByDependency, pairIntakeFiles } from '../module-intake'
-import { categoryBadge, categoryNote, categorySearchText, CATEGORY_FILTERS, filterByCategory } from '../module-category'
+import { categorySearchText, CATEGORY_FILTERS, filterByCategory } from '../module-category'
 import { installedOnlyRows, onlineAvailability, releaseLabels, skippedRows, skippedSummary, syncScheduleInfo } from '../module-repository-info'
-import { confirmationRequired, dependantLines, handBackDisableLines, handBackEnableLines, handBackRequiredPayload, handBackWarning, installConfirmSummary, jobSwitchLines, emptySecondConfirmationText, secondConfirmationRequired, secondConfirmationRequiredPayload, secondConfirmationText, isReplacementProblem, replacedByLabel, replacementConfirmLines, replacementListChangedText, replacementProblemText, replacementSummary, replacesLabel, satisfiedByLine, willDisableIds } from '../module-replacement'
+import { confirmationRequired, dependantLines, handBackDisableLines, handBackEnableLines, handBackRequiredPayload, handBackWarning, installConfirmSummary, emptySecondConfirmationText, secondConfirmationRequired, secondConfirmationRequiredPayload, secondConfirmationText, isReplacementProblem, replacedByLabel, replacementConfirmLines, replacementListChangedText, replacementProblemText, replacesLabel, satisfiedByLine, willDisableIds } from '../module-replacement'
 import {
   addModuleRepository,
   checkModuleRemoval,
@@ -1101,136 +1107,53 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
   </div>
 
   <template v-if="activeTab==='installed'">
-  <section class="card package-workspace mb" aria-labelledby="package-workspace-title">
-    <div class="cardhead">
-      <div><span class="eyebrow">PACKAGE INTAKE</span><h3 id="package-workspace-title">Install packages / bundle</h3></div>
-      <span v-if="staged" class="pill" :class="plan?.valid ? 'ok' : 'warn'">{{ plan?.valid ? 'INSPECTED' : 'BLOCKED' }}</span>
-    </div>
-
-    <input ref="fileInput" class="sr-only" type="file" multiple accept=".zip,.tgz,.tar.gz,.sig,.json,application/zip,application/gzip,application/json" @change="filesChosen">
-
-    <div
-      v-if="!staged"
-      class="drop-zone"
-      :class="{ active: dropActive, disabled: !canManage || jobRunning || inspecting }"
-      role="button"
-      tabindex="0"
-      @click="pick"
-      @keydown.enter.prevent="pick"
-      @keydown.space.prevent="pick"
-      @dragenter.prevent="dropActive=true"
-      @dragover.prevent="dropActive=true"
-      @dragleave.prevent="dropActive=false"
-      @drop.prevent="onDrop"
-    >
-      <div class="drop-icon">⇩</div>
-      <div><b>{{ dropActive ? 'Drop package files here' : 'Drag & drop Tec-Tac packages here' }}</b><span>Signatures are optional for normal modules. Each package pairs with the .sig and .release.json that share its file name.</span></div>
-      <button class="btn sm" type="button" :disabled="!canManage || jobRunning || inspecting" @click.stop="pick">Browse files</button>
-    </div>
-
-    <div v-if="pendingFiles.length" class="package-queue">
-      <div class="queue-head"><span class="eyebrow">FILES TO INSPECT</span><span class="mono muted">{{ pendingFiles.length }} file{{ pendingFiles.length===1?'':'s' }}</span></div>
-      <div v-for="(file,index) in pendingFiles" :key="fileKey(file)" class="queue-row">
-        <span class="queue-grip" aria-hidden="true">⋮⋮</span>
-        <span class="queue-index mono">{{ index+1 }}</span>
-        <div class="queue-main"><b>{{ file.name }}</b><span>{{ (file.size/1024).toFixed(1) }} KB</span></div>
-        <span class="pill" :class="intakeFileType(file)==='package'?'':(intakeFileType(file)==='signature'?'ok':'')">{{ intakeFileLabel(file) }}</span>
-        <div class="queue-actions"><button class="iconbtn" :disabled="index===0" title="Move up" @click="movePending(index,-1)">↑</button><button class="iconbtn" :disabled="index===pendingFiles.length-1" title="Move down" @click="movePending(index,1)">↓</button><button class="iconbtn" title="Remove" @click="removePending(index)">×</button></div>
-      </div>
-      <div v-if="pendingIntakeProblem" class="state-inline warning mt"><b>Package intake needs attention.</b> {{ pendingIntakeProblem }}</div>
-      <div v-for="set in problemSets" :key="`problem-${set.key}`" class="state-inline warning mt"><b>{{ set.label }}</b> {{ set.problems.join(' ') }}</div>
-      <div v-for="item in intakeErrors" :key="`failed-${item.key}`" class="state-inline warning mt"><b>{{ item.label }}</b> did not inspect. {{ item.message }}</div>
-      <div v-if="!intakeBlocked && intakeNotes.unsigned" class="state-inline mt"><b>{{ intakeNotes.unsigned === 1 ? 'Unsigned package.' : `${intakeNotes.unsigned} unsigned packages.` }}</b> Signing is optional for normal modules at this stage; Core will still inspect and can install them unless a module requests privileged publisher permissions.</div>
-      <div v-if="!intakeBlocked && intakeNotes.signed" class="state-inline mt"><b>{{ intakeNotes.signed === 1 ? 'Signed package detected.' : `${intakeNotes.signed} signed packages detected.` }}</b> Core checks each package with its own .sig and .release.json, and inspects them all in one request. Core checks the package hash, publisher policy and detached Ed25519 signature.</div>
-      <div v-if="staged" class="state-inline warning mt"><b>Packages are staged.</b> Install or discard them before you inspect these files.</div>
-      <div class="queue-footer"><button class="btn" @click="clearPending">Clear</button><span class="spacer"></span><button class="btn primary" :disabled="inspecting || intakeBlocked || !!staged" @click="inspectPending">{{ inspecting ? 'Inspecting…' : 'Inspect package intake' }}</button></div>
-    </div>
-
-    <div v-if="staged" class="install-plan-workspace">
-      <div class="card update-preview module-package-preview">
-        <div class="cardhead module-inspection-head">
-          <div><span class="eyebrow">PACKAGE INSPECTION</span><h3>{{ orderedRows.length }} module{{ orderedRows.length===1?'':'s' }} ready for review</h3><p>{{ stagedArtifactLabel }} · {{ stagedSourceLabel }}</p></div>
-          <span class="pill" :class="plan?.valid ? 'ok' : 'warn'">{{ plan?.valid ? 'INSTALLABLE' : 'BLOCKED' }}</span>
-        </div>
-        <div class="module-inspection-grid">
-          <div class="module-inspection-grid-head" aria-hidden="true">
-            <span>Module</span><span>Installed</span><span>Package</span><span>Trust</span><span>Action</span><span>Source</span><span>SHA256</span><span>Requires</span>
-          </div>
-          <div v-for="row in orderedRows" :key="`inspect-${row.id}`" class="module-inspection-grid-row">
-            <div class="module-inspection-name"><b>{{ row.id }}</b><span class="mono">{{ row.intake_filename }}</span></div>
-            <div data-label="Installed" class="mono">{{ row.current_version || 'not installed' }}</div>
-            <div data-label="Package" class="mono module-target-version">{{ moduleTargetVersion(row) }}</div>
-            <div data-label="Trust" class="module-trust-cell">
-              <span
-                v-if="row.intake_trust"
-                class="pill module-trust-badge"
-                :class="row.intake_trust_class"
-                tabindex="0"
-                :aria-label="`Package trust: ${row.intake_trust_label}`"
-              >
-                {{ row.intake_trust_label === 'VERIFIED' ? 'SIGNED' : row.intake_trust_label }}
-                <span class="module-trust-popover" role="tooltip">
-                  <b>{{ row.intake_trust_label === 'VERIFIED' ? 'Signed package' : (row.intake_trust_label === 'UNSIGNED' ? 'Unsigned package' : row.intake_trust_label) }}</b>
-                  <template v-if="row.intake_trust.verified && row.intake_trust.trusted">
-                    <span><strong>Publisher</strong>{{ row.intake_trust.publisher_display_name || row.intake_trust.publisher_id || '—' }}</span>
-                    <span><strong>Publisher ID</strong><code>{{ row.intake_trust.publisher_id || '—' }}</code></span>
-                    <span><strong>Key ID</strong><code>{{ row.intake_trust.key_id || '—' }}</code></span>
-                    <span><strong>Algorithm</strong><code>{{ row.intake_trust.algorithm || 'Ed25519' }}</code></span>
-                    <span><strong>Environment</strong><code>{{ row.intake_trust.publisher_environment || row.intake_trust.server_environment || '—' }}</code></span>
-                    <span><strong>Assurance</strong><code>{{ row.intake_trust.assurance || 'standard' }}</code></span>
-                    <span v-if="row.intake_trust.acceptance_policy"><strong>Acceptance</strong><code>{{ row.intake_trust.acceptance_policy.actual_label }} · minimum {{ row.intake_trust.acceptance_policy.minimum_label }}</code></span>
-                    <span><strong>SHA256</strong><code>{{ row.intake_trust.package_sha256 || row.intake_sha256 || '—' }}</code></span>
-                    <span><strong>Required</strong><code>{{ row.intake_trust.required_permissions?.length ? row.intake_trust.required_permissions.join(', ') : 'none' }}</code></span>
-                    <span><strong>Approved</strong><code>{{ row.intake_trust.approved_permissions?.length ? row.intake_trust.approved_permissions.join(', ') : 'none' }}</code></span>
-                  </template>
-                  <template v-else-if="row.intake_trust.state==='unsigned' || row.intake_trust.signed===false">
-                    <span class="module-trust-note">No package signature was supplied.</span>
-                    <span class="module-trust-note">Unsigned packages are accepted only when the global Update Trust Policy and module-specific rules permit them.</span>
-                    <span class="module-trust-note">Privileged publisher permissions still require a trusted signature regardless of the global minimum.</span>
-                  </template>
-                  <template v-else>
-                    <span class="module-trust-note">{{ row.intake_trust.reason || row.intake_trust.error || 'Core did not accept the package trust material.' }}</span>
-                  </template>
-                </span>
-              </span>
-              <span v-else class="pill module-trust-badge" tabindex="0">NOT REPORTED</span>
-            </div>
-            <div data-label="Action"><span class="pill" :class="row.action==='replace'?'warn':'ok'">{{ row.action || 'install' }}</span></div>
-            <div data-label="Source" class="module-inspection-source">{{ row.intake_source || stagedSourceLabel }}</div>
-            <div data-label="SHA256" class="mono module-inspection-hash" :title="row.intake_sha256 || ''">{{ compactHash(row.intake_sha256) }}</div>
-            <div data-label="Requires" class="mono module-inspection-requires" :title="moduleRequirements(row)">{{ moduleRequirements(row) }}</div>
-          </div>
-        </div>
-      </div>
-      <div class="state-inline mt" :class="plan?.valid ? '' : 'warning'"><b>{{ plan?.valid ? 'Dependency plan resolved.' : 'Installation blocked.' }}</b> {{ plan?.valid ? 'Required dependency sequence is enforced. Independent packages may be reordered.' : 'Resolve the dependency/version problems before installation.' }}</div><div v-if="staged.source" class="state-inline mt"><b>Online source:</b> {{ staged.source.repository_name }} <span class="mono">· {{ staged.source.repository_trust }} · {{ staged.source.package_sha256.slice(0,12) }}…</span></div>
-      <div v-if="queueWarning" class="state-inline warning mt"><b>Order not changed.</b> {{ queueWarning }}</div>
-
-      <div class="queue-head mt"><span class="eyebrow">INSTALL SEQUENCE</span><span class="mono muted">{{ orderedRows.length }} package{{ orderedRows.length===1?'':'s' }}</span></div>
-      <div
-        v-for="(row,index) in orderedRows"
-        :key="row.id"
-        class="queue-row inspected"
-        draggable="true"
-        @dragstart="dragStart(row.id)"
-        @dragover.prevent
-        @drop.prevent="dropOn(row.id)"
-      >
-        <span class="queue-grip" title="Drag to reorder independent packages">⋮⋮</span>
-        <span class="queue-index mono">{{ index+1 }}</span>
-        <div class="queue-main"><b>{{ row.id }}</b><span class="mono">{{ row.current_version || 'not installed' }} → {{ row.version || row.extension_version || '—' }}</span></div>
-        <div class="queue-deps"><span class="label">REQUIRES</span><span class="mono">{{ Object.keys(row.dependencies||{}).length ? Object.entries(row.dependencies||{}).map(([id,v])=>`${id} ${v}`).join(' · ') : 'none' }}</span></div>
-        <span class="pill" :class="row.action==='replace'?'warn':'ok'">{{ row.action || 'install' }}</span>
-        <div class="queue-actions"><button class="iconbtn" :disabled="index===0" title="Move up" @click="moveInspected(row.id,-1)">↑</button><button class="iconbtn" :disabled="index===orderedRows.length-1" title="Move down" @click="moveInspected(row.id,1)">↓</button></div>
-      </div>
-
-      <template v-if="plan?.problems?.length">
-        <div class="section-divider">Blocking problems</div>
-        <div v-for="(problem,index) in plan.problems" :key="index" class="state-inline warning mt"><template v-if="isReplacementProblem(problem)">{{ replacementProblemText(problem) }}</template><template v-else><span class="mono">{{ problem.module || 'plan' }}</span> — {{ problem.type }}</template><span v-if="problem.dependency">: {{ problem.dependency }} {{ problem.constraint }}</span></div>
-      </template>
-
-      <div class="queue-footer"><button class="btn" :disabled="jobRunning || installing" @click="clearStaged">Cancel / discard</button><span class="spacer"></span><span class="muted smalltext">The framework validates this sequence again before execution.</span><button class="btn primary" :disabled="!plan?.valid || !orderedRows.length || jobRunning || installing" @click="install">Install {{ orderedRows.length }} package{{ orderedRows.length===1?'':'s' }}</button></div>
-    </div>
-  </section>
+  <input ref="fileInput" class="sr-only" type="file" multiple accept=".zip,.tgz,.tar.gz,.sig,.json,application/zip,application/gzip,application/json" @change="filesChosen">
+  <ModulePackageIntake
+    :can-manage="canManage"
+    :job-running="jobRunning"
+    :inspecting="inspecting"
+    :staged="staged"
+    :plan="plan"
+    :drop-active="dropActive"
+    :pending-files="pendingFiles"
+    :pending-intake-problem="pendingIntakeProblem"
+    :problem-sets="problemSets"
+    :intake-errors="intakeErrors"
+    :intake-blocked="intakeBlocked"
+    :intake-notes="intakeNotes"
+    :file-key="fileKey"
+    :intake-file-type="intakeFileType"
+    :intake-file-label="intakeFileLabel"
+    @pick="pick"
+    @on-drop="onDrop"
+    @dragenter="dropActive=true"
+    @dragover="dropActive=true"
+    @dragleave="dropActive=false"
+    @move-pending="movePending"
+    @remove-pending="removePending"
+    @clear-pending="clearPending"
+    @inspect-pending="inspectPending"
+  />
+  <ModuleInstallReview
+    :staged="staged"
+    :plan="plan"
+    :ordered-rows="orderedRows"
+    :staged-artifact-label="stagedArtifactLabel"
+    :staged-source-label="stagedSourceLabel"
+    :queue-warning="queueWarning"
+    :job-running="jobRunning"
+    :installing="installing"
+    :module-target-version="moduleTargetVersion"
+    :module-requirements="moduleRequirements"
+    :compact-hash="compactHash"
+    :is-replacement-problem="isReplacementProblem"
+    :replacement-problem-text="replacementProblemText"
+    @drag-start="dragStart"
+    @drop-on="dropOn"
+    @move-inspected="moveInspected"
+    @clear-staged="clearStaged"
+    @install="install"
+  />
 
   <div class="grid g4 mb"><article class="tile"><div class="lbl">Installed</div><div class="big">{{ modules.filter(x=>x.managed).length }}</div><div class="brk">managed modules</div></article><article class="tile"><div class="lbl">Enabled</div><div class="big">{{ enabledCount }}</div><div class="brk">active at runtime</div></article><article class="tile"><div class="lbl">Disabled</div><div class="big">{{ disabledCount }}</div><div class="brk">installed, inactive</div></article><article class="tile"><div class="lbl">Hidden</div><div class="big">{{ hiddenCount }}</div><div class="brk">active, not in navigation</div></article></div>
 
@@ -1239,7 +1162,18 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
       <div class="toolbar mm-filters" role="search"><label class="compact-input"><span class="sr-only">Search modules</span><input v-model="query" placeholder="Search modules…" @keydown.esc.stop.prevent="query=''"></label><label class="compact-input"><select v-model="categoryFilter" aria-label="Filter by category"><option v-for="f in CATEGORY_FILTERS" :key="f.key" :value="f.key">{{ f.label }}</option></select></label><span class="spacer"></span><button class="btn sm" @click="refresh(selectedId)">Refresh</button></div>
       <DataTable :columns="INSTALLED_COLUMNS" :rows="installedRows" row-key="id" :selected-key="selectedId" :sort-key="installedSort.key" :sort-dir="installedSort.dir" :footer="installedFooter" empty-title="No modules match" empty-text="Clear the search or the category filter to show every module." aria-label="Installed modules" :cell="installedTableCell" @select="(row) => selectedId = row.id" @activate="(row) => selectedId = row.id" @rowmenu="(row) => selectedId = row.id" @sort="(key, dir) => setSort(installedSort, key, dir)" />
     </div>
-    <aside v-if="selected" class="module-detail card"><div class="cardhead"><div><span class="eyebrow">MODULE DETAIL</span><h3>{{ selected.id }}</h3></div><div class="module-detail-head-actions"><span class="pill" :class="selected.enabled?'ok':'warn'">{{ selected.enabled?'ENABLED':'DISABLED' }}</span><button v-if="canOpenSelected" class="btn primary sm module-open-btn" type="button" @click="openSelectedModule">Open</button></div></div><dl class="kvlist module-kv"><dt>Extension</dt><dd class="mono">v{{ selected.extension_version }}</dd><dt>ReportSet</dt><dd class="mono">v{{ selected.reportset_version }}</dd><dt>Managed</dt><dd>{{ selected.managed?'yes':'no' }}</dd><template v-if="categoryBadge(selected).known"><dt>Category</dt><dd><span class="pill" :class="categoryBadge(selected).tone">{{ categoryBadge(selected).label }}</span></dd></template><dt>Navigation</dt><dd>{{ selected.visible!==false?'visible':'hidden' }}</dd><dt>UI load</dt><dd><span class="pill" :class="{ok:selectedLoad.state==='loaded',warn:['skipped','unknown'].includes(selectedLoad.state),danger:['failed','runtime-error'].includes(selectedLoad.state)}">{{ selectedLoad.label }}</span></dd><dt>Source</dt><dd class="module-source">{{ selected.source?.repository_name || selected.source?.repository_id || 'local / offline' }}</dd><dt>SHA256</dt><dd class="mono module-source">{{ selected.source?.package_sha256 ? selected.source.package_sha256.slice(0,16)+'…' : '—' }}</dd><dt>Permissions</dt><dd>{{ selected.permission_count||0 }}</dd><template v-if="selected.publisher_trust"><dt>Package trust</dt><dd><span class="pill" :class="selected.publisher_trust.verified&&selected.publisher_trust.trusted?'ok':(selected.publisher_trust.state==='unsigned'?'':'danger')">{{ selected.publisher_trust.verified&&selected.publisher_trust.trusted?'verified':(selected.publisher_trust.state||'unknown') }}</span></dd><dt>Signed by</dt><dd>{{ selected.publisher_trust.publisher_display_name || selected.publisher_trust.publisher_id || '—' }}</dd><dt>Signing key</dt><dd class="mono">{{ selected.publisher_trust.key_id || '—' }}</dd></template></dl><div v-if="selectedLoad.state==='failed'" class="state-inline denied module-load-error"><b>Authenticated UI failed to load.</b><code>{{ selectedLoad.detail }}</code><span>Runtime and visibility state are unchanged; fix the module UI package and reload Tec-Tac.</span></div><div v-else-if="selectedLoad.state==='runtime-error'" class="state-inline denied module-load-error"><b>Authenticated UI raised a runtime error.</b><code>{{ selectedLoad.detail }}</code><span>Core contained the failure; the rest of Tec-Tac is unaffected. Reload Tec-Tac or fix the module UI.</span></div><div v-else-if="selectedLoad.state==='skipped' || selectedLoad.state==='unknown'" class="state-inline warning module-load-error"><b>Authenticated UI {{ selectedLoad.label }}.</b><code>{{ selectedLoad.detail }}</code></div><div v-for="(line,index) in categoryNote(selected)" :key="'cat'+index" class="state-inline warning module-category-note">{{ line }}</div><template v-if="replacementSummary(selected).lines.length"><div class="section-divider">Replacement <span v-if="replacementSummary(selected).badge" class="pill" :class="replacementSummary(selected).tone">{{ replacementSummary(selected).badge }}</span></div><div v-for="(line,index) in replacementSummary(selected).lines" :key="index" class="muted smalltext">{{ line }}</div></template><div class="section-divider">Hard dependencies</div><div v-if="!Object.keys(selected.dependencies||{}).length" class="muted smalltext">None</div><div v-for="(constraint,id) in selected.dependencies" :key="id" class="module-meta"><b>{{ id }}</b><span class="mono">{{ constraint }}</span><span v-if="satisfiedFor(selected,id)" class="muted smalltext">{{ satisfiedFor(selected,id) }}</span></div><div class="section-divider">Required by</div><div v-if="!selected.dependants?.length" class="muted smalltext">No installed dependants</div><div v-for="d in selected.dependants" :key="d.id" class="module-meta"><b>{{ d.id }}</b><span class="mono">{{ d.constraint }}</span></div><div v-if="selected.runtime_requirements?.length" class="section-divider">Runtime requirements</div><div v-for="r in selected.runtime_requirements" :key="r.component" class="module-meta"><b>{{ r.component }}</b><span class="mono">{{ r.current||'unknown' }} / {{ r.constraint }} {{ r.satisfied?'✓':'✕' }}</span></div><div v-if="selected.managed" class="module-actions"><button v-if="selected.visible!==false" class="btn" :disabled="!canManage||jobRunning" title="Keep the module active but remove its top-level navigation entry" @click="setVisibility(selected,false)">Hide</button><button v-else class="btn" :disabled="!canManage||jobRunning" title="Restore the module's top-level navigation entry" @click="setVisibility(selected,true)">Show</button><button v-if="selected.enabled" class="btn warnbtn" :disabled="!canManage||jobRunning" @click="ask(selected,'disable')">Disable</button><button v-else class="btn primary" :disabled="!canManage||jobRunning" @click="ask(selected,'enable')">Enable</button><button class="btn danger" :disabled="!canManage||jobRunning" @click="ask(selected,'remove')">Remove</button></div></aside>
+    <ModuleDetailPanel
+      v-if="selected"
+      :selected="selected"
+      :selected-load="selectedLoad"
+      :can-open-selected="canOpenSelected"
+      :can-manage="canManage"
+      :job-running="jobRunning"
+      :satisfied-for="satisfiedFor"
+      @open-selected-module="openSelectedModule"
+      @set-visibility="setVisibility"
+      @ask="ask"
+    />
   </div>
 
   </template>
@@ -1302,43 +1236,66 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
   </template>
 
   <template v-else-if="activeTab==='hotfixes'">
-    <div class="grid g2 mb">
-      <section class="card">
-        <div class="cardhead"><div><span class="eyebrow">MANAGED HOTFIX</span><h3>Inspect & apply</h3><p>Hotfixes are exact-version, SHA-256-bound module file replacements managed by Core.</p></div><span v-if="hotfixStaged" class="pill ok">INSPECTED</span></div>
-        <input ref="hotfixFileInput" class="sr-only" type="file" multiple accept=".zip,.sig,.json,application/zip,application/json" @change="hotfixFileChanged">
-        <div v-if="!hotfixStaged" class="drop-zone" :class="{disabled:!canManage||hotfixInspecting||hotfixJobRunning}" role="button" tabindex="0" @click="chooseHotfixFile" @keydown.enter.prevent="chooseHotfixFile">
-          <b>{{ hotfixZip?.name || 'Choose signed hotfix files' }}</b><span>{{ hotfixZip ? `${hotfixFiles.length} file${hotfixFiles.length===1?'':'s'} selected` : 'ZIP + detached .sig + .release.json' }}</span>
-        </div>
-        <div v-if="hotfixZip&&!hotfixStaged" class="state-inline mt" :class="{warning:!hotfixSignature||!hotfixMetadata}"><b>Publisher trust.</b> <span v-if="hotfixSignature&&hotfixMetadata">Detached signature and release metadata detected. Core will verify them again as root immediately before apply.</span><span v-else>Signature companions are incomplete. Production trust policy will reject unsigned hotfixes; development systems follow the configured root trust floor.</span></div>
-        <div v-if="hotfixZip&&!hotfixStaged" class="row mt"><button class="btn primary" :disabled="hotfixInspecting||hotfixJobRunning" @click="inspectHotfix">{{hotfixInspecting?'Inspecting…':'Inspect hotfix'}}</button><button class="btn" @click="discardHotfixStage">Clear</button></div>
-        <div v-if="hotfixStaged" class="hotfix-preview">
-          <dl class="kvlist"><dt>Module</dt><dd class="mono">{{hotfixPreview?.module_id}}</dd><dt>Hotfix</dt><dd class="mono">{{hotfixPreview?.id}}</dd><dt>Base version</dt><dd class="mono">{{hotfixPreview?.base_version}}</dd><dt>Files</dt><dd>{{hotfixPreview?.targets?.length||0}}</dd><dt>Reload</dt><dd class="mono">{{hotfixPreview?.reload||'none'}}</dd><dt>UI sync</dt><dd>{{hotfixPreview?.ui_sync?'yes':'no'}}</dd><dt>Package trust</dt><dd><span class="pill" :class="hotfixTrust?.verified&&hotfixTrust?.trusted?'ok':(hotfixTrust?.state==='unsigned'?'warn':'danger')">{{ hotfixTrust?.verified&&hotfixTrust?.trusted?'verified':(hotfixTrust?.state||'unknown') }}</span></dd><dt>Publisher</dt><dd>{{ hotfixTrust?.publisher_display_name || hotfixTrust?.publisher_id || '—' }}</dd><dt>Signing key</dt><dd class="mono">{{ hotfixTrust?.key_id || '—' }}</dd></dl>
-          <p class="compact-copy">{{hotfixPreview?.description||'No description supplied.'}}</p>
-          <div class="tablewrap"><table><thead><tr><th>Component</th><th>Path</th><th>Before SHA256</th><th>After SHA256</th></tr></thead><tbody><tr v-for="target in hotfixPreview?.targets||[]" :key="`${target.component}:${target.path}`"><td>{{target.component}}</td><td class="mono">{{target.path}}</td><td class="mono">{{compactHash(target.sha256_before)}}</td><td class="mono">{{compactHash(target.sha256_after)}}</td></tr></tbody></table></div>
-          <div class="row mt"><button class="btn primary" :disabled="hotfixJobRunning" @click="applyHotfix">Apply hotfix</button><button class="btn" :disabled="hotfixJobRunning" @click="discardHotfixStage">Discard</button></div>
-        </div>
-        <div v-if="hotfixJobError" class="auth-error mt">{{hotfixJobError}}</div>
-        <div v-if="hotfixJob" class="state-inline mt" :class="{warning:hotfixJobRunning,denied:['failed','dispatch_failed'].includes(hotfixJob.status)}"><b>{{hotfixJob.action}} {{hotfixJob.hotfix_id}}</b> · {{hotfixJob.status}} · <span class="mono">{{hotfixJob.stage}}</span><pre v-if="hotfixJob.log_tail?.length" class="job-log">{{hotfixJob.log_tail.join('\n')}}</pre></div>
-      </section>
-      <section class="card">
-        <div class="cardhead"><div><span class="eyebrow">APPLIED STATE</span><h3>Module hotfixes</h3><p>Rollback is newest-first and fails closed if files changed after application.</p></div></div>
-        <label class="field"><span>Module</span><select v-model="hotfixSelectedModuleId" @change="loadHotfixRows(hotfixSelectedModuleId)"><option :value="null">Select module</option><option v-for="item in modules.filter(x=>x.managed)" :key="item.id" :value="item.id">{{item.id}} · {{item.extension_version}} · {{item.hotfixes?.count||0}} hotfixes</option></select></label>
-        <div v-if="hotfixLoading" class="state-inline">Loading applied hotfixes…</div>
-        <div v-else-if="hotfixSelectedModuleId&&!hotfixRows.length" class="state-inline"><b>No active hotfixes.</b> This module is running its normal installed package state.</div>
-        <div v-else-if="hotfixRows.length" class="tablewrap"><table><thead><tr><th>Hotfix</th><th>Base</th><th>Applied</th><th>Files</th><th></th></tr></thead><tbody><tr v-for="(row,index) in hotfixRows" :key="row.id"><td><b>{{row.id}}</b><span class="sub">{{row.description||'—'}}</span></td><td class="mono">{{row.base_version}}</td><td>{{historyTime(row.applied_at)}}<span class="sub">{{row.applied_by||'unknown'}}</span></td><td>{{row.targets?.length||0}}</td><td><button class="btn sm danger" :disabled="hotfixJobRunning||index!==hotfixRows.length-1" :title="index!==hotfixRows.length-1?'Roll back newer hotfixes first':'Roll back this hotfix'" @click="rollbackHotfix(row)">Rollback</button></td></tr></tbody></table></div>
-      </section>
-    </div>
+    <input ref="hotfixFileInput" class="sr-only" type="file" multiple accept=".zip,.sig,.json,application/zip,application/json" @change="hotfixFileChanged">
+    <ModuleHotfixes
+      :can-manage="canManage"
+      :modules="modules"
+      :hotfix-files="hotfixFiles"
+      :hotfix-zip="hotfixZip"
+      :hotfix-signature="hotfixSignature"
+      :hotfix-metadata="hotfixMetadata"
+      :hotfix-inspecting="hotfixInspecting"
+      :hotfix-staged="hotfixStaged"
+      :hotfix-preview="hotfixPreview"
+      :hotfix-trust="hotfixTrust"
+      :hotfix-job="hotfixJob"
+      :hotfix-job-error="hotfixJobError"
+      :hotfix-job-running="!!hotfixJobRunning"
+      :hotfix-rows="hotfixRows"
+      :hotfix-loading="hotfixLoading"
+      v-model:hotfixSelectedModuleId="hotfixSelectedModuleId"
+      @choose-hotfix-file="chooseHotfixFile"
+      @inspect-hotfix="inspectHotfix"
+      @discard-hotfix-stage="discardHotfixStage"
+      @apply-hotfix="applyHotfix"
+      @rollback-hotfix="rollbackHotfix"
+      @load-hotfix-rows="loadHotfixRows"
+    />
   </template>
 
   <template v-else-if="activeTab==='history' && canManage">
     <ModuleJobHistory ref="historyRef" :can-manage="canManage" />
   </template>
 
-  <div v-if="activeJob" class="job-panel card mt"><div class="cardhead"><div><span class="eyebrow">MODULE JOB</span><h3>{{ activeJob.action }} / {{ activeJob.plugin_id }}</h3></div><span class="pill" :class="{ok:activeJob.status==='succeeded',danger:['failed','dispatch_failed'].includes(activeJob.status),warn:!['succeeded','failed','dispatch_failed'].includes(activeJob.status)}">{{ activeJob.status }}</span></div><div v-if="jobPollError" class="state-inline warning"><b>Job status refresh failed.</b> {{ jobPollError }} Retrying automatically.</div><div v-for="(line,index) in jobSwitchLines(activeJob)" :key="'sw'+index" class="compact-copy">{{ line }}</div><div v-if="activeJob.error" class="auth-error">{{ activeJob.error }}</div><pre v-if="activeJob.log_tail?.length" class="job-log">{{ activeJob.log_tail.join('\n') }}</pre><div v-if="activeJob.status==='succeeded'" class="row"><button class="btn primary" @click="reloadTecTac">Reload Tec-Tac</button></div></div>
+  <ModuleJobPanel v-if="activeJob" :active-job="activeJob" :job-poll-error="jobPollError" @reload-tec-tac="reloadTecTac" />
 
-  <div v-if="reinstallTarget" class="modal-backdrop" @click.self="closeReinstallConfirm"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="module-reinstall-title"><div class="cardhead"><div><span class="eyebrow">REINSTALL MODULE</span><h3 id="module-reinstall-title">{{ reinstallTarget.name || reinstallTarget.id }}</h3></div><span class="pill warn">SAME VERSION</span></div><p class="compact-copy">Installed version and repository version are both <span class="mono">{{ reinstallTarget.latest_version }}</span>. Continuing will download and inspect the same version for reinstall. The replacement still requires confirmation from the package inspection step.</p><div class="state-inline warning mt"><b>Existing module files will be replaced when the install job runs.</b> Configuration and data remain subject to the module's normal upgrade/reinstall lifecycle.</div><div class="modal-actions"><button class="btn primary" :disabled="inspecting || jobRunning" @click="confirmReinstall">Continue to reinstall</button><button class="btn" @click="closeReinstallConfirm">Cancel</button></div></section></div>
-
-  <div v-if="installConfirm" class="modal-backdrop" @click.self="closeInstallConfirm"><section class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="module-install-confirm-title"><div class="cardhead"><div><span class="eyebrow">INSTALL MODULES</span><h3 id="module-install-confirm-title">Switch off replaced modules?</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="installConfirm.changed" class="state-inline warning mt"><b>{{ installConfirm.changed }}</b></div><div v-if="installConfirm.lines.length" class="state-inline warning mt"><div v-for="(line,index) in installConfirm.lines" :key="index">{{ line }}</div></div><div class="modal-actions"><button class="btn primary" :disabled="jobRunning || installing" @click="confirmInstall">{{ installConfirm.ids.length ? 'Install and switch off' : 'Install' }}</button><button class="btn" @click="closeInstallConfirm">Cancel</button></div></section></div>
-  <div v-if="confirmTarget" class="modal-backdrop" @click.self="closeConfirm"><section class="modal-panel"><div class="cardhead"><div><span class="eyebrow">{{ confirmMode.toUpperCase() }} MODULE</span><h3>{{ confirmTarget.id }}</h3></div><span class="pill warn">RUNTIME CHANGE</span></div><div v-if="enableNotice.length || listChanged" class="state-inline warning mt"><b v-if="listChanged">{{ listChanged }}</b><div v-for="(line,index) in enableNotice" :key="index">{{ line }}</div></div><div v-if="disableNotice.length" class="state-inline warning mt"><div v-for="(line,index) in disableNotice" :key="index">{{ line }}</div></div><p v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="compact-copy">Enabled dependants may block this action. Select cascade to disable dependent modules first.</p><label v-if="confirmMode==='disable'&&confirmTarget.dependants?.length" class="checkline warning-check"><input v-model="cascade" type="checkbox"> Disable enabled dependants as part of this job</label><template v-if="handBack"><div class="state-inline warning mt"><div v-for="(line,index) in handBack.lines" :key="'hand-back'+index">{{ line }}</div></div><div class="modal-actions"><button class="btn danger" :disabled="handBackBusy" @click="confirmHandBack">{{ handBack.button }}</button><button class="btn" @click="closeConfirm">Cancel</button></div></template><template v-else-if="confirmStep===2&&needsSecondConfirmation"><div class="auth-error mt"><b>Second confirmation.</b> {{ secondStepText.warning }}</div><div v-for="(line,index) in secondDependantLines" :key="'dependant'+index" class="state-inline warning mt">{{ line }}</div><label class="checkline warning-check"><input v-model="switchAck" type="checkbox"> {{ secondStepText.checkbox }}</label><div class="modal-actions"><button class="btn danger" :disabled="!switchAck" @click="confirmSwitchAction">{{ secondStepText.button }}</button><button class="btn" @click="closeConfirm">Cancel</button></div></template><template v-else><p class="confirm-question">{{ confirmMode.charAt(0).toUpperCase() + confirmMode.slice(1) }} module {{ confirmTarget.id }}? Are you sure?</p><div class="modal-actions"><button class="btn" @click="closeConfirm">No</button><button class="btn" :class="confirmMode==='enable'?'primary':'danger'" @click="confirmAction">Yes</button></div></template></section></div>
+  <ModuleActionDialogs
+    :reinstall-target="reinstallTarget"
+    :install-confirm="installConfirm"
+    :confirm-target="confirmTarget"
+    :confirm-mode="confirmMode"
+    :inspecting="inspecting"
+    :job-running="!!jobRunning"
+    :installing="installing"
+    :enable-notice="enableNotice"
+    :disable-notice="disableNotice"
+    :list-changed="listChanged"
+    :hand-back="handBack"
+    :hand-back-busy="handBackBusy"
+    :confirm-step="confirmStep"
+    :needs-second-confirmation="needsSecondConfirmation"
+    :second-step-text="secondStepText"
+    :second-dependant-lines="secondDependantLines"
+    v-model:cascade="cascade"
+    v-model:switchAck="switchAck"
+    @close-reinstall-confirm="closeReinstallConfirm"
+    @confirm-reinstall="confirmReinstall"
+    @close-install-confirm="closeInstallConfirm"
+    @confirm-install="confirmInstall"
+    @close-confirm="closeConfirm"
+    @confirm-hand-back="confirmHandBack"
+    @confirm-switch-action="confirmSwitchAction"
+    @confirm-action="confirmAction"
+  />
 </section>
 </template>

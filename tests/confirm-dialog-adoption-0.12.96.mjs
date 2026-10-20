@@ -5,6 +5,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { resetTotpWorkflow, revokeOthersWorkflow } from '../src/my-account-workflows.js'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 const root = fileURLToPath(new URL('..', import.meta.url))
 const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8')
@@ -24,7 +25,7 @@ for (const file of walk(path.join(root, 'src'))) {
 }
 
 // (2) No typed-confirmation text in Modules and Schedules.
-const modules = read('src/views/ModulesView.vue')
+const modules = moduleManagerSource()
 const schedules = read('src/views/SchedulesView.vue')
 for (const [name, source] of [['ModulesView', modules], ['SchedulesView', schedules]]) {
   assert.doesNotMatch(source, /to confirm/i, `${name}: typed field text remains`)
@@ -33,7 +34,8 @@ for (const [name, source] of [['ModulesView', modules], ['SchedulesView', schedu
 assert.doesNotMatch(modules, /confirmText/)
 assert.doesNotMatch(schedules, /confirmText|forceDeleteText|forceDeleteRequired/)
 assert.match(modules, /Are you sure\?/)
-assert.match(modules, /@click="confirmAction">Yes</)
+assert.match(modules, /@click="emit\('confirmAction'\)">Yes</)
+assert.match(modules, /@confirm-action="confirmAction"/)
 // The two-step hand-back dialog is a review screen with no typed text: its checkbox and its own button stay.
 assert.match(modules, /switchAck/)
 assert.match(modules, /confirmSwitchAction/)

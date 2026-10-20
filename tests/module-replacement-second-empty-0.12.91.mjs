@@ -2,6 +2,7 @@
 // shows Core's own words and reloads, instead of returning to step one.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 const { emptySecondConfirmationText, secondConfirmationRequiredPayload } = await import('../src/module-replacement.js')
 
@@ -22,7 +23,7 @@ for (const second of [{ willDisable: [], detail: '' }, { detail: '   ' }, {}, nu
 }
 
 // the page: run handleEnableRefusal from the real source against stubs
-const view = fs.readFileSync(new URL('../src/views/ModulesView.vue', import.meta.url), 'utf8')
+const view = moduleManagerSource()
 const start = view.indexOf('function handleEnableRefusal(e, item) {')
 assert.ok(start > 0)
 let depth = 0

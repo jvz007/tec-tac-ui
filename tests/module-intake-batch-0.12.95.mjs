@@ -2,6 +2,7 @@
 // signature before anything is sent. Every package in a batch shows its own trust. The UI requires Core 1.17.20.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 globalThis.localStorage = { getItem: (key) => (key === 'access_token' ? 'abc123' : null), setItem() {}, removeItem() {} }
 globalThis.window = { _env_: { PROD_URL: 'https://rmm.example.test' }, dispatchEvent() {} }
@@ -116,7 +117,7 @@ assert.equal(singleResults[0].staged.upload_id, 'u-solo')
 
 // (7) stagedRowsOf on a fake batch: each row carries its own trust. A package takes its row's trust, a bundle's children take
 // the trust of the bundle they came from, and only a row with neither reads NOT REPORTED.
-const view = fs.readFileSync(new URL('../src/views/ModulesView.vue', import.meta.url), 'utf8')
+const view = moduleManagerSource()
 function extractFunction(name) {
   const start = view.indexOf(`function ${name}(`)
   assert.ok(start >= 0, `ModulesView.vue has function ${name}`)

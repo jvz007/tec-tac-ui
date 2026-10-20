@@ -1,6 +1,7 @@
 // 0.12.88: replacement state in plain English on the Modules page (AD-20, Core 1.17.9 and 1.17.10).
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 const { replacementSummary, replacementProblemText, registeredMismatchText, replacesLabel, replacedByLabel, isReplacementProblem } = await import('../src/module-replacement.js')
 
@@ -110,7 +111,7 @@ assert.equal(isReplacementProblem({ type: 'missing_dependency' }), false)
 assert.equal(isReplacementProblem(conflict), true)
 
 // Source checks.
-const view = fs.readFileSync(new URL('../src/views/ModulesView.vue', import.meta.url), 'utf8')
+const view = moduleManagerSource()
 assert.match(view, /from '\.\.\/module-replacement'/)
 assert.match(view, /replacementSummary\(selected\)/)
 assert.match(view, />Replacement </)

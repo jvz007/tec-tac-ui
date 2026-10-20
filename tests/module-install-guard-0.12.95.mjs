@@ -3,8 +3,9 @@
 // reload hint. Source-plus-runtime: the real functions are read from ModulesView.vue and run against stubs (the SFC is not mounted here).
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
-const view = fs.readFileSync(new URL('../src/views/ModulesView.vue', import.meta.url), 'utf8')
+const view = moduleManagerSource()
 function extractFunction(name) {
   let start = view.indexOf(`function ${name}(`)
   assert.ok(start >= 0, `ModulesView.vue has function ${name}`)
@@ -187,10 +188,10 @@ const flush = () => new Promise((resolve) => setImmediate(resolve))
 }
 
 // (5) the rendered buttons are disabled while a request is in flight (source check of the footer and dialog).
-const footer = view.slice(view.indexOf('<div class="queue-footer"><button class="btn" :disabled="jobRunning || installing" @click="clearStaged">'))
-assert.ok(footer.startsWith('<div class="queue-footer"><button class="btn" :disabled="jobRunning || installing" @click="clearStaged">Cancel / discard</button>'), 'Cancel / discard is disabled while installing')
-assert.match(view, /<button class="btn primary" :disabled="!plan\?\.valid \|\| !orderedRows\.length \|\| jobRunning \|\| installing" @click="install">/, 'Install is disabled while installing')
-assert.match(view, /<button class="btn primary" :disabled="jobRunning \|\| installing" @click="confirmInstall">/, 'the install confirmation is disabled while installing')
+const footer = view.slice(view.indexOf(`<div class="mm-footer"><button class="btn" :disabled="jobRunning || installing" @click="emit('clearStaged')">`))
+assert.ok(footer.startsWith(`<div class="mm-footer"><button class="btn" :disabled="jobRunning || installing" @click="emit('clearStaged')">Cancel / discard</button>`), 'Cancel / discard is disabled while installing')
+assert.match(view, /<button class="btn primary" :disabled="!plan\?\.valid \|\| !orderedRows\.length \|\| jobRunning \|\| installing" @click="emit\('install'\)">/, 'Install is disabled while installing')
+assert.match(view, /<button class="btn primary" :disabled="jobRunning \|\| installing" @click="emit\('confirmInstall'\)">/, 'the install confirmation is disabled while installing')
 assert.match(view, /const installing = ref\(false\)/)
 assert.match(extractFunction('install'), /if \(installing\.value\) return/)
 assert.match(extractFunction('clearStaged'), /if \(installing\.value\) return/)

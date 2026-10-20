@@ -3,6 +3,7 @@
 // calls the unload after a succeeded disable or uninstall job, and for a replacement a job switched off, before the reload.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 const { createModuleServiceRegistry } = await import(new URL('../src/module-services.js', import.meta.url).href)
 const { createContextActionRegistry } = await import(new URL('../src/context-actions.js', import.meta.url).href)
@@ -116,7 +117,7 @@ assert.equal(checks.has('stray.run'), false, 'the unload removes the services of
 const main = fs.readFileSync(new URL('../src/main.js', import.meta.url), 'utf8')
 assert.match(main, /app\.provide\('tecTacModuleUnload', \(moduleId\) => unloadUiModule\(loaderRuntime, moduleId\)\)/)
 assert.match(main, /tacticalWebSocket,\n      modules,/)
-const view = fs.readFileSync(new URL('../src/views/ModulesView.vue', import.meta.url), 'utf8')
+const view = moduleManagerSource()
 assert.match(view, /const unloadModule = inject\('tecTacModuleUnload', null\)/)
 assert.match(view, /if \(\(job\.action === 'disable' \|\| job\.action === 'remove'\) && typeof job\.plugin_id === 'string'/)
 assert.match(view, /for \(const id of Array\.isArray\(job\.disabled_modules\) \? job\.disabled_modules : \[\]\)/)

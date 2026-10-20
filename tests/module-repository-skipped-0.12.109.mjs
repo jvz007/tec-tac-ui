@@ -4,6 +4,7 @@
 // channel, lifecycle or recommended. src/modules.js is unchanged: the same two routes and the same api surface.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 const read = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8')
 const { skippedSummary, skippedRows, releaseLabels } = await import(new URL('../src/module-repository-info.js', import.meta.url).href)
@@ -47,7 +48,7 @@ assert.deepEqual(releaseLabels({ channel: '<b>x</b>' }), ['<b>x</b>'], 'a label 
 
 // (d) the view: no v-html; the Repositories tab has the count and the editor block; the Online catalog has the labels; the
 // Download button and filteredOnline never read channel, lifecycle or recommended.
-const view = read('../src/views/ModulesView.vue')
+const view = moduleManagerSource()
 assert.doesNotMatch(view, /v-html/, 'the Modules page never uses v-html')
 assert.match(view, /from '\.\.\/module-repository-info'/, 'the view imports the helpers')
 

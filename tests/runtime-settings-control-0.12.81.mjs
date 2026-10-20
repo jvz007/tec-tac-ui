@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 const storage = new Map([['access_token', 'abc123']])
 globalThis.localStorage = {
@@ -77,7 +78,7 @@ await assert.rejects(() => saveRegisterTimeout(60), (error) => error.status === 
 
 // Source checks.
 const read = (path) => fs.readFileSync(new URL(path, import.meta.url), 'utf8')
-assert.doesNotMatch(read('../src/views/ModulesView.vue'), /RuntimeSettingsCard/, 'the card moved to System Configuration in 0.12.83')
+assert.doesNotMatch(moduleManagerSource(), /RuntimeSettingsCard/, 'the card moved to System Configuration in 0.12.83')
 assert.match(read('../src/views/SystemSettingsView.vue'), /<RuntimeSettingsCard v-if="allowed" \/>/)
 const card = read('../src/components/RuntimeSettingsCard.vue')
 assert.match(card, /<form v-if="canEdit"/)

@@ -2,6 +2,7 @@
 // will_enable on a replacement, job switch lines, and the Core requirement.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 globalThis.localStorage = { getItem: (key) => (key === 'access_token' ? 'abc123' : null), setItem() {}, removeItem() {} }
 globalThis.window = { _env_: { PROD_URL: 'https://rmm.example.test' }, dispatchEvent() {} }
@@ -111,11 +112,13 @@ assert.deepEqual(jobSwitchLines({ disabled_modules: 'a', enabled_modules: null, 
 assert.deepEqual(jobSwitchLines({ disabled_modules: [], enabled_modules: [''] }), [])
 
 // (7) source scan of the Modules page
-const view = read('../src/views/ModulesView.vue')
+const view = moduleManagerSource()
 assert.match(view, /confirmStep/)
 assert.match(view, /needsSecondConfirmation/)
-assert.match(view, /v-model="switchAck"/)
-assert.match(view, /@click="confirmSwitchAction"/)
+assert.match(view, /v-model:switchAck="switchAck"/)
+assert.match(view, /:checked="switchAck" type="checkbox" @change="emit\('update:switchAck'/)
+assert.match(view, /@click="emit\('confirmSwitchAction'\)"/)
+assert.match(view, /@confirm-switch-action="confirmSwitchAction"/)
 // Only the second-step handler passes confirmSwitch = true.
 assert.equal((view.match(/willDisableIds\(item\.will_disable\), true\)/g) || []).length, 1, 'exactly one call sends the confirm flag')
 const switchHandler = view.slice(view.indexOf('async function confirmSwitchAction'), view.indexOf('function handleEnableRefusal'))

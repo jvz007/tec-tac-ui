@@ -4,6 +4,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 fail(){ echo "[TEST] FAIL: $*" >&2; exit 1; }
 # Python for the JSON checks below: the first interpreter that really runs (0.12.110).
 source "${ROOT}/tests/python-bin.sh"
+# 0.12.119: the Module Manager markup lives in src/components/modules/, so its checks read ModulesView.vue and those components together.
+MM_SRC="$(mktemp)"
+trap 'rm -f "${MM_SRC}"' EXIT
+node "${ROOT}/tests/helpers/module-manager-source.mjs" > "${MM_SRC}"
 
 VERSION="$(tr -d '\r\n' < "${ROOT}/VERSION")"
 PACKAGE_VERSION="$("${PY}" - "${ROOT}/package.json" <<'PY_VERSION'
@@ -52,9 +56,9 @@ grep -q 'totp-qr-image' "${ROOT}/src/components/LoginPanel.vue" || fail "TOTP QR
 grep -q "'/api/tfd/modules/v2/'" "${ROOT}/src/modules.js" || fail "module v2 catalog API missing"
 grep -q "modules/v2/packages/inspect/" "${ROOT}/src/modules.js" || fail "module v2 package inspect API missing"
 grep -q "setModuleEnabled" "${ROOT}/src/modules.js" || fail "module enable/disable API missing"
-grep -q "installModuleArtifact" "${ROOT}/src/views/ModulesView.vue" || fail "module v2 install UI missing"
-grep -q "removeModule" "${ROOT}/src/views/ModulesView.vue" || fail "module remove UI missing"
-grep -q "cascade" "${ROOT}/src/views/ModulesView.vue" || fail "cascade disable UI missing"
+grep -q "installModuleArtifact" "${MM_SRC}" || fail "module v2 install UI missing"
+grep -q "removeModule" "${MM_SRC}" || fail "module remove UI missing"
+grep -q "cascade" "${MM_SRC}" || fail "cascade disable UI missing"
 grep -q 'role-actionbar' "${ROOT}/src/components/access/RolesPanel.vue" || fail "role action bar missing"
 grep -q 'Tactical permissions' "${ROOT}/src/components/access/RolesPanel.vue" || fail "role editor tabs missing"
 grep -q 'Search permissions' "${ROOT}/src/components/access/RolesPanel.vue" || fail "role permission search missing"
@@ -122,7 +126,7 @@ grep -q 'Drag & drop an offline system update here' "${ROOT}/src/views/SystemUpd
 grep -q 'Inspect package' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "system update explicit inspect action missing"
 echo "[TEST] PASS foundation"
 
-grep -q 'drop-zone' "${ROOT}/src/views/ModulesView.vue" || fail "drag/drop package intake missing"
+grep -q 'mm-drop' "${MM_SRC}" || fail "drag/drop package intake missing"
 grep -q 'discardModuleArtifact' "${ROOT}/src/modules.js" || fail "v2 staged discard API missing"
 grep -q '__TEC_TAC_UI_VERSION__' "${ROOT}/src/App.vue" || fail "dynamic footer UI version missing"
 grep -q 'const uiVersion = __TEC_TAC_UI_VERSION__' "${ROOT}/src/components/LoginPanel.vue" || fail "dynamic login UI version missing"
@@ -135,20 +139,20 @@ grep -q 'visible: descriptor.visible !== false' "${ROOT}/src/module-loader.js" |
 grep -q 'moduleId: descriptor.id' "${ROOT}/src/module-loader.js" || fail "operator visibility ownership metadata missing"
 grep -q 'effective_visible=visible(mid,payload)' "${ROOT}/scripts/sync-modules.sh" || fail "module visibility manifest sync missing"
 grep -q 'navigation\["visible"\]=effective_visible' "${ROOT}/scripts/sync-modules.sh" || fail "module visibility override normalization missing"
-grep -q '>Hide<' "${ROOT}/src/views/ModulesView.vue" || fail "module hide control missing"
-grep -q '>Show<' "${ROOT}/src/views/ModulesView.vue" || fail "module show control missing"
+grep -q '>Hide<' "${MM_SRC}" || fail "module hide control missing"
+grep -q '>Show<' "${MM_SRC}" || fail "module show control missing"
 
-grep -q 'moduleLoadDiagnostic' "${ROOT}/src/views/ModulesView.vue" || fail "module UI load diagnostics missing"
-grep -q 'Authenticated UI failed to load' "${ROOT}/src/views/ModulesView.vue" || fail "module UI failure detail missing"
-grep -q 'module-load-summary' "${ROOT}/src/views/ModulesView.vue" || fail "module UI load failure summary missing"
+grep -q 'moduleLoadDiagnostic' "${MM_SRC}" || fail "module UI load diagnostics missing"
+grep -q 'Authenticated UI failed to load' "${MM_SRC}" || fail "module UI failure detail missing"
+grep -q 'module-load-summary' "${MM_SRC}" || fail "module UI load failure summary missing"
 
 # 0.7.0 online repository/catalog UI
 grep -q 'listModuleRepositories' "${ROOT}/src/modules.js" || fail "module repository API helpers missing"
 grep -q 'listOnlineModuleCatalog' "${ROOT}/src/modules.js" || fail "online module catalog API helper missing"
 grep -q 'stageOnlineModulePackage' "${ROOT}/src/modules.js" || fail "online module staging API helper missing"
-grep -q 'Online catalog' "${ROOT}/src/views/ModulesView.vue" || fail "online catalog tab missing"
-grep -q 'Repositories' "${ROOT}/src/views/ModulesView.vue" || fail "repository management tab missing"
-grep -q 'Sync repositories' "${ROOT}/src/views/ModulesView.vue" || fail "repository sync UI missing"
+grep -q 'Online catalog' "${MM_SRC}" || fail "online catalog tab missing"
+grep -q 'Repositories' "${MM_SRC}" || fail "repository management tab missing"
+grep -q 'Sync repositories' "${MM_SRC}" || fail "repository sync UI missing"
 
 
 # 0.8.0 scheduler UI
@@ -240,11 +244,11 @@ node --check "${ROOT}/src/context-actions.js"
 echo "[TEST] PASS UI context action contract"
 
 # 0.10.9 lifecycle progress + delayed refresh
-grep -q 'lifecycle-progress' "${ROOT}/src/views/ModulesView.vue" || fail "module lifecycle progress bar missing"
+grep -q 'lifecycle-progress' "${MM_SRC}" || fail "module lifecycle progress bar missing"
 grep -q 'lifecycle-progress' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "system update progress bar missing"
-grep -q 'reloadCountdown.value = 5' "${ROOT}/src/views/ModulesView.vue" || fail "module success reload delay missing"
+grep -q 'reloadCountdown.value = 5' "${MM_SRC}" || fail "module success reload delay missing"
 grep -q 'reloadCountdown.value = 5' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "system update success reload delay missing"
-grep -q 'reloading in' "${ROOT}/src/views/ModulesView.vue" || fail "module reload countdown label missing"
+grep -q 'reloading in' "${MM_SRC}" || fail "module reload countdown label missing"
 grep -q 'reloading in' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "system update reload countdown label missing"
 grep -q '.lifecycle-progress-track' "${ROOT}/src/styles.css" || fail "lifecycle progress styling missing"
 echo "[TEST] PASS lifecycle progress and delayed refresh"
@@ -296,8 +300,8 @@ grep -q "fresh tab may target a dynamically registered authenticated route" "${R
 echo "[TEST] PASS navigation fresh-tab route restoration"
 
 # 0.10.14 module install current -> target version preview
-grep -q "row.current_version || 'not installed'" "${ROOT}/src/views/ModulesView.vue" || fail "module install preview does not show installed version"
-grep -q "row.version || row.extension_version" "${ROOT}/src/views/ModulesView.vue" || fail "module install preview does not show target version"
+grep -q "row.current_version || 'not installed'" "${MM_SRC}" || fail "module install preview does not show installed version"
+grep -q "row.version || row.extension_version" "${MM_SRC}" || fail "module install preview does not show target version"
 grep -q 'current.*target module versions' "${ROOT}/README.md" || fail "module version preview documentation missing"
 echo "[TEST] PASS module current-to-target version preview"
 
@@ -404,10 +408,10 @@ grep -q "StructuredObjectEditor" "${ROOT}/src/views/SchedulesView.vue" || fail "
 ! grep -q "Parameters (JSON)" "${ROOT}/src/views/SchedulesView.vue" || fail "raw Parameters JSON textarea remains"
 grep -q "Advanced JSON" "${ROOT}/src/components/StructuredObjectEditor.vue" || fail "advanced JSON fallback missing"
 grep -q "listModuleJobs" "${ROOT}/src/modules.js" || fail "module history API helper missing"
-grep -q "activeTab==='history'" "${ROOT}/src/views/ModulesView.vue" || fail "module history tab missing"
+grep -q "activeTab==='history'" "${MM_SRC}" || fail "module history tab missing"
 # 0.12.118: the History tab is src/components/modules/ModuleJobHistory.vue (Core 1.17.60 history route); the page mounts it.
 grep -q "listModuleJobHistory" "${ROOT}/src/modules.js" || fail "module history list helper missing"
-grep -q "<ModuleJobHistory" "${ROOT}/src/views/ModulesView.vue" || fail "module history component is not mounted"
+grep -q "<ModuleJobHistory" "${MM_SRC}" || fail "module history component is not mounted"
 grep -q "Requested by" "${ROOT}/src/components/modules/ModuleJobHistory.vue" || fail "module history requester column missing"
 echo "[TEST] PASS structured scheduler payload editor and module lifecycle history"
 
@@ -439,17 +443,17 @@ echo "[TEST] PASS terminal lifecycle job polling"
 grep -q 'ignoring stale enabled module state for missing extension' "${ROOT}/scripts/sync-modules.sh" || fail "stale module-state degradation missing"
 grep -q 'Preflighting extension UI modules against staged deployment' "${ROOT}/scripts/install.sh" || fail "UI module preflight does not happen before live replacement"
 grep -q 'STAGE_ROOT=.*tec-tac-ui-stage' "${ROOT}/scripts/install.sh" || fail "staged UI deployment root missing"
-grep -q 'PACKAGE INSPECTION' "${ROOT}/src/views/ModulesView.vue" || fail "module package inspection summary missing"
-grep -q 'stagedHash' "${ROOT}/src/views/ModulesView.vue" || fail "module package SHA summary missing"
-grep -q 'stagedSourceLabel' "${ROOT}/src/views/ModulesView.vue" || fail "module package source summary missing"
+grep -q 'PACKAGE INSPECTION' "${MM_SRC}" || fail "module package inspection summary missing"
+grep -q 'stagedHash' "${MM_SRC}" || fail "module package SHA summary missing"
+grep -q 'stagedSourceLabel' "${MM_SRC}" || fail "module package source summary missing"
 grep -q 'systemJobFailureTail' "${ROOT}/src/views/SystemUpdatesView.vue" || fail "terminal system-update failure tail missing"
 echo "[TEST] PASS lifecycle hardening and package inspection parity"
 
 # 0.11.12 compact multi-module package inspection grid
-grep -q 'module-inspection-grid' "${ROOT}/src/views/ModulesView.vue" || fail "compact module inspection grid missing"
-grep -q 'Installed</span><span>Package</span><span>Trust</span><span>Action</span><span>Source</span><span>SHA256</span><span>Requires' "${ROOT}/src/views/ModulesView.vue" || fail "module inspection columns missing"
-grep -q 'intake_sha256' "${ROOT}/src/views/ModulesView.vue" || fail "module package provenance hash mapping missing"
-grep -q 'moduleRequirements(row)' "${ROOT}/src/views/ModulesView.vue" || fail "module inspection dependency summary missing"
+grep -q 'mm-inspection' "${MM_SRC}" || fail "compact module inspection grid missing"
+grep -q 'Installed</span><span>Package</span><span>Trust</span><span>Action</span><span>Source</span><span>SHA256</span><span>Requires' "${MM_SRC}" || fail "module inspection columns missing"
+grep -q 'intake_sha256' "${MM_SRC}" || fail "module package provenance hash mapping missing"
+grep -q 'moduleRequirements(row)' "${MM_SRC}" || fail "module inspection dependency summary missing"
 echo "[TEST] PASS compact multi-module package inspection grid"
 
 # 0.11.13 per-user Quick Actions bar + module contribution contract
@@ -482,14 +486,14 @@ echo "[TEST] PASS module-owned executable Quick Actions"
 for token in inspectModuleHotfix applyModuleHotfix getModuleHotfixJob listModuleHotfixes rollbackModuleHotfix; do
   grep -q "$token" "${ROOT}/src/modules.js" || fail "managed hotfix API helper missing: $token"
 done
-grep -q "activeTab==='hotfixes'" "${ROOT}/src/views/ModulesView.vue" || fail "Module Manager Hotfixes tab missing"
-grep -q 'Apply hotfix' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix apply action missing"
-grep -q 'Rollback' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix rollback action missing"
-grep -q 'sha256_before' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix before-hash inspection missing"
+grep -q "activeTab==='hotfixes'" "${MM_SRC}" || fail "Module Manager Hotfixes tab missing"
+grep -q 'Apply hotfix' "${MM_SRC}" || fail "managed hotfix apply action missing"
+grep -q 'Rollback' "${MM_SRC}" || fail "managed hotfix rollback action missing"
+grep -q 'sha256_before' "${MM_SRC}" || fail "managed hotfix before-hash inspection missing"
 grep -q "body.append('signature',signature)" "${ROOT}/src/modules.js" || fail "managed hotfix detached-signature upload missing"
 grep -q "body.append('metadata',metadata)" "${ROOT}/src/modules.js" || fail "managed hotfix release-metadata upload missing"
-grep -q 'hotfixTrust' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix trust visibility missing"
-grep -q 'verify them again as root' "${ROOT}/src/views/ModulesView.vue" || fail "managed hotfix root re-verification guidance missing"
+grep -q 'hotfixTrust' "${MM_SRC}" || fail "managed hotfix trust visibility missing"
+grep -q 'verify them again as root' "${MM_SRC}" || fail "managed hotfix root re-verification guidance missing"
 echo "[TEST] PASS managed module hotfix UI"
 
 # 0.11.16 24-hour System Updates release cache integration
@@ -580,8 +584,8 @@ grep -q 'Save layout' "${ROOT}/src/views/MenuLayoutView.vue" || fail "Menu Layou
 grep -q 'itemDrop' "${ROOT}/src/views/MenuLayoutView.vue" || fail "Menu Layout item drag/drop missing"
 grep -q 'sectionDrop' "${ROOT}/src/views/MenuLayoutView.vue" || fail "Menu Layout category drag/drop missing"
 grep -q 'moduleId: descriptor.id' "${ROOT}/src/module-loader.js" || fail "module navigation ownership metadata missing"
-grep -q 'selectedNavigation' "${ROOT}/src/views/ModulesView.vue" || fail "Module Manager route discovery missing"
-grep -q '>Open</button>' "${ROOT}/src/views/ModulesView.vue" || fail "Module Manager Open action missing"
+grep -q 'selectedNavigation' "${MM_SRC}" || fail "Module Manager route discovery missing"
+grep -q '>Open</button>' "${MM_SRC}" || fail "Module Manager Open action missing"
 node --check "${ROOT}/src/core-navigation.js"
 node --check "${ROOT}/src/preferences.js"
 echo "[TEST] PASS Menu Layout and Module Manager Open action"
@@ -664,13 +668,13 @@ grep -q "diagnostic-section-head" "${ROOT}/src/styles.css" || fail "diagnostics 
 printf '[TEST] PASS diagnostics UI foundation\n'
 
 # 0.12.9 same-version module reinstall confirmation
-grep -q "function sameOnlineVersion" "${ROOT}/src/views/ModulesView.vue" || fail "same-version module detection missing"
-grep -q "function requestStageOnline" "${ROOT}/src/views/ModulesView.vue" || fail "same-version staging guard missing"
-grep -q 'v-if="reinstallTarget"' "${ROOT}/src/views/ModulesView.vue" || fail "module reinstall confirmation dialog missing"
-grep -q 'SAME VERSION' "${ROOT}/src/views/ModulesView.vue" || fail "same-version reinstall warning missing"
-grep -q 'Continue to reinstall' "${ROOT}/src/views/ModulesView.vue" || fail "module reinstall confirmation action missing"
+grep -q "function sameOnlineVersion" "${MM_SRC}" || fail "same-version module detection missing"
+grep -q "function requestStageOnline" "${MM_SRC}" || fail "same-version staging guard missing"
+grep -q 'v-if="reinstallTarget"' "${MM_SRC}" || fail "module reinstall confirmation dialog missing"
+grep -q 'SAME VERSION' "${MM_SRC}" || fail "same-version reinstall warning missing"
+grep -q 'Continue to reinstall' "${MM_SRC}" || fail "module reinstall confirmation action missing"
 # 0.12.118: the Online catalog is a kit DataTable; its Download button asks the page's stage callback, which is the guard.
-grep -q 'stage: (item) => requestStageOnline(item)' "${ROOT}/src/views/ModulesView.vue" || fail "online catalog does not use reinstall confirmation guard"
+grep -q 'stage: (item) => requestStageOnline(item)' "${MM_SRC}" || fail "online catalog does not use reinstall confirmation guard"
 grep -q 'stage(item)' "${ROOT}/src/module-manager-tables.js" || fail "online catalog button does not call the stage guard"
 # 0.12.118: the button label is built in src/module-manager-tables.js (kit DataTable cells).
 grep -q "item.update_available ? 'Download update' : 'Reinstall'" "${ROOT}/src/module-manager-tables.js" || fail "up-to-date module action is not labelled Reinstall"
@@ -679,21 +683,21 @@ printf '[TEST] PASS same-version module reinstall confirmation\n'
 # 0.12.10 module package signature intake and trust visibility
 grep -q "body.append('signatures',file)" "${ROOT}/src/modules.js" || fail "module signature sidecars are not sent to Core (0.12.95 repeated field)"
 grep -q "body.append('metadata_files',file)" "${ROOT}/src/modules.js" || fail "module release metadata sidecars are not sent to Core (0.12.95 repeated field)"
-grep -q "function intakeFileType" "${ROOT}/src/views/ModulesView.vue" || fail "module package sidecar classifier missing"
-grep -q "...trustFieldsOf(rowTrust)" "${ROOT}/src/views/ModulesView.vue" || fail "staged package trust result missing"
-grep -q 'data-label="Trust"' "${ROOT}/src/views/ModulesView.vue" || fail "package trust review column missing"
-grep -q "global Update Trust Policy" "${ROOT}/src/views/ModulesView.vue" || fail "global module trust policy is not explicit in trust popover"
-grep -q "Privileged publisher permissions still require a trusted signature" "${ROOT}/src/views/ModulesView.vue" || fail "privileged unsigned-package boundary is not visible"
-grep -q "publisher_display_name" "${ROOT}/src/views/ModulesView.vue" || fail "publisher identity is not shown after verification"
-grep -q "key_id" "${ROOT}/src/views/ModulesView.vue" || fail "publisher key identity is not shown after verification"
+grep -q "function intakeFileType" "${MM_SRC}" || fail "module package sidecar classifier missing"
+grep -q "...trustFieldsOf(rowTrust)" "${MM_SRC}" || fail "staged package trust result missing"
+grep -q 'data-label="Trust"' "${MM_SRC}" || fail "package trust review column missing"
+grep -q "global Update Trust Policy" "${MM_SRC}" || fail "global module trust policy is not explicit in trust popover"
+grep -q "Privileged publisher permissions still require a trusted signature" "${MM_SRC}" || fail "privileged unsigned-package boundary is not visible"
+grep -q "publisher_display_name" "${MM_SRC}" || fail "publisher identity is not shown after verification"
+grep -q "key_id" "${MM_SRC}" || fail "publisher key identity is not shown after verification"
 node --check "${ROOT}/src/modules.js"
 printf '[TEST] PASS module package signature intake and trust visibility\n'
 
 # 0.12.11 compact package trust badge and hover/focus details
-grep -q 'module-trust-badge' "${ROOT}/src/views/ModulesView.vue" || fail "compact package trust badge missing"
-grep -q 'module-trust-popover' "${ROOT}/src/views/ModulesView.vue" || fail "package trust hover/focus details missing"
-grep -q "row.intake_trust_label === 'VERIFIED' ? 'SIGNED'" "${ROOT}/src/views/ModulesView.vue" || fail "verified package is not labelled SIGNED in review row"
-! grep -q 'class="card mt module-signature-card"' "${ROOT}/src/views/ModulesView.vue" || fail "large package trust card still present"
+grep -q 'mm-trust-badge' "${MM_SRC}" || fail "compact package trust badge missing"
+grep -q 'mm-trust-popover' "${MM_SRC}" || fail "package trust hover/focus details missing"
+grep -q "row.intake_trust_label === 'VERIFIED' ? 'SIGNED'" "${MM_SRC}" || fail "verified package is not labelled SIGNED in review row"
+! grep -q 'class="card mt module-signature-card"' "${MM_SRC}" || fail "large package trust card still present"
 grep -q '.module-trust-badge:hover .module-trust-popover' "${ROOT}/src/styles.css" || fail "trust hover popover styling missing"
 grep -q '.module-trust-badge:focus .module-trust-popover' "${ROOT}/src/styles.css" || fail "keyboard trust popover styling missing"
 printf '[TEST] PASS compact package trust badge and details popover\n'

@@ -162,3 +162,48 @@ export function repositoryCell({ sync, disabled }) {
     }
   }
 }
+
+// 0.12.119: the Hotfixes tab on the brand board. The preview targets and the applied hotfixes are P1 kit tables. The board keeps
+// buttons out of table rows, so Roll back is an action bar above the applied table (ModuleHotfixes.vue); these cells hold text only.
+const shortHash = (value) => {
+  const hash = String(value || '').trim()
+  return hash ? `${hash.slice(0, 12)}…` : '—'
+}
+
+export const HOTFIX_TARGET_COLUMNS = [
+  { key: 'component', label: 'Component' },
+  { key: 'path', label: 'Path' },
+  { key: 'before', label: 'Before SHA256' },
+  { key: 'after', label: 'After SHA256' },
+]
+
+export function hotfixTargetCell(target, column) {
+  switch (column.key) {
+    case 'component': return String(target?.component ?? '')
+    case 'path': return h('span', { class: 'mono' }, String(target?.path ?? ''))
+    case 'before': return h('span', { class: 'mono' }, shortHash(target?.sha256_before))
+    case 'after': return h('span', { class: 'mono' }, shortHash(target?.sha256_after))
+    default: return ''
+  }
+}
+
+export const HOTFIX_APPLIED_COLUMNS = [
+  { key: 'hotfix', label: 'Hotfix' },
+  { key: 'base', label: 'Base' },
+  { key: 'applied', label: 'Applied' },
+  { key: 'files', label: 'Files', align: 'right' },
+]
+
+// format(value) is the page's date formatter (date-format.js), passed in so this file stays free of the shell state.
+export function hotfixAppliedCell(format = (value) => String(value)) {
+  const stamp = (value) => (value ? format(value) : '—')
+  return (row, column) => {
+    switch (column.key) {
+      case 'hotfix': return h('span', [h('b', String(row?.id ?? '')), sub(row?.description || '—')])
+      case 'base': return h('span', { class: 'mono' }, String(row?.base_version ?? ''))
+      case 'applied': return h('span', [stamp(row?.applied_at), sub(row?.applied_by || 'unknown')])
+      case 'files': return String(row?.targets?.length || 0)
+      default: return ''
+    }
+  }
+}

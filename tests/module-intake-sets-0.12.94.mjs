@@ -2,6 +2,7 @@
 // 0.12.95: every clean set goes to Core in one request (the request shape is pinned in the 0.12.94 section below).
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 globalThis.localStorage = { getItem: (key) => (key === 'access_token' ? 'abc123' : null), setItem() {}, removeItem() {} }
 globalThis.window = { _env_: { PROD_URL: 'https://rmm.example.test' }, dispatchEvent() {} }
@@ -158,7 +159,7 @@ const cycle = orderGroupsByDependency([
 assert.deepEqual(cycle.map((group) => group.key), ['a', 'b'])
 
 // (13) ModulesView wiring: no page-level signature refusal, the poll waits for queued sets, discard covers every upload.
-const view = fs.readFileSync(new URL('../src/views/ModulesView.vue', import.meta.url), 'utf8')
+const view = moduleManagerSource()
 assert.match(view, /const pendingIntakeProblem = computed\(\(\) => pendingSets\.value\.problems\[0\] \|\| ''\)/)
 assert.doesNotMatch(view, /intake\.signatures\.length > 1/)
 assert.match(view, /const checked = await checkIntakeMetadata\(pendingSets\.value\.sets, \(file\) => file\.text\(\)\)/)

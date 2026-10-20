@@ -630,6 +630,18 @@ export async function getSystemUpdateJob(jobId) {
   return apiFetch(`/api/tfd/system/updates/jobs/${jobId}/`, { rejectErrorPayload: false })
 }
 
+// 0.12.119: server-maintenance jobs (Core 1.17.16, in the signed 1.17.65 export). Both routes need core.privileged_operations.
+// The list sends no output; the detail sends the three log texts. limit is a whole number from 1 to 100 (Core takes it as it comes).
+export async function listMaintenanceJobs({ limit = 100 } = {}) {
+  const n = Number(limit)
+  const size = Number.isFinite(n) ? Math.min(100, Math.max(1, Math.trunc(n))) : 100
+  return apiFetch(`/api/tfd/system/maintenance/jobs/?limit=${size}`)
+}
+
+export async function getMaintenanceJob(jobId) {
+  return apiFetch(`/api/tfd/system/maintenance/jobs/${encodeURIComponent(jobId)}/`)
+}
+
 // Tec-Tac Core storage housekeeping APIs
 export async function getStorageHousekeeping() {
   return apiFetch('/api/tfd/system/storage/')

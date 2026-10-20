@@ -2,6 +2,7 @@
 // back (Core 1.17.14 disable, 1.17.15 uninstall), the confirm_without_hand_back resend, and the step-two dependants.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 globalThis.localStorage = { getItem: (key) => (key === 'access_token' ? 'abc123' : null), setItem() {}, removeItem() {} }
 globalThis.window = { _env_: { PROD_URL: 'https://rmm.example.test' }, dispatchEvent() {} }
@@ -91,7 +92,7 @@ assert.deepEqual(secondConfirmationRequiredPayload(Object.assign(new Error('x'),
 assert.equal(secondConfirmationRequired({ second_confirmation_required: true, will_disable: willDisableIds(['pm']) }), true)
 
 // (5) the page: run the real confirm flow from the source against stubs
-const view = read('../src/views/ModulesView.vue')
+const view = moduleManagerSource()
 const extract = (name) => {
   const found = view.indexOf(`function ${name}(`)
   assert.ok(found > 0, `${name} exists`)
@@ -242,7 +243,8 @@ assert.match(view, /dependantLines\(confirmTarget\.value\.replacement_dependants
 assert.match(view, /v-for="\(line,index\) in secondDependantLines"/)
 assert.match(view, /replacement_dependants: second\.dependants \?\? item\.replacement_dependants/)
 assert.match(view, /<template v-if="handBack">/)
-assert.match(view, /@click="confirmHandBack"/)
+assert.match(view, /@click="emit\('confirmHandBack'\)"/)
+assert.match(view, /@confirm-hand-back="confirmHandBack"/)
 assert.match(view, /setModuleEnabled\(item\.id, false, cascade\.value\)/, 'the first disable request is unchanged')
 assert.match(view, /removeModule\(item\.id\)/, 'the first uninstall request is unchanged')
 

@@ -4,6 +4,7 @@
 // errors, the Yes or No, and that the reason text never reaches the console or browser storage.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 const read = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8')
 const store = []
@@ -92,7 +93,7 @@ assert.deepEqual(withOverride, without, 'adding an override changes nothing else
 assert.deepEqual(without, { kind: 'batch', order: ['x', 'y'], disable_replaced: ['old'] })
 
 // ---- the page: reason cleared after each try, never carried, one retry per route ----
-const view = read('../src/views/ModulesView.vue')
+const view = moduleManagerSource()
 assert.match(view, /\.\.\.\(typeof licenceReason === 'string' \? \[licenceReason\] : \[\]\)/, 'the reason is added to a call only when there is one')
 assert.match(view, /noteLicenceRefusal\(e, \(reason\) => stageOnline\(item, reason\)/, 'a stage refusal retries the stage')
 assert.match(view, /noteLicenceRefusal\(e, \(reason\) => runInstall\(disableReplaced, exact, afterSuccess, reloadHint, reason\)/, 'an install refusal retries the install with its own flags')
@@ -109,7 +110,7 @@ const component = read('../src/components/modules/LicenceOverride.vue')
 assert.match(component, /const value = reason\.value\n\s*\/\/[^\n]*\n\s*reason\.value = ''\n\s*touched\.value = false\n\s*emit\('override', value\)/, 'the box is cleared as the reason is sent')
 assert.match(component, /<LicenceOverride v-if|v-if="refusal"/)
 assert.match(component, /<div v-if="allowed" class="mm-licence-reason">/, 'the box and button need a superuser')
-assert.match(read('../src/views/ModulesView.vue'), /<LicenceOverride v-if="licenceRefusal"/)
+assert.match(moduleManagerSource(), /<LicenceOverride v-if="licenceRefusal"/)
 assert.match(view, /function clearLicence\(\) \{ licenceRefusal\.value = null; licenceFailure\.value = null \}/)
 for (const fn of ['stageOnline', 'runInstall', 'runInspect']) {
   const start = view.indexOf(`async function ${fn}(`)

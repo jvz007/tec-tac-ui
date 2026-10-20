@@ -4,6 +4,7 @@
 // the Online catalog keeps Core's availability sentence; the card follows the person's date format.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 const read = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8')
 const { syncScheduleInfo, SYNC_NOT_SET_UP, SYNC_NOTE } = await import(new URL('../src/module-repository-info.js', import.meta.url).href)
@@ -83,7 +84,7 @@ const enabled = {
 }
 
 // (8) the view: the card, the row hint, the disabled Sync button, the enable path, the catalog sentence, the date format
-const view = read('../src/views/ModulesView.vue')
+const view = moduleManagerSource()
 const cardAt = view.indexOf('class="card mb repository-sync-card"')
 assert.ok(cardAt > 0, 'the card exists')
 const cardEnd = view.indexOf('</section>', cardAt)
@@ -144,7 +145,7 @@ for (const line of syncReads) {
   assert.equal(mistyped.status, '')
   const noManage = syncScheduleInfo({ enabled: true }, fmt)
   assert.equal(noManage.state, 'On')
-  const v = read('../src/views/ModulesView.vue')
+  const v = moduleManagerSource()
   const table = v.slice(v.indexOf('<table><thead><tr><th>Repository</th>'), v.indexOf('</tbody>', v.indexOf('<table><thead><tr><th>Repository</th>')))
   assert.ok(!table.includes('repo.url') && !/official/i.test(table), 'the table shows no address and no official label')
 }

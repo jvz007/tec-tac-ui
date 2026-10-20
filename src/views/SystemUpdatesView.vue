@@ -14,6 +14,8 @@ import {
   stageOnlineSystemUpdate,
 } from '../api'
 import ReleaseTrustBadge from '../components/ReleaseTrustBadge.vue'
+import ModuleJobLogWindow from '../components/modules/ModuleJobLogWindow.vue'
+import { systemUpdateRow } from '../system-job-logs'
 import { copyTextWithFeedback } from '../copy-feedback'
 import { canChangeUpdateSource } from '../runtime-settings'
 import {
@@ -34,6 +36,8 @@ import { trustPopoverDomId, trustPopoverOpen, trustPopoverTransition } from '../
 const help = inject('tecTacHelp', null)
 const appState = inject('tecTacState', null)
 const status = ref(null)
+// 0.12.119 (Q83): the log of one finished update, in the same read-only window the Module Manager History tab uses.
+const openLog = ref(null)
 const loading = ref(true)
 const error = ref('')
 const online = ref({ framework: null, ui: null })
@@ -916,7 +920,7 @@ onBeforeUnmount(() => {
     <article v-if="status?.history?.length" class="tablewrap mt">
       <div class="cardhead system-history-head"><div><span class="eyebrow">RECENT ACTIVITY</span><h3>Update history</h3></div></div>
       <table>
-        <thead><tr><th>Component</th><th>Version</th><th>Source</th><th>Trust</th><th>Operator</th><th>Result</th><th>Finished</th></tr></thead>
+        <thead><tr><th>Component</th><th>Version</th><th>Source</th><th>Trust</th><th>Operator</th><th>Result</th><th>Finished</th><th>Log</th></tr></thead>
         <tbody>
           <tr v-for="item in status.history" :key="item.id">
             <td>{{ item.component }}</td>
@@ -926,10 +930,13 @@ onBeforeUnmount(() => {
             <td>{{ item.requested_by || 'unknown' }}</td>
             <td><span class="pill" :class="item.status === 'succeeded' ? 'ok' : 'warn'">{{ item.status }}</span></td>
             <td class="mono smalltext">{{ item.finished_at || '—' }}</td>
+            <td><button class="btn sm" type="button" :disabled="!item.id" @click="openLog = systemUpdateRow(item)">Open log</button></td>
           </tr>
         </tbody>
       </table>
     </article>
+
+    <ModuleJobLogWindow v-if="openLog" :job="openLog" source="system-update" @close="openLog = null" />
 
     <div v-if="trustPolicyOpen" class="modal-backdrop" @click.self="closeTrustPolicy">
       <section class="modal-panel trust-policy-modal" role="dialog" aria-modal="true" aria-labelledby="trust-policy-title">

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { createRenderer, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import ModuleErrorBoundary from '../src/components/module-error-boundary.js'
+import { moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 // node_modules has no DOM, so the boundary runs on Vue's custom renderer with
 // an in-memory node tree.
@@ -181,7 +182,7 @@ assert.match(main, /\[TEC-TAC-UI\] Unhandled component error\./)
 const stateSource = read('../src/state.js')
 assert.match(stateSource, /MODULE_RUNTIME_ERROR_LIMIT = 50/)
 assert.match(stateSource, /moduleRuntimeErrors: \[\]/)
-const modules = read('../src/views/ModulesView.vue')
+const modules = moduleManagerSource()
 assert.match(modules, /label: 'runtime error'/)
 
 console.log('[TEST] module failure containment OK')

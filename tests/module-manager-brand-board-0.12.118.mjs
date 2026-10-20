@@ -5,9 +5,10 @@ import assert from 'node:assert/strict'
 import fs from 'node:fs'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'
+import { handlerWired, moduleManagerSource } from './helpers/module-manager-source.mjs'
 
 const read = (p) => fs.readFileSync(new URL(p, import.meta.url), 'utf8')
-const view = read('../src/views/ModulesView.vue')
+const view = moduleManagerSource()
 const tables = await import(new URL('../src/module-manager-tables.js', import.meta.url).href)
 const { DataTable } = await import(new URL('../src/shared-kit.js', import.meta.url).href)
 const tablesSource = read('../src/module-manager-tables.js')
@@ -83,7 +84,8 @@ const wired = [
   `@click="confirmAction"`, `@click="confirmHandBack"`, `@click="confirmSwitchAction"`, `@click="confirmInstall"`, `@click="confirmReinstall"`, `@click="closeConfirm"`, `@click="reloadTecTac"`,
   `@click="moveInspected(row.id,-1)"`, `@click="moveInspected(row.id,1)"`,
 ]
-for (const handler of wired) assert.ok(view.includes(handler), `${handler} is still wired`)
+// 0.12.119: a handler that moved into a component is wired when the page binds the component's event of the same name to it.
+for (const handler of wired) assert.ok(handlerWired(view, handler), `${handler} is still wired`)
 for (const fn of ['stage: (item) => requestStageOnline(item)', 'sync: (repo) => syncRepository(repo)', '@select="editRepository"']) assert.ok(view.includes(fn), `${fn} is wired through the table`)
 // each table action reaches the same page function the old button called
 assert.match(tablesSource, /onClick: \(event\) => \{ event\.stopPropagation\(\); stage\(item\) \}/)
@@ -95,10 +97,10 @@ for (const call of ['removeModule(item.id)', 'setModuleEnabled(item.id, true, fa
 // ---- confirmations: the shell Yes or No, nothing typed ----
 assert.match(view, /askConfirm\(\{ question: `Remove repository \$\{item\.name\}\?`/)
 assert.match(view, /askConfirm\(\{ question: `Roll back hotfix \$\{row\.id\} from \$\{moduleId\}\?`/)
-const confirmModal = view.slice(view.indexOf('<div v-if="confirmTarget" class="modal-backdrop"'))
-assert.match(confirmModal, /<button class="btn" @click="closeConfirm">No<\/button><button class="btn" :class="confirmMode==='enable'\?'primary':'danger'" @click="confirmAction">Yes<\/button>/, 'a plain No and Yes')
+const confirmModal = view.slice(view.indexOf('<div v-if="confirmTarget" class="modal-backdrop"'), view.indexOf('\n</template>', view.indexOf('<div v-if="confirmTarget" class="modal-backdrop"')))
+assert.match(confirmModal, /<button class="btn" @click="emit\('closeConfirm'\)">No<\/button><button class="btn" :class="confirmMode==='enable'\?'primary':'danger'" @click="emit\('confirmAction'\)">Yes<\/button>/, 'a plain No and Yes')
 assert.ok(!/type="text"|<textarea|type="password"/.test(confirmModal), 'no typed confirmation in the lifecycle dialogs')
-assert.match(confirmModal, /<input v-model="switchAck" type="checkbox">/, 'the second step stays a tick box and a button (Q26), unchanged')
+assert.match(confirmModal, /<input :checked="switchAck" type="checkbox" @change="emit\('update:switchAck', \$event\.target\.checked\)">/, 'the second step stays a tick box and a button (Q26), unchanged')
 const installConfirmModal = view.slice(view.indexOf('<div v-if="installConfirm" class="modal-backdrop"'), view.indexOf('<div v-if="confirmTarget" class="modal-backdrop"'))
 assert.ok(!/type="text"|<textarea/.test(installConfirmModal))
 
@@ -124,7 +126,7 @@ assert.ok(!/<style/.test(changed['ModuleJobHistory.vue'] + changed['ModuleJobLog
 assert.ok(!/v-html|innerHTML/.test(view), 'ModulesView never uses v-html')
 
 // ---- ModulesView does not grow: the new markup lives in components ----
-const lines = view.split('\n').length
+const lines = read('../src/views/ModulesView.vue').split('\n').length
 assert.ok(lines < 1400, `ModulesView.vue is ${lines} lines`)
 for (const file of ['ModuleJobHistory.vue', 'ModuleJobLogWindow.vue', 'LicenceOverride.vue']) assert.ok(fs.existsSync(new URL(`../src/components/modules/${file}`, import.meta.url)), file)
 
