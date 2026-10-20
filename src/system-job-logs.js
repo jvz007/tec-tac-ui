@@ -1,23 +1,22 @@
 // 0.12.119 (Q83): access to the System Updates and server-maintenance job logs from the Module Manager History tab and from the
 // System Updates page. Pure logic, no Vue and no DOM. The three logs are not merged: each source keeps its own list and its own
 // log. Everything here turns Core's answer into plain text and small rows; nothing is markup and no path or token is built.
-import { NO_RIGHTS_TEXT, statusTone, statusWord } from './module-job-history.js'
+import { NOT_RECORDED_TEXT, NO_RIGHTS_TEXT, statusTone, statusWord } from './module-job-history.js'
 
 export const LOG_SOURCES = Object.freeze([
   { key: 'module', label: 'Module and hotfix jobs' },
   { key: 'system-update', label: 'System updates' },
   { key: 'maintenance', label: 'Server maintenance' },
 ])
-export const DOWNLOAD_UNAVAILABLE_TEXT = 'Core does not offer a download for this log yet'
-export const LAST_LINES_TEXT = 'Showing the last 80 lines'
-export const CUT_LOG_TEXT = 'Core kept only the end of this log. The start was left out.'
 export const GONE_LOG_TEXT = 'Core no longer holds this log'
 export const NO_LOG_YET_TEXT = 'Core kept no log text for this job.'
 
 const clean = (value) => (typeof value === 'string' ? value : '')
 const stamp = (value) => (typeof value === 'string' ? value : '')
 
-// One finished System Updates job (status.history of GET /api/tfd/system/updates/) as a History row.
+// 0.12.120 (Core 1.17.67): the logs come from Core's log routes, with Download on. A System Updates row has Download only when
+// Core's has_log is true; Open stays on for any row with an id (the window can then show the reason). Not a single path or token here.
+// One System Updates job (a row of GET /api/tfd/system/updates/jobs/, or status.history) as a History row.
 export function systemUpdateRow(item) {
   const job = item && typeof item === 'object' ? item : {}
   const component = clean(job.component) || 'system'
@@ -38,7 +37,9 @@ export function systemUpdateRow(item) {
     statusTone: statusTone(job.status),
     stage: clean(job.stage) || '—',
     error: clean(job.error),
-    hasLog: Boolean(clean(job.id)),
+    hasLog: job.has_log === true,
+    canOpen: Boolean(clean(job.id)),
+    logBytes: Number.isFinite(job.log_bytes) ? job.log_bytes : null,
     warning: '',
     moduleIds: [component],
     switchSource: {},
@@ -48,8 +49,9 @@ export function systemUpdateRow(item) {
   }
 }
 
-export function systemUpdateRows(status) {
-  const list = Array.isArray(status?.history) ? status.history : []
+// payload is the list answer (jobs) or, for the older status answer, history.
+export function systemUpdateRows(payload) {
+  const list = Array.isArray(payload?.jobs) ? payload.jobs : (Array.isArray(payload?.history) ? payload.history : [])
   return list.map(systemUpdateRow).filter((row) => row.id)
 }
 
@@ -74,6 +76,7 @@ export function maintenanceRow(item) {
     stage: clean(job.stage) || '—',
     error: failure,
     hasLog: Boolean(clean(job.id)),
+    canOpen: Boolean(clean(job.id)),
     warning: '',
     moduleIds: [],
     switchSource: {},
@@ -88,31 +91,20 @@ export function maintenanceRows(payload) {
   return list.map(maintenanceRow).filter((row) => row.id)
 }
 
-// The System Updates log: Core keeps the last 80 lines (log_tail). Text only.
-export function systemUpdateLog(job) {
-  const lines = Array.isArray(job?.log_tail) ? job.log_tail.filter((line) => typeof line === 'string') : []
-  return { text: lines.join('\n'), truncated: false, note: LAST_LINES_TEXT, empty: lines.length === 0 }
+const slug = (value) => String(value || '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 40)
+// Used when the browser cannot read Content-Disposition: system-update-<component>-<date>.log or server-maintenance-<action>-<date>.log.
+export function otherDownloadFileName(source, job, now = new Date()) {
+  const date = (now instanceof Date && !Number.isNaN(now.getTime()) ? now : new Date()).toISOString().slice(0, 10)
+  if (source === 'system-update') return `system-update-${slug(Array.isArray(job?.moduleIds) ? job.moduleIds[0] : job?.modules) || 'system'}-${date}.log`
+  return `server-maintenance-${slug(job?.actionKey || job?.modules) || 'job'}-${date}.log`
 }
 
-function outputText(block) {
-  return block && typeof block === 'object' && typeof block.text === 'string' ? block.text : ''
-}
-const outputCut = (block) => Boolean(block && typeof block === 'object' && block.truncated === true)
-
-// The server-maintenance log: the log, stdout and stderr texts Core returns, each under a plain heading, empty ones left out.
-// Core's own truncated flag decides whether the cut note shows.
-export function maintenanceLog(job) {
-  const parts = [['Log', job?.logs], ['Output', job?.stdout], ['Errors', job?.stderr]]
-  const shown = parts.filter(([, block]) => outputText(block).trim() !== '')
-  const text = shown.length === 1 ? outputText(shown[0][1]) : shown.map(([title, block]) => `--- ${title} ---\n${outputText(block)}`).join('\n')
-  return { text, truncated: parts.some(([, block]) => outputCut(block)), note: '', empty: shown.length === 0 }
-}
-
-// Plain sentences for a refused read. A System Updates row from Core's history folder can answer 404: it is shown once, never retried.
+// Plain sentences for a refused read, one read, never retried. 404 shows Core's own sentence (no_log, job_not_found).
 export function systemLogErrorSentence(error, source) {
   const status = Number(error?.status)
   if (status === 403) return NO_RIGHTS_TEXT
-  if (status === 404) return source === 'system-update' ? GONE_LOG_TEXT : (clean(error?.payload?.detail) || GONE_LOG_TEXT)
+  if (status === 404) return clean(error?.payload?.detail) || GONE_LOG_TEXT
+  if (status === 503) return NOT_RECORDED_TEXT
   return clean(error?.message) || 'The log could not be read.'
 }
 

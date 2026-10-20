@@ -88,8 +88,8 @@ assert.equal(noLog.hasLog, false)
 assert.equal(noLog.warning, '')
 assert.equal(h.NO_LOG_TEXT, 'No log was kept')
 const history = read('../src/components/modules/ModuleJobHistory.vue')
-assert.match(history, /if \(!row\.hasLog\) return h\('span', \{ class: 'muted smalltext' \}, NO_LOG_TEXT\)/, 'a row without a log shows the plain words and no button')
-assert.match(history, /function open\(row\) \{ if \(row\?\.hasLog\) openJob\.value = row \}/, 'Enter and double-click open only a row with a log')
+assert.match(history, /if \(!openable\(row\)\) return h\('span', \{ class: 'muted smalltext' \}, NO_LOG_TEXT\)/, 'a row without a log shows the plain words and no button')
+assert.match(history, /function openable\(row\) \{ return row\?\.canOpen \?\? row\?\.hasLog \}\nfunction open\(row\) \{ if \(openable\(row\)\) openJob\.value = row \}/, 'Enter and double-click open only a row with a log')
 assert.ok(!/Download/.test(history), 'Download lives in the log window only')
 
 // ---- the size warning (above 5 MiB) ----

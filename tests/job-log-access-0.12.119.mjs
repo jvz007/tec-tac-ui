@@ -27,12 +27,13 @@ assert.equal(calls[1].url.endsWith('?limit=100'), true, 'the limit stays 1 to 10
 await api.getMaintenanceJob('0b8e0d3a-0000-4000-8000-000000000001').catch(() => {})
 assert.equal(calls[2].url, 'https://rmm.example.test/api/tfd/system/maintenance/jobs/0b8e0d3a-0000-4000-8000-000000000001/')
 await api.getSystemUpdateJob('abc').catch(() => {})
-assert.equal(calls[3].url, 'https://rmm.example.test/api/tfd/system/updates/jobs/abc/')
+assert.equal(calls[3].url, 'https://rmm.example.test/api/tfd/system/updates/jobs/abc/', 'a plain id stays as it was (0.12.120 encodes it)')
 for (const call of calls) {
   assert.ok(!/token|access_token/i.test(call.url), 'no token in a URL')
   assert.equal(call.options.headers.get('Authorization'), 'Token tok-1', 'the token travels in the header')
 }
 
+// 0.12.120: the log builders, the 80-line view and the disabled Download moved on; tests/system-update-log-download-0.12.120.mjs covers them.
 // ---- the lists ----
 assert.deepEqual(logs.LOG_SOURCES.map((s) => s.key), ['module', 'system-update', 'maintenance'])
 assert.deepEqual(logs.LOG_SOURCES.map((s) => s.label), ['Module and hotfix jobs', 'System updates', 'Server maintenance'])
@@ -44,7 +45,7 @@ const rows = logs.systemUpdateRows({ history: [
 assert.equal(rows.length, 2, 'a row with no id is dropped')
 assert.equal(rows[0].action, 'Update 1.17.16 → 1.17.17')
 assert.equal(rows[0].statusWord, 'Done')
-assert.equal(rows[0].hasLog, true)
+assert.equal(rows[0].canOpen, true, 'Open stays on for a row with an id (0.12.120: Download needs has_log)')
 assert.equal(logs.systemUpdateRows({}).length, 0)
 assert.equal(logs.systemUpdateRows(null).length, 0)
 const mrows = logs.maintenanceRows({ jobs: [{ id: 'm1', action: 'restart-services', status: 'failed', stage: 'restart', created_at: 'a', finished_at: 'b', context: { requested_by: 'johan' }, failure: { message: 'It stopped.' }, stdout: { text: 'must not be read from a list row' } }] })
@@ -54,25 +55,11 @@ assert.equal(mrows[0].error, 'It stopped.')
 assert.equal(mrows[0].statusTone, 'danger')
 assert.ok(!('stdout' in mrows[0]) && !('logs' in mrows[0]), 'a row holds no log text')
 
-// ---- the logs: text only, nothing merged ----
-const su = logs.systemUpdateLog({ log_tail: ['line 1', '<b>bold</b>', 'line 3'] })
-assert.equal(su.text, 'line 1\n<b>bold</b>\nline 3')
-assert.equal(su.note, 'Showing the last 80 lines')
-assert.equal(su.empty, false)
-assert.equal(logs.systemUpdateLog({ log_tail: [] }).empty, true)
-assert.equal(logs.systemUpdateLog({}).empty, true)
-const ml = logs.maintenanceLog({ logs: { text: 'the log', bytes: 7, truncated: false }, stdout: { text: 'out', truncated: true }, stderr: { text: '', bytes: 0, truncated: false } })
-assert.equal(ml.text, '--- Log ---\nthe log\n--- Output ---\nout')
-assert.equal(ml.truncated, true, 'the truncated flag Core sends is shown')
-assert.equal(logs.maintenanceLog({ logs: { text: 'only', truncated: false } }).text, 'only')
-assert.equal(logs.maintenanceLog({ logs: { text: 'only', truncated: false } }).truncated, false)
-assert.equal(logs.maintenanceLog({}).empty, true)
 // ---- sentences ----
 const failure = (status, detail) => Object.assign(new Error('x'), { status, payload: detail ? { detail } : null })
-assert.equal(logs.systemLogErrorSentence(failure(404), 'system-update'), 'Core no longer holds this log')
+assert.equal(logs.systemLogErrorSentence(failure(404), 'system-update'), 'Core no longer holds this log', 'a 404 with no sentence of its own')
 assert.equal(logs.systemLogErrorSentence(failure(404, 'Server-maintenance job a was not found.'), 'maintenance'), 'Server-maintenance job a was not found.')
 assert.equal(logs.systemLogErrorSentence(failure(403), 'maintenance'), 'You need module management rights to see this')
-assert.equal(logs.DOWNLOAD_UNAVAILABLE_TEXT, 'Core does not offer a download for this log yet')
 
 // ---- the real components ----
 const loader = await createSfcLoader()
@@ -88,9 +75,7 @@ try {
   const base = { id: 'j2', modules: '<img src=x onerror=alert(1)>', action: 'Update 1 → 2', statusWord: 'Failed', stage: '—', requestedBy: 'johan', createdAt: '', startedAt: '', finishedAt: '', error: '', switchSource: {} }
   const su1 = await render(win, { job: { ...rows[1], ...base }, source: 'system-update' })
   assert.ok(!su1.includes('<img'), 'markup in a name is escaped')
-  assert.match(su1, /<button class="btn sm" type="button" disabled title="Core does not offer a download for this log yet">Download<\/button>/, 'Download is off for System Updates, with its reason')
   const mt = await render(win, { job: { ...mrows[0] }, source: 'maintenance' })
-  assert.match(mt, /disabled title="Core does not offer a download for this log yet">Download</, 'and for server maintenance')
   assert.match(mt, /restart-services/, 'the maintenance details show')
   const mod = await render(win, { job: { ...base, id: 'k1', modules: 'agents', hasLog: true } })
   assert.match(mod, /<button class="btn sm" type="button">Download<\/button>/, 'Download still works for module jobs (enabled, no title)')
@@ -103,10 +88,10 @@ const historySrc = read('../src/components/modules/ModuleJobHistory.vue')
 const windowSrc = read('../src/components/modules/ModuleJobLogWindow.vue')
 const updatesSrc = read('../src/views/SystemUpdatesView.vue')
 const modulesSrc = read('../src/views/ModulesView.vue')
-assert.match(historySrc, /getSystemUpdateStatus\(\)/, 'System updates reads the status history Core already sends')
+assert.match(historySrc, /listSystemUpdateJobs\(/, 'System updates reads the job list (0.12.120)')
 assert.match(historySrc, /listMaintenanceJobs\(\{ limit: 100 \}\)/)
 assert.match(windowSrc, /getSystemUpdateJob\(id\)/)
-assert.match(windowSrc, /getMaintenanceJob\(id\)/)
+assert.match(windowSrc, /readMaintenanceLog\(id, \{ part: 'all' \}\)/)
 assert.match(windowSrc, /logEl\.value\.textContent = text/, 'every log is put in the page as text')
 for (const [name, text] of [['history', historySrc], ['window', windowSrc], ['logs', read('../src/system-job-logs.js')]]) {
   assert.ok(!/v-html|innerHTML|insertAdjacentHTML/.test(text), `${name}: no HTML from Core`)
@@ -116,7 +101,7 @@ for (const [name, text] of [['history', historySrc], ['window', windowSrc], ['lo
 assert.match(updatesSrc, /<th>Log<\/th>/)
 assert.match(updatesSrc, /@click="openLog = systemUpdateRow\(item\)">Open log<\/button>/)
 assert.match(updatesSrc, /<ModuleJobLogWindow v-if="openLog" :job="openLog" source="system-update" @close="openLog = null" \/>/)
-assert.match(windowSrc, /if \(downloading\.value \|\| otherSource\.value\) return/, 'no download call for the two sources')
+assert.match(windowSrc, /if \(downloading\.value \|\| downloadOff\.value\) return/, 'no download call while it is off')
 // a person without module management rights sees no History tab and the component loads nothing
 assert.match(modulesSrc, /<button v-if="canManage" :class="\{active:activeTab==='history'\}"/)
 assert.match(modulesSrc, /v-else-if="activeTab==='history' && canManage"/)

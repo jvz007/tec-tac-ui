@@ -626,8 +626,41 @@ export async function installSystemUpdatePackage(uploadId, allowDowngrade = fals
   })
 }
 
+// 0.12.120: the id is encoded (held Low from the 0.12.119 review). Since Core 1.17.67 a finished job is answered from history
+// (no more 404) and every answer carries has_log and log_bytes.
 export async function getSystemUpdateJob(jobId) {
-  return apiFetch(`/api/tfd/system/updates/jobs/${jobId}/`, { rejectErrorPayload: false })
+  return apiFetch(`/api/tfd/system/updates/jobs/${encodeURIComponent(jobId)}/`, { rejectErrorPayload: false })
+}
+
+const pageSizeOf = (value, fallback) => {
+  const n = Number(value)
+  return Number.isFinite(n) ? Math.min(100, Math.max(1, Math.trunc(n))) : fallback
+}
+
+// 0.12.120 (Core 1.17.67, docs/system-update-logs.md): the System Updates job list, jobs folder and history merged, newest first.
+// Answer: jobs, count, total, page, page_size, pages, next_page, previous_page. page_size is a whole number from 1 to 100.
+export async function listSystemUpdateJobs({ page = 1, page_size = 50, component = '', status = '' } = {}) {
+  const query = new URLSearchParams()
+  const p = Math.trunc(Number(page))
+  query.set('page', String(Number.isFinite(p) && p >= 1 ? p : 1))
+  query.set('page_size', String(pageSizeOf(page_size, 50)))
+  if (component) query.set('component', String(component))
+  if (status) query.set('status', String(status))
+  return apiFetch(`/api/tfd/system/updates/jobs/?${query.toString()}`)
+}
+
+// 0.12.120: the two job logs as plain text through apiRaw, so the headers (truncated flag, file name) can be read. The token travels
+// only in the Authorization header apiRaw sets; no URL here has a token. A caller needs core.privileged_operations.
+export async function readSystemUpdateLog(jobId, { download = false } = {}) {
+  const query = download ? '?download=1' : ''
+  return apiRaw(`/api/tfd/system/updates/jobs/${encodeURIComponent(jobId)}/log/${query}`, { headers: { Accept: 'text/plain' } })
+}
+
+const MAINTENANCE_PARTS = ['all', 'log', 'stdout', 'stderr']
+export async function readMaintenanceLog(jobId, { part = 'all', download = false } = {}) {
+  const query = new URLSearchParams({ part: MAINTENANCE_PARTS.includes(part) ? part : 'all' })
+  if (download) query.set('download', '1')
+  return apiRaw(`/api/tfd/system/maintenance/jobs/${encodeURIComponent(jobId)}/log/?${query.toString()}`, { headers: { Accept: 'text/plain' } })
 }
 
 // 0.12.119: server-maintenance jobs (Core 1.17.16, in the signed 1.17.65 export). Both routes need core.privileged_operations.

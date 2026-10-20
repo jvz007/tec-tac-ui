@@ -10,7 +10,7 @@ import { DataTable } from '../../shared-kit.js'
 import { formatDateTime } from '../../date-format'
 import { createLatestRequestGate } from '../../admin-session-state'
 import { listModuleJobHistory } from '../../modules'
-import { getSystemUpdateStatus, listMaintenanceJobs } from '../../api'
+import { listMaintenanceJobs, listSystemUpdateJobs } from '../../api'
 import { jobSwitchLines } from '../../module-replacement'
 import { NO_LOG_TEXT, historyErrorSentence, historyMeta, historyRows } from '../../module-job-history'
 import { LOG_SOURCES, maintenanceRows, sourceLabel, systemLogErrorSentence, systemUpdateRows } from '../../system-job-logs'
@@ -28,6 +28,7 @@ const source = ref('module')
 const otherRows = ref([])
 const otherLoading = ref(false)
 const otherError = ref('')
+const otherTotal = ref(0)
 const filters = ref({ module: '', action: '', status: '', kind: '' })
 const applied = ref({ module: '', action: '', status: '', kind: '' })
 const gate = createLatestRequestGate()
@@ -75,8 +76,10 @@ function clear() {
   filters.value = { module: '', action: '', status: '', kind: '' }
   apply()
 }
-function open(row) { if (row?.hasLog) openJob.value = row }
-// System updates and Server maintenance: one read each, no paging (Core sends at most 12 and at most 100).
+function openable(row) { return row?.canOpen ?? row?.hasLog }
+function open(row) { if (openable(row)) openJob.value = row }
+// System updates and Server maintenance: one read each, no paging UI (at most 100 rows). 0.12.120: System updates reads Core's job list
+// (jobs folder and history merged), no longer the status history.
 async function loadOther() {
   const current = source.value
   if (!props.canManage || current === 'module') return
@@ -84,9 +87,11 @@ async function loadOther() {
   otherLoading.value = true
   otherError.value = ''
   try {
-    const rows = current === 'system-update' ? systemUpdateRows(await getSystemUpdateStatus()) : maintenanceRows(await listMaintenanceJobs({ limit: 100 }))
+    const payload = current === 'system-update' ? await listSystemUpdateJobs({ page: 1, page_size: 100 }) : await listMaintenanceJobs({ limit: 100 })
     if (!gate.isCurrent(request) || source.value !== current) return
+    const rows = current === 'system-update' ? systemUpdateRows(payload) : maintenanceRows(payload)
     otherRows.value = rows
+    otherTotal.value = Number.isFinite(payload?.total) ? payload.total : rows.length
   } catch (e) {
     if (!gate.isCurrent(request) || source.value !== current) return
     otherRows.value = []
@@ -101,6 +106,7 @@ function changeSource() {
   loading.value = false
   otherLoading.value = false
   otherRows.value = []
+  otherTotal.value = 0
   otherError.value = ''
   if (source.value === 'module') load(1)
   else loadOther()
@@ -123,7 +129,7 @@ function cell(row, column) {
     case 'stage': return row.stage
     case 'error': return row.error
     case 'log':
-      if (!row.hasLog) return h('span', { class: 'muted smalltext' }, NO_LOG_TEXT)
+      if (!openable(row)) return h('span', { class: 'muted smalltext' }, NO_LOG_TEXT)
       return h('span', { class: 'mm-log-cell' }, [
         h('button', { class: 'btn sm', type: 'button', onClick: (event) => { event.stopPropagation(); open(row) } }, 'Open'),
         row.warning ? h('span', { class: 'muted smalltext' }, row.warning) : null,
@@ -132,7 +138,10 @@ function cell(row, column) {
   }
 }
 const footer = computed(() => {
-  if (source.value === 'system-update') return `${otherRows.value.length} finished update job${otherRows.value.length === 1 ? '' : 's'}`
+  if (source.value === 'system-update') {
+    const n = otherRows.value.length
+    return otherTotal.value > n ? `${n} of ${otherTotal.value} finished update jobs` : `${n} finished update job${n === 1 ? '' : 's'}`
+  }
   if (source.value === 'maintenance') return `${otherRows.value.length} server maintenance job${otherRows.value.length === 1 ? '' : 's'}`
   const pages = meta.value.pages > 1 ? ` · page ${meta.value.page} of ${meta.value.pages}` : ''
   return `${meta.value.total} lifecycle record${meta.value.total === 1 ? '' : 's'}${pages}`

@@ -77,6 +77,12 @@ if (fs.existsSync(exportFile)) {
   for (const route of ['/api/tfd/system/maintenance/jobs/','/api/tfd/system/maintenance/jobs/<uuid:job_id>/']) assert.ok(exportText.includes('`'+route+'`'), `the 1.17.65 export lists ${route}`)
 }
 for (const route of maintenanceRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
+// 0.12.120: the three routes of Core 1.17.67 (docs/system-update-logs.md in Core): system update job list, system update job log and
+// maintenance job log. They are not yet in a signed contract export (the newest is 1.17.65-0.12.118); added by name, and the signed
+// export row arrives with the next export. The maintenance job list route and the update detail route were already covered above.
+const logRoutes=['/api/tfd/system/updates/jobs/','/api/tfd/system/updates/jobs/<dynamic>/log/','/api/tfd/system/maintenance/jobs/<dynamic>/log/']
+for (const route of logRoutes) routes.add(route)
+for (const route of logRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
 
 const missing=[]
 for (const raw of used) {
