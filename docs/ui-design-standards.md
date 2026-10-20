@@ -497,3 +497,19 @@ Four components, built on `shared-components.js` the same way as `SearchSelect` 
 **The confirmation rule (AD-27).** No component confirms or discards by itself. `EditorWindow` emits `close` and `discard`. When the window is dirty, the module asks one plain Yes or No through `context.confirm`. Nobody types a name, a hostname or a count to confirm.
 
 **Use them, do not copy them.** A module does not rebuild a table, form row, editor window or stepper under its own prefix, and does not redefine their classes (`tt-panel`, `tt-tablewrap`, `tt-table`, `tt-frow`, `tt-ctl`, `tt-win`, `tt-steps` and their parts). Adoption is at the module's next release (the AD-27 rule). Script Manager and Report Manager move onto the kit in their own releases.
+
+## 25. Adopters of the kit and what 0.12.118 added
+
+**Module Manager (Core UI 0.12.118) is the first Core page on the kit.** It follows the brand board and changes no behaviour:
+
+| Where | Pattern | Built with |
+|---|---|---|
+| Installed, Online catalog and Repositories lists | P1 list page | `DataTable`, with a search box, the category filter, a count footer, sortable headers, and Enter, double-click or right-click to open |
+| History tab (jobs and full logs) | P1 list page, with filters and paging | `DataTable`; the log opens in a floating, read-only `EditorWindow` (P2) |
+| Repository add and edit | P4 input dialog | The shell's modal panel, not an inline card |
+| Remove repository, roll back a hotfix, change the licensing mode, licence override | P8 confirmation | The shell's plain Yes or No. Nothing is typed. |
+| Install progress and the job result | P10 and P9 | The lifecycle bar and the job panel, unchanged |
+
+The table cells are built in `src/module-manager-tables.js` and the new markup lives in `src/components/modules/`, so `ModulesView.vue` does not grow. Package intake, the install review and the Hotfixes tab keep their layout and logic; their restyle is the next step and does not change a behaviour.
+
+**New in 0.12.118.** `EditorWindow` takes `floating` (the window is drawn over the page on layer 1050, as a dialog) and `readOnly` (no Save and no Discard changes). `FormRow` takes `stacked`, and a row inside the properties column stacks on its own. `TagEditor` takes `inputId` and `describedBy`. All are off by default and the output without them is what it was. The layer order is in `docs/module-dialogs.md`.

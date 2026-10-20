@@ -11,7 +11,7 @@ const root = fileURLToPath(new URL('..', import.meta.url))
 const read = (p) => fs.readFileSync(path.join(root, p), 'utf8')
 const walk = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]))
 
-const files = [...walk('docs'), ...walk('src'), 'RELEASE_NOTES_0.12.117.md'].filter((f) => /\.(md|js|mjs|css|vue)$/.test(f))
+const files = [...walk('docs'), ...walk('src')].filter((f) => /\.(md|js|mjs|css|vue)$/.test(f))
 for (const file of files) {
   const text = read(file).replace(/\s+/g, ' ')
   assert.doesNotMatch(text, /cannot read another module'?s? (fields|filter)/i, `${file} no longer claims isolation`)

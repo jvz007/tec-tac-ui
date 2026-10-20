@@ -1,6 +1,7 @@
 <script setup>
 import { computed, inject } from 'vue'
 import RuntimeSettingsCard from '../components/RuntimeSettingsCard.vue'
+import LicensingCard from '../components/LicensingCard.vue'
 import { canEditRuntimeSettings } from '../runtime-settings'
 
 const state = inject('tecTacState')
@@ -19,6 +20,7 @@ const allowed = computed(() => canEditRuntimeSettings(state?.context))
     </div>
   </div>
   <RuntimeSettingsCard v-if="allowed" />
+  <LicensingCard v-if="allowed" />
   <div v-else class="state-inline denied" role="alert">
     <b>System Configuration is not available to your account.</b>
     Only a superuser, or an administrator with the core.privileged_operations or core.runtime_settings.manage permission, can open this page.

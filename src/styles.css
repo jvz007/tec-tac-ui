@@ -348,6 +348,21 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .tt-win-foot .spacer{flex:1}
 .tt-status{color:var(--faint);font:var(--text-xs) var(--mono);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media(max-width:900px){.tt-win-body{grid-template-columns:1fr}.tt-props{border-right:0;border-bottom:1px solid var(--line)}}
+/* 0.12.118: floating window layer 1050. Above the resource menu (1000), below module dialogs and the SearchSelect list (1100), the row menu (1150), toasts (1200), the unsaved prompt (1300) and the shell confirm (1400). */
+.tt-win.tt-win-floating{position:fixed;z-index:1050;inset:6vh 5vw;max-height:none;box-shadow:0 18px 48px rgba(0,0,0,.45)}
+.tt-win.tt-win-floating:focus{outline:none}
+/* 0.12.118: stacked FormRow, and the same inside an editor window's properties column. */
+.tt-frow.tt-frow-stacked,.tt-props .tt-frow{grid-template-columns:minmax(0,1fr)}
+.tt-frow.tt-frow-stacked>label,.tt-props .tt-frow>label{padding-top:0}
+/* 0.12.118: Module Manager. Additive classes only; they use the tokens above and nothing else. */
+.mm-log{margin:0;padding:12px;flex:1;min-height:0;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font:var(--text-sm) var(--mono);color:var(--ink-2);background:var(--bg-2)}
+.mm-log-note{margin:10px 12px 0}
+.mm-log-cell{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mm-filters{flex-wrap:wrap}
+.mm-filters .compact-input{width:auto;min-width:150px}
+.mm-licence-reason{display:grid;gap:6px;margin-top:10px}
+.mm-licence-reason textarea{width:100%;min-height:calc(64px * var(--font-scale));border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:8px 10px;font:inherit;resize:vertical}
+.mm-licence-reason .count{justify-self:end;color:var(--faint);font:var(--text-xs) var(--mono)}
 .tt-steps{display:flex;gap:0;margin:0 0 14px;padding:0;border:1px solid var(--line);background:var(--surface);border-radius:var(--radius-panel);overflow:hidden}
 .tt-steps li{flex:1;list-style:none;display:flex;align-items:center;gap:8px;padding:9px 12px;border-right:1px solid var(--line);font-size:calc(12.7px * var(--font-scale));color:var(--faint)}
 .tt-steps li:last-child{border-right:0}

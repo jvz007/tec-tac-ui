@@ -162,7 +162,7 @@ const view = fs.readFileSync(new URL('../src/views/ModulesView.vue', import.meta
 assert.match(view, /const pendingIntakeProblem = computed\(\(\) => pendingSets\.value\.problems\[0\] \|\| ''\)/)
 assert.doesNotMatch(view, /intake\.signatures\.length > 1/)
 assert.match(view, /const checked = await checkIntakeMetadata\(pendingSets\.value\.sets, \(file\) => file\.text\(\)\)/)
-assert.match(view, /const results = await inspectIntakeSets\(checked\)/)
+assert.match(view, /const results = await inspectIntakeSets\(checked, post\)/)
 const pollBody = view.slice(view.indexOf('async function poll()'), view.indexOf('function reloadTecTac'))
 // The reload comes only after the queued-set check, so a queued set never reloads the page early.
 assert.match(pollBody, /if \(stagedGroups\(\)\.length\) \{\s*await runInstall\(confirmedDisable\.value, false, true\)\s*return\s*\}[\s\S]*?scheduleReload\(\)/)
@@ -171,6 +171,7 @@ const clearBody = view.slice(view.indexOf('async function clearStaged()'), view.
 assert.match(clearBody, /const uploadIds = stagedGroups\(\)\.map\(\(group\) => group\.staged\?\.upload_id\)\.filter\(Boolean\)/)
 assert.match(clearBody, /for \(const uploadId of uploadIds\) \{\s*try \{ await discardModuleArtifact\(uploadId\) \}/)
 const installBody = view.slice(view.indexOf('async function runInstall('), view.indexOf('// The message when a set did not install'))
-assert.match(installBody, /installModuleArtifact\(\n\s*group\.staged\.upload_id,\n\s*kindOf\(group\.staged\),\n\s*order,\n\s*sendIds,\n\s*\)/)
+assert.match(installBody, /installModuleArtifact\(\n\s*group\.staged\.upload_id,\n\s*kindOf\(group\.staged\),\n\s*order,\n\s*sendIds,\n(?:\s*\/\/[^\n]*\n)?\s*\.\.\.\(typeof licenceReason === 'string' \? \[licenceReason\] : \[\]\),\n\s*\)/)
+// 0.12.118: the call is still group, kind, order and sendIds; the licence reason is added last and only when there is one.
 
 console.log('module-intake-sets-0.12.94: ok')

@@ -2,7 +2,8 @@ import { apiFetch } from './api'
 export function listModules(){ return apiFetch('/api/tfd/modules/v2/') }
 // 0.12.95: every file goes to Core in one request as repeated fields. Core pairs each package with its .sig and
 // .release.json from the release metadata. Core 1.17.20 or later.
-export function inspectModulePackages(files){
+// 0.12.118: licenceOverrideReason (Core 1.17.58) is a form field, sent only for a non-empty string, so a call without it is what it was.
+export function inspectModulePackages(files,licenceOverrideReason){
   const body=new FormData()
   for(const file of files){
     const name=String(file?.name||'')
@@ -10,6 +11,7 @@ export function inspectModulePackages(files){
     if(/\.release(?:\(\d+\))?\.json$/i.test(name)){ body.append('metadata_files',file); continue }
     body.append('packages',file)
   }
+  if(typeof licenceOverrideReason==='string'&&licenceOverrideReason!=='') body.append('licence_override_reason',licenceOverrideReason)
   return apiFetch('/api/tfd/modules/v2/packages/inspect/',{method:'POST',body})
 }
 // 0.12.95: every set with no problem goes in ONE request (one batch from Core, or one staged package). A set with a
@@ -40,7 +42,12 @@ function withDisableReplaced(body,disableReplaced){
   if(ids.length) body.disable_replaced=ids
   return body
 }
-export function installModuleArtifact(uploadId,kind='artifact',order=[],disableReplaced=[]){ return apiFetch(`/api/tfd/modules/v2/packages/${encodeURIComponent(uploadId)}/install/`,{method:'POST',body:JSON.stringify(withDisableReplaced({kind,order},disableReplaced))}) }
+// 0.12.118: licenceOverrideReason (Core 1.17.58) is a JSON string, added last and only when it is a non-empty string.
+export function installModuleArtifact(uploadId,kind='artifact',order=[],disableReplaced=[],licenceOverrideReason){
+  const body=withDisableReplaced({kind,order},disableReplaced)
+  if(typeof licenceOverrideReason==='string'&&licenceOverrideReason!=='') body.licence_override_reason=licenceOverrideReason
+  return apiFetch(`/api/tfd/modules/v2/packages/${encodeURIComponent(uploadId)}/install/`,{method:'POST',body:JSON.stringify(body)})
+}
 export function discardModuleArtifact(uploadId){ return apiFetch(`/api/tfd/modules/v2/packages/${encodeURIComponent(uploadId)}/`,{method:'DELETE'}) }
 // confirm_replacement_switch (Core 1.17.12) is sent only when confirmSwitch is exactly true.
 // confirm_without_hand_back (Core 1.17.14) is sent only when confirmWithoutHandBack is exactly true.
@@ -64,6 +71,18 @@ export function listModuleJobs({page=1,pageSize=50,status='',action='',search=''
   if(search) query.set('search',search)
   return apiFetch(`/api/tfd/modules/v2/jobs/?${query.toString()}`)
 }
+// 0.12.118: Core 1.17.60. The History tab list: module and hotfix jobs, no log text on any row. listModuleJobs stays as it was.
+// page is a whole number of 1 or more; page_size is 1 to 100 (Core cuts a larger one to 100). An empty filter sends nothing.
+export function listModuleJobHistory({page=1,pageSize=50,module='',action='',status='',kind=''}={}){
+  const whole=(value,fallback,max=Infinity)=>{const n=Number(value);return Number.isFinite(n)?Math.min(max,Math.max(1,Math.trunc(n))):fallback}
+  const query=new URLSearchParams({page:String(whole(page,1)),page_size:String(whole(pageSize,50,100))})
+  const text=(value)=>typeof value==='string'?value.trim():''
+  if(text(module)) query.set('module',text(module))
+  if(text(action)) query.set('action',text(action))
+  if(text(status)) query.set('status',text(status))
+  if(kind==='module'||kind==='hotfix') query.set('kind',kind)
+  return apiFetch(`/api/tfd/modules/v2/jobs/history/?${query.toString()}`)
+}
 export function getModuleJob(jobId){ return apiFetch(`/api/tfd/modules/v2/jobs/${encodeURIComponent(jobId)}/`,{rejectErrorPayload:false}) }
 
 export function listModuleRepositories(){ return apiFetch('/api/tfd/modules/repositories/') }
@@ -73,7 +92,12 @@ export function deleteModuleRepository(repositoryId){ return apiFetch(`/api/tfd/
 export function syncModuleRepository(repositoryId){ return apiFetch(`/api/tfd/modules/repositories/${encodeURIComponent(repositoryId)}/sync/`,{method:'POST',body:JSON.stringify({})}) }
 export function syncAllModuleRepositories(){ return apiFetch('/api/tfd/modules/repositories/sync/',{method:'POST',body:JSON.stringify({})}) }
 export function listOnlineModuleCatalog(){ return apiFetch('/api/tfd/modules/catalog/online/') }
-export function stageOnlineModulePackage(repositoryId,moduleId,version=null){ return apiFetch('/api/tfd/modules/catalog/online/stage/',{method:'POST',body:JSON.stringify({repository_id:repositoryId,module_id:moduleId,version})}) }
+// 0.12.118: licenceOverrideReason (Core 1.17.58) is a JSON string, added last and only when it is a non-empty string.
+export function stageOnlineModulePackage(repositoryId,moduleId,version=null,licenceOverrideReason){
+  const body={repository_id:repositoryId,module_id:moduleId,version}
+  if(typeof licenceOverrideReason==='string'&&licenceOverrideReason!=='') body.licence_override_reason=licenceOverrideReason
+  return apiFetch('/api/tfd/modules/catalog/online/stage/',{method:'POST',body:JSON.stringify(body)})
+}
 
 export function inspectModuleHotfix(files){
   const list=Array.isArray(files)?files:[files].filter(Boolean)

@@ -139,7 +139,9 @@ assert.match(view, /v-for="\(line,index\) in disableNotice"/)
 assert.match(view, /setModuleEnabled\(item\.id, false, cascade\.value\)/)
 // Job lines in the active job and the history record.
 assert.match(view, /jobSwitchLines\(activeJob\)/)
-assert.match(view, /jobSwitchLines\(selectedHistory\)/)
+// 0.12.118: the History tab is a component; it shows each row's switch lines under the action and in the log window.
+assert.match(fs.readFileSync(new URL('../src/components/modules/ModuleJobHistory.vue', import.meta.url), 'utf8'), /jobSwitchLines\(row\.switchSource\)/)
+assert.match(fs.readFileSync(new URL('../src/components/modules/ModuleJobLogWindow.vue', import.meta.url), 'utf8'), /jobSwitchLines\(job\.switchSource\)/)
 // Hidden when denied is unchanged.
 assert.match(view, /const canManage = computed\(\(\) => managerAllowed\.value/)
 

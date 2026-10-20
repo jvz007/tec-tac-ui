@@ -194,16 +194,16 @@ const EXPECTED_0_12_116 = [
 assert.equal(EXPECTED_0_12_116.length, 176)
 assert.equal(new Set(EXPECTED_0_12_116).size, 176)
 
-// the one replaced entry: the Core requirement test moved to its 0.12.117 version, in the same place
-const expected = EXPECTED_0_12_116.map((entry) => entry.replace('core-requirement-0.12.116', 'core-requirement-0.12.117'))
+// the one replaced entry: the Core requirement test moved to the release test of the current release (0.12.118), in the same place
+const expected = EXPECTED_0_12_116.map((entry) => entry.replace('node tests/core-requirement-0.12.116.mjs', 'node tests/release-0.12.118.mjs'))
 assert.equal(new Set(ENTRIES).size, ENTRIES.length, 'no entry is listed twice')
 assert.deepEqual(ENTRIES.slice(0, 176), expected, 'the 176 entries are all kept, in the same order, one replaced in place')
-assert.deepEqual(ENTRIES.slice(176), [
+assert.deepEqual(ENTRIES.slice(176, 180), [
   'node tests/filter-editor-date-number-0.12.117.mjs',
   'node tests/filter-editor-docs-0.12.117.mjs',
   'node tests/filter-editor-viewkey-0.12.117.mjs',
   'node tests/test-runner-0.12.117.mjs',
-], 'the new tests follow')
+], 'the 0.12.117 tests follow; later releases append after them')
 for (const entry of ENTRIES) {
   const match = /^(bash|node) (tests\/[\w.-]+\.(?:sh|mjs))$/.exec(entry)
   assert.ok(match, `a plain entry: ${entry}`)

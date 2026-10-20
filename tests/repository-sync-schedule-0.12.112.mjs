@@ -99,8 +99,11 @@ assert.ok(view.includes('syncScheduleInfo(syncSchedule.value, (value) => formatD
 assert.ok(view.includes('formatDateTime } from') || view.includes("import { formatDateTime } from '../date-format'"), 'formatDateTime is the shared formatter')
 
 // the hint under a disabled row's State pill; the Sync button still needs the repository enabled
-assert.ok(view.includes('<span v-if="!repo.enabled" class="sub">Enable it to sync.</span>'), 'a disabled row shows the hint')
-assert.ok(view.includes(':disabled="!canManage || repositoryBusy || !repo.enabled" @click.stop="syncRepository(repo)"'), 'the Sync button stays disabled for a disabled row')
+// 0.12.118: the Repositories list is a kit DataTable (P1); the hint and the Sync button are built in src/module-manager-tables.js.
+const tables = fs.readFileSync(new URL('../src/module-manager-tables.js', import.meta.url), 'utf8')
+assert.ok(tables.includes("!repo.enabled ? sub('Enable it to sync.') : null"), 'a disabled row shows the hint')
+assert.ok(tables.includes('disabled: disabled(repo),') && tables.includes('onClick: (event) => { event.stopPropagation(); sync(repo) }'), 'the Sync button takes the page rule and stops the row click')
+assert.ok(view.includes('disabled: (repo) => !canManage.value || repositoryBusy.value || !repo.enabled'), 'the Sync button stays disabled for a disabled row')
 
 // the enable path: the existing editor. toggleRepository (spreads the whole row, read-only keys included) is not used by the view
 const templateStart = view.indexOf('<template v-else-if="activeTab===\'repositories\'">')

@@ -38,6 +38,8 @@ One control that picks one item from a list and searches as you type.
 | `modelValue` | `null` | The chosen option's `value`. `null` means nothing chosen. |
 | `options` | `[]` | `[{ value, label, description, favourite, chip, chipTone, disabled, searchText }]`. |
 | `placeholder` | none | Placeholder text of the input. |
+| `inputId` | none | (0.12.118) The `id` of the real text input, so a label can name it. No id when absent. |
+| `describedBy` | none | (0.12.118) The `aria-describedby` of the real text input. |
 | `inputId` | none | `id` of the input, so a `<label for>` can name it. |
 | `ariaLabel` | none | Accessible name when there is no label. |
 | `disabled` | `false` | Turns the control off. |
@@ -198,6 +200,7 @@ control goes in the default slot.
 | `help` | none | A line under the control, in `.tt-help`. Its id is `forId + "-hint"`. |
 | `error` | none | The error line under the control, shown with the leading cross and `role="alert"`. Its id is `forId + "-error"`. |
 | `forId` | none | The `id` of the control, so the label names it. Give the control `aria-describedby` with the two ids above. |
+| `stacked` | `false` | (0.12.118) Puts the label above the control at any width. Inside an editor window's properties column a row stacks on its own, so a 320px column does not squeeze the control. |
 
 ### EditorWindow (P2)
 
@@ -211,6 +214,10 @@ Discard button and the Save button.
 | `canSave` | `false` | The module sets this when there is something valid to save. Save and Ctrl+S need it. |
 | `saving` | `false` | Shows "Saving" and turns Save and Discard off. |
 | `status` | none | The footer status line (read out politely). |
+| `floating` | `false` | (0.12.118) Draws the window fixed over the page as a dialog on layer 1050. It takes the focus when it opens and gives it back to the opener when it closes. |
+| `readOnly` | `false` | (0.12.118) Hides Save and Discard changes, for a viewer such as a log window. Close and Escape stay. |
+
+**Layer order (0.12.118).** A floating window sits at 1050: above the resource menu (1000), below module dialogs and the SearchSelect list (1100), the row menu (1150), toasts (1200), the unsaved-changes prompt (1300) and the shell Yes or No confirm (1400). A confirm or a toast is never lost behind a module window. Without `floating` the window is drawn in the page flow as before.
 
 | Area | Where |
 |---|---|

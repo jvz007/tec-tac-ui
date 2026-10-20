@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.117",
+  "version": "0.12.118",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,9 +32,9 @@
       "sha256": "28da8f0c070c3353f4e865cc5b55ef9960e456db428ac8693d3ce100f7e3d036"
     },
     {
-      "path": "RELEASE_NOTES_0.12.117.md",
-      "size": 6396,
-      "sha256": "8392be55b27036c6b26a9155ac60f4d4c1e5ea35d1ff6f58a9b48ca7bf148384"
+      "path": "RELEASE_NOTES_0.12.118.md",
+      "size": 18440,
+      "sha256": "9ddfb50d8b7ecdbe50f76a6256cf544695de42eb382878b3ccc3666d9aa4b16d"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -44,7 +44,7 @@
     {
       "path": "VERSION",
       "size": 9,
-      "sha256": "90ccdb404817b168fedbde5358f0f7b34156ba5e7e1f3e6b915b372e64a1fb59"
+      "sha256": "576586a29a439ecac2df394f29f4ce6e02298d7a749f3288de1bf3a51fb3cd3c"
     },
     {
       "path": "docs/context-actions.md",
@@ -68,8 +68,8 @@
     },
     {
       "path": "docs/module-components.md",
-      "size": 18148,
-      "sha256": "e6d6d315cd755d101f585bfc1336b343801834007f1993ac1eddd1ff802dd865"
+      "size": 19239,
+      "sha256": "a06c28c2e78c386b7c901249a237cf4831ce26bbb48282bdb5c7c8da3015dd3f"
     },
     {
       "path": "docs/module-dashboard-widgets.md",
@@ -78,8 +78,8 @@
     },
     {
       "path": "docs/module-dialogs.md",
-      "size": 7228,
-      "sha256": "c0fcb95ecf9c0e6a69e4ffafbd07ff2cceb0240b7da90d3b0edbed10d65d0cd0"
+      "size": 7338,
+      "sha256": "e995c7568330213da741399bfc1e169e965c4c175dcdd05b74b1266a649d544a"
     },
     {
       "path": "docs/module-filters.md",
@@ -420,6 +420,11 @@
       "path": "docs/releases/RELEASE_NOTES_0.12.116.md",
       "size": 5783,
       "sha256": "002cb51d98289cfebcfc550dbbb46122463c1d434c25668b1a84dc0dbe1f5498"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.117.md",
+      "size": 6396,
+      "sha256": "8392be55b27036c6b26a9155ac60f4d4c1e5ea35d1ff6f58a9b48ca7bf148384"
     },
     {
       "path": "docs/releases/RELEASE_NOTES_0.12.14.md",
@@ -963,8 +968,8 @@
     },
     {
       "path": "docs/ui-design-standards.md",
-      "size": 27862,
-      "sha256": "d3bce763a20f20bb0a9357756de8aa2a453941c8df83c1a2e270dcb44a9e2077"
+      "size": 29506,
+      "sha256": "9df4b15a814ebb2ed3d4303eeb8b7f0cad993f3b34a0bcf6c262d621ec9a1c08"
     },
     {
       "path": "docs/user-preferences.md",
@@ -1004,12 +1009,12 @@
     {
       "path": "package-lock.json",
       "size": 44828,
-      "sha256": "6815003fc16352f75c883b98f32b0b187e382eae0d9d14d98e3e996bb5541e1f"
+      "sha256": "f4e78bbe3734fd4daa805fcd1680538e572c104a1b506df3fe41b2430683e45b"
     },
     {
       "path": "package.json",
       "size": 504,
-      "sha256": "5402978f4639757f5e3fc39808462e33ea82817f169002f21a0bd7c34c5a854d"
+      "sha256": "c66fd463558414b69da9ecc0c8de152d93db07b8075099924df0fc3b5190c3ef"
     },
     {
       "path": "public/licenses/xterm-LICENSE.txt",
@@ -1130,6 +1135,11 @@
       "path": "src/components/HelpDrawer.vue",
       "size": 4200,
       "sha256": "147672f2900bfde26c76946127d532fdb1cbad409794dd21f966a4ba7f547e4b"
+    },
+    {
+      "path": "src/components/LicensingCard.vue",
+      "size": 6301,
+      "sha256": "69fb71d88f0e378b98504cdb4d505736a33ab7eebd43c27ca7977cd0fb905817"
     },
     {
       "path": "src/components/LoadingBar.vue",
@@ -1255,6 +1265,21 @@
       "path": "src/components/module-error-boundary.js",
       "size": 3431,
       "sha256": "6684655f87fe773c40366c49f7cbfc5b7d611ec2e9520f881bcc3aea3731ed23"
+    },
+    {
+      "path": "src/components/modules/LicenceOverride.vue",
+      "size": 3056,
+      "sha256": "d9df5ebd94086e1e924c7fef4f7abaf0c15323276a457c7ded10474daaed7528"
+    },
+    {
+      "path": "src/components/modules/ModuleJobHistory.vue",
+      "size": 6938,
+      "sha256": "43005a50fda6b53141f37fc301152010474217a922901bdac00d299ab08d2689"
+    },
+    {
+      "path": "src/components/modules/ModuleJobLogWindow.vue",
+      "size": 5061,
+      "sha256": "d24768124b34c031f134bad8bb85ddb38a628a378e31e1ce8f36ec1fbe02adfa"
     },
     {
       "path": "src/confirm-dialog.js",
@@ -1452,6 +1477,11 @@
       "sha256": "5f2ab166c6278b8d1e7f6f0e15423f2a48b3b59deb1b1b03ad48438edd0a14aa"
     },
     {
+      "path": "src/licensing.js",
+      "size": 11083,
+      "sha256": "6581da27ac342500c429a1b5572f94b8eeb3f0fe4ed8fed6d8646430564a0fad"
+    },
+    {
       "path": "src/load-phase.js",
       "size": 714,
       "sha256": "4b521363dc2583aeca02b8cc318b7fd74e614f90cf1fd1521b92b9a90f9339a0"
@@ -1492,9 +1522,19 @@
       "sha256": "90901b4a84c82881a869839c13fb1249e7c1e4606f5a3c83aea755273415016a"
     },
     {
+      "path": "src/module-job-history.js",
+      "size": 9249,
+      "sha256": "ff9b8e7cdb8657527c440b5b7ea8d839134a3417bb9bbcd2df7cb8dcb0584f0f"
+    },
+    {
       "path": "src/module-loader.js",
       "size": 38610,
       "sha256": "5f5e8d2c820fd5ba7c0ecf649431e6c1bdfe030b69a5eda1fd572a7eaeee03ba"
+    },
+    {
+      "path": "src/module-manager-tables.js",
+      "size": 7981,
+      "sha256": "c803ee6de84bd555d8429b56f53498a5a8ef515b50a7491d237e9d55a96d4342"
     },
     {
       "path": "src/module-preferences.js",
@@ -1523,8 +1563,8 @@
     },
     {
       "path": "src/modules.js",
-      "size": 7362,
-      "sha256": "34326f1897995cf6ca65e2cae3b0a70a5b13e3d36820dc31e5732696f152efb8"
+      "size": 9191,
+      "sha256": "cb456ebfe0f3e215b7ff9b85498d26205a86b36c4cbad2dc4465647ee6d8dc66"
     },
     {
       "path": "src/my-account-password.js",
@@ -1617,6 +1657,21 @@
       "sha256": "b14a4e1b198015700111b5917e1258a124bb95c5a85b2458a593a1c5455e9525"
     },
     {
+      "path": "src/scheduler-completion.js",
+      "size": 1880,
+      "sha256": "c755e78b0ae8c6f06dbe075df6b5df3c113abad8b33553fa6146ed055c3bd607"
+    },
+    {
+      "path": "src/scheduler-creators.js",
+      "size": 2925,
+      "sha256": "546bfa0dc3c826c52c6fa305d0b3c22eaca1d2aa9a33422afe7e6f8c25dd58c8"
+    },
+    {
+      "path": "src/scheduler-event-jobs.js",
+      "size": 3147,
+      "sha256": "811a5e41dee52638efa515ccb4e3941c18edb3664d996cd166e24a07fdc7076d"
+    },
+    {
       "path": "src/scheduler-health.js",
       "size": 398,
       "sha256": "9b2cd8f85cf5d1a090829c6f01fb50e1486fe782a20ae926ab592d843100597b"
@@ -1633,8 +1688,8 @@
     },
     {
       "path": "src/scheduler.js",
-      "size": 2032,
-      "sha256": "a3c6bcace8178813cc4d7abb68c20a3601123f59402791d9e614fe7490aba155"
+      "size": 2328,
+      "sha256": "77190d9fe0cc659ce608af9574e2f39b07b48754d71d924358fd58f2851fed17"
     },
     {
       "path": "src/session-security.js",
@@ -1648,8 +1703,8 @@
     },
     {
       "path": "src/shared-components.js",
-      "size": 18160,
-      "sha256": "356998eb3bfa8b897a855f79704d13e5a0ec8129cea5d2d83f5077115033dca6"
+      "size": 18482,
+      "sha256": "61b98ce584519664ef2d115fb7e4153997cccbebdfa81d216c3c407de5c89b9b"
     },
     {
       "path": "src/shared-kit-logic.js",
@@ -1658,8 +1713,8 @@
     },
     {
       "path": "src/shared-kit.js",
-      "size": 11346,
-      "sha256": "b64a02d324892a1fcc6a649f995cf6eb04ca5c974143ffa00fcdc29dc7caaf9c"
+      "size": 12799,
+      "sha256": "917193c0e02417331c43470a6d952ceab45f5581c0b055ea2847bb17973663e7"
     },
     {
       "path": "src/sign-in-landing.js",
@@ -1688,8 +1743,8 @@
     },
     {
       "path": "src/styles.css",
-      "size": 110659,
-      "sha256": "a864df23826791b3ab81efe1e465e673784b1728c572a34f4c8108383c13f9bf"
+      "size": 112117,
+      "sha256": "afc9b5514755b8d5f9cdd8090d9667ac2b2554d9296dfb7331f336c9dec06c46"
     },
     {
       "path": "src/system-trust-popover-state.js",
@@ -1768,8 +1823,8 @@
     },
     {
       "path": "src/views/ModulesView.vue",
-      "size": 95510,
-      "sha256": "4938519785a7ea9ae69a2703af3aab7c2d8d222147bc2b9023c615f9df196520"
+      "size": 91684,
+      "sha256": "f929df85ec7e871e13de1ad5cd67cfc53e70eb206dc5a33b207fbcc7e714ebbf"
     },
     {
       "path": "src/views/MyAccountView.vue",
@@ -1798,13 +1853,13 @@
     },
     {
       "path": "src/views/SchedulerSettingsView.vue",
-      "size": 6885,
-      "sha256": "829d2bddaae310813acdc15e35526c81085df007e79ec9592d531545e5e37981"
+      "size": 9157,
+      "sha256": "ff2833b049592dce08d58894ec10e8279e96ee2dca0e44eeebff39b24462bd07"
     },
     {
       "path": "src/views/SchedulesView.vue",
-      "size": 20988,
-      "sha256": "5224d81d1ad75acc7b079a24b3f4215044e794cf7d7c6bcc50b1f6402244d921"
+      "size": 23631,
+      "sha256": "2beb36047734fa688497437ef1c486a72a32e05fe6afedc520a3e18ee7887a9d"
     },
     {
       "path": "src/views/SsoCallbackView.vue",
@@ -1818,8 +1873,8 @@
     },
     {
       "path": "src/views/SystemSettingsView.vue",
-      "size": 1084,
-      "sha256": "eeeb10f8818d396bff48bd8f8527ce718f2a12aa5751da61c3ec1725e0860038"
+      "size": 1179,
+      "sha256": "6bb9f319950d28430c1e382bddc4db267fec0a652765c741524a469803029ef2"
     },
     {
       "path": "src/views/SystemUpdatesView.vue",
@@ -1829,7 +1884,7 @@
     {
       "path": "tec_tac_package.json",
       "size": 139,
-      "sha256": "8f0b6e2b402aa60816f3c1ecbee7e2fd91f6967742f1bd308e46de2e9ca9d7ad"
+      "sha256": "0c544aa324403aa3f61a55062b8c66c4526292a3e73834caf987bffe45142c04"
     },
     {
       "path": "tests/access-panels-reload-0.12.101.mjs",
@@ -1863,8 +1918,8 @@
     },
     {
       "path": "tests/api-contract-routes-0.12.58-1.mjs",
-      "size": 4452,
-      "sha256": "78f8a970fcf64c9da2e157af523c3557508bcebc5aa614bfe3743b17253efc29"
+      "size": 5660,
+      "sha256": "eea97887458a20f6073512ce87e12db6b5248e2837812b97a633255ebd0f1f2e"
     },
     {
       "path": "tests/api-error-shape-0.12.81.mjs",
@@ -1935,11 +1990,6 @@
       "path": "tests/core-requirement-0.12.113.mjs",
       "size": 2079,
       "sha256": "9cd979ad42f7792b70056e2cef470f7034a25469964edd3d8695519277ef6662"
-    },
-    {
-      "path": "tests/core-requirement-0.12.117.mjs",
-      "size": 4202,
-      "sha256": "c08a5845ab4d9fef3a4a9712f76715665857a606f50c0e5056138ab8b32a3c63"
     },
     {
       "path": "tests/csp-env-config-source-0.12.113.sh",
@@ -2108,8 +2158,8 @@
     },
     {
       "path": "tests/filter-editor-docs-0.12.117.mjs",
-      "size": 3374,
-      "sha256": "5279da1645411754b7c7412d195559fd9c0e966aacfd68aef0eff0c33e1e8b77"
+      "size": 3345,
+      "sha256": "2f0d4b951c9110c7c7308f7ba1f839718603aaf5dbedd2d62e8e0e19ac62c3c2"
     },
     {
       "path": "tests/filter-editor-sets-0.12.116.mjs",
@@ -2158,8 +2208,8 @@
     },
     {
       "path": "tests/foundation.sh",
-      "size": 66266,
-      "sha256": "77bfe9781202ad81fcb2ec45142f323a9a648d4d4fb4685f855f2cf92c6cb78b"
+      "size": 66974,
+      "sha256": "aca8c2f9ba07ee66ca0b67bab9eaff4f707ddd75b64c219dd946dc1ab48c457c"
     },
     {
       "path": "tests/grid-columns-host-abort-0.12.111.mjs",
@@ -2178,8 +2228,8 @@
     },
     {
       "path": "tests/history-pagination-ui.sh",
-      "size": 1222,
-      "sha256": "e0af7894327e3809ba5fea152b13bac497c7322cd5ecf7d1e34292c78c37b2f6"
+      "size": 1325,
+      "sha256": "d82e3a4e30bda02ecd88031baf74622c12c1333681abfbaa17eb2d2b078c590f"
     },
     {
       "path": "tests/install-lockfile-u1.mjs",
@@ -2222,9 +2272,29 @@
       "sha256": "89d5cb03bb2b9441eee79a4bc5bac02e58410b37c1ff2a6db04678b06220fbf1"
     },
     {
+      "path": "tests/kit-floating-window-0.12.118.mjs",
+      "size": 4118,
+      "sha256": "ff9b6d6941ef8522b460c8d0b4a6844d1ef847a032b07d678406bd2e1fbc98ae"
+    },
+    {
+      "path": "tests/kit-formrow-stacked-taginput-0.12.118.mjs",
+      "size": 2764,
+      "sha256": "82e6006697ab6311bf6b6a7a833059303fb4546dc3533ce96cc09cf3d0b45522"
+    },
+    {
       "path": "tests/latest-request-gate.mjs",
       "size": 709,
       "sha256": "b6a89c07c0597e14b40a79cb8531e871152a57cdfea8242b2db87a5eb040ee5c"
+    },
+    {
+      "path": "tests/licence-override-0.12.118.mjs",
+      "size": 12265,
+      "sha256": "ebfc90ccb1fa5486d581b73ea35abd1946593b52332126632da355e0c280c804"
+    },
+    {
+      "path": "tests/licensing-controls-0.12.118.mjs",
+      "size": 10846,
+      "sha256": "9c5d4ea5e5661a2fb5d5baba11371ef420c11ef52ac8cce40c916b33f482f7bb"
     },
     {
       "path": "tests/loading-bar-0.12.107.mjs",
@@ -2253,8 +2323,8 @@
     },
     {
       "path": "tests/module-category-0.12.91.mjs",
-      "size": 5064,
-      "sha256": "db252d01fbd2606552263f2593960627a7a837e8f6c1c4846da4398b65328df2"
+      "size": 5372,
+      "sha256": "4fb1c3702029d2168fa21773207ed37f1fa7f1e9dc0f4ef6231b301a7e55cf04"
     },
     {
       "path": "tests/module-dialogs-0.12.112.mjs",
@@ -2273,8 +2343,8 @@
     },
     {
       "path": "tests/module-install-guard-0.12.95.mjs",
-      "size": 10145,
-      "sha256": "99de13a4e38888d309aa9a3e2cba93f3cb7ea83f475445825b7f45842ca8f63b"
+      "size": 10338,
+      "sha256": "1ede34aaae5c03b020d11c068448d86b3d6054d289058722ecb2bd1fad3c7a4a"
     },
     {
       "path": "tests/module-intake-batch-0.12.95.mjs",
@@ -2283,8 +2353,18 @@
     },
     {
       "path": "tests/module-intake-sets-0.12.94.mjs",
-      "size": 11596,
-      "sha256": "97218c6740b41a4623c847acce4850945f92175868a81df457ca5f2c9ae5aef7"
+      "size": 11823,
+      "sha256": "474cbf1c3d494cfe613da8f857a007ec7c166326122c04e1b0439e93b84d3247"
+    },
+    {
+      "path": "tests/module-job-history-0.12.118.mjs",
+      "size": 13659,
+      "sha256": "137f8f10c249eed9f76934ddc79f200d68f5e8377fb9e971c207a997751ea59e"
+    },
+    {
+      "path": "tests/module-manager-brand-board-0.12.118.mjs",
+      "size": 13201,
+      "sha256": "8a2077903e05188fca8ada2c2f93a73397192f0b6ab0bd45e183474ec47a1fa1"
     },
     {
       "path": "tests/module-navigation-scope-0.12.82.mjs",
@@ -2323,8 +2403,8 @@
     },
     {
       "path": "tests/module-replacement-handback-0.12.90.mjs",
-      "size": 10869,
-      "sha256": "bb4119bed4df14b38fd6b964b95e1b77620bec692469c7f879d404d52ae0f535"
+      "size": 11239,
+      "sha256": "f1b02d77a3c1efa3bab68144e204a6056db8cd6ee5a61a8435e1b9d14a4ef7b0"
     },
     {
       "path": "tests/module-replacement-second-empty-0.12.91.mjs",
@@ -2333,13 +2413,13 @@
     },
     {
       "path": "tests/module-replacement-status-0.12.88.mjs",
-      "size": 9584,
-      "sha256": "a8d05b722de7cf2ad1a55b5c6e8a80607b84e134f3a7c7a8053eacf607190b4a"
+      "size": 9872,
+      "sha256": "c3c0d59a756531e64258ceb7f4431197a3ed3666cc44a3686814a259ba4f74c4"
     },
     {
       "path": "tests/module-repository-skipped-0.12.109.mjs",
-      "size": 8283,
-      "sha256": "35fc6a5fb2d02377225608b64f16385c69ea914726e9d74d166eeb8dcbffcd86"
+      "size": 8916,
+      "sha256": "055188c29ced242c24663e4210f12c4cd187188d0a1540f9bc70b2a48938e841"
     },
     {
       "path": "tests/module-runtime-docs-0.12.82.mjs",
@@ -2422,6 +2502,11 @@
       "sha256": "af9655deb32d894f63fc43590bd57f5fa53308900986420fbdef9db4404ebc4b"
     },
     {
+      "path": "tests/release-0.12.118.mjs",
+      "size": 5461,
+      "sha256": "9bf601ac623acf961d5627850542e1af04f18db052d9066e07c4d19cffb50802"
+    },
+    {
       "path": "tests/release-integrity.sh",
       "size": 1973,
       "sha256": "c6203b78ed42e6b115b4a53a70f41f6f2b838c76e13cddb3eba267b5f63d63f5"
@@ -2438,8 +2523,8 @@
     },
     {
       "path": "tests/repository-sync-schedule-0.12.112.mjs",
-      "size": 9476,
-      "sha256": "50a541eba32e5ad0139850001910784b6c00f6e5777f8aadd08413006f75d373"
+      "size": 9880,
+      "sha256": "c6cf51541693cca911235a97694c8480b624232b7cf61654453eec8e7bd3584a"
     },
     {
       "path": "tests/resource-context-menu-0.12.99.mjs",
@@ -2498,13 +2583,23 @@
     },
     {
       "path": "tests/run-all.mjs",
-      "size": 10485,
-      "sha256": "3a56ce23c2073968b3c7bc29a96425c68b460607aed8c55ae32a1f5a701dcd32"
+      "size": 10958,
+      "sha256": "1af16a4316b37c42ebb09d1fd678901c4c41bba477e2ae0c5c3f94dc48961b3e"
     },
     {
       "path": "tests/runtime-settings-control-0.12.81.mjs",
       "size": 7897,
       "sha256": "042d8809673c98eb82fccb7f8b150d08613d347249d159212161f848eb6e6d8d"
+    },
+    {
+      "path": "tests/scheduler-creator-filters-0.12.118.mjs",
+      "size": 8451,
+      "sha256": "22dadcee13c1dfe6e72f16b5900d9a1848e5c3f436d7f6e6d821adc295462a09"
+    },
+    {
+      "path": "tests/scheduler-event-jobs-0.12.118.mjs",
+      "size": 6050,
+      "sha256": "98b21f995a25ec2dd6421f36251a162d7749eb0b65e7e0c230f1ed75001509ac"
     },
     {
       "path": "tests/scheduler-history-pagination-ui.sh",
@@ -2515,6 +2610,11 @@
       "path": "tests/scheduler-history-state.mjs",
       "size": 814,
       "sha256": "90b13ff090b20a5335dd05f91b66b05b96397adfae419a6afcd85d791ba37b89"
+    },
+    {
+      "path": "tests/scheduler-pending-completion-0.12.118.mjs",
+      "size": 3951,
+      "sha256": "452c9e7a95665653ed2102e51552e6693e54454800d57de34cd6232e8bb94f20"
     },
     {
       "path": "tests/session-expiry.mjs",
@@ -2558,8 +2658,8 @@
     },
     {
       "path": "tests/shared-select-tags-0.12.111.mjs",
-      "size": 19463,
-      "sha256": "ce608174ee49576bb6e182b77e85bc56b14d5522fa1219c17ca8077f7b413bc6"
+      "size": 19683,
+      "sha256": "26cef15165108c5af0e658becb151af9cb60aeebbcc537ffdc7d330c7fe9bff4"
     },
     {
       "path": "tests/sign-in-landing-0.12.112.mjs",
@@ -2743,8 +2843,8 @@
     },
     {
       "path": "tests/test-runner-0.12.117.mjs",
-      "size": 13803,
-      "sha256": "dcca929e27845d62fd24e60b823e3de22c9cdd39db4004dec7ef14ef4da70237"
+      "size": 13898,
+      "sha256": "ee5072d8d394858f3289dbb0d30e9a03cece644bd5e3e8103db6d3ba19020789"
     },
     {
       "path": "tests/theme-docs-0.12.114.mjs",

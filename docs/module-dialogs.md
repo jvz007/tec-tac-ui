@@ -63,6 +63,7 @@ Descriptor fields:
 
 | Layer | z-index |
 |---|---|
+| Floating editor window (`EditorWindow` with `floating`, 0.12.118) | 1050, below every layer in this table |
 | Module dialog (this) | 1100, the same layer as Quick Actions |
 | Popovers, help | 900 to 1000 |
 | Unsaved-changes prompt | 1300, above a module dialog, so it is never hidden under one |

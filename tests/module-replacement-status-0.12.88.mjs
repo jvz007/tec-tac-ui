@@ -114,8 +114,11 @@ const view = fs.readFileSync(new URL('../src/views/ModulesView.vue', import.meta
 assert.match(view, /from '\.\.\/module-replacement'/)
 assert.match(view, /replacementSummary\(selected\)/)
 assert.match(view, />Replacement </)
-assert.match(view, /replacesLabel\(item\)/)
-assert.match(view, /replacedByLabel\(item\)/)
+// 0.12.118: the Installed list is a kit DataTable; its cells are built in src/module-manager-tables.js (P1), which draws both labels.
+const tables = fs.readFileSync(new URL('../src/module-manager-tables.js', import.meta.url), 'utf8')
+assert.match(tables, /replacesLabel\(item\)/)
+assert.match(tables, /replacedByLabel\(item\)/)
+assert.match(view, /:cell="installedTableCell"/)
 assert.match(view, /v-for="\(problem,index\) in plan\.problems"[^\n]*replacementProblemText\(problem\)/)
 assert.match(view, /v-for="\(line,index\) in replacementSummary\(selected\)\.lines"[^\n]*\{\{ line \}\}/)
 assert.ok(!/v-html/.test(view.split('Replacement <')[1].slice(0, 400)), 'no v-html in the replacement section')

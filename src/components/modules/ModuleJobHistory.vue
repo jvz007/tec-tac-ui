@@ -1,0 +1,138 @@
+<script setup>
+// 0.12.118: the Module Manager History tab (Core 1.17.60). Brand board P1 list page on the shared kit DataTable: search,
+// filters, count and paging footer, Enter or double-click to open. A row has no log text and no path. The tab is shown only to
+// people who can manage modules (the parent decides; this component also loads nothing without canManage).
+import { computed, h, onMounted, ref } from 'vue'
+import { DataTable } from '../../shared-kit.js'
+import { formatDateTime } from '../../date-format'
+import { createLatestRequestGate } from '../../admin-session-state'
+import { listModuleJobHistory } from '../../modules'
+import { jobSwitchLines } from '../../module-replacement'
+import { NO_LOG_TEXT, historyErrorSentence, historyMeta, historyRows } from '../../module-job-history'
+import ModuleJobLogWindow from './ModuleJobLogWindow.vue'
+
+const props = defineProps({ canManage: { type: Boolean, default: false } })
+const emit = defineEmits(['total'])
+
+const rows = ref([])
+const meta = ref({ page: 1, pages: 0, total: 0 })
+const loading = ref(false)
+const error = ref('')
+const openJob = ref(null)
+const filters = ref({ module: '', action: '', status: '', kind: '' })
+const applied = ref({ module: '', action: '', status: '', kind: '' })
+const gate = createLatestRequestGate()
+const PAGE_SIZE = 50
+
+const ACTIONS = ['install', 'enable', 'disable', 'remove', 'visibility', 'apply', 'rollback']
+const STATUSES = [['queued', 'Waiting to start'], ['dispatched', 'Starting'], ['running', 'Running'], ['succeeded', 'Done'], ['failed', 'Failed'], ['dispatch_failed', 'Could not start']]
+
+const columns = [
+  { key: 'when', label: 'When' },
+  { key: 'modules', label: 'Module(s)' },
+  { key: 'action', label: 'Action' },
+  { key: 'requestedBy', label: 'Requested by' },
+  { key: 'status', label: 'Status' },
+  { key: 'stage', label: 'Stage' },
+  { key: 'error', label: 'Error' },
+  { key: 'log', label: 'Log' },
+]
+
+async function load(page = meta.value.page) {
+  if (!props.canManage) return
+  const request = gate.begin()
+  loading.value = true
+  error.value = ''
+  try {
+    const target = Math.max(1, Number(page) || 1)
+    const payload = await listModuleJobHistory({ page: target, pageSize: PAGE_SIZE, ...applied.value })
+    // A slower answer to an earlier request must not replace a newer one.
+    if (!gate.isCurrent(request)) return
+    rows.value = historyRows(payload)
+    meta.value = historyMeta(payload, target)
+    emit('total', meta.value.total)
+  } catch (e) {
+    if (!gate.isCurrent(request)) return
+    error.value = historyErrorSentence(e)
+  } finally {
+    if (gate.isCurrent(request)) loading.value = false
+  }
+}
+function apply() {
+  applied.value = { ...filters.value, module: filters.value.module.trim() }
+  load(1)
+}
+function clear() {
+  filters.value = { module: '', action: '', status: '', kind: '' }
+  apply()
+}
+function open(row) { if (row?.hasLog) openJob.value = row }
+function go(page) {
+  if (loading.value || page < 1 || (meta.value.pages && page > meta.value.pages)) return
+  load(page)
+}
+
+const when = (value) => (value ? formatDateTime(value) : '—')
+// Cells are text or small elements built here. No cell uses markup from Core.
+function cell(row, column) {
+  switch (column.key) {
+    case 'when': return when(row.createdAt)
+    case 'modules': return row.modules
+    case 'action': return h('span', [row.action, ...jobSwitchLines(row.switchSource).map((line) => h('span', { class: 'sub' }, line))])
+    case 'requestedBy': return row.requestedBy
+    case 'status': return h('span', { class: ['pill', row.statusTone] }, row.statusWord)
+    case 'stage': return row.stage
+    case 'error': return row.error
+    case 'log':
+      if (!row.hasLog) return h('span', { class: 'muted smalltext' }, NO_LOG_TEXT)
+      return h('span', { class: 'mm-log-cell' }, [
+        h('button', { class: 'btn sm', type: 'button', onClick: (event) => { event.stopPropagation(); open(row) } }, 'Open'),
+        row.warning ? h('span', { class: 'muted smalltext' }, row.warning) : null,
+      ])
+    default: return ''
+  }
+}
+const footer = computed(() => {
+  const pages = meta.value.pages > 1 ? ` · page ${meta.value.page} of ${meta.value.pages}` : ''
+  return `${meta.value.total} lifecycle record${meta.value.total === 1 ? '' : 's'}${pages}`
+})
+const filtered = computed(() => Object.values(applied.value).some(Boolean))
+defineExpose({ reload: () => load(meta.value.page) })
+onMounted(() => load(1))
+</script>
+
+<template>
+  <section class="mm-history" aria-label="Module job history">
+    <form class="toolbar mm-filters" role="search" @submit.prevent="apply">
+      <label class="compact-input"><span class="sr-only">Module</span><input v-model="filters.module" type="text" placeholder="Module id…" autocomplete="off"></label>
+      <label class="compact-input"><span class="sr-only">Action</span>
+        <select v-model="filters.action" @change="apply"><option value="">Any action</option><option v-for="a in ACTIONS" :key="a" :value="a">{{ a }}</option></select></label>
+      <label class="compact-input"><span class="sr-only">Status</span>
+        <select v-model="filters.status" @change="apply"><option value="">Any status</option><option v-for="[v, w] in STATUSES" :key="v" :value="v">{{ w }}</option></select></label>
+      <label class="compact-input"><span class="sr-only">Type</span>
+        <select v-model="filters.kind" @change="apply"><option value="">Modules and hotfixes</option><option value="module">Modules</option><option value="hotfix">Hotfixes</option></select></label>
+      <button class="btn" type="submit" :disabled="loading">Apply</button>
+      <button v-if="filtered || filters.module || filters.action || filters.status || filters.kind" class="btn" type="button" @click="clear">Clear</button>
+      <button class="btn" type="button" :disabled="loading" @click="load(meta.page)">Refresh</button>
+    </form>
+    <div v-if="error" class="state-inline denied" role="alert">{{ error }}</div>
+    <DataTable
+      v-else
+      :columns="columns"
+      :rows="rows"
+      row-key="id"
+      :loading="loading && !rows.length"
+      :empty-title="filtered ? 'No jobs match these filters' : 'No module jobs yet'"
+      :empty-text="filtered ? 'Clear the filters to show every job.' : 'Jobs appear here after an install, enable, disable, uninstall or hotfix.'"
+      :footer="footer"
+      aria-label="Module job history"
+      :cell="cell"
+      @activate="open"
+    />
+    <div v-if="!error && meta.pages > 1" class="toolbar mt">
+      <span class="muted mono">Page {{ meta.page }} / {{ meta.pages }}</span>
+      <div class="row"><button class="btn sm" :disabled="loading || meta.page <= 1" @click="go(meta.page - 1)">Previous</button><button class="btn sm" :disabled="loading || meta.page >= meta.pages" @click="go(meta.page + 1)">Next</button></div>
+    </div>
+    <ModuleJobLogWindow v-if="openJob" :job="openJob" @close="openJob = null" />
+  </section>
+</template>

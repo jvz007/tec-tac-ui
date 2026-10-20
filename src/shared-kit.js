@@ -2,7 +2,7 @@
 // components with no template strings, so modules need no compiler. They hold no values of their own: the module passes
 // everything in and listens to events. Cell text, labels and titles are text nodes, never v-html. The rules live in
 // shared-kit-logic.js. No component confirms or discards anything: a module asks one plain Yes or No through context.confirm.
-import { defineComponent, h } from 'vue'
+import { defineComponent, h, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import {
   KIT_LIMITS,
   ariaSortFor,
@@ -143,12 +143,14 @@ export const FormRow = defineComponent({
     help: { type: String, default: '' },
     error: { type: String, default: '' },
     forId: { type: String, default: undefined },
+    // 0.12.118: label above the control. Off by default. Inside an editor window's properties column it stacks on its own.
+    stacked: { type: Boolean, default: false },
   },
   setup(props, { slots }) {
     const fallback = nextId('tt-frow')
     return () => {
       const base = props.forId || fallback
-      return h('div', { class: 'tt-frow' }, [
+      return h('div', { class: props.stacked ? 'tt-frow tt-frow-stacked' : 'tt-frow' }, [
         h('label', { for: props.forId }, [props.label, props.hint ? h('small', props.hint) : null]),
         h('div', { class: 'tt-ctl' }, [
           slots.default ? slots.default() : null,
@@ -170,10 +172,28 @@ export const EditorWindow = defineComponent({
     canSave: { type: Boolean, default: false },
     saving: { type: Boolean, default: false },
     status: { type: String, default: '' },
+    // 0.12.118: floating draws the window fixed over the page (layer 1050, see docs/module-components.md) as a dialog. readOnly
+    // hides Save and Discard changes for a viewer. Both are off by default and then the output is what it was in 0.12.117.
+    floating: { type: Boolean, default: false },
+    readOnly: { type: Boolean, default: false },
   },
   emits: ['save', 'discard', 'close'],
   setup(props, { emit, slots }) {
     const titleId = nextId('tt-win-title')
+    const root = ref(null)
+    let opener = null
+    // A floating window takes the focus when it opens and gives it back to what had it when it closes.
+    onMounted(() => {
+      if (!props.floating || typeof document === 'undefined') return
+      opener = document.activeElement || null
+      try { root.value?.focus?.() } catch { /* a window that left the page cannot take focus */ }
+    })
+    onBeforeUnmount(() => {
+      const back = opener
+      opener = null
+      if (!back || typeof back.focus !== 'function') return
+      nextTick(() => { try { back.focus() } catch { /* the opener may be gone */ } })
+    })
     const onKeydown = (event) => {
       const action = editorKeyAction(event, { canSave: props.canSave, saving: props.saving })
       if (!action) return
@@ -182,7 +202,14 @@ export const EditorWindow = defineComponent({
       if (action === 'close') emit('close')
       else if (action === 'save') emit('save')
     }
-    return () => h('section', { class: 'tt-win tt-ws', role: 'group', 'aria-labelledby': titleId, onKeydown }, [
+    return () => h('section', {
+      ref: root,
+      class: props.floating ? 'tt-win tt-ws tt-win-floating' : 'tt-win tt-ws',
+      role: props.floating ? 'dialog' : 'group',
+      tabindex: props.floating ? -1 : undefined,
+      'aria-labelledby': titleId,
+      onKeydown,
+    }, [
       h('div', { class: 'tt-win-head' }, [
         h('span', { class: 'tt-win-title', id: titleId }, props.title),
         props.dirty ? h('span', { class: 'tt-dirty', role: 'status' }, KIT_LIMITS.unsavedText) : null,
@@ -199,8 +226,8 @@ export const EditorWindow = defineComponent({
         h('span', { class: 'tt-status', role: 'status', 'aria-live': 'polite' }, props.status),
         h('span', { class: 'spacer' }),
         slots.footer ? slots.footer() : null,
-        h('button', { class: 'btn', type: 'button', disabled: !props.dirty || props.saving, onClick: () => emit('discard') }, 'Discard changes'),
-        h('button', { class: 'btn primary', type: 'button', disabled: !saveEnabled(props), onClick: () => emit('save') }, props.saving ? 'Saving…' : 'Save'),
+        props.readOnly ? null : h('button', { class: 'btn', type: 'button', disabled: !props.dirty || props.saving, onClick: () => emit('discard') }, 'Discard changes'),
+        props.readOnly ? null : h('button', { class: 'btn primary', type: 'button', disabled: !saveEnabled(props), onClick: () => emit('save') }, props.saving ? 'Saving…' : 'Save'),
       ]),
     ])
   },

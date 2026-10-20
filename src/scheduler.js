@@ -1,7 +1,9 @@
 import { apiFetch } from './api'
+import { schedulesQuery } from './scheduler-creators.js'
 
 export function listScheduledActions(){ return apiFetch('/api/tfd/scheduler/actions/') }
-export function listSchedules(ownerType=null){ const q=ownerType?`?owner_type=${encodeURIComponent(ownerType)}`:''; return apiFetch(`/api/tfd/scheduler/schedules/${q}`) }
+// 0.12.118: the optional second argument filters by creator and confirmer (Core 1.17.63). One argument sends what it always sent.
+export function listSchedules(ownerType=null,{createdBy='',confirmedBy=''}={}){ const q=schedulesQuery(ownerType,{createdBy,confirmedBy}); return apiFetch(`/api/tfd/scheduler/schedules/${q}`) }
 export function getSchedule(id){ return apiFetch(`/api/tfd/scheduler/schedules/${encodeURIComponent(id)}/`) }
 export function createSchedule(payload){ return apiFetch('/api/tfd/scheduler/schedules/',{method:'POST',body:JSON.stringify(payload)}) }
 export function updateSchedule(id,payload){ return apiFetch(`/api/tfd/scheduler/schedules/${encodeURIComponent(id)}/`,{method:'PATCH',body:JSON.stringify(payload)}) }
@@ -13,3 +15,4 @@ export function getSchedulerConfig(){ return apiFetch('/api/tfd/scheduler/config
 export function updateSchedulerConfig(payload){ return apiFetch('/api/tfd/scheduler/config/',{method:'PATCH',body:JSON.stringify(payload)}) }
 export function getSchedulerHealth(){ return apiFetch('/api/tfd/scheduler/health/') }
 export function runSchedulerSelfTest(mode){ return apiFetch('/api/tfd/scheduler/self-test/',{method:'POST',body:JSON.stringify({mode})}) }
+export function listEventJobs(){ return apiFetch('/api/tfd/scheduler/event-jobs/') }

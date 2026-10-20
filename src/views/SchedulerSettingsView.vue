@@ -3,9 +3,13 @@ import { formatDateTime } from '../date-format'
 import { computed, onMounted, ref } from 'vue'
 import { getSchedulerConfig, getSchedulerHealth, runSchedulerSelfTest, updateSchedulerConfig } from '../scheduler'
 import { authorizationRevokedState } from '../scheduler-health'
+import { eventJobTiles, loadEventJobs } from '../scheduler-event-jobs'
 
 const config=ref(null), health=ref(null), loading=ref(true), refreshing=ref(false), saving=ref(false), selfTesting=ref(''), error=ref(''), notice=ref('')
 const configDraft=ref(48)
+// 0.12.118: the event jobs panel (Core 1.17.45). Read only; hidden on a 403 or a 404. { rows } or null.
+const eventJobs=ref(null)
+const eventTiles=computed(()=>eventJobTiles(health.value))
 const healthState=computed(()=>health.value?.tick_health || 'unknown')
 const revokedState=computed(()=>authorizationRevokedState(health.value))
 function nextLabel(iso){return iso?formatDateTime(iso):'—'}
@@ -20,6 +24,8 @@ async function load({quiet=false}={}){
     health.value=h
   }catch(e){error.value=e.message||'Unable to load Scheduler configuration.'}
   finally{loading.value=false;refreshing.value=false}
+  // Its own read: a refusal or an older Core only hides the panel and never breaks the page.
+  try{const result=await loadEventJobs();eventJobs.value=result.hidden?null:result}catch{eventJobs.value=null}
 }
 async function saveConfig(){
   saving.value=true;error.value='';notice.value=''
@@ -61,6 +67,8 @@ onMounted(load)
       <article class="tile"><div class="lbl">Failed</div><div class="big">{{health?.failed_last_24h ?? '—'}}</div><div class="brk">runs in the last 24 hours</div></article>
     </div>
 
+    <div v-if="eventTiles" class="grid g4 mb event-job-tiles"><article v-for="tile in eventTiles" :key="tile.key" class="tile"><div class="lbl">{{tile.label}}</div><div class="big compact">{{tile.value}}</div><div class="brk">{{tile.note}}</div></article></div>
+
     <div class="scheduler-config-grid">
       <article class="card scheduler-config-card">
         <div class="cardhead"><div><span class="eyebrow">HOUSEKEEPING</span><h3>One-off schedule retention</h3></div></div>
@@ -98,6 +106,15 @@ onMounted(load)
         <p class="muted smalltext">Failure is expected for the deliberate failure test. Retry + recovery intentionally fails once and succeeds on its configured retry.</p>
       </article>
     </div>
+
+    <section v-if="eventJobs" class="card mt scheduler-event-jobs" aria-labelledby="event-jobs-title">
+      <div class="cardhead"><div><span class="eyebrow">EVENT JOBS</span><h3 id="event-jobs-title">Jobs modules start from an event</h3></div></div>
+      <p class="compact-copy muted">Read only. Each row is one job a module registered with Core. Core shows counts and the last error here, never a payload or a key.</p>
+      <div v-if="!eventJobs.rows.length" class="state-inline"><b>No event jobs are registered.</b> A module registers one when it needs work to start from an event.</div>
+      <div v-else class="tablewrap table-clean"><table><thead><tr><th>Module</th><th>Job</th><th>Pending</th><th>Running</th><th>Oldest pending</th><th>Published</th><th>Dropped</th><th>Failed</th><th>Expired</th><th>Last failure</th></tr></thead><tbody>
+        <tr v-for="row in eventJobs.rows" :key="row.uid"><td class="mono">{{row.module}}</td><td><b>{{row.label}}</b><span v-if="!row.registered" class="sub">not registered now</span></td><td class="mono">{{row.pending}}</td><td class="mono">{{row.running}}</td><td>{{row.oldestPending}}</td><td class="mono">{{row.published}}</td><td class="mono">{{row.dropped}}</td><td class="mono">{{row.failed}}</td><td class="mono">{{row.expired}}</td><td><span v-if="row.lastFailureAt" class="mono">{{nextLabel(row.lastFailureAt)}}</span><span v-else class="muted">—</span><span v-if="row.lastError" class="sub dangertext">{{row.lastError}}</span></td></tr>
+      </tbody></table></div>
+    </section>
   </template>
 </section>
 </template>

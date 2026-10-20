@@ -58,22 +58,28 @@ assert.ok(onlineStart > 0 && reposStart > onlineStart && hotfixStart > reposStar
 const online = view.slice(onlineStart, reposStart)
 const repos = view.slice(reposStart, hotfixStart)
 
-assert.match(repos, /skippedSummary\(repo\.sync\)/, 'the Sync column shows the count under the status')
+// 0.12.118: the lists are kit DataTables (P1). Their cells are built in src/module-manager-tables.js; the editor is a P4 dialog in the page.
+const tables = read('../src/module-manager-tables.js')
+const onlineCells = tables.slice(tables.indexOf('export function onlineCell'), tables.indexOf('export const REPOSITORY_COLUMNS'))
+const repoCells = tables.slice(tables.indexOf('export function repositoryCell'))
+assert.match(repoCells, /skippedSummary\(repo\.sync\)/, 'the Sync column shows the count under the status')
 assert.match(repos, /Skipped entries/, 'the editor has a Skipped entries block')
 assert.match(repos, /skippedRows\(selectedRepository\.sync\)/, 'the editor lists each skipped record')
 assert.doesNotMatch(online, /skippedSummary|skippedRows/, 'the skipped block is on the Repositories tab only')
-assert.match(online, /releaseLabels\(item\)/, 'the Online catalog shows the release labels')
-assert.doesNotMatch(repos, /releaseLabels/, 'the Repositories tab shows no release labels')
+assert.doesNotMatch(onlineCells, /skippedSummary|skippedRows/, 'the online cells do not show skipped entries')
+assert.match(onlineCells, /releaseLabels\(item\)/, 'the Online catalog shows the release labels')
+assert.doesNotMatch(repoCells, /releaseLabels/, 'the Repositories tab shows no release labels')
 
 // The labels are pills with no click handler.
-const labelLine = online.split('\n').find((line) => line.includes('releaseLabels(item)') && line.includes('class="pill"'))
+const labelLine = onlineCells.split('\n').find((line) => line.includes('releaseLabels(item)') && line.includes("class: 'pill'"))
 assert.ok(labelLine, 'the label pills are plain pills')
-assert.doesNotMatch(labelLine, /@click/, 'the label pills have no click handler')
+assert.doesNotMatch(labelLine, /onClick|@click/, 'the label pills have no click handler')
 
 // The Download button's disabled expression and filteredOnline do not read the release fields.
-const buttonMatch = /<button class="btn sm"[^>]*:disabled="([^"]*)"[^>]*@click="requestStageOnline\(item\)"/.exec(online)
-assert.ok(buttonMatch, 'the Download button is in the Online catalog')
-assert.doesNotMatch(buttonMatch[1], /channel|lifecycle|recommended/, 'the Download button does not read the release fields')
+const blockedMatch = /blocked: \(item\) => ([^}]*)\}\)/.exec(view)
+assert.ok(blockedMatch, 'the Download button rule is in the page')
+assert.match(onlineCells, /onClick: \(event\) => \{ event\.stopPropagation\(\); stage\(item\) \}/, 'the Download button asks the page to stage')
+assert.doesNotMatch(blockedMatch[1], /channel|lifecycle|recommended/, 'the Download button does not read the release fields')
 const filteredLine = view.split('\n').find((line) => line.trimStart().startsWith('const filteredOnline = computed('))
 assert.ok(filteredLine, 'filteredOnline is found')
 assert.doesNotMatch(filteredLine, /channel|lifecycle|recommended/, 'filteredOnline does not read the release fields')

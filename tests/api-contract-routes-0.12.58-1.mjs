@@ -56,6 +56,19 @@ routes.add('/api/tfd/filter-sets/')
 routes.add('/api/tfd/filter-sets/fields/')
 routes.add('/api/tfd/filter-sets/<dynamic>/')
 routes.add('/api/tfd/filter-values/')
+// 0.12.118: Core 1.17.58, 1.17.60 and 1.17.45 routes, in the signed 1.17.65 export (docs/contracts/tec-tac-public-contract   1.17.65-0.12.117.md):
+// system/licensing/, modules/v2/jobs/history/, modules/v2/jobs/<uuid:job_id>/log/ and scheduler/event-jobs/. Added here by name, like the
+// preference routes; the next fixture refresh takes them. When the export file is on disk (the full workspace) each one is checked in it.
+const exportRoutes=['/api/tfd/system/licensing/','/api/tfd/modules/v2/jobs/history/','/api/tfd/modules/v2/jobs/<dynamic>/log/','/api/tfd/scheduler/event-jobs/']
+for (const route of exportRoutes) routes.add(route)
+const exportFile=new URL('../../../docs/contracts/tec-tac-public-contract   1.17.65-0.12.117.md', import.meta.url)
+if (fs.existsSync(exportFile)) {
+  const exportText=fs.readFileSync(exportFile,'utf8')
+  for (const route of ['/api/tfd/system/licensing/','/api/tfd/modules/v2/jobs/history/','/api/tfd/modules/v2/jobs/<uuid:job_id>/log/','/api/tfd/scheduler/event-jobs/']) {
+    assert.ok(exportText.includes('`'+route+'`'), `the 1.17.65 export lists ${route}`)
+  }
+}
+for (const route of exportRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
 const missing=[]
 for (const raw of used) {
   const normalized=cleanUsed(raw)

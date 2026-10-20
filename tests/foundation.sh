@@ -405,7 +405,10 @@ grep -q "StructuredObjectEditor" "${ROOT}/src/views/SchedulesView.vue" || fail "
 grep -q "Advanced JSON" "${ROOT}/src/components/StructuredObjectEditor.vue" || fail "advanced JSON fallback missing"
 grep -q "listModuleJobs" "${ROOT}/src/modules.js" || fail "module history API helper missing"
 grep -q "activeTab==='history'" "${ROOT}/src/views/ModulesView.vue" || fail "module history tab missing"
-grep -q "Requested by" "${ROOT}/src/views/ModulesView.vue" || fail "module history requester column missing"
+# 0.12.118: the History tab is src/components/modules/ModuleJobHistory.vue (Core 1.17.60 history route); the page mounts it.
+grep -q "listModuleJobHistory" "${ROOT}/src/modules.js" || fail "module history list helper missing"
+grep -q "<ModuleJobHistory" "${ROOT}/src/views/ModulesView.vue" || fail "module history component is not mounted"
+grep -q "Requested by" "${ROOT}/src/components/modules/ModuleJobHistory.vue" || fail "module history requester column missing"
 echo "[TEST] PASS structured scheduler payload editor and module lifecycle history"
 
 # 0.11.7 Core interactive session-security rollout
@@ -666,8 +669,11 @@ grep -q "function requestStageOnline" "${ROOT}/src/views/ModulesView.vue" || fai
 grep -q 'v-if="reinstallTarget"' "${ROOT}/src/views/ModulesView.vue" || fail "module reinstall confirmation dialog missing"
 grep -q 'SAME VERSION' "${ROOT}/src/views/ModulesView.vue" || fail "same-version reinstall warning missing"
 grep -q 'Continue to reinstall' "${ROOT}/src/views/ModulesView.vue" || fail "module reinstall confirmation action missing"
-grep -q '@click="requestStageOnline(item)"' "${ROOT}/src/views/ModulesView.vue" || fail "online catalog does not use reinstall confirmation guard"
-grep -q "item.update_available ? 'Download update' : 'Reinstall'" "${ROOT}/src/views/ModulesView.vue" || fail "up-to-date module action is not labelled Reinstall"
+# 0.12.118: the Online catalog is a kit DataTable; its Download button asks the page's stage callback, which is the guard.
+grep -q 'stage: (item) => requestStageOnline(item)' "${ROOT}/src/views/ModulesView.vue" || fail "online catalog does not use reinstall confirmation guard"
+grep -q 'stage(item)' "${ROOT}/src/module-manager-tables.js" || fail "online catalog button does not call the stage guard"
+# 0.12.118: the button label is built in src/module-manager-tables.js (kit DataTable cells).
+grep -q "item.update_available ? 'Download update' : 'Reinstall'" "${ROOT}/src/module-manager-tables.js" || fail "up-to-date module action is not labelled Reinstall"
 printf '[TEST] PASS same-version module reinstall confirmation\n'
 
 # 0.12.10 module package signature intake and trust visibility

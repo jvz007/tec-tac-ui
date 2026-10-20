@@ -317,6 +317,9 @@ export const TagEditor = defineComponent({
     maxLength: { type: Number, default: TAG_LIMITS.maxLength },
     commaAdds: { type: Boolean, default: true },
     validate: { type: Function, default: undefined },
+    // 0.12.118: id of the real text input and aria-describedby on it, as SearchSelect has. Off by default.
+    inputId: { type: String, default: undefined },
+    describedBy: { type: String, default: undefined },
   },
   emits: ['update:modelValue', 'reject'],
   setup(props, { emit }) {
@@ -380,9 +383,11 @@ export const TagEditor = defineComponent({
           ? null
           : h('input', {
             ref: input,
+            id: props.inputId || undefined,
             class: 'tt-tag-input',
             type: 'text',
             'aria-label': props.ariaLabel,
+            'aria-describedby': props.describedBy || undefined,
             'aria-invalid': problem.value ? 'true' : undefined,
             placeholder: props.placeholder || undefined,
             disabled: props.disabled,

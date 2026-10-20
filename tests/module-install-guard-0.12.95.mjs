@@ -27,6 +27,9 @@ const build = new Function('deps', `
   const { staged, installOrder, installing, installConfirm, error, queueWarning, confirmedDisable, plan, jobRunning,
     installModuleArtifact, discardModuleArtifact, installConfirmSummary, confirmationRequired, replacementListChangedText,
     beginPoll, willDisableIds } = deps
+  // 0.12.118: the licence override helpers the page added; this test is about the install guard, so they do nothing here.
+  const clearLicence = () => {}
+  const noteLicenceRefusal = () => {}
   const stagedRows = { get value() { return staged.value ? stagedRowsOf(staged.value.composite ? { kind: 'batch' } : staged.value) : [] } }
   ${body}
   return { install, runInstall, confirmInstall, clearStaged, closeInstallConfirm, stagedGroups, restageGroups, runInstallRef: runInstall }

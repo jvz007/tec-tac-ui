@@ -195,7 +195,9 @@ assert.match(html, /class="tt-tagbox"/, 'no value renders an empty box')
 assert.deepEqual(Object.keys(comps.SearchSelect.props).sort(), ['allLabel', 'ariaLabel', 'clearable', 'describedBy', 'disabled', 'emptyText', 'favouriteLabel', 'hasMore', 'inputId', 'invalid', 'loading', 'modelValue', 'options', 'placeholder', 'required', 'selectedLabel', 'serverSearch'])  // 0.12.112 adds the four server-mode props, 0.12.114 adds required, invalid and describedBy
 assert.deepEqual(comps.SearchSelect.emits, ['update:modelValue', 'select', 'search', 'more'])  // 0.12.112 adds search and more
 assert.equal(comps.SearchSelect.props.clearable.default, false)
-assert.deepEqual(Object.keys(comps.TagEditor.props).sort(), ['ariaLabel', 'commaAdds', 'disabled', 'maxItems', 'maxLength', 'modelValue', 'placeholder', 'readonly', 'validate'])
+assert.deepEqual(Object.keys(comps.TagEditor.props).sort(), ['ariaLabel', 'commaAdds', 'describedBy', 'disabled', 'inputId', 'maxItems', 'maxLength', 'modelValue', 'placeholder', 'readonly', 'validate'])  // 0.12.118 adds inputId and describedBy (both off by default)
+assert.equal(comps.TagEditor.props.inputId.default, undefined)
+assert.equal(comps.TagEditor.props.describedBy.default, undefined)
 assert.deepEqual(comps.TagEditor.emits, ['update:modelValue', 'reject'])
 assert.equal(comps.TagEditor.props.commaAdds.default, true)
 assert.equal(comps.TagEditor.props.maxItems.default, 200)
