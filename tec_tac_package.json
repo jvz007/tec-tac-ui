@@ -1,7 +1,7 @@
 {
   "type": "tec-tac-ui",
   "id": "tec-tac-ui",
-  "version": "0.12.121",
+  "version": "0.12.122",
   "requires": {
     "tec-tac-framework": ">=1.17.67,<2.0.0"
   }

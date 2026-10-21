@@ -195,7 +195,7 @@ assert.equal(EXPECTED_0_12_116.length, 176)
 assert.equal(new Set(EXPECTED_0_12_116).size, 176)
 
 // the one replaced entry: the Core requirement test moved to the release test of the current release (0.12.119), in the same place
-const expected = EXPECTED_0_12_116.map((entry) => entry.replace('node tests/core-requirement-0.12.116.mjs', 'node tests/release-0.12.121.mjs'))
+const expected = EXPECTED_0_12_116.map((entry) => entry.replace('node tests/core-requirement-0.12.116.mjs', 'node tests/release-0.12.122.mjs'))
 assert.equal(new Set(ENTRIES).size, ENTRIES.length, 'no entry is listed twice')
 assert.deepEqual(ENTRIES.slice(0, 176), expected, 'the 176 entries are all kept, in the same order, one replaced in place')
 assert.deepEqual(ENTRIES.slice(176, 180), [

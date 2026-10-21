@@ -57,8 +57,8 @@ for (const file of fs.readdirSync(root).filter((f) => f === '.npmrc')) {
 
 // (e) versions agree and the Core requirement is unchanged
 const tt = JSON.parse(read('tec_tac_package.json'))
-assert.equal(read('VERSION').trim(), '0.12.121')
-assert.equal(pkg.version, '0.12.121')
-assert.equal(tt.version, '0.12.121')
+assert.equal(read('VERSION').trim(), pkg.version)
+assert.match(pkg.version, /^0\.12\.\d+$/)
+assert.equal(tt.version, pkg.version)
 assert.equal(tt.requires['tec-tac-framework'], '>=1.17.67,<2.0.0')
 console.log('dependency-audit-0.12.121: ok')
