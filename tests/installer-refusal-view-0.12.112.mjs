@@ -8,7 +8,10 @@ const lines = view.split(/\r?\n/).filter((l) => l.includes('Update refused, noth
 assert.equal(lines.length, 1, 'the sentence appears once')
 assert.ok(lines[0].includes(`v-if="job.rollback?.reason === 'installer-refused'"`), 'it shows only for installer-refused')
 assert.ok(!lines[0].includes('v-html'), 'a text node')
-assert.ok(view.includes(`Rollback {{ job.rollback.status }}<span v-if="job.rollback.version"> · restored {{ job.rollback.version }}</span>`), 'the other rollback wording is unchanged')
+// 0.12.123: the rollback wording now comes from src/system-update-rollback.js; a succeeded rollback keeps its words and 'failed' stays red.
+const { rollbackNotice } = await import(new URL('../src/system-update-rollback.js', import.meta.url).href)
+assert.equal(rollbackNotice({ performed: true, status: 'succeeded', version: '1.2' }).text, 'Rollback succeeded · restored 1.2', 'the other rollback wording is unchanged')
+assert.ok(view.includes('rollbackNotice(job.value?.rollback)'))
 
 // the condition, evaluated as the template would
 const shows = (job) => job.rollback?.reason === 'installer-refused'

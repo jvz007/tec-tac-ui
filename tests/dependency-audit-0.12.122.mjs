@@ -49,13 +49,13 @@ for (const file of fs.readdirSync(root).filter((f) => f === '.npmrc')) {
 
 // (f) versions agree and the Core requirement is unchanged
 const tt = JSON.parse(read('tec_tac_package.json'))
-assert.equal(read('VERSION').trim(), '0.12.122')
-assert.equal(pkg.version, '0.12.122')
-assert.equal(tt.version, '0.12.122')
-assert.equal(tt.requires['tec-tac-framework'], '>=1.17.67,<2.0.0')
+// 0.12.123: the version and the Core requirement move with each release; the current ones are pinned in the release test
+assert.equal(read('VERSION').trim(), pkg.version)
+assert.equal(tt.version, pkg.version)
+assert.match(tt.requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/)
 
 // (g) the release notes
-const notes = read('RELEASE_NOTES_0.12.122.md')
+const notes = read('docs/releases/RELEASE_NOTES_0.12.122.md')
 for (const word of ['vite', 'launch-editor', 'GHSA-698v-4r3x-3vcv', 'GHSA-r825-w8mm-5pxw', 'GHSA-587h-7wmj-h5pm', 'build-time']) {
   assert.ok(notes.includes(word), `the notes mention ${word}`)
 }

@@ -31,6 +31,7 @@ import {
   supportsUpdateSource,
 } from '../update-source'
 import { createKeyedLatestRequestGate } from '../latest-request-gate'
+import { isRollbackStage, rollbackNotice } from '../system-update-rollback'
 import { trustPopoverDomId, trustPopoverOpen, trustPopoverTransition } from '../system-trust-popover-state'
 
 const help = inject('tecTacHelp', null)
@@ -132,7 +133,7 @@ const systemJobProgress = computed(() => {
   if (current.status === 'succeeded' || current.stage === 'complete') return 100
   if (current.status === 'failed') return 100
   const stage = String(current.stage || current.status || '').toLowerCase()
-  if (stage.includes('rollback')) return 88
+  if (isRollbackStage(stage)) return 88
   if (stage.includes('verify')) return 86
   if (stage.includes('install')) return 62
   if (stage.includes('source') || stage.includes('deploy')) return 46
@@ -148,6 +149,8 @@ const systemJobProgressLabel = computed(() => {
   if (job.value.status === 'failed') return 'Failed'
   return String(job.value.stage || job.value.status || 'queued').replace(/-/g, ' ')
 })
+// 0.12.123: yellow for a restored version, red only when the rollback itself failed. The job stays failed with its own error line.
+const jobRollbackNotice = computed(() => rollbackNotice(job.value?.rollback))
 const systemJobFailureTail = computed(() => {
   if (job.value?.status !== 'failed') return []
   return (job.value?.log_tail || []).filter((line) => String(line || '').trim()).slice(-8)
@@ -979,7 +982,7 @@ onBeforeUnmount(() => {
       <div class="module-meta"><span>Stage</span><b class="mono">{{ job.stage }}</b></div>
       <div class="module-meta"><span>Version</span><b class="mono">{{ job.installed_version }} → {{ job.version }}</b></div>
       <div v-if="job.rollback?.reason === 'installer-refused'" class="state-inline warning">Update refused, nothing was changed</div>
-      <div v-if="job.rollback?.performed" class="state-inline" :class="job.rollback.status === 'succeeded' ? 'warning' : 'denied'">Rollback {{ job.rollback.status }}<span v-if="job.rollback.version"> · restored {{ job.rollback.version }}</span></div>
+      <div v-if="jobRollbackNotice" class="state-inline" :class="jobRollbackNotice.tone" role="status">{{ jobRollbackNotice.text }}<div v-if="jobRollbackNotice.advice">{{ jobRollbackNotice.advice }}</div><div v-if="jobRollbackNotice.detail" class="smalltext muted">{{ jobRollbackNotice.detail }}</div><code v-if="jobRollbackNotice.restart" class="mono">{{ jobRollbackNotice.restart }}</code></div>
       <div v-if="job.error" class="state-inline denied mt"><b>{{ job.error_type }}:</b> {{ job.error }}</div>
       <div v-if="systemJobFailureTail.length" class="state-inline denied mt"><b>Final lifecycle output</b><pre class="job-log">{{ systemJobFailureTail.join('\n') }}</pre></div>
       <pre class="job-log">{{ (job.log_tail || []).join('\n') || 'Waiting for lifecycle output…' }}</pre>

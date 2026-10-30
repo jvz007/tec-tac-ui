@@ -2,6 +2,7 @@
 // System Updates page. Pure logic, no Vue and no DOM. The three logs are not merged: each source keeps its own list and its own
 // log. Everything here turns Core's answer into plain text and small rows; nothing is markup and no path or token is built.
 import { NOT_RECORDED_TEXT, NO_RIGHTS_TEXT, statusTone, statusWord } from './module-job-history.js'
+import { rollbackNotice } from './system-update-rollback.js'
 
 export const LOG_SOURCES = Object.freeze([
   { key: 'module', label: 'Module and hotfix jobs' },
@@ -23,6 +24,9 @@ export function systemUpdateRow(item) {
   const from = clean(job.installed_version)
   const to = clean(job.version)
   const versions = from || to ? `${from || '—'} → ${to || '—'}` : '—'
+  // 0.12.123: one Rollback row when the job rolled back (text only, same words as the job panel).
+  const rollback = rollbackNotice(job.rollback)
+  const rollbackRow = rollback ? [['Rollback', [rollback.text, rollback.advice].filter(Boolean).join(' ')]] : []
   return {
     id: clean(job.id),
     source: 'system-update',
@@ -45,7 +49,7 @@ export function systemUpdateRow(item) {
     switchSource: {},
     startedAt: stamp(job.started_at),
     finishedAt: stamp(job.finished_at),
-    detailRows: [['Component', component], ['Versions', versions], ['Status', statusWord(job.status)], ['Requested by', clean(job.requested_by) || '—'], ['Started', stamp(job.started_at)], ['Finished', stamp(job.finished_at)]],
+    detailRows: [['Component', component], ['Versions', versions], ['Status', statusWord(job.status)], ['Requested by', clean(job.requested_by) || '—'], ['Started', stamp(job.started_at)], ['Finished', stamp(job.finished_at)], ...rollbackRow],
   }
 }
 

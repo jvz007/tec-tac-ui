@@ -35,7 +35,7 @@ assert.ok(!/editing\.value=false;await refresh\(\)/.test(view) || /closeEditor\(
 const refreshBody = view.slice(view.indexOf('async function refresh()'), view.indexOf('function changeRunPage'))
 assert.ok(!refreshBody.includes('editing.value'), 'a refresh does not touch the editor')
 // opening remembers the row
-assert.match(view, /function edit\(item\)\{if\(item\.owner_type==='module'\)return;selectedId\.value=item\.id;openSnapshot\.value=item;/)
+assert.match(view, /function edit\(item\)\{if\(item\.owner_type==='module'\|\|item\.orphaned===true\)return;selectedId\.value=item\.id;openSnapshot\.value=item;/)
 // the snapshot is cleared on save, delete, close, new and tab change
 assert.match(view, /function closeEditor\(\)\{editing\.value=false;openSnapshot\.value=null\}/)
 assert.match(view, /else await createSchedule\(data\);closeEditor\(\);await refresh\(\)/, 'save')

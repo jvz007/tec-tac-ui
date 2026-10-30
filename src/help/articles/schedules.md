@@ -31,3 +31,11 @@ Core recovers abandoned Scheduler runs automatically. A queued run that never re
 ## Deleting a schedule with active runs
 
 Normal delete refuses while a run is queued or running. If the run is genuinely stuck, retry Delete and Tec-Tac will offer **Fail active runs & delete**. This requires typing the schedule name. Core marks each active run `ForceDeleted`, keeps its history/snapshot, and then removes the schedule definition.
+
+## Schedules of a module that is not installed
+
+If a module is uninstalled, its schedules stay in the list with an **Owner module not installed** label. Core pauses them. They never run, and you cannot open or run them from here. A schedule of a module that is only **disabled** is hidden by Core and shows nothing.
+
+Scheduler managers see **Disable** and **Remove** on those rows. Remove asks Yes or No. Run history stays. The module's own schedule comes back only when a person saves it in the module again. A queued or running run blocks the change: try again when it has ended.
+
+The **Owner module not installed** panel lists each module with its schedule count. **Disable all** and **Remove all schedules of this module** ask Yes or No first and name the module and the count. Schedules outside your scope are left alone and counted. Tick **Owner module not installed** beside the Created by filter to list only these rows.

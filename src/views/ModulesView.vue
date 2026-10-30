@@ -18,6 +18,7 @@ import { readLicenceRefusal } from '../licensing'
 import { loadLatestHotfixRows } from '../module-hotfix-loader'
 import { checkIntakeMetadata, orderGroupsByDependency, pairIntakeFiles } from '../module-intake'
 import { categorySearchText, CATEGORY_FILTERS, filterByCategory } from '../module-category'
+import { isRollbackStage } from '../system-update-rollback'
 import { installedOnlyRows, onlineAvailability, releaseLabels, skippedRows, skippedSummary, syncScheduleInfo } from '../module-repository-info'
 import { confirmationRequired, dependantLines, handBackDisableLines, handBackEnableLines, handBackRequiredPayload, handBackWarning, installConfirmSummary, emptySecondConfirmationText, secondConfirmationRequired, secondConfirmationRequiredPayload, secondConfirmationText, isReplacementProblem, replacedByLabel, replacementConfirmLines, replacementListChangedText, replacementProblemText, replacesLabel, satisfiedByLine, willDisableIds } from '../module-replacement'
 import {
@@ -186,7 +187,7 @@ const moduleJobProgress = computed(() => {
   if (job.status === 'succeeded' || job.stage === 'complete') return 100
   if (['failed', 'dispatch_failed'].includes(job.status)) return 100
   const stage = String(job.stage || job.status || '').toLowerCase()
-  if (stage.includes('rollback')) return 85
+  if (isRollbackStage(stage)) return 85
   if (stage.includes('runtime-sync') || stage.includes('ui-sync')) return 82
   if (stage.includes('lifecycle') || stage.includes('install')) return 55
   if (stage.includes('dispatch')) return 18

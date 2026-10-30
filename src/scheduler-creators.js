@@ -22,26 +22,30 @@ export function cleanFilters(filters) {
   const confirmedBy = name(filters?.confirmedBy)
   if (createdBy) out.createdBy = createdBy
   if (confirmedBy) out.confirmedBy = confirmedBy
+  if (filters?.orphaned === true) out.orphaned = true
   return out
 }
 
-// The query string for listSchedules, in a fixed order: owner_type, created_by, confirmed_by.
+// The query string for listSchedules, in a fixed order: owner_type, created_by, confirmed_by, orphaned (0.12.123, Core 1.17.97, only when true).
 export function schedulesQuery(ownerType = null, filters = {}) {
   const parts = []
   if (ownerType) parts.push(`owner_type=${encodeURIComponent(ownerType)}`)
   const clean = cleanFilters(filters)
   if (clean.createdBy) parts.push(`created_by=${encodeURIComponent(clean.createdBy)}`)
   if (clean.confirmedBy) parts.push(`confirmed_by=${encodeURIComponent(clean.confirmedBy)}`)
+  if (clean.orphaned) parts.push('orphaned=true')
   return parts.length ? `?${parts.join('&')}` : ''
 }
 
 // The one-line state beside the filter boxes, or '' when no filter is applied.
 export function filterStateSentence(filters) {
   const clean = cleanFilters(filters)
-  if (clean.createdBy && clean.confirmedBy) return `Showing schedules created by ${clean.createdBy} and confirmed by ${clean.confirmedBy}`
-  if (clean.createdBy) return `Showing schedules created by ${clean.createdBy}`
-  if (clean.confirmedBy) return `Showing schedules confirmed by ${clean.confirmedBy}`
-  return ''
+  const who = []
+  if (clean.createdBy) who.push(`created by ${clean.createdBy}`)
+  if (clean.confirmedBy) who.push(`confirmed by ${clean.confirmedBy}`)
+  const base = who.join(' and ')
+  if (clean.orphaned) return base ? `Showing schedules ${base} whose owner module is not installed` : 'Showing schedules whose owner module is not installed'
+  return base ? `Showing schedules ${base}` : ''
 }
 
 // The tab count line. A filter narrows the list, so the counts say they are filtered.

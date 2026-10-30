@@ -83,6 +83,10 @@ for (const route of maintenanceRoutes) assert.ok(used.map(cleanUsed).includes(ro
 const logRoutes=['/api/tfd/system/updates/jobs/','/api/tfd/system/updates/jobs/<dynamic>/log/','/api/tfd/system/maintenance/jobs/<dynamic>/log/']
 for (const route of logRoutes) routes.add(route)
 for (const route of logRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
+// 0.12.123: the five orphaned-schedule routes of Core 1.17.97 (framwork/tec_tac/urls.py). Added by name until the next signed contract export carries them.
+const orphanRoutes=['/api/tfd/scheduler/orphaned/','/api/tfd/scheduler/orphaned/<dynamic>/disable/','/api/tfd/scheduler/orphaned/<dynamic>/','/api/tfd/scheduler/orphaned/modules/<dynamic>/disable/','/api/tfd/scheduler/orphaned/modules/<dynamic>/']
+for (const route of orphanRoutes) routes.add(route)
+for (const route of orphanRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
 
 const missing=[]
 for (const raw of used) {

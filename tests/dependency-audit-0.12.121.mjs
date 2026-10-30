@@ -60,5 +60,5 @@ const tt = JSON.parse(read('tec_tac_package.json'))
 assert.equal(read('VERSION').trim(), pkg.version)
 assert.match(pkg.version, /^0\.12\.\d+$/)
 assert.equal(tt.version, pkg.version)
-assert.equal(tt.requires['tec-tac-framework'], '>=1.17.67,<2.0.0')
+assert.match(tt.requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/) // 0.12.123: the requirement moves with each release; the current one is pinned in the release test
 console.log('dependency-audit-0.12.121: ok')
