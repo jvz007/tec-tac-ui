@@ -178,7 +178,8 @@ assert.match(template, /v-if="branchListFailed\[component\.id\]"[^>]*type="text"
 const save = script.slice(script.indexOf('async function saveSource'), script.indexOf('async function checkOnline'))
 assert.match(save, /\[component\]: result\.update_sources\[component\]/)
 assert.match(save, /onlineRequestGate\.invalidate\(component\)/)
-assert.match(save, /checkOnline\(component, \{ force: true \}\)/)
+// 0.12.124 (Core 1.17.98): the re-check after a save asks for the saved answer of the new source, not a forced refresh.
+assert.match(save, /checkOnline\(component, \{ waitForCurrent: true \}\)/)
 // Check and Stage are blocked while the draft differs.
 assert.match(template, /sourceBlocked\(component\.id\)/)
 assert.match(template, /Save to use this source/)

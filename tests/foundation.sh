@@ -497,7 +497,8 @@ grep -q 'verify them again as root' "${MM_SRC}" || fail "managed hotfix root re-
 echo "[TEST] PASS managed module hotfix UI"
 
 # 0.11.16 24-hour System Updates release cache integration
-grep -q "checkOnlineSystemUpdate(component, { force = false } = {})" "${ROOT}/src/api.js" || fail "system update API force-cache contract missing"
+# 0.12.124 (Core 1.17.98): the page states refresh=none|branch|release|all and never sends force.
+grep -q "checkOnlineSystemUpdate(component, { refresh = 'none' } = {})" "${ROOT}/src/api.js" || fail "system update API refresh contract missing"
 grep -q "status.value?.release_cache?.\[component\]" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "System Updates does not hydrate cached release versions"
 grep -q "refreshOnline" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "automatic stable release refresh missing"
 grep -q "60 \* 60 \* 1000" "${ROOT}/src/views/SystemUpdatesView.vue" || fail "hourly cache-age recheck timer missing"

@@ -583,9 +583,13 @@ export async function setUpdateTrustPolicy(minimumLevel) {
   })
 }
 
-export async function checkOnlineSystemUpdate(component, { force = false } = {}) {
-  const query = new URLSearchParams({ component })
-  if (force) query.set('force', '1')
+// 0.12.124 (Core 1.17.98): the page states what to refresh. none (the default) is the saved answer; branch and release
+// are the Refresh buttons; force is never sent. Core answers 400 for any other value, so it is refused here first.
+const ONLINE_REFRESH = new Set(['none', 'branch', 'release', 'all'])
+export async function checkOnlineSystemUpdate(component, { refresh = 'none' } = {}) {
+  const scope = refresh === null || refresh === undefined || refresh === '' ? 'none' : String(refresh)
+  if (!ONLINE_REFRESH.has(scope)) throw failure('refresh must be none, branch, release or all.', 0)
+  const query = new URLSearchParams({ component, refresh: scope })
   return apiFetch(`/api/tfd/system/updates/online/?${query.toString()}`)
 }
 
@@ -597,12 +601,16 @@ export async function getSystemUpdateBranches(component) {
 // With no sourceType the body carries only the component and Core stages the
 // saved update source. An explicit sourceType (one-off branch, or an older Core
 // without saved sources) wins.
-export async function stageOnlineSystemUpdate(component, sourceType = null, ref = null) {
+// 0.12.124 (Core 1.17.98): commit pins the stage to the commit the check showed. Core answers 409 stale_candidate when
+// the branch or release moved, and never stages another commit. Only a 40-hex value is sent; anything else is left out.
+export async function stageOnlineSystemUpdate(component, sourceType = null, ref = null, commit = null) {
   const body = { component }
   if (sourceType !== null && sourceType !== undefined) {
     body.source_type = sourceType
     body.ref = ref
   }
+  const pinned = typeof commit === 'string' && /^[0-9a-f]{40}$/i.test(commit.trim()) ? commit.trim().toLowerCase() : null
+  if (pinned) body.commit = pinned
   return apiFetch('/api/tfd/system/updates/online/stage/', {
     method: 'POST',
     body: JSON.stringify(body),

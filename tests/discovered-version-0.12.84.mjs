@@ -82,7 +82,8 @@ assert.ok(view.slice(guard, guardEnd).includes('<dt>Release trust</dt>') && view
 assert.match(view, /discovered\(component\.id\)\.kind !== 'branch' && online\[component\.id\]\?\.release_error/)
 assert.match(view, /latest_release && !savedIsBranch\(component\)\) online\.value\[component\] = cached/)
 assert.match(view, /checkedAtLocal\.value\[component\] = /)
-assert.match(view, /\(this session\)/)
+// 0.12.124: the branch line now reads "Checked N seconds ago" through checkedText (src/system-update-github.js).
+assert.match(view, /checkedText\(\{/)
 assert.match(view, /kind !== 'branch' && online\[component\.id\]\?\.cache\?\.stale/)
 assert.match(view, /<dt>Discovered version<\/dt>/)
 console.log('discovered-version-0.12.84 ok')

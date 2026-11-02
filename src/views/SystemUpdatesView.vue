@@ -32,6 +32,20 @@ import {
 } from '../update-source'
 import { createKeyedLatestRequestGate } from '../latest-request-gate'
 import { isRollbackStage, rollbackNotice } from '../system-update-rollback'
+import {
+  checkedText,
+  isNewCheck,
+  isStaleCandidate,
+  latestTelemetry,
+  pinnedCommit,
+  rateLimitActive,
+  rateLimitFromError,
+  rateLimitFromResult,
+  rateLimitView,
+  rateLimitWarning,
+  refreshNotice,
+  staleCandidateMessage,
+} from '../system-update-github'
 import { trustPopoverDomId, trustPopoverOpen, trustPopoverTransition } from '../system-trust-popover-state'
 
 const help = inject('tecTacHelp', null)
@@ -51,6 +65,19 @@ const branches = ref({ framework: [], ui: [] })
 const selectedBranch = ref({ framework: 'main', ui: 'main' })
 const branchBusy = ref({ framework: false, ui: false })
 const onlineRequestGate = createKeyedLatestRequestGate(['framework', 'ui'])
+// 0.12.124 (Core 1.17.98): one online request per component at a time. onlineScope is the refresh scope in flight
+// (none, branch or release), or null. onlineInFlight holds the running promise, so a second call joins it.
+const onlineScope = ref({ framework: null, ui: null })
+const onlineInFlight = { framework: null, ui: null }
+// github_rate_limit_error from the answer, or the 429 body: { code, reset_at, cached_data_available }, or null.
+const rateLimit = ref({ framework: null, ui: null })
+// A line after a Refresh press when Core did not ask GitHub (recently_refreshed, refreshed_by_another_request).
+const refreshNote = ref({ framework: '', ui: '' })
+// The 409 stale_candidate message, with a Refresh button. Nothing is staged.
+const staleCandidate = ref({ framework: '', ui: '' })
+// Ticks every 5 seconds for "Checked N seconds ago" and the reset time. No request.
+const nowMs = ref(Date.now())
+const clockTimer = ref(null)
 const branchRequestGate = createKeyedLatestRequestGate(['framework', 'ui'])
 // Remembered update source (Core 1.17.2): the draft is what the control shows,
 // status.update_sources is what Core saved.
@@ -151,6 +178,11 @@ const systemJobProgressLabel = computed(() => {
 })
 // 0.12.123: yellow for a restored version, red only when the rollback itself failed. The job stays failed with its own error line.
 const jobRollbackNotice = computed(() => rollbackNotice(job.value?.rollback))
+// The GitHub API line: the newest telemetry Core reported, from the status answer or either online answer.
+const githubApi = computed(() => rateLimitView(
+  latestTelemetry(status.value?.github_rate_limit, online.value.framework?.github_rate_limit, online.value.ui?.github_rate_limit),
+  { format: formatCheckedAt },
+))
 const systemJobFailureTail = computed(() => {
   if (job.value?.status !== 'failed') return []
   return (job.value?.log_tail || []).filter((line) => String(line || '').trim()).slice(-8)
@@ -351,13 +383,58 @@ function discovered(component) {
   return discoveredVersion({ saved: savedSources.value[component], online: online.value[component], sourcesSupported: sourcesSupported.value })
 }
 
-// Core 1.17.3 returns no checked_at for a branch source, so show when this page
-// received the check. cache.stale means nothing for a branch.
+// 0.12.124: "Checked N seconds ago" from the answer's checked_at. Core 1.17.98 returns no check time for a branch head,
+// so a branch shows when this page got an answer Core marked as a real check, or says it is Core's saved check.
+// cache.stale means nothing for a branch.
 function lastCheckedText(component) {
-  if (discovered(component).kind === 'branch') {
-    return checkedAtLocal.value[component] ? `${formatCheckedAt(checkedAtLocal.value[component])} (this session)` : 'Never'
-  }
-  return formatCheckedAt(online.value[component]?.checked_at)
+  return checkedText({
+    kind: discovered(component).kind,
+    result: online.value[component],
+    localAt: checkedAtLocal.value[component],
+    now: nowMs.value,
+    format: formatCheckedAt,
+  })
+}
+
+// GitHub's limit is used up and the card shows the saved answer.
+function shownStale(component) {
+  return Boolean(rateLimit.value[component])
+}
+
+function limitActive(component) {
+  return rateLimitActive(rateLimit.value[component], nowMs.value)
+}
+
+function limitText(component) {
+  return rateLimitWarning(rateLimit.value[component], nowMs.value, { format: formatCheckedAt })
+}
+
+// What a Refresh press asks for: the branch for a saved branch source, else the stable release.
+function primaryScope(component) {
+  return savedIsBranch(component) ? 'branch' : 'release'
+}
+
+// A Refresh button is off while any request for its component runs, and until GitHub's reset time.
+function refreshBlocked(component) {
+  return Boolean(onlineScope.value[component]) || stageBusy.value || limitActive(component)
+}
+
+function refreshTitle(component) {
+  if (limitActive(component)) return limitText(component)
+  if (onlineScope.value[component]) return 'A check is already running.'
+  return ''
+}
+
+async function refreshComponent(component, scope) {
+  if (refreshBlocked(component)) return
+  staleCandidate.value[component] = ''
+  await checkOnline(component, { refresh: scope })
+}
+
+// The commit the card shows for the saved source: the branch head, or the stable release commit. Null when none is shown.
+function shownCommit(component, type) {
+  if (type === 'branch') return pinnedCommit(branchCheck(component)?.branch?.head_commit)
+  return pinnedCommit(online.value[component]?.latest_release?.commit)
 }
 
 function stageShown(component) {
@@ -408,7 +485,8 @@ async function applySource(component, type, ref) {
     syncSourceDraft(component)
     // Anything still in flight was for the old source.
     onlineRequestGate.invalidate(component)
-    await checkOnline(component, { force: true })
+    // 0.12.124: the saved answer for the new source (refresh=none). Core asks GitHub only when it has none or it is old.
+    await checkOnline(component, { waitForCurrent: true })
   } catch (err) {
     sourceError.value[component] = err?.message || 'Unable to save the update source.'
   } finally {
@@ -433,26 +511,59 @@ function stable(component) {
   })
 }
 
-async function checkOnline(component, { force = false, background = false } = {}) {
-  const requestId = onlineRequestGate.begin(component)
-  onlineBusy.value[component] = !background
-  if (!background) error.value = ''
+// 0.12.124 (Core 1.17.98): refresh is none (page load, the hourly look, a saved source change), branch or release
+// (the Refresh buttons). force is never sent. A call while one runs for the component joins it and sends nothing;
+// waitForCurrent (a saved source change) waits for it, then asks once for the new source.
+async function checkOnline(component, { refresh = 'none', background = false, waitForCurrent = false } = {}) {
+  if (onlineInFlight[component]) {
+    if (!waitForCurrent) return onlineInFlight[component]
+    try { await onlineInFlight[component] } catch { /* its own error handling ran */ }
+    if (onlineInFlight[component]) return onlineInFlight[component]
+  }
+  const run = runOnlineCheck(component, refresh, background)
+  onlineInFlight[component] = run
   try {
-    const result = await checkOnlineSystemUpdate(component, { force })
-    if (!onlineRequestGate.isCurrent(component, requestId)) return
-    online.value[component] = result
-    checkedAtLocal.value[component] = new Date().toISOString()
-  } catch (err) {
-    if (onlineRequestGate.isCurrent(component, requestId) && !background) {
-      error.value = err?.message || 'Unable to check repository release.'
-    }
+    return await run
   } finally {
-    if (onlineRequestGate.isCurrent(component, requestId)) onlineBusy.value[component] = false
+    if (onlineInFlight[component] === run) onlineInFlight[component] = null
   }
 }
 
+async function runOnlineCheck(component, refresh, background) {
+  const requestId = onlineRequestGate.begin(component)
+  onlineScope.value[component] = refresh
+  onlineBusy.value[component] = !background
+  if (!background) error.value = ''
+  try {
+    const result = await checkOnlineSystemUpdate(component, { refresh })
+    if (!onlineRequestGate.isCurrent(component, requestId)) return
+    online.value[component] = result
+    rateLimit.value[component] = rateLimitFromResult(result)
+    refreshNote.value[component] = refreshNotice(result) || ''
+    if (refresh !== 'none') staleCandidate.value[component] = ''
+    if (isNewCheck(result)) checkedAtLocal.value[component] = new Date().toISOString()
+  } catch (err) {
+    if (!onlineRequestGate.isCurrent(component, requestId)) return
+    // 429: nothing saved to show. Keep whatever the card shows, mark it stale, and do not retry.
+    const limited = rateLimitFromError(err)
+    if (limited) {
+      rateLimit.value[component] = limited
+      refreshNote.value[component] = ''
+      return
+    }
+    if (!background) error.value = err?.message || 'Unable to check repository release.'
+  } finally {
+    // Only one request runs per component, so the flags always clear here.
+    onlineScope.value[component] = null
+    onlineBusy.value[component] = false
+  }
+}
+
+// Page load and the hourly look: the saved answers (refresh=none). Skipped while GitHub's limit is used up.
 async function refreshOnline() {
-  await Promise.allSettled(['framework', 'ui'].map((component) => checkOnline(component, { background: true })))
+  await Promise.allSettled(['framework', 'ui']
+    .filter((component) => !rateLimitActive(rateLimit.value[component], Date.now()))
+    .map((component) => checkOnline(component, { background: true })))
 }
 
 function formatCheckedAt(value) {
@@ -484,7 +595,8 @@ async function loadBranches(component, { quiet = false } = {}) {
   } catch (err) {
     if (branchRequestGate.isCurrent(component, requestId)) {
       branchListFailed.value[component] = true
-      if (!quiet) error.value = err?.message || 'Unable to list repository branches.'
+      const limited = rateLimitFromError(err)
+      if (!quiet) error.value = limited ? rateLimitWarning(limited, Date.now(), { format: formatCheckedAt }) : (err?.message || 'Unable to list repository branches.')
     }
   } finally {
     if (branchRequestGate.isCurrent(component, requestId)) branchBusy.value[component] = false
@@ -507,16 +619,27 @@ async function stageOnline(component, sourceType = null) {
     type = saved.type
     ref = saved.type === 'branch' ? saved.ref : null
   }
+  // 0.12.124 (Core 1.17.98): the saved source is pinned to the commit the card shows. The one-off Advanced stage is not:
+  // Core saves no head for a branch it has not checked, so a pin would always be refused. Its inspection shows the commit.
+  const commit = oneOff ? null : shownCommit(component, type)
+  if (onlineScope.value[component]) return
   offlineFile.value = null
   offlineDropActive.value = false
   stageBusy.value = true
   error.value = ''
+  staleCandidate.value[component] = ''
   try {
-    stage.value = await stageOnlineSystemUpdate(component, type, ref)
+    stage.value = await stageOnlineSystemUpdate(component, type, ref, commit)
     stageRequest.value = { component, type, ref, oneOff }
     allowDowngrade.value = false
   } catch (err) {
-    error.value = err?.message || 'Unable to stage online update.'
+    if (isStaleCandidate(err)) {
+      // 409: the branch or release moved. Nothing was staged; the person refreshes and looks again.
+      staleCandidate.value[component] = staleCandidateMessage(type)
+      return
+    }
+    const limited = rateLimitFromError(err)
+    error.value = limited ? rateLimitWarning(limited, Date.now(), { format: formatCheckedAt }) : (err?.message || 'Unable to stage online update.')
   } finally {
     stageBusy.value = false
   }
@@ -663,9 +786,10 @@ onMounted(async () => {
     ? Promise.allSettled(['framework', 'ui'].map((component) => loadBranches(component, { quiet: true })))
     : Promise.resolve()
   await Promise.all([refreshOnline(), lists])
-  // The backend cache makes this cheap: GitHub is contacted only when the
-  // persisted release lookup is at least 24 hours old.
+  // refresh=none: Core answers from its saved checks and asks GitHub only when one is old (one conditional request).
+  // Never a forced refresh, and skipped while GitHub's limit is used up.
   releaseRefreshTimer.value = window.setInterval(refreshOnline, 60 * 60 * 1000)
+  clockTimer.value = window.setInterval(() => { nowMs.value = Date.now() }, 5000)
 })
 onBeforeUnmount(() => {
   for (const component of ['framework', 'ui']) { onlineRequestGate.invalidate(component); branchRequestGate.invalidate(component) }
@@ -673,6 +797,7 @@ onBeforeUnmount(() => {
   stopPolling()
   if (reloadTimer.value) window.clearInterval(reloadTimer.value)
   if (releaseRefreshTimer.value) window.clearInterval(releaseRefreshTimer.value)
+  if (clockTimer.value) window.clearInterval(clockTimer.value)
 })
 </script>
 
@@ -739,6 +864,10 @@ onBeforeUnmount(() => {
       <div v-if="stage" class="state-inline"><b>Package staged.</b> Review the inspection result below before installation.</div>
     </article>
 
+    <div v-if="!loading && githubApi" class="state-inline smalltext mb" data-test="github-api-state">
+      <b>GitHub API</b> · <span class="mono">{{ githubApi.countText }}</span><template v-if="githubApi.resetText"> · {{ githubApi.resetText }}</template> · <span class="pill" :class="githubApi.limited ? 'warn' : (githubApi.authenticated ? 'ok' : '')">{{ githubApi.authLabel.toUpperCase() }}</span>
+    </div>
+
     <div v-if="!loading" class="system-update-grid">
       <article v-for="component in components" :key="component.id" class="card system-update-card">
         <div class="cardhead">
@@ -791,6 +920,7 @@ onBeforeUnmount(() => {
                   <span v-if="stable(component.id).operation" class="sub">{{ humanOperation(stable(component.id).operation) }}</span>
                 </template>
                 <span v-if="stable(component.id).error" class="sub muted" data-test="stable-release-error">{{ stable(component.id).error }}</span>
+                <button class="btn sm" type="button" data-test="refresh-stable-release" :disabled="refreshBlocked(component.id)" :title="refreshTitle(component.id)" @click="refreshComponent(component.id, 'release')">{{ onlineScope[component.id] === 'release' ? 'Checking…' : 'Refresh stable release' }}</button>
                 <button v-if="canEditSource && savedIsBranch(component.id)" class="btn sm" type="button" data-test="use-stable-release" :disabled="sourceSaving[component.id]" @click="switchToRelease(component.id)">{{ sourceSaving[component.id] ? 'Switching…' : 'Use stable release' }}</button>
               </dd>
             </template>
@@ -827,10 +957,11 @@ onBeforeUnmount(() => {
             <dd><span class="pill" :class="online[component.id].latest_release.release_trust.acceptance_policy.accepted ? 'ok' : 'danger'">{{ online[component.id].latest_release.release_trust.acceptance_policy.accepted ? 'ACCEPTED' : 'BLOCKED' }}</span><span class="sub">{{ online[component.id].latest_release.release_trust.acceptance_policy.actual_label || 'Unknown' }} · minimum {{ online[component.id].latest_release.release_trust.acceptance_policy.minimum_label }}</span></dd>
           </template>
           </template>
-          <dt>Last checked</dt><dd class="smalltext">{{ lastCheckedText(component.id) }}<span v-if="discovered(component.id).kind !== 'branch' && online[component.id]?.cache?.stale" class="pill warn ml">STALE</span></dd>
+          <dt>Last checked</dt><dd class="smalltext" data-test="last-checked">{{ lastCheckedText(component.id) }}<span v-if="(discovered(component.id).kind !== 'branch' && online[component.id]?.cache?.stale) || shownStale(component.id)" class="pill warn ml">STALE</span></dd>
         </dl>
 
-        <div v-if="discovered(component.id).kind !== 'branch' && online[component.id]?.release_error" class="state-inline warning mt">{{ online[component.id].release_error }}</div>
+        <div v-if="rateLimit[component.id]" class="state-inline warning mt" role="status" data-test="github-rate-limit-warning">{{ limitText(component.id) }}</div>
+        <div v-if="discovered(component.id).kind !== 'branch' && online[component.id]?.release_error && !rateLimit[component.id]" class="state-inline warning mt">{{ online[component.id].release_error }}</div>
 
         <div v-if="sourcesSupported" class="update-source-control mt">
           <div class="section-divider">Update source</div>
@@ -861,18 +992,23 @@ onBeforeUnmount(() => {
         <div v-if="discovered(component.id).kind === 'branch' && discovered(component.id).branchError" class="state-inline warning mt" data-test="branch-check">{{ discovered(component.id).branchError }}</div>
 
         <div class="system-update-actions">
-          <button class="btn" :disabled="onlineBusy[component.id] || stageBusy || sourceBlocked(component.id)" :title="sourceBlocked(component.id) ? 'Save to use this source.' : ''" @click="checkOnline(component.id, { force: true })">
-            {{ onlineBusy[component.id] ? 'Checking…' : 'Check for updates' }}
+          <button class="btn" data-test="refresh-primary" :disabled="refreshBlocked(component.id) || sourceBlocked(component.id)" :title="sourceBlocked(component.id) ? 'Save to use this source.' : refreshTitle(component.id)" @click="refreshComponent(component.id, primaryScope(component.id))">
+            {{ onlineScope[component.id] === primaryScope(component.id) ? 'Checking…' : 'Check for updates' }}
           </button>
           <button
             v-if="stageShown(component.id)"
             class="btn primary"
-            :disabled="stageBusy || sourceBlocked(component.id) || !stageAllowed(component.id)"
+            :disabled="stageBusy || Boolean(onlineScope[component.id]) || sourceBlocked(component.id) || !stageAllowed(component.id)"
             :title="sourceBlocked(component.id) ? 'Save to use this source.' : (!stageAllowed(component.id) ? 'Release is below the configured trust acceptance level.' : '')"
             @click="stageOnline(component.id)"
           >
             {{ stageLabel(component.id) }}
           </button>
+        </div>
+        <p v-if="refreshNote[component.id]" class="compact-copy muted" role="status" data-test="refresh-note">{{ refreshNote[component.id] }}</p>
+        <div v-if="staleCandidate[component.id]" class="state-inline warning mt" role="alert" data-test="stale-candidate">
+          {{ staleCandidate[component.id] }}
+          <div class="mt"><button class="btn sm" type="button" :disabled="refreshBlocked(component.id)" :title="refreshTitle(component.id)" @click="refreshComponent(component.id, primaryScope(component.id))">{{ onlineScope[component.id] ? 'Checking…' : 'Refresh the check' }}</button></div>
         </div>
 
         <div class="section-divider">Advanced source (one-off)</div>
