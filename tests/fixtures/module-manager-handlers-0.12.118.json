@@ -343,7 +343,7 @@
   "!canManage||jobRunning",
   "!canManage || repositoryBusy",
   "catalogBusy",
-  "!canManage || repositoryBusy || !repositoryDraft.name || !repositoryDraft.url",
+  "!canManage || repositoryBusy || !repositoryDraft.name || (isLicensingSource(selectedRepository) ? Boolean(channelError(repositoryDraft.channel)) : !repositoryDraft.url)",
   "hotfixInspecting||hotfixJobRunning",
   "hotfixJobRunning",
   "hotfixJobRunning||index!==hotfixRows.length-1",

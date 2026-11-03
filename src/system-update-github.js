@@ -57,6 +57,10 @@ export function checkedText({ kind, result, localAt = null, now = Date.now(), fo
     const reason = result?.refresh?.reason
     const head = result?.branch?.head_commit
     if (!head) return 'Never'
+    // 0.12.126 (Core 1.17.106): refresh.stale names every saved part past its limit. cache_fresh then only means the
+    // primary answer is inside its limit, so the list is shown instead of "less than 5 minutes old".
+    const parts = staleParts(result)
+    if (parts.length) return `Saved check. Out of date: ${parts.join(', ')}`
     if (reason === 'recently_refreshed') return 'Checked less than 20 seconds ago'
     if (reason === 'cache_fresh') return 'Saved check, less than 5 minutes old'
     return 'Saved check'
@@ -164,4 +168,67 @@ export function staleCandidateMessage(sourceType) {
     return 'The branch moved after your last check, so nothing was downloaded. Refresh the check, look at the new commit, then download again.'
   }
   return 'The stable release changed after your last check, so nothing was downloaded. Refresh the check, look at the new release, then download again.'
+}
+
+// 0.12.126 (Core 1.17.106, reviews/requests/ui.md "System Update must not offer a stale branch head").
+// refresh.stale lists the saved parts past their limit: branch_head, stable_release, latest_release. An unknown name is
+// shown as Core sent it, with underscores as spaces.
+const STALE_PART_LABELS = Object.freeze({ branch_head: 'branch head', stable_release: 'stable release', latest_release: 'latest release' })
+
+export function staleParts(result) {
+  const list = result?.refresh?.stale
+  if (!Array.isArray(list)) return []
+  return list
+    .filter((name) => typeof name === 'string' && name.trim())
+    .map((name) => STALE_PART_LABELS[name] || name.replace(/_/g, ' '))
+}
+
+// The saved branch head is old: Core says head_stale, or it could not refresh the head (not_refreshed). The page then
+// never offers the head as the update: Stage stays off until a refresh brings a head that is not stale. An older Core
+// sends neither key, so this is false and the page behaves as before.
+export function branchHeadStale(result) {
+  if (!result || typeof result !== 'object') return false
+  return result.branch?.head_stale === true || result.refresh?.reason === 'not_refreshed'
+}
+
+// "Last checked 3 Nov 2026, 09:14; refresh to see the latest". head_checked_at is when GitHub last confirmed the head.
+export function staleHeadText(result, { format = defaultFormat } = {}) {
+  const at = timeOf(result?.branch?.head_checked_at)
+  const when = at === null ? 'at an unknown time' : format(new Date(at))
+  return `Last checked ${when}; refresh to see the latest`
+}
+
+// The 409 stale_candidate text. Core 1.17.106 names the current head in detail ("dev has moved to 28e1396; the check
+// showed 45cbf36. Refresh the check and try again."), shown as text. An older Core's detail is generic, so the page's own
+// sentence stays the fallback.
+export function staleCandidateText(error, sourceType) {
+  const detail = error?.payload && typeof error.payload === 'object' ? error.payload.detail : null
+  if (typeof detail === 'string' && /has moved to/i.test(detail)) return detail.trim().slice(0, 400)
+  return staleCandidateMessage(sourceType)
+}
+
+// A staged package older than the installed one. Core 1.17.106 sends downgrade and confirmation_required; operation
+// downgrade has meant the same since before.
+export function isDowngradePreview(preview) {
+  if (!preview || typeof preview !== 'object') return false
+  return preview.downgrade === true || preview.confirmation_required === 'downgrade' || preview.operation === 'downgrade'
+}
+
+// The pill on the inspection card. A downgrade always reads DOWNGRADE, never UPDATE.
+export function operationLabel(preview) {
+  if (isDowngradePreview(preview)) return 'DOWNGRADE'
+  return String(preview?.operation || '').toUpperCase() || 'UNKNOWN'
+}
+
+// The plain Yes/No question before a downgrade is installed. It names both versions.
+export function downgradeConfirmOptions(preview) {
+  const label = preview?.component_label || 'this component'
+  const installed = preview?.installed_version || 'the installed version'
+  const version = preview?.version || 'an older version'
+  return {
+    question: `Downgrade ${label} from ${installed} to ${version}?`,
+    target: label,
+    detail: preview?.downgrade_warning || `This package is ${label} ${version}, older than the installed ${installed}. Installing it is a downgrade.`,
+    danger: true,
+  }
 }

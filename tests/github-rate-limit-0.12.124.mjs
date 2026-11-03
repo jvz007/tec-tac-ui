@@ -287,7 +287,7 @@ assert.match(template, /data-test="refresh-note"/)
 // the stage pin and 409
 const stageFn = script.slice(script.indexOf('async function stageOnline'), script.indexOf('function pickOfflinePackage'))
 assert.match(stageFn, /const commit = oneOff \? null : shownCommit\(component, type\)/)
-assert.match(stageFn, /isStaleCandidate\(err\)[\s\S]*staleCandidate\.value\[component\] = staleCandidateMessage\(type\)\s*return/)
+assert.match(stageFn, /isStaleCandidate\(err\)[\s\S]*staleCandidate\.value\[component\] = staleCandidateText\(err, type\)\s*return/)
 assert.doesNotMatch(stageFn.slice(stageFn.indexOf('isStaleCandidate(err)')), /stageOnlineSystemUpdate/, 'a 409 never stages again by itself')
 assert.match(script, /if \(type === 'branch'\) return pinnedCommit\(branchCheck\(component\)\?\.branch\?\.head_commit\)/)
 assert.match(script, /return pinnedCommit\(online\.value\[component\]\?\.latest_release\?\.commit\)/)

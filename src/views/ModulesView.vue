@@ -20,7 +20,7 @@ import { loadLatestHotfixRows } from '../module-hotfix-loader'
 import { checkIntakeMetadata, orderGroupsByDependency, pairIntakeFiles } from '../module-intake'
 import { categorySearchText, CATEGORY_FILTERS, filterByCategory } from '../module-category'
 import { isRollbackStage } from '../system-update-rollback'
-import { installedOnlyRows, onlineAvailability, releaseLabels, skippedRows, skippedSummary, syncScheduleInfo } from '../module-repository-info'
+import { CHANNEL_HINT, channelError, installedOnlyRows, isLicensingSource, licensingStateText, onlineAvailability, releaseLabels, repositoryPayload, skippedRows, skippedSummary, syncScheduleInfo } from '../module-repository-info'
 import { confirmationRequired, dependantLines, handBackDisableLines, handBackEnableLines, handBackRequiredPayload, handBackWarning, installConfirmSummary, emptySecondConfirmationText, secondConfirmationRequired, secondConfirmationRequiredPayload, secondConfirmationText, isReplacementProblem, replacedByLabel, replacementConfirmLines, replacementListChangedText, replacementProblemText, replacesLabel, satisfiedByLine, willDisableIds } from '../module-replacement'
 import {
   addModuleRepository,
@@ -426,6 +426,8 @@ function newRepository() {
 function editRepository(item) {
   selectedRepositoryId.value = item.id
   repositoryDraft.value = { name: item.name, url: item.url, priority: item.priority, trust: item.trust, enabled: item.enabled }
+  // 0.12.126 (AD-58 D6): the Licensing source carries its channel; an index repository has none.
+  if (isLicensingSource(item)) repositoryDraft.value.channel = typeof item.channel === 'string' ? item.channel : ''
   editingRepository.value = true
 }
 
@@ -439,7 +441,7 @@ async function saveRepository() {
   repositoryBusy.value = true
   error.value = ''
   try {
-    if (selectedRepositoryId.value) await updateModuleRepository(selectedRepositoryId.value, repositoryDraft.value)
+    if (selectedRepositoryId.value) await updateModuleRepository(selectedRepositoryId.value, repositoryPayload(repositoryDraft.value, selectedRepository.value))
     else await addModuleRepository(repositoryDraft.value)
     editingRepository.value = false
     selectedRepositoryId.value = null
@@ -1235,10 +1237,19 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
       <div v-if="editingRepository" class="modal-backdrop" @click.self="cancelRepositoryEdit" @keydown.esc.stop.prevent="cancelRepositoryEdit"><section class="modal-panel repository-editor" role="dialog" aria-modal="true" aria-labelledby="repository-dialog-title">
         <div class="cardhead"><div><span class="eyebrow">REPOSITORY</span><h3 id="repository-dialog-title">{{ selectedRepository ? 'Edit source' : 'Add source' }}</h3></div></div>
         <label class="field"><span>Name</span><input v-model="repositoryDraft.name" autocomplete="off"></label>
+        <template v-if="isLicensingSource(selectedRepository)">
+          <div class="field"><span>Address</span><div class="mono smalltext" data-test="licensing-address">{{ selectedRepository.url || '—' }}</div><span class="muted smalltext">Set by the server. It cannot be changed here.</span></div>
+          <div class="field-grid"><label class="field"><span>Priority</span><input v-model.number="repositoryDraft.priority" type="number" min="0" max="10000"></label><label class="field"><span>Channel</span><input v-model.trim="repositoryDraft.channel" class="mono" data-test="licensing-channel" autocomplete="off" spellcheck="false" maxlength="32" placeholder="Licence default"></label></div>
+          <div class="muted smalltext">{{ CHANNEL_HINT }}</div>
+          <div v-if="channelError(repositoryDraft.channel)" class="state-inline denied mt" data-test="licensing-channel-error">{{ channelError(repositoryDraft.channel) }}</div>
+        </template>
+        <template v-else>
         <label class="field"><span>Index URL</span><input v-model="repositoryDraft.url" class="mono" autocomplete="off" placeholder="https://…/index.json"></label>
         <div class="field-grid"><label class="field"><span>Priority</span><input v-model.number="repositoryDraft.priority" type="number" min="0" max="10000"></label><label class="field"><span>Trust</span><select v-model="repositoryDraft.trust"><option value="official">Official</option><option value="internal">Internal</option><option value="custom">Custom</option></select></label></div>
+        </template>
         <label class="checkline"><input v-model="repositoryDraft.enabled" type="checkbox"> Enabled</label>
-        <div v-if="selectedRepository?.sync?.error" class="state-inline denied mt"><b>Last sync failed.</b> {{ selectedRepository.sync.error }}</div>
+        <div v-if="licensingStateText(selectedRepository)" class="state-inline warning mt" role="status" data-test="licensing-state">{{ licensingStateText(selectedRepository) }}</div>
+        <div v-else-if="selectedRepository?.sync?.error" class="state-inline denied mt"><b>Last sync failed.</b> {{ selectedRepository.sync.error }}</div>
         <div v-if="skippedSummary(selectedRepository?.sync)" class="repo-skipped">
           <div class="section-divider">Skipped entries</div>
           <div class="muted smalltext">{{ skippedSummary(selectedRepository.sync) }}</div>
@@ -1247,7 +1258,7 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
             <div class="reason">{{ row.reason }}</div>
           </div>
         </div>
-        <div class="modal-actions"><button class="btn primary" :disabled="!canManage || repositoryBusy || !repositoryDraft.name || !repositoryDraft.url" @click="saveRepository">Save</button><button class="btn" @click="cancelRepositoryEdit">Cancel</button><button v-if="selectedRepository" class="btn danger" :disabled="!canManage || repositoryBusy" @click="removeRepository(selectedRepository)">Remove</button></div>
+        <div class="modal-actions"><button class="btn primary" :disabled="!canManage || repositoryBusy || !repositoryDraft.name || (isLicensingSource(selectedRepository) ? Boolean(channelError(repositoryDraft.channel)) : !repositoryDraft.url)" @click="saveRepository">Save</button><button class="btn" @click="cancelRepositoryEdit">Cancel</button><button v-if="selectedRepository" class="btn danger" :disabled="!canManage || repositoryBusy" @click="removeRepository(selectedRepository)">Remove</button></div>
       </section></div>
     </div>
   </template>

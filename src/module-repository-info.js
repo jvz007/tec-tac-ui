@@ -117,3 +117,59 @@ export function syncScheduleInfo(sync, formatDate = (value) => String(value)) {
     note: SYNC_NOTE,
   }
 }
+
+// 0.12.126 (Core 1.17.103, AD-58 D6: "configured and editable per repo url"): the Licensing source on the Repositories tab.
+// A row with kind 'licensing' is the licensed catalogue. Core sets its address, kind and trust; a module manager edits name,
+// priority, enabled and channel. An empty channel means the licence's own channel. Core checks the value again.
+export const LICENSING_KIND = 'licensing'
+export const CHANNEL_PATTERN = /^[a-z][a-z0-9_-]{0,31}$/
+export const CHANNEL_HINT = "Empty uses the licence's own channel. Otherwise 1 to 32 lower case letters, digits, '-' or '_', starting with a letter."
+export const CHANNEL_ERROR = "The channel must be empty or a name of 1 to 32 lower case letters, digits, '-' or '_', starting with a letter."
+
+export function isLicensingSource(repo) {
+  return repo?.kind === LICENSING_KIND
+}
+
+// '' when the value is allowed (empty included), else the plain sentence.
+export function channelError(value) {
+  const text = typeof value === 'string' ? value.trim() : ''
+  if (text === '' || CHANNEL_PATTERN.test(text)) return ''
+  return CHANNEL_ERROR
+}
+
+// The PATCH body. For the Licensing source only the four fields it may change; the address, kind and trust are Core's, so
+// they are never sent. An index repository keeps the body it always had, with no channel key (Core refuses one there).
+export function repositoryPayload(draft, repo = null) {
+  if (isLicensingSource(repo)) {
+    return {
+      name: draft?.name,
+      priority: draft?.priority,
+      enabled: draft?.enabled === true,
+      channel: typeof draft?.channel === 'string' ? draft.channel.trim() : '',
+    }
+  }
+  const { channel: _channel, ...rest } = draft || {}
+  return rest
+}
+
+// The Licensing source's state sentence. sync.error carries Core's own sentence; a state with no sentence gets a plain one.
+const LICENSING_STATE_TEXT = Object.freeze({
+  not_registered: 'This server is not registered with the licensing server.',
+  licence_revoked: 'The licence has been revoked.',
+  licence_expired: 'The licence has expired.',
+  licence_grace_expired: 'The licence grace period has ended.',
+  licence_refused: 'The licensing server refused the licence.',
+  channel_not_permitted: 'The licence does not allow this channel.',
+  licensing_unavailable: 'The Licensing module is not available.',
+  invalid_response: 'The licensing server sent an answer Core could not read.',
+  bad_request: 'The licensing server refused the request.',
+  audit_unavailable: 'The audit log could not be written, so nothing was fetched.',
+})
+
+export function licensingStateText(repo) {
+  if (!isLicensingSource(repo)) return ''
+  const state = repo?.sync?.licensing_state
+  if (typeof state !== 'string' || state === '' || state === 'ok') return ''
+  const error = typeof repo?.sync?.error === 'string' && repo.sync.error.trim() ? repo.sync.error.trim() : ''
+  return error || LICENSING_STATE_TEXT[state] || `Licensing state: ${state.replace(/_/g, ' ')}.`
+}

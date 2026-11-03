@@ -33,10 +33,14 @@ import {
 import { createKeyedLatestRequestGate } from '../latest-request-gate'
 import { isRollbackStage, rollbackNotice } from '../system-update-rollback'
 import {
+  branchHeadStale,
   checkedText,
+  downgradeConfirmOptions,
+  isDowngradePreview,
   isNewCheck,
   isStaleCandidate,
   latestTelemetry,
+  operationLabel,
   pinnedCommit,
   rateLimitActive,
   rateLimitFromError,
@@ -44,12 +48,15 @@ import {
   rateLimitView,
   rateLimitWarning,
   refreshNotice,
-  staleCandidateMessage,
+  staleCandidateText,
+  staleHeadText,
 } from '../system-update-github'
 import { trustPopoverDomId, trustPopoverOpen, trustPopoverTransition } from '../system-trust-popover-state'
+import { useConfirm } from '../confirm-dialog'
 
 const help = inject('tecTacHelp', null)
 const appState = inject('tecTacState', null)
+const askConfirm = useConfirm()
 const status = ref(null)
 // 0.12.119 (Q83): the log of one finished update, in the same read-only window the Module Manager History tab uses.
 const openLog = ref(null)
@@ -442,7 +449,27 @@ function stageShown(component) {
 }
 
 function stageAllowed(component) {
-  return savedIsBranch(component) || releaseAccepted(component)
+  if (savedIsBranch(component)) return !headStale(component)
+  return releaseAccepted(component)
+}
+
+// 0.12.126 (Core 1.17.106): the saved branch head is old (head_stale, or not_refreshed). The page never offers it as the
+// update: Stage stays off and the card says when it was last checked, until a Refresh brings a current head. The page does
+// not refresh on its own; the person presses Refresh (Core's 20-second guard and rate-limit block apply as always).
+function headStale(component) {
+  const result = branchCheck(component)
+  return Boolean(result) && branchHeadStale(result)
+}
+
+function headStaleText(component) {
+  return staleHeadText(branchCheck(component), { format: formatCheckedAt })
+}
+
+function stageTitle(component) {
+  if (sourceBlocked(component)) return 'Save to use this source.'
+  if (savedIsBranch(component) && headStale(component)) return 'Refresh to see the latest head before you download.'
+  if (!stageAllowed(component)) return 'Release is below the configured trust acceptance level.'
+  return ''
 }
 
 // The branch the online check reports on, only when it is the saved branch.
@@ -461,7 +488,7 @@ function branchView(component) {
 
 function stageLabel(component) {
   if (savedIsBranch(component)) {
-    const head = branchView(component)?.headShort
+    const head = headStale(component) ? '' : branchView(component)?.headShort
     return `Download & inspect branch ${savedBranchRef(component)}${head ? ` (${head})` : ''}`
   }
   return `Download & inspect ${online.value[component]?.latest_release?.tag || ''}`.trim()
@@ -635,7 +662,7 @@ async function stageOnline(component, sourceType = null) {
   } catch (err) {
     if (isStaleCandidate(err)) {
       // 409: the branch or release moved. Nothing was staged; the person refreshes and looks again.
-      staleCandidate.value[component] = staleCandidateMessage(type)
+      staleCandidate.value[component] = staleCandidateText(err, type)
       return
     }
     const limited = rateLimitFromError(err)
@@ -711,7 +738,16 @@ async function clearStage() {
 async function installStage() {
   if (!stage.value?.upload_id || stageBusy.value || stageCheck.value.blocked) return
   const preview = stage.value.preview || {}
-  if (preview.operation === 'downgrade' && !allowDowngrade.value) return
+  // 0.12.126 (Core 1.17.106): a downgrade gets its own plain Yes/No naming both versions. allow_downgrade is sent only
+  // after that Yes; Core still refuses a downgrade without it.
+  const downgrade = isDowngradePreview(preview)
+  allowDowngrade.value = false
+  if (downgrade) {
+    const upload = stage.value.upload_id
+    if (!(await askConfirm(downgradeConfirmOptions(preview)))) return
+    if (stage.value?.upload_id !== upload || stageBusy.value) return
+    allowDowngrade.value = true
+  }
   stageBusy.value = true
   error.value = ''
   try {
@@ -999,11 +1035,15 @@ onBeforeUnmount(() => {
             v-if="stageShown(component.id)"
             class="btn primary"
             :disabled="stageBusy || Boolean(onlineScope[component.id]) || sourceBlocked(component.id) || !stageAllowed(component.id)"
-            :title="sourceBlocked(component.id) ? 'Save to use this source.' : (!stageAllowed(component.id) ? 'Release is below the configured trust acceptance level.' : '')"
+            :title="stageTitle(component.id)"
             @click="stageOnline(component.id)"
           >
             {{ stageLabel(component.id) }}
           </button>
+        </div>
+        <div v-if="savedIsBranch(component.id) && headStale(component.id)" class="state-inline warning mt" role="status" data-test="head-stale">
+          {{ headStaleText(component.id) }}
+          <div class="mt"><button class="btn sm" type="button" data-test="head-stale-refresh" :disabled="refreshBlocked(component.id)" :title="refreshTitle(component.id)" @click="refreshComponent(component.id, 'branch')">{{ onlineScope[component.id] ? 'Checking…' : 'Refresh' }}</button></div>
         </div>
         <p v-if="refreshNote[component.id]" class="compact-copy muted" role="status" data-test="refresh-note">{{ refreshNote[component.id] }}</p>
         <div v-if="staleCandidate[component.id]" class="state-inline warning mt" role="alert" data-test="stale-candidate">
@@ -1034,7 +1074,7 @@ onBeforeUnmount(() => {
     <article v-if="stage" class="card update-preview mt">
       <div class="cardhead">
         <div><span class="eyebrow">PACKAGE INSPECTION</span><h3>{{ stage.preview.component_label }}</h3></div>
-        <span class="pill" :class="stage.preview.operation === 'downgrade' ? 'warn' : 'ok'">{{ humanOperation(stage.preview.operation) }}</span>
+        <span class="pill" data-test="stage-operation" :class="isDowngradePreview(stage.preview) ? 'warn' : 'ok'">{{ operationLabel(stage.preview) }}</span>
       </div>
       <div class="package-summary system-package-summary">
         <div><span>Installed</span><b class="mono">{{ stage.preview.installed_version || 'none' }}</b></div>
@@ -1046,12 +1086,9 @@ onBeforeUnmount(() => {
       <div v-if="stageCheck.state === 'mismatch'" class="state-inline denied" data-test="stage-source-mismatch" role="alert">{{ stageCheck.message }}</div>
       <div v-else-if="stageCheck.state === 'oneoff'" class="state-inline warning" data-test="stage-source-oneoff">{{ stageCheck.message }}</div>
       <div v-if="!stage.preview.installable" class="state-inline denied">{{ stage.preview.install_block_reason }}</div>
-      <label v-if="stage.preview.operation === 'downgrade'" class="warning-check checkline">
-        <input v-model="allowDowngrade" type="checkbox" />
-        <span>I understand this installs an older system component and may be incompatible with installed modules.</span>
-      </label>
+      <div v-if="isDowngradePreview(stage.preview)" class="state-inline warning" role="alert" data-test="stage-downgrade">{{ stage.preview.downgrade_warning || `This package is ${stage.preview.component_label} ${stage.preview.version}, older than the installed ${stage.preview.installed_version || 'version'}. Installing it is a downgrade.` }} It may not work with the modules installed now. You are asked to confirm before it installs.</div>
       <div class="module-actions">
-        <button class="btn primary" :disabled="stageBusy || stageCheck.blocked || !stage.preview.installable || (stage.preview.operation === 'downgrade' && !allowDowngrade)" @click="installStage">{{ stageBusy ? 'Starting…' : 'Install package' }}</button>
+        <button class="btn primary" data-test="stage-install" :disabled="stageBusy || stageCheck.blocked || !stage.preview.installable" @click="installStage">{{ stageBusy ? 'Starting…' : (isDowngradePreview(stage.preview) ? 'Install downgrade' : 'Install package') }}</button>
         <button class="btn" :disabled="stageBusy" @click="clearStage">Discard</button>
       </div>
     </article>

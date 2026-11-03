@@ -114,7 +114,8 @@ assert.ok(templateStart > 0 && templateEnd > templateStart, 'the Repositories ta
 assert.ok(!repositoriesTab.includes('toggleRepository'), 'the tab does not use toggleRepository')
 const draft = view.match(/repositoryDraft\.value = \{ name: item\.name, url: item\.url, priority: item\.priority, trust: item\.trust, enabled: item\.enabled \}/)
 assert.ok(draft, 'the editor draft holds only the five editable fields, never the read-only sync object')
-assert.ok(view.includes('await updateModuleRepository(selectedRepositoryId.value, repositoryDraft.value)'), 'Save goes through updateModuleRepository, the existing edit')
+// 0.12.126: the draft goes through repositoryPayload, which drops the address, kind and trust of the Licensing source only.
+assert.ok(view.includes('await updateModuleRepository(selectedRepositoryId.value, repositoryPayload(repositoryDraft.value, selectedRepository.value))'), 'Save goes through updateModuleRepository, the existing edit')
 const saveBody = view.slice(view.indexOf('async function saveRepository'), view.indexOf('async function toggleRepository'))
 assert.ok(saveBody.length > 0 && !saveBody.includes('...'), 'Save sends the editor draft only, never a spread of the whole row')
 

@@ -1,7 +1,7 @@
 {
   "schema": 2,
   "component": "ui",
-  "version": "0.12.125",
+  "version": "0.12.126",
   "publisher_id": "tech_flow_dynamics-dev",
   "key_id": "tech-key-dev-1025",
   "algorithm": "Ed25519",
@@ -32,9 +32,9 @@
       "sha256": "28da8f0c070c3353f4e865cc5b55ef9960e456db428ac8693d3ce100f7e3d036"
     },
     {
-      "path": "RELEASE_NOTES_0.12.125.md",
-      "size": 7247,
-      "sha256": "78b6ea3e3522d3c9e37bfc11b71db8af0bafb605c1de66b0fd8c45f178dd0112"
+      "path": "RELEASE_NOTES_0.12.126.md",
+      "size": 8811,
+      "sha256": "77c1e020e533cde2f48781dab9b95e0ab166a2030af222c11d6c75cedad379ba"
     },
     {
       "path": "THIRD-PARTY-NOTICES.md",
@@ -44,7 +44,7 @@
     {
       "path": "VERSION",
       "size": 9,
-      "sha256": "6165f55932ec6a0edfbf65e5a83948ec0af765e5a10ec436ca8ce44a2b5c84d1"
+      "sha256": "adcd60b7368d5f23084f9d6da25d599d09ea5d450917b4b75c8054bb8fd85e61"
     },
     {
       "path": "docs/context-actions.md",
@@ -460,6 +460,11 @@
       "path": "docs/releases/RELEASE_NOTES_0.12.124.md",
       "size": 9734,
       "sha256": "e631cb659c1b5ac2cf1cdf8a166855b316da697d3f54feb8cc5fea896d72eb0f"
+    },
+    {
+      "path": "docs/releases/RELEASE_NOTES_0.12.125.md",
+      "size": 7247,
+      "sha256": "78b6ea3e3522d3c9e37bfc11b71db8af0bafb605c1de66b0fd8c45f178dd0112"
     },
     {
       "path": "docs/releases/RELEASE_NOTES_0.12.14.md",
@@ -1044,12 +1049,12 @@
     {
       "path": "package-lock.json",
       "size": 44806,
-      "sha256": "bfcc5b63eabc5a69126f862d1923fe5dbfba493c5af68798b5fbb3e88fe25fcc"
+      "sha256": "f5359aef9f9768f827a685446d220bd4f66597376cac1c2e3911d1f160d74c81"
     },
     {
       "path": "package.json",
       "size": 504,
-      "sha256": "8e633e6518a8702e86903e7e35fda36f28a52fedf669c7f7526ccac2b537c51d"
+      "sha256": "7f24f60a9eeacd75dbf547477258d6b932c316e558ded199fb47a0e48fd97326"
     },
     {
       "path": "public/licenses/xterm-LICENSE.txt",
@@ -1613,8 +1618,8 @@
     },
     {
       "path": "src/module-repository-info.js",
-      "size": 6559,
-      "sha256": "6cf370e73a8e52ad0c657b3c0bf09504a266bce94ec1ccf94aa0eeb384c4d6d0"
+      "size": 9515,
+      "sha256": "cf00eef3173a4716172db3b8991049fe0554c20efb3bbbca8b218c24a76f1d8e"
     },
     {
       "path": "src/module-services.js",
@@ -1843,8 +1848,8 @@
     },
     {
       "path": "src/system-update-github.js",
-      "size": 8088,
-      "sha256": "b8be5cbfb23b351ff0ea4a3a4fd402610aee7d6a4f54e9314397a41d7d31ad11"
+      "size": 11816,
+      "sha256": "ecd304added3eb604147724403f2f2a49027ad61ca8025c1f013538f78b89106"
     },
     {
       "path": "src/system-update-rollback.js",
@@ -1923,8 +1928,8 @@
     },
     {
       "path": "src/views/ModulesView.vue",
-      "size": 69718,
-      "sha256": "0edcf13fad53023727ed966b65f08393351bf532816fd9bb012fd28880047d54"
+      "size": 71348,
+      "sha256": "fc26a20e1f8d68b5698e0c151d5b5fc8c5662835df689789c1533292a3767e81"
     },
     {
       "path": "src/views/MyAccountView.vue",
@@ -1978,13 +1983,13 @@
     },
     {
       "path": "src/views/SystemUpdatesView.vue",
-      "size": 58594,
-      "sha256": "18b59f2d2ab340c8c8895c8749e842573c6b889340b653879678328e605a0c45"
+      "size": 60753,
+      "sha256": "04865be7c61c669a0aab215b549cb3cdb9bde885be113939124529cf8188ffd5"
     },
     {
       "path": "tec_tac_package.json",
       "size": 140,
-      "sha256": "9c14f0de78193b16133d898f85e91762bfb8690521a06fb476409a7f3e31ae1f"
+      "sha256": "6c8969206bf9ba9114a26467a3cfa8e9c75a7cb7dfa25ab7fa63f47ac2d0f5ce"
     },
     {
       "path": "tests/access-panels-reload-0.12.101.mjs",
@@ -2318,8 +2323,8 @@
     },
     {
       "path": "tests/fixtures/module-manager-handlers-0.12.118.json",
-      "size": 5970,
-      "sha256": "8669b28f4b81ba5acfbb4849eed355df6e0487c26f089329c6386434528bce7d"
+      "size": 6061,
+      "sha256": "ab7676bcd9f5a615736f25f0411f26050b483fe3b590d7b558b10a15124ed6ca"
     },
     {
       "path": "tests/foundation.sh",
@@ -2328,8 +2333,8 @@
     },
     {
       "path": "tests/github-rate-limit-0.12.124.mjs",
-      "size": 21600,
-      "sha256": "1e9215d64e8761ce85a9d9ca259f1c18817236bbf723de049eecf2bf69171ab5"
+      "size": 21602,
+      "sha256": "d197b2066986e59a7d5608bd95c02a200861b328599ca2999ee1257a419ed8cb"
     },
     {
       "path": "tests/grid-columns-host-abort-0.12.111.mjs",
@@ -2503,8 +2508,8 @@
     },
     {
       "path": "tests/module-manager-brand-board-0.12.118.mjs",
-      "size": 13618,
-      "sha256": "666bec0d51e66652a45f3e3dad9d7db608762f317f1c0c6f1a113ab561452897"
+      "size": 13894,
+      "sha256": "44fa9744a93dabe41921c64f314748f606eedc47374cac99b8480ba931af2be4"
     },
     {
       "path": "tests/module-manager-brand-board-0.12.119.mjs",
@@ -2652,9 +2657,9 @@
       "sha256": "af9655deb32d894f63fc43590bd57f5fa53308900986420fbdef9db4404ebc4b"
     },
     {
-      "path": "tests/release-0.12.125.mjs",
-      "size": 4036,
-      "sha256": "e0c2978990c5ad52389741be9b6da8f543e12cb82b64854d01d575c971061e88"
+      "path": "tests/release-0.12.126.mjs",
+      "size": 4039,
+      "sha256": "d80459eebb4383a6e1143accf32c8790f7d8c06922482b7ec0c2b0a705e0c1c0"
     },
     {
       "path": "tests/release-integrity.sh",
@@ -2673,8 +2678,8 @@
     },
     {
       "path": "tests/repository-sync-schedule-0.12.112.mjs",
-      "size": 9924,
-      "sha256": "86a91acdbfaa32472aa5aa88925065ceb74311dcefc0377ed28f8ac205aadeba"
+      "size": 10094,
+      "sha256": "3351738f663d1fad2eddfdfcae9700fdd04327f675bc12094534959fe69b3912"
     },
     {
       "path": "tests/resource-context-menu-0.12.99.mjs",
@@ -2733,8 +2738,8 @@
     },
     {
       "path": "tests/run-all.mjs",
-      "size": 11614,
-      "sha256": "210ae40ed503b2ab70ee97d7df7a7b0710f052c0f39852d4aee3790adb816b74"
+      "size": 11668,
+      "sha256": "8de9b67f551739560dd07e4c74ce88131d4f81d5fb55365c6b08400e7fae3634"
     },
     {
       "path": "tests/runtime-settings-control-0.12.81.mjs",
@@ -2912,6 +2917,11 @@
       "sha256": "51c538293e4fcee482130c3ed15ff35bc2e4a6cb1febb084e86a6d3a8d107109"
     },
     {
+      "path": "tests/system-update-stale-head-0.12.126.mjs",
+      "size": 11125,
+      "sha256": "4945f9a97b1f3709f969cad50e63a3b47b3d668c2f871aa82f6bfa520df742bd"
+    },
+    {
       "path": "tests/system-update-trust-popover-focus.sh",
       "size": 1217,
       "sha256": "21f1821ef903d986015e394f45cb1fdec88e727af6922bb6683e325cd4a6fa56"
@@ -3014,7 +3024,7 @@
     {
       "path": "tests/test-runner-0.12.117.mjs",
       "size": 13898,
-      "sha256": "da8791b0be8920fb5ed5b0c2cd1ced73948698a2f5f4f2891d143ff2e919c461"
+      "sha256": "276676c5eb5a117090d8219e455ff71eb431a4eeb7725a2bad5cdc2231a8b2f3"
     },
     {
       "path": "tests/theme-docs-0.12.114.mjs",
