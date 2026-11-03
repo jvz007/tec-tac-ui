@@ -26,6 +26,7 @@ const router = useRouter()
 const dynamicNav = inject('tecTacNavigation', [])
 const quickActions = inject('tecTacQuickActions', null)
 const notifications = inject('tecTacNotifications', null)
+const moduleUpdates = inject('tecTacModuleUpdates', null)
 const help = inject('tecTacHelp', null)
 const header = inject('tecTacHeader', null)
 const confirmService = inject('tecTacConfirm', null)
@@ -86,7 +87,8 @@ const publicRoute = computed(() => route.meta?.public === true || route.path.sta
 // Popup window (0.12.95): no brand, top bar, rail, navigation menu, notices, help or quick actions. The toast stack,
 // the unsaved-changes dialog, theme and text size, and session tracking stay.
 const popupLayout = computed(() => route.path.startsWith('/popup/') || state.popup?.active === true)
-const coreNav = computed(() => coreNavigation(state.context))
+// 0.12.125: the Modules badge reads the module update count (Core 1.17.104). It is loaded with the shell, not on a timer.
+const coreNav = computed(() => coreNavigation(state.context, { moduleUpdateCount: moduleUpdates?.state?.allowed === false ? 0 : moduleUpdates?.state?.count }))
 
 // The shell labels a failure by the module that owns the current route.
 const routeProvider = computed(() => route.meta?.dynamicModule || route.meta?.publicModule || 'Core')
@@ -170,11 +172,15 @@ watch(() => state.status, (status) => {
     void startSessionActivityTracking()
     // A popup window does not poll for notices (0.12.95).
     if (!state.popup?.active) notifications?.startServerNoticePolling?.()
+    // 0.12.125: one read of the module update count per shell load; a popup window has no menu.
+    if (!state.popup?.active) void moduleUpdates?.loadCount?.(state.context)
   } else {
     stopSessionActivityTracking()
     notifications?.stopServerNoticePolling?.()
     // 0.12.103: no toast stays on the sign-in screen.
     if (status === 'unauthenticated') notifications?.clearAll?.()
+    // 0.12.125: the next person on this browser starts with no module update count.
+    if (status === 'unauthenticated') moduleUpdates?.reset?.()
   }
 }, { immediate: true })
 function applyFontScale(value) { document.documentElement.style.setProperty('--font-scale', String(value || 1)) }
@@ -347,7 +353,7 @@ onBeforeUnmount(() => { window.removeEventListener('keydown', handleGlobalKey); 
               @dragend="navDragEnd"
               @dragover.prevent
               @drop.prevent="navDrop(group.section, item)"
-            ><span class="ico">{{ item.icon }}</span><span class="nav-label">{{ item.label }}</span><span v-if="item.badge" class="count">{{ item.badge }}</span><span v-if="group.section === 'Favorites'" class="favorite-star" aria-hidden="true">★</span></button>
+            ><span class="ico">{{ item.icon }}</span><span class="nav-label">{{ item.label }}</span><span v-if="item.badge" class="count" :title="item.badgeTitle || undefined" :aria-label="item.badgeTitle || undefined">{{ item.badge }}</span><span v-if="group.section === 'Favorites'" class="favorite-star" aria-hidden="true">★</span></button>
           </template>
         </template>
       </template>

@@ -17,6 +17,7 @@ import { createCodeEditorService } from './code-editor'
 import { createDashboardWidgetRegistry } from './dashboard-widgets'
 import { createQuickActionRegistry } from './quick-actions'
 import { createNotificationService } from './notifications'
+import { createModuleUpdates } from './module-updates'
 import { createModuleServiceRegistry } from './module-services'
 import { createJobFollowService } from './job-follow'
 import { createTerminalService } from './terminal-widget'
@@ -98,6 +99,8 @@ async function bootstrap() {
   // refresh is 'loading' and a backend outage is 'failed', and both still toast).
   const isSignedOut = () => state.status === 'unauthenticated'
   const notifications = createNotificationService({ api: apiFetch, router, userKey: () => state.context?.user?.id, isSignedOut })
+  // 0.12.125 (Core 1.17.104): module update counts for the Modules badge and page. Core's own, not a module registry.
+  const moduleUpdates = createModuleUpdates({ fetchJson: apiFetch })
   const audit = createAuditService(apiFetch)
   const help = createHelpService()
   const ssoProviders = createSsoProviderRegistry({
@@ -165,6 +168,7 @@ async function bootstrap() {
   app.provide('tecTacDashboardWidgets', dashboardWidgets)
   app.provide('tecTacQuickActions', quickActions)
   app.provide('tecTacNotifications', notifications)
+  app.provide('tecTacModuleUpdates', moduleUpdates)
   app.provide('tecTacAudit', audit)
   app.provide('tecTacHelp', help)
   app.provide('tecTacSsoProviders', ssoProviders)

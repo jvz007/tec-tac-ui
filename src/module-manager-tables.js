@@ -5,9 +5,24 @@ import { h } from 'vue'
 import { categoryBadge } from './module-category.js'
 import { releaseLabels, skippedSummary } from './module-repository-info.js'
 import { replacedByLabel, replacesLabel } from './module-replacement.js'
+import { blockedReasonText, safeReleaseNotesUrl, updateBlocked, updateChipText, updateLevel } from './module-updates.js'
 
 const sub = (text) => (text ? h('span', { class: 'sub' }, text) : null)
 const pill = (text, tone = '') => h('span', { class: ['pill', tone] }, text)
+
+// 0.12.125 (Core 1.17.104): the update chip, the release-notes link and the blocked reason, under a row's version. All text
+// nodes; the link is https only and opens in a new tab without the opener. A click on the link does not select the row.
+export function updateDetails(update) {
+  if (!update) return null
+  const chipText = updateChipText(update)
+  const notes = safeReleaseNotesUrl(update.release_notes_url)
+  const reason = blockedReasonText(update)
+  return h('span', { class: 'mm-update' }, [
+    h('span', { class: ['pill', 'warn', 'mm-update-chip'], 'data-level': updateLevel(update.level), title: chipText }, chipText),
+    notes ? h('a', { class: 'mm-update-notes', href: notes, target: '_blank', rel: 'noopener noreferrer', onClick: (event) => event.stopPropagation() }, 'Release notes') : null,
+    reason ? h('span', { class: 'sub mm-update-blocked' }, reason) : null,
+  ])
+}
 
 export const INSTALLED_COLUMNS = [
   { key: 'id', label: 'Module', sortable: true },
@@ -23,12 +38,17 @@ export const INSTALLED_COLUMNS = [
 
 const loadTone = (state) => (state === 'loaded' ? 'ok' : ['skipped', 'unknown'].includes(state) ? 'warn' : ['failed', 'runtime-error'].includes(state) ? 'danger' : '')
 
-// diagnose(row) is the page's moduleLoadDiagnostic.
-export function installedCell(diagnose) {
+// diagnose(row) is the page's moduleLoadDiagnostic. 0.12.125: updateFor(row), optional, returns the row's entry in Core's
+// updates[] or null; with an entry the version cell carries the update chip.
+export function installedCell(diagnose, updateFor = () => null) {
   return (item, column) => {
     switch (column.key) {
       case 'id': return h('span', [h('b', item.id), item.protected ? sub('protected') : null, sub(replacesLabel(item)), sub(replacedByLabel(item))])
-      case 'version': return h('span', { class: 'mono' }, item.extension_version || '—')
+      case 'version': {
+        const update = updateFor(item)
+        const version = h('span', { class: 'mono' }, item.extension_version || '—')
+        return update ? h('span', [version, updateDetails(update)]) : version
+      }
       case 'category': {
         const badge = categoryBadge(item)
         return badge.known ? pill(badge.label, badge.tone) : h('span', { class: 'muted' }, '—')
@@ -98,13 +118,18 @@ export function onlineStatusText(item) {
   return 'available'
 }
 
-// stage(item) starts the download and inspect; blocked(item) says whether the button is off.
-export function onlineCell({ stage, blocked }) {
+// stage(item) starts the download and inspect; blocked(item) says whether the button is off. 0.12.125: update(item), optional,
+// returns the row's entry in Core's updates[] or null. A blocked update (installable false) shows its reason and no button.
+export function onlineCell({ stage, blocked, update = () => null }) {
   return (item, column) => {
     switch (column.key) {
       case 'name': return h('span', [h('b', item.name || item.id), h('span', { class: 'sub mono' }, item.id)])
       case 'installed': return h('span', { class: 'mono' }, item.installed_version || '—')
-      case 'available': return h('span', { class: 'mono' }, item.latest_version || '—')
+      case 'available': {
+        const entry = update(item)
+        const version = h('span', { class: 'mono' }, item.latest_version || '—')
+        return entry ? h('span', [version, updateDetails(entry)]) : version
+      }
       case 'source': return h('span', [
         h('span', item.selected_repository_name || 'local only'),
         item.selected_repository_trust ? h('span', { class: 'sub mono' }, item.selected_repository_trust) : null,
@@ -115,12 +140,16 @@ export function onlineCell({ stage, blocked }) {
         const text = onlineStatusText(item)
         return pill(text, item.source_conflict ? 'danger' : item.update_available ? 'warn' : item.installed ? 'ok' : '')
       }
-      case 'action': return h('button', {
-        class: ['btn', 'sm', item.update_available ? 'primary' : ''],
-        type: 'button',
-        disabled: blocked(item),
-        onClick: (event) => { event.stopPropagation(); stage(item) },
-      }, item.installed ? (item.update_available ? 'Download update' : 'Reinstall') : 'Download & inspect')
+      case 'action': {
+        const entry = update(item)
+        if (entry && updateBlocked(entry)) return h('span', { class: 'sub mm-update-blocked', title: blockedReasonText(entry) }, 'Blocked')
+        return h('button', {
+          class: ['btn', 'sm', item.update_available ? 'primary' : ''],
+          type: 'button',
+          disabled: blocked(item),
+          onClick: (event) => { event.stopPropagation(); stage(item) },
+        }, item.installed ? (item.update_available ? 'Download update' : 'Reinstall') : 'Download & inspect')
+      }
       default: return ''
     }
   }

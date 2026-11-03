@@ -44,6 +44,9 @@ export const DataTable = defineComponent({
     ariaLabel: { type: String, default: undefined },
     // cell(row, column) returns text or vnodes. Without it the cell shows row[column.key] as text.
     cell: { type: Function, default: undefined },
+    // 0.12.125, optional: rowClass(row) returns a class name for the row (a string of letters, digits, '-' and '_' only).
+    // Without it a row has no class, as before.
+    rowClass: { type: Function, default: undefined },
   },
   emits: ['sort', 'select', 'rowmenu', 'activate'],
   setup(props, { emit }) {
@@ -72,6 +75,12 @@ export const DataTable = defineComponent({
       if (value !== null && typeof value === 'object') return value
       return cellText(value)
     }
+    const classFor = (row) => {
+      if (typeof props.rowClass !== 'function') return undefined
+      let value
+      try { value = props.rowClass(row) } catch { return undefined }
+      return typeof value === 'string' && /^[A-Za-z][\w-]{0,63}$/.test(value) ? value : undefined
+    }
 
     return () => {
       const columns = cleanColumns(props.columns)
@@ -99,6 +108,7 @@ export const DataTable = defineComponent({
         rowsOut = items.map((item) => h('tr', {
           key: item.key,
           'data-row': item.key,
+          class: classFor(item.row),
           tabindex: item.index === tab ? 0 : -1,
           'aria-selected': item.key === selected ? 'true' : 'false',
           onClick: () => emit('select', item.row),

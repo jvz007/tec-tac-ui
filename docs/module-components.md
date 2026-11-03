@@ -177,6 +177,7 @@ A table in a panel. The module owns the rows and the order; the component draws 
 | `footer` | none | One line under the table, for example a count. |
 | `ariaLabel` | none | Accessible name of the table. |
 | `cell` | none | `cell(row, column)` returns text or vnodes for one cell. Without it the cell shows `row[column.key]` as text. A function that throws shows an empty cell. |
+| `rowClass` | none | Since UI 0.12.125. `rowClass(row)` returns one class name for the row (a letter, then letters, digits, `-` or `_`, at most 64). Anything else, or a function that throws, gives no class. Without it a row has no class, as before. |
 
 | Event | Arguments | When |
 |---|---|---|

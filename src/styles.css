@@ -527,3 +527,13 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .tt-filter-panel .tt-filter-wide{flex-basis:100%}
 @media (max-width:640px){.tt-filter-rule{grid-template-columns:minmax(0,1fr)}.tt-filter-pair{grid-template-columns:minmax(0,1fr)}.tt-filter-group.is-nested{margin-left:6px}}
 /* ==== end of FilterEditor ==== */
+/* 0.12.125: module updates (Core 1.17.104). A row with an update gets a light warn tint and a left marker; its text may wrap so the chip and the blocked reason stay readable. Tokens only. */
+.tt-table tbody tr.mm-update-row td{background:rgba(var(--warn-rgb),.06);white-space:normal}
+.tt-table tbody tr.mm-update-row td:first-child{box-shadow:inset 2px 0 0 var(--warn)}
+.tt-table tbody tr.mm-update-row[aria-selected="true"] td{background:rgba(var(--accent-rgb),.12)}
+.mm-update{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:4px}
+.mm-update-chip{white-space:normal}
+.mm-update-notes{color:var(--accent-text);font-size:var(--text-xs)}
+.mm-update .mm-update-blocked{flex-basis:100%;margin-top:0;color:var(--dim)}
+.mm-update-error{margin:0 0 8px}
+.mm-update-filter select{min-width:0}

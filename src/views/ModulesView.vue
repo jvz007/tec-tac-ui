@@ -15,6 +15,7 @@ import ModuleJobPanel from '../components/modules/ModuleJobPanel.vue'
 import ModulePackageIntake from '../components/modules/ModulePackageIntake.vue'
 import { INSTALLED_COLUMNS, ONLINE_COLUMNS, REPOSITORY_COLUMNS, installedCell, onlineCell, repositoryCell, sortRows } from '../module-manager-tables'
 import { readLicenceRefusal } from '../licensing'
+import { updateBlocked } from '../module-updates'
 import { loadLatestHotfixRows } from '../module-hotfix-loader'
 import { checkIntakeMetadata, orderGroupsByDependency, pairIntakeFiles } from '../module-intake'
 import { categorySearchText, CATEGORY_FILTERS, filterByCategory } from '../module-category'
@@ -52,6 +53,8 @@ const state = inject('tecTacState')
 const dynamicNav = inject('tecTacNavigation', [])
 // 0.12.102: the shell's unload for a module that is switched off while the page is open (main.js provides it).
 const unloadModule = inject('tecTacModuleUnload', null)
+// 0.12.125 (Core 1.17.104): the module update list. Rows with an update are highlighted; a blocked one has no download button.
+const moduleUpdates = inject('tecTacModuleUpdates', null)
 const router = useRouter()
 const askConfirm = useConfirm()
 const modules = ref([])
@@ -129,7 +132,15 @@ const reloadCountdown = ref(0)
 
 const canManage = computed(() => managerAllowed.value && state.context.capabilities?.manage_modules !== false)
 const categoryFilter = ref('all')
-const filtered = computed(() => filterByCategory(modules.value, categoryFilter.value).filter((x) => !query.value.trim() || [x.id, x.status, x.extension_version, categorySearchText(x)].some((v) => String(v || '').toLowerCase().includes(query.value.toLowerCase()))))
+// 0.12.125: 'all' or 'updates' (only the modules in Core's updates[]).
+const updateFilter = ref('all')
+const updateRows = computed(() => (Array.isArray(moduleUpdates?.state?.updates) ? moduleUpdates.state.updates : []))
+const updateById = computed(() => new Map(updateRows.value.map((row) => [row.module_id, row])))
+const updatesVisible = computed(() => moduleUpdates?.state?.allowed === true)
+const updatesError = computed(() => moduleUpdates?.state?.error || '')
+function updateFor(id) { return updateById.value.get(id) || null }
+function updateRowClass(row) { return updateFor(row?.id) ? 'mm-update-row' : '' }
+const filtered = computed(() => filterByCategory(modules.value, categoryFilter.value).filter((x) => !updatesVisible.value || updateFilter.value !== 'updates' || updateById.value.has(x.id)).filter((x) => !query.value.trim() || [x.id, x.status, x.extension_version, categorySearchText(x)].some((v) => String(v || '').toLowerCase().includes(query.value.toLowerCase()))))
 const filteredOnline = computed(() => onlineCatalog.value.filter((x) => !onlineQuery.value.trim() || [x.id, x.name, x.installed_version, x.latest_version, x.selected_repository_name].some((v) => String(v || '').toLowerCase().includes(onlineQuery.value.toLowerCase()))))
 const updatesAvailable = computed(() => onlineCatalog.value.filter((x) => x.update_available).length)
 const repositoryErrors = computed(() => repositories.value.filter((x) => x.sync?.status === 'error').length)
@@ -145,8 +156,8 @@ const repositorySort = ref({ key: null, dir: null })
 const installedRows = computed(() => sortRows(filtered.value, installedSort.value.key, installedSort.value.dir))
 const onlineRows = computed(() => sortRows(filteredOnline.value, onlineSort.value.key, onlineSort.value.dir))
 const repositoryRows = computed(() => sortRows(repositories.value, repositorySort.value.key, repositorySort.value.dir))
-const installedTableCell = installedCell((item) => moduleLoadDiagnostic(item))
-const onlineTableCell = onlineCell({ stage: (item) => requestStageOnline(item), blocked: (item) => !canManage.value || !item.latest_version || item.compatible === false || item.source_conflict || inspecting.value })
+const installedTableCell = installedCell((item) => moduleLoadDiagnostic(item), (item) => updateFor(item.id))
+const onlineTableCell = onlineCell({ stage: (item) => requestStageOnline(item), blocked: (item) => !canManage.value || !item.latest_version || item.compatible === false || item.source_conflict || inspecting.value, update: (item) => (item.update_available ? updateFor(item.id) : null) })
 const repositoryTableCell = repositoryCell({ sync: (repo) => syncRepository(repo), disabled: (repo) => !canManage.value || repositoryBusy.value || !repo.enabled })
 const installedFooter = computed(() => `${filtered.value.length} of ${modules.value.length} modules`)
 const onlineFooter = computed(() => `${filteredOnline.value.length} of ${onlineCatalog.value.length} modules`)
@@ -479,6 +490,8 @@ function sameOnlineVersion(item) {
 }
 
 function requestStageOnline(item) {
+  // 0.12.125: a blocked update (Core 1.17.104 installable false) is never staged; the row shows the reason instead.
+  if (item?.update_available && updateBlocked(updateFor(item.id))) return
   if (sameOnlineVersion(item)) {
     reinstallTarget.value = item
     return
@@ -517,6 +530,8 @@ async function refresh(preferred = null) {
   try {
     const payload = await listModules()
     modules.value = payload.modules || []
+    // 0.12.125: the update list is read with the module list; it never blocks or fails the page.
+    void moduleUpdates?.loadList?.(state.context)
     managerAllowed.value = !!payload.manage
     selectedId.value = (preferred && modules.value.some((x) => x.id === preferred))
       ? preferred
@@ -1160,8 +1175,9 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
 
   <div v-if="loading" class="callout mono">Loading Module Management v2 catalog…</div>
   <div v-else class="module-layout"><div>
-      <div class="toolbar mm-filters" role="search"><label class="compact-input"><span class="sr-only">Search modules</span><input v-model="query" placeholder="Search modules…" @keydown.esc.stop.prevent="query=''"></label><label class="compact-input"><select v-model="categoryFilter" aria-label="Filter by category"><option v-for="f in CATEGORY_FILTERS" :key="f.key" :value="f.key">{{ f.label }}</option></select></label><span class="spacer"></span><button class="btn sm" @click="refresh(selectedId)">Refresh</button></div>
-      <DataTable :columns="INSTALLED_COLUMNS" :rows="installedRows" row-key="id" :selected-key="selectedId" :sort-key="installedSort.key" :sort-dir="installedSort.dir" :footer="installedFooter" empty-title="No modules match" empty-text="Clear the search or the category filter to show every module." aria-label="Installed modules" :cell="installedTableCell" @select="(row) => selectedId = row.id" @activate="(row) => selectedId = row.id" @rowmenu="(row) => selectedId = row.id" @sort="(key, dir) => setSort(installedSort, key, dir)" />
+      <div class="toolbar mm-filters" role="search"><label class="compact-input"><span class="sr-only">Search modules</span><input v-model="query" placeholder="Search modules…" @keydown.esc.stop.prevent="query=''"></label><label class="compact-input"><select v-model="categoryFilter" aria-label="Filter by category"><option v-for="f in CATEGORY_FILTERS" :key="f.key" :value="f.key">{{ f.label }}</option></select></label><label v-if="updatesVisible" class="compact-input mm-update-filter"><select v-model="updateFilter" aria-label="Filter by update"><option value="all">All modules</option><option value="updates">Updates available ({{ updateRows.length }})</option></select></label><span class="spacer"></span><button class="btn sm" @click="refresh(selectedId)">Refresh</button></div>
+      <div v-if="updatesError" class="muted smalltext mm-update-error" role="status">Module updates could not be read: {{ updatesError }}</div>
+      <DataTable :columns="INSTALLED_COLUMNS" :rows="installedRows" row-key="id" :selected-key="selectedId" :sort-key="installedSort.key" :sort-dir="installedSort.dir" :footer="installedFooter" empty-title="No modules match" :empty-text="updateFilter === 'updates' ? 'No module has an update. Choose All modules to show every module.' : 'Clear the search or the category filter to show every module.'" aria-label="Installed modules" :cell="installedTableCell" :row-class="updateRowClass" @select="(row) => selectedId = row.id" @activate="(row) => selectedId = row.id" @rowmenu="(row) => selectedId = row.id" @sort="(key, dir) => setSort(installedSort, key, dir)" />
     </div>
     <ModuleDetailPanel
       v-if="selected"
@@ -1190,7 +1206,7 @@ onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); 
     <div v-else-if="!onlineInfo && !repositories.length" class="state-inline warning"><b>No repositories configured.</b> Add a module repository before using the online catalog.</div>
     <div v-else-if="onlineInfo && !onlineCatalog.length"></div>
     <div v-else-if="onlineInfo && !filteredOnline.length" class="state-inline">No modules match your search.</div>
-    <DataTable v-else :columns="ONLINE_COLUMNS" :rows="onlineRows" row-key="id" :sort-key="onlineSort.key" :sort-dir="onlineSort.dir" :footer="onlineFooter" empty-title="No modules match" empty-text="Clear the search to show every module." aria-label="Online module catalog" :cell="onlineTableCell" @sort="(key, dir) => setSort(onlineSort, key, dir)" />
+    <DataTable v-else :columns="ONLINE_COLUMNS" :rows="onlineRows" row-key="id" :sort-key="onlineSort.key" :sort-dir="onlineSort.dir" :footer="onlineFooter" empty-title="No modules match" empty-text="Clear the search to show every module." aria-label="Online module catalog" :cell="onlineTableCell" :row-class="(row) => (row.update_available && updateFor(row.id) ? 'mm-update-row' : '')" @sort="(key, dir) => setSort(onlineSort, key, dir)" />
     <section v-if="installedOnly.length" class="online-installed-only">
       <h4 class="eyebrow">Installed here, not in any repository</h4>
       <ul class="muted"><li v-for="(row, i) in installedOnly" :key="i"><b>{{ row.name !== '—' ? row.name : row.id }}</b> <span class="mono">{{ row.id }}</span> <span class="mono">{{ row.installed_version }}</span> <span>{{ row.installed_source }}</span></li></ul>

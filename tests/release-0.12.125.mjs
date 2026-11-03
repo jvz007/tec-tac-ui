@@ -1,8 +1,8 @@
-// 0.12.124 (standing rule, UI Q16): the UI keeps the Core requirement of the newest Core it was tested against, Core 1.17.98
-// (the refresh parameter, the rate-limit fields and the stage commit pin this release reads are Core 1.17.98's own). The manifest
-// requires exactly '>=1.17.98,<2.0.0'. The three version files and the lock agree, the root notes are the 0.12.124 ones with a
+// 0.12.125 (standing rule, UI Q16): the UI keeps the Core requirement of the newest Core it was tested against, Core 1.17.104
+// (the module update routes and the "Module update available" notice this release reads are Core 1.17.104's own). The manifest
+// requires exactly '>=1.17.104,<2.0.0'. The three version files and the lock agree, the root notes are the 0.12.125 ones with a
 // dev-server checklist that has PASS, FAIL and send-back lines, every new test is in the runner, and the earlier notes are kept
-// under docs/releases. This replaces the 0.12.123 release test, which pinned the previous version.
+// under docs/releases. This replaces the 0.12.124 release test, which pinned the previous version.
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
 
@@ -14,20 +14,20 @@ const pkg = JSON.parse(read('../package.json'))
 const lock = JSON.parse(read('../package-lock.json'))
 const version = read('../VERSION').trim()
 
-assert.equal(version, '0.12.124')
+assert.equal(version, '0.12.125')
 assert.equal(pkg.version, version)
 assert.equal(manifest.version, version)
 assert.equal(lock.version, version)
 assert.equal(lock.packages[''].version, version)
-assert.equal(manifest.requires['tec-tac-framework'], '>=1.17.98,<2.0.0', 'the Core requirement is Core 1.17.98 or later, below 2.0.0')
+assert.equal(manifest.requires['tec-tac-framework'], '>=1.17.104,<2.0.0', 'the Core requirement is Core 1.17.104 or later, below 2.0.0')
 assert.match(manifest.requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/, 'a signed Core release')
 // tec-tac-release.json is written and signed when the package is packed, so it is not checked here.
 
-const notes = read('../RELEASE_NOTES_0.12.124.md')
-assert.equal(notes.split(/\r?\n/, 1)[0], '# UI 0.12.124')
-assert.match(notes, /Requires Core 1\.17\.98 or later/)
-assert.match(notes, /refresh=none/)
-assert.match(notes, /stale_candidate/)
+const notes = read('../RELEASE_NOTES_0.12.125.md')
+assert.equal(notes.split(/\r?\n/, 1)[0], '# UI 0.12.125')
+assert.match(notes, /Requires Core 1\.17\.104 or later/)
+assert.match(notes, /\/api\/tfd\/modules\/updates\//)
+assert.match(notes, /Updates available/)
 assert.match(notes, /tt01 or dev02/)
 assert.match(notes, /## What could not run/)
 assert.match(notes, /not run here/)
@@ -43,22 +43,22 @@ for (const step of steps) {
   assert.match(step, /Send back:/, `a send-back line in: ${step.slice(0, 50)}`)
 }
 
-for (const v of ['0.12.123', '0.12.122', '0.12.121', '0.12.120', '0.12.119', '0.12.118', '0.12.117', '0.12.116', '0.12.115', '0.12.114', '0.12.113', '0.12.112', '0.12.111', '0.12.110']) {
+for (const v of ['0.12.124', '0.12.123', '0.12.122', '0.12.121', '0.12.120', '0.12.119', '0.12.118', '0.12.117', '0.12.116', '0.12.115', '0.12.114', '0.12.113', '0.12.112', '0.12.111', '0.12.110']) {
   assert.equal(exists(`../docs/releases/RELEASE_NOTES_${v}.md`), true, `the ${v} notes are kept in docs/releases`)
   assert.equal(exists(`../RELEASE_NOTES_${v}.md`), false, `no ${v} notes remain at the root`)
 }
-assert.equal(exists('./release-0.12.123.mjs'), false, 'the old release test is replaced by this one')
+assert.equal(exists('./release-0.12.124.mjs'), false, 'the old release test is replaced by this one')
 
 assert.equal(pkg.scripts.test, 'node tests/run-all.mjs')
 const { ENTRIES } = await import('./run-all.mjs')
-assert.ok(ENTRIES.includes('node tests/release-0.12.124.mjs'))
-assert.equal(ENTRIES.some((entry) => entry.includes('release-0.12.123')), false)
-assert.ok(ENTRIES.includes('node tests/github-rate-limit-0.12.124.mjs'), 'the new test is in the runner')
+assert.ok(ENTRIES.includes('node tests/release-0.12.125.mjs'))
+assert.equal(ENTRIES.some((entry) => entry.includes('release-0.12.124')), false)
+assert.ok(ENTRIES.includes('node tests/module-updates-0.12.125.mjs'), 'the new test is in the runner')
 const listed = new Set(ENTRIES.map((entry) => entry.split(' ')[1]))
 for (const file of fs.readdirSync(new URL('./', import.meta.url))) {
-  if (/0\.12\.12[34]\.(mjs|sh)$/.test(file)) assert.ok(listed.has(`tests/${file}`), `${file} is listed in tests/run-all.mjs`)
+  if (/0\.12\.12[45]\.(mjs|sh)$/.test(file)) assert.ok(listed.has(`tests/${file}`), `${file} is listed in tests/run-all.mjs`)
 }
 for (const entry of ENTRIES) assert.equal(exists(`../${entry.split(' ')[1]}`), true, `${entry} exists`)
 assert.equal(new Set(ENTRIES).size, ENTRIES.length, 'no entry is listed twice')
 assert.match(notes, new RegExp(`${ENTRIES.length} test entries ran`), 'the notes state the real entry count')
-console.log('release-0.12.124: PASS')
+console.log('release-0.12.125: PASS')

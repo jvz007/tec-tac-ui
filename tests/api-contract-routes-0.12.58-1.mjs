@@ -87,6 +87,11 @@ for (const route of logRoutes) assert.ok(used.map(cleanUsed).includes(route), `s
 const orphanRoutes=['/api/tfd/scheduler/orphaned/','/api/tfd/scheduler/orphaned/<dynamic>/disable/','/api/tfd/scheduler/orphaned/<dynamic>/','/api/tfd/scheduler/orphaned/modules/<dynamic>/disable/','/api/tfd/scheduler/orphaned/modules/<dynamic>/']
 for (const route of orphanRoutes) routes.add(route)
 for (const route of orphanRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
+// 0.12.125: the two module update read routes of Core 1.17.104 (framwork/tec_tac/urls.py: modules/updates/ and modules/updates/count/).
+// Added by name until the next signed contract export carries them.
+const updateRoutes=['/api/tfd/modules/updates/','/api/tfd/modules/updates/count/']
+for (const route of updateRoutes) routes.add(route)
+for (const route of updateRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
 
 const missing=[]
 for (const raw of used) {
