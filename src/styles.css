@@ -533,6 +533,7 @@ table{width:100%;border-collapse:collapse}thead th{text-align:left;padding:8px 1
 .tt-table tbody tr.mm-update-row[aria-selected="true"] td{background:rgba(var(--accent-rgb),.12)}
 .mm-update{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;margin-top:4px}
 .mm-update-chip{white-space:normal}
+.mm-category-warning{margin-left:6px;white-space:normal}
 .mm-update-notes{color:var(--accent-text);font-size:var(--text-xs)}
 .mm-update .mm-update-blocked{flex-basis:100%;margin-top:0;color:var(--dim)}
 .mm-update-error{margin:0 0 8px}

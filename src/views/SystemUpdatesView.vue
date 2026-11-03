@@ -50,6 +50,7 @@ import {
   refreshNotice,
   staleCandidateText,
   staleHeadText,
+  stageStillInstallable,
 } from '../system-update-github'
 import { trustPopoverDomId, trustPopoverOpen, trustPopoverTransition } from '../system-trust-popover-state'
 import { useConfirm } from '../confirm-dialog'
@@ -745,7 +746,7 @@ async function installStage() {
   if (downgrade) {
     const upload = stage.value.upload_id
     if (!(await askConfirm(downgradeConfirmOptions(preview)))) return
-    if (stage.value?.upload_id !== upload || stageBusy.value) return
+    if (!stageStillInstallable({ stage: stage.value, upload, busy: stageBusy.value, check: stageCheck.value })) return
     allowDowngrade.value = true
   }
   stageBusy.value = true

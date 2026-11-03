@@ -1,7 +1,7 @@
 import { apiFetch } from './api'
 
 export const TACTICAL_PERMISSION_GROUPS = [
-  { name: 'Agents', keys: ['can_list_agents','can_use_mesh','can_uninstall_agents','can_update_agents','can_edit_agent','can_manage_procs','can_view_eventlogs','can_send_cmd','can_reboot_agents','can_install_agents','can_run_scripts','can_run_bulk','can_recover_agents','can_list_agent_history','can_send_wol','can_use_registry','can_use_terminal'] },
+  { name: 'Agents', keys: ['can_list_agents','can_use_mesh','can_use_file_browser','can_uninstall_agents','can_update_agents','can_edit_agent','can_manage_procs','can_view_eventlogs','can_send_cmd','can_reboot_agents','can_install_agents','can_run_scripts','can_run_bulk','can_recover_agents','can_list_agent_history','can_send_wol','can_use_registry','can_use_terminal'] },
   { name: 'Core', keys: ['can_list_notes','can_manage_notes','can_view_core_settings','can_edit_core_settings','can_do_server_maint','can_code_sign','can_run_urlactions','can_view_customfields','can_manage_customfields','can_run_server_scripts','can_use_webterm','can_view_global_keystore','can_edit_global_keystore','can_view_schedules','can_manage_schedules'] },
   { name: 'Checks', keys: ['can_list_checks','can_manage_checks','can_run_checks'] },
   { name: 'Clients & sites', keys: ['can_list_clients','can_manage_clients','can_list_sites','can_manage_sites','can_list_deployments','can_manage_deployments'] },

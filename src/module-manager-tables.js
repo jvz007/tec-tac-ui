@@ -118,12 +118,22 @@ export function onlineStatusText(item) {
   return 'available'
 }
 
+// 0.12.127 (Core 1.17.109): a module item's category_warning as text, or '' when Core sends nothing to say.
+export function categoryWarning(item) {
+  const text = item?.category_warning
+  return typeof text === 'string' && text.trim() ? text.trim() : ''
+}
+
 // stage(item) starts the download and inspect; blocked(item) says whether the button is off. 0.12.125: update(item), optional,
 // returns the row's entry in Core's updates[] or null. A blocked update (installable false) shows its reason and no button.
 export function onlineCell({ stage, blocked, update = () => null }) {
   return (item, column) => {
     switch (column.key) {
-      case 'name': return h('span', [h('b', item.name || item.id), h('span', { class: 'sub mono' }, item.id)])
+      case 'name': {
+        // 0.12.127 (Core 1.17.109): Core's category_warning, shown as it is sent, beside the name. Display only.
+        const warning = categoryWarning(item)
+        return h('span', [h('b', item.name || item.id), warning ? h('span', { class: ['pill', 'warn', 'mm-category-warning'], title: warning }, warning) : null, h('span', { class: 'sub mono' }, item.id)])
+      }
       case 'installed': return h('span', { class: 'mono' }, item.installed_version || '—')
       case 'available': {
         const entry = update(item)

@@ -67,7 +67,16 @@ export function checkedText({ kind, result, localAt = null, now = Date.now(), fo
   }
   const at = result?.checked_at
   if (!at) return 'Never'
-  return checkedAgo(at, now, { format }) || String(at)
+  const ago = checkedAgo(at, now, { format }) || String(at)
+  // 0.12.127: refresh.stale is named on the release path too (a stale stable_release or latest_release).
+  const parts = staleParts(result)
+  return parts.length ? `${ago}. Out of date: ${parts.join(', ')}` : ago
+}
+
+// 0.12.127: after the downgrade Yes/No the stage is checked again. Install goes ahead only when the same upload is still
+// staged, nothing else is running and the stage check has not been blocked while the dialog was open.
+export function stageStillInstallable({ stage, upload, busy, check } = {}) {
+  return Boolean(stage?.upload_id) && stage.upload_id === upload && !busy && !check?.blocked
 }
 
 // A short line under the buttons after a Refresh press, only when Core did not ask GitHub. Null otherwise.

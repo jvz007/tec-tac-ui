@@ -107,10 +107,6 @@ assert.ok(!licTemplate.includes('repositoryDraft.url') && !licTemplate.includes(
 assert.match(modules, /data-test="licensing-state"/)
 
 // ---- release metadata ----
-assert.equal(read('../VERSION').trim(), '0.12.126')
-assert.equal(JSON.parse(read('../package.json')).version, '0.12.126')
-const pkg = JSON.parse(read('../tec_tac_package.json'))
-assert.equal(pkg.version, '0.12.126')
-assert.equal(pkg.requires['tec-tac-framework'], '>=1.17.107,<2.0.0')
-assert.ok(fs.existsSync(new URL('../RELEASE_NOTES_0.12.126.md', import.meta.url)))
+// 0.12.127: the version and Core requirement now belong to tests/release-0.12.127.mjs; the 0.12.126 notes are kept.
+assert.ok(fs.existsSync(new URL('../docs/releases/RELEASE_NOTES_0.12.126.md', import.meta.url)))
 console.log('system-update-stale-head-0.12.126: PASS')
