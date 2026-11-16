@@ -111,9 +111,9 @@ for (const alias of ['/popup/x', ['/fine', '/popup/y/z']]) {
 const pkg = JSON.parse(read('../package.json'))
 const manifest = JSON.parse(read('../tec_tac_package.json'))
 const version = read('../VERSION').trim()
-assert.match(version, /^0\.12\.(9[6-9]|[1-9]\d\d)(-\d+)?$/) // 0.12.96 or later (moved on each release)
+assert.match(version, /^0\.(12\.(9[6-9]|[1-9]\d\d)|13\.\d+)(-\d+)?$/) // 0.12.96 or later (moved on each release)
 assert.equal(pkg.version, version)
 assert.equal(manifest.version, version)
-assert.match(manifest.dependencies?.['tec-tac-framework'] ?? manifest.requires?.['tec-tac-framework'] ?? JSON.stringify(manifest).match(/"tec-tac-framework":\s*"([^"]+)"/)?.[1], /^>=1\.17\.\d+,<2\.0\.0$/)
+assert.match(manifest.dependencies?.['tec-tac-framework'] ?? manifest.requires?.['tec-tac-framework'] ?? JSON.stringify(manifest).match(/"tec-tac-framework":\s*"([^"]+)"/)?.[1], /^>=1\.\d+\.\d+,<2\.0\.0$/)
 
 console.log('popup-route-prefix-0.12.96: PASS')

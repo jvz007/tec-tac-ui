@@ -150,11 +150,11 @@ assert.match(view, /const canManage = computed\(\(\) => managerAllowed\.value/)
 
 // (8) versions and the Core requirement
 const version = read('../VERSION').trim()
-assert.match(version, /^0\.12\.\d+/) // 0.12.91: pinned versions live in the newest test
+assert.match(version, /^0\.(12|13)\.\d+/) // 0.12.91: pinned versions live in the newest test
 assert.equal(JSON.parse(read('../package.json')).version, version)
 const pkg = JSON.parse(read('../tec_tac_package.json'))
 assert.equal(pkg.version, version)
-assert.match(pkg.requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/)
+assert.match(pkg.requires['tec-tac-framework'], /^>=1\.\d+\.\d+,<2\.0\.0$/)
 const notes = read('../docs/releases/RELEASE_NOTES_0.12.90.md')
 assert.match(notes, /Core 1\.17\.12/)
 assert.match(notes, /contract export/)

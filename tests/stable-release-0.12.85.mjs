@@ -190,9 +190,9 @@ for (const file of ['../src/update-source.js', '../src/components/ReleaseTrustBa
 assert.doesNotMatch(script, /localStorage|sessionStorage|Authorization/)
 
 // Metadata.
-assert.match(read('../VERSION').trim(), /^0\.12\.\d+/)
+assert.match(read('../VERSION').trim(), /^0\.(12|13)\.\d+/)
 const pkg = JSON.parse(read('../tec_tac_package.json'))
-assert.match(pkg.requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/)
+assert.match(pkg.requires['tec-tac-framework'], /^>=1\.\d+\.\d+,<2\.0\.0$/)
 // 0.12.117: the test list lives in tests/run-all.mjs; the two tests still run one after the other.
 assert.match((await import('./run-all.mjs')).ENTRIES.join(' && '), /discovered-version-0\.12\.84\.mjs && node tests\/stable-release-0\.12\.85\.mjs/)
 assert.ok(fs.existsSync(new URL('../docs/releases/RELEASE_NOTES_0.12.85.md', import.meta.url)))

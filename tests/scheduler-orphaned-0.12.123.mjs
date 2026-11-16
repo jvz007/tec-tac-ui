@@ -137,6 +137,6 @@ assert.match(loadFn, /catch\(e\)\{[^}]*orphanedError\.value=orphanedErrorWords\(
 // ---- (g) the Core requirement ----
 const manifest = JSON.parse(read('../tec_tac_package.json'))
 // 0.12.124: Core 1.17.97 or later; the release test pins the exact requirement of the current release.
-assert.match(manifest.requires['tec-tac-framework'], /^>=1\.17\.(9[7-9]|[1-9]\d{2,}),<2\.0\.0$/)
+assert.match(manifest.requires['tec-tac-framework'], /^>=1\.(17\.(9[7-9]|[1-9]\d{2,})|\d{2,}\.\d+),<2\.0\.0$/)
 assert.match(read('../src/help/articles/schedules.md'), /Owner module not installed/)
 console.log('scheduler-orphaned-0.12.123: ok')

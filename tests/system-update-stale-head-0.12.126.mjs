@@ -107,6 +107,6 @@ assert.ok(!licTemplate.includes('repositoryDraft.url') && !licTemplate.includes(
 assert.match(modules, /data-test="licensing-state"/)
 
 // ---- release metadata ----
-// 0.12.127: the version and Core requirement now belong to tests/release-0.12.127.mjs; the 0.12.126 notes are kept.
+// 0.12.127: the version and Core requirement now belong to tests/release-0.13.0.mjs; the 0.12.126 notes are kept.
 assert.ok(fs.existsSync(new URL('../docs/releases/RELEASE_NOTES_0.12.126.md', import.meta.url)))
 console.log('system-update-stale-head-0.12.126: PASS')

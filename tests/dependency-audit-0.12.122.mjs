@@ -52,7 +52,7 @@ const tt = JSON.parse(read('tec_tac_package.json'))
 // 0.12.123: the version and the Core requirement move with each release; the current ones are pinned in the release test
 assert.equal(read('VERSION').trim(), pkg.version)
 assert.equal(tt.version, pkg.version)
-assert.match(tt.requires['tec-tac-framework'], /^>=1\.17\.\d+,<2\.0\.0$/)
+assert.match(tt.requires['tec-tac-framework'], /^>=1\.\d+\.\d+,<2\.0\.0$/)
 
 // (g) the release notes
 const notes = read('docs/releases/RELEASE_NOTES_0.12.122.md')

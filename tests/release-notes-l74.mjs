@@ -5,10 +5,10 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const version = fs.readFileSync(path.join(root, 'VERSION'), 'utf8').trim()
+// 0.13.0: the last 0.12 patch is 127 and all of 0.12.32 to 0.12.127 stay archived.
 const match = version.match(/^0\.12\.(\d+)(?:-(\d+))?$/)
-assert.ok(match, `unexpected UI version ${version}`)
-const currentPatch = Number(match[1])
-const stopPatch = currentPatch + (match[2] ? 1 : 0)
+assert.ok(match || /^0\.13\.\d+(?:-\d+)?$/.test(version), `unexpected UI version ${version}`)
+const stopPatch = match ? Number(match[1]) + (match[2] ? 1 : 0) : 128
 for (let patch = 32; patch < stopPatch; patch += 1) {
   const archived = `0.12.${patch}`
   const file = path.join(root, 'docs', 'releases', `RELEASE_NOTES_${archived}.md`)
