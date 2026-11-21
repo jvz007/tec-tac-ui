@@ -93,6 +93,17 @@ const updateRoutes=['/api/tfd/modules/updates/','/api/tfd/modules/updates/count/
 for (const route of updateRoutes) routes.add(route)
 for (const route of updateRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
 
+// 0.13.1: the four online plan and install routes of Core 1.18.35 (in the signed 1.18.33 export: online/plan/, online/install/,
+// online/install/<uuid:run_id>/ and online/install/<uuid:run_id>/stop/). Added by name; when the export is on disk each is checked in it.
+const bulkRoutes=['/api/tfd/modules/catalog/online/plan/','/api/tfd/modules/catalog/online/install/','/api/tfd/modules/catalog/online/install/<dynamic>/','/api/tfd/modules/catalog/online/install/<dynamic>/stop/']
+for (const route of bulkRoutes) routes.add(route)
+for (const route of bulkRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
+const export1833=new URL('../../../docs/contracts/tec-tac-public-contract   1.18.33-0.13.0.md', import.meta.url)
+if (fs.existsSync(export1833)) {
+  const exportText=fs.readFileSync(export1833,'utf8')
+  for (const route of ['/api/tfd/modules/catalog/online/plan/','/api/tfd/modules/catalog/online/install/','/api/tfd/modules/catalog/online/install/<uuid:run_id>/','/api/tfd/modules/catalog/online/install/<uuid:run_id>/stop/']) assert.ok(exportText.includes('`'+route+'`'), `the 1.18.33 export lists ${route}`)
+}
+
 const missing=[]
 for (const raw of used) {
   const normalized=cleanUsed(raw)

@@ -111,6 +111,9 @@ export const ONLINE_COLUMNS = [
   { key: 'action', label: '' },
 ]
 
+// 0.13.1: the same list with a tick column first, used when the page can upgrade several modules at once. ONLINE_COLUMNS is unchanged.
+export const ONLINE_SELECT_COLUMNS = [{ key: 'select', label: '' }, ...ONLINE_COLUMNS]
+
 export function onlineStatusText(item) {
   if (item.source_conflict) return 'source unavailable'
   if (item.update_available) return 'update available'
@@ -126,9 +129,26 @@ export function categoryWarning(item) {
 
 // stage(item) starts the download and inspect; blocked(item) says whether the button is off. 0.12.125: update(item), optional,
 // returns the row's entry in Core's updates[] or null. A blocked update (installable false) shows its reason and no button.
-export function onlineCell({ stage, blocked, update = () => null }) {
+// 0.13.1: optional hooks for the tick column. selectable(item) returns { eligible, reason } or null (no bulk upgrade for the row);
+// selected(item) says if it is ticked; select(item, on) ticks it; selectDisabled(item) turns the box off while a run is going.
+// Without them the 'select' column renders nothing, so earlier callers draw what they drew.
+export function onlineCell({ stage, blocked, update = () => null, selectable = () => null, selected = () => false, select = () => {}, selectDisabled = () => false }) {
   return (item, column) => {
     switch (column.key) {
+      case 'select': {
+        const can = selectable(item)
+        if (!can) return ''
+        if (!can.eligible) return can.reason ? h('span', { class: 'sub mm-bulk-reason' }, can.reason) : ''
+        return h('input', {
+          type: 'checkbox',
+          class: 'mm-bulk-check',
+          checked: !!selected(item),
+          disabled: !!selectDisabled(item),
+          'aria-label': `Select ${item.name || item.id} for upgrade`,
+          onClick: (event) => event.stopPropagation(),
+          onChange: (event) => select(item, event.target.checked),
+        })
+      }
       case 'name': {
         // 0.12.127 (Core 1.17.109): Core's category_warning, shown as it is sent, beside the name. Display only.
         const warning = categoryWarning(item)

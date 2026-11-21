@@ -20,7 +20,7 @@ const sections = {
   repositories: view.slice(view.indexOf(`<template v-else-if="activeTab==='repositories'">`), view.indexOf(`<template v-else-if="activeTab==='hotfixes'">`)),
 }
 assert.match(sections.installed, /<DataTable :columns="INSTALLED_COLUMNS" :rows="installedRows" row-key="id"/, 'Installed is a P1 table')
-assert.match(sections.online, /<DataTable v-else :columns="ONLINE_COLUMNS" :rows="onlineRows" row-key="id"/, 'Online catalog is a P1 table')
+assert.match(sections.online, /<DataTable v-else :columns="onlineColumns" :rows="onlineRows" row-key="id"/, 'Online catalog is a P1 table')
 assert.match(sections.repositories, /<DataTable v-else :columns="REPOSITORY_COLUMNS" :rows="repositoryRows" row-key="id"/, 'Repositories is a P1 table')
 assert.match(read('../src/components/modules/ModuleJobHistory.vue'), /<DataTable\s+v-else\s+:columns="columns"/, 'History is a P1 table')
 for (const [name, section] of Object.entries(sections)) assert.ok(!/<table>/.test(section), `${name} has no hand-built table`)

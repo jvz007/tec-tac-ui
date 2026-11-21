@@ -38,6 +38,6 @@ assert.equal((await old).stale, true, 'stale hotfix error must not publish')
 const source = moduleManagerSource()
 assert.match(source, /loadLatestHotfixRows/)
 assert.match(source, /isSelected:\(id\)=>hotfixSelectedModuleId\.value===id/)
-assert.match(source, /onBeforeUnmount\(\(\) => \{ hotfixRowsRequestGate\.begin\(\)/)
+assert.match(source, /onBeforeUnmount\(\(\) => \{[^\n]*hotfixRowsRequestGate\.begin\(\)/)
 
 console.log('ui-0.12.54: PASS')

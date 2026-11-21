@@ -77,7 +77,7 @@ assert.ok(labelLine, 'the label pills are plain pills')
 assert.doesNotMatch(labelLine, /onClick|@click/, 'the label pills have no click handler')
 
 // The Download button's disabled expression and filteredOnline do not read the release fields.
-const blockedMatch = /blocked: \(item\) => ([^}]*)\}\)/.exec(view)
+const blockedMatch = /blocked: \(item\) => ([^\n]*),\n/.exec(view)
 assert.ok(blockedMatch, 'the Download button rule is in the page')
 assert.match(onlineCells, /onClick: \(event\) => \{ event\.stopPropagation\(\); stage\(item\) \}/, 'the Download button asks the page to stage')
 assert.doesNotMatch(blockedMatch[1], /channel|lifecycle|recommended/, 'the Download button does not read the release fields')
