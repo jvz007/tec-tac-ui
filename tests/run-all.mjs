@@ -162,7 +162,7 @@ export const ENTRIES = [
   'node tests/module-preferences-merged-result-0.12.109.mjs',
   'node tests/signin-parity-0.12.110.mjs',
   'bash tests/python-bin-0.12.110.sh',
-  'node tests/release-0.13.2.mjs',
+  'node tests/release-0.13.3.mjs',
   'node tests/online-catalog-availability-0.12.111.mjs',
   'node tests/shared-select-tags-0.12.111.mjs',
   'node tests/shared-components-docs-0.12.111.mjs',
@@ -223,6 +223,8 @@ export const ENTRIES = [
   // 0.13.0
   // 0.13.2
   'node tests/bulk-stage-0.13.2.mjs',
+  // 0.13.3
+  'node tests/system-update-versions-0.13.3.mjs',
 ]
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')

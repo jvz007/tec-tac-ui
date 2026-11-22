@@ -99,6 +99,12 @@ const batchRoutes=['/api/tfd/modules/catalog/online/stage/batch/']
 for (const route of batchRoutes) routes.add(route)
 for (const route of batchRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
 
+// 0.13.3: the version list route of Core 1.18.43 (GET system/updates/versions/). The stage route it uses is already in the export.
+// Added by name until the next signed contract export carries it (there is no 1.18.43 export on disk yet).
+const versionRoutes=['/api/tfd/system/updates/versions/']
+for (const route of versionRoutes) routes.add(route)
+for (const route of versionRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
+
 const missing=[]
 for (const raw of used) {
   const normalized=cleanUsed(raw)

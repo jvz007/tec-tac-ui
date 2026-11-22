@@ -7,11 +7,13 @@ import {
   getSystemUpdateBranches,
   getSystemUpdateJob,
   getSystemUpdateStatus,
+  getSystemUpdateVersions,
   getUpdateTrustPolicy,
   inspectSystemUpdatePackage,
   installSystemUpdatePackage,
   setUpdateTrustPolicy,
   stageOnlineSystemUpdate,
+  stageSystemUpdateVersion,
 } from '../api'
 import ReleaseTrustBadge from '../components/ReleaseTrustBadge.vue'
 import ModuleJobLogWindow from '../components/modules/ModuleJobLogWindow.vue'
@@ -32,6 +34,14 @@ import {
 } from '../update-source'
 import { createKeyedLatestRequestGate } from '../latest-request-gate'
 import { isRollbackStage, rollbackNotice } from '../system-update-rollback'
+import {
+  VERSION_STALE_TEXT,
+  defaultVersion,
+  findVersion,
+  normalizeVersions,
+  versionLabel,
+  versionRateLimitText,
+} from '../system-update-versions'
 import {
   branchHeadStale,
   checkedText,
@@ -105,6 +115,15 @@ const stageCheck = computed(() => stageSourceCheck({
   saved: stageRequest.value ? savedSources.value[stageRequest.value.component] : null,
 }))
 const stageBusy = ref(false)
+// 0.13.3 (Core 1.18.43, AD-77): the version dropdown. versions is the normalised list per component, versionInfo the
+// rest of Core's answer (installed_version, lowest_installable, rate limit sentence), picked the chosen version.
+const versions = ref({ framework: [], ui: [] })
+const versionInfo = ref({ framework: null, ui: null })
+const versionBusy = ref({ framework: false, ui: false })
+const versionError = ref({ framework: '', ui: '' })
+const versionStale = ref({ framework: '', ui: '' })
+const picked = ref({ framework: '', ui: '' })
+const versionRequestGate = createKeyedLatestRequestGate(['framework', 'ui'])
 const offlineInput = ref(null)
 const offlineFile = ref(null)
 const offlineDropActive = ref(false)
@@ -515,6 +534,7 @@ async function applySource(component, type, ref) {
     onlineRequestGate.invalidate(component)
     // 0.12.124: the saved answer for the new source (refresh=none). Core asks GitHub only when it has none or it is old.
     await checkOnline(component, { waitForCurrent: true })
+    loadVersions(component)
   } catch (err) {
     sourceError.value[component] = err?.message || 'Unable to save the update source.'
   } finally {
@@ -628,6 +648,75 @@ async function loadBranches(component, { quiet = false } = {}) {
     }
   } finally {
     if (branchRequestGate.isCurrent(component, requestId)) branchBusy.value[component] = false
+  }
+}
+
+// 0.13.3: Core caches the list for 5 minutes, so there is no timer. It follows the saved update source, so it is read again
+// after a source is saved.
+async function loadVersions(component) {
+  const requestId = versionRequestGate.begin(component)
+  versionBusy.value[component] = true
+  versionError.value[component] = ''
+  try {
+    const result = await getSystemUpdateVersions(component)
+    if (!versionRequestGate.isCurrent(component, requestId)) return
+    const rows = normalizeVersions(result)
+    versions.value[component] = rows
+    versionInfo.value[component] = result && typeof result === 'object' ? {
+      installed: typeof result.installed_version === 'string' ? result.installed_version : '',
+      lowest: typeof result.lowest_installable === 'string' ? result.lowest_installable : '',
+      rateLimit: versionRateLimitText(result, Date.now(), { format: formatCheckedAt }),
+    } : null
+    if (!findVersion(rows, picked.value[component])) picked.value[component] = defaultVersion(rows)
+  } catch (err) {
+    if (versionRequestGate.isCurrent(component, requestId)) {
+      versions.value[component] = []
+      versionInfo.value[component] = null
+      picked.value[component] = ''
+      versionError.value[component] = err?.message || 'Unable to list the available versions.'
+    }
+  } finally {
+    if (versionRequestGate.isCurrent(component, requestId)) versionBusy.value[component] = false
+  }
+}
+
+function pickedRow(component) {
+  return findVersion(versions.value[component], picked.value[component])
+}
+
+function versionStageBlocked(component) {
+  const row = pickedRow(component)
+  return !row || row.installable === false || stageBusy.value || Boolean(onlineScope.value[component])
+}
+
+// Stages the picked build. Core's preview reports the server's saved source, not 'version', so the request recorded for the
+// source check is the saved source (as stageOnline does) and a version stage never shows a false mismatch.
+async function stageVersion(component) {
+  const row = pickedRow(component)
+  if (!row || row.installable === false || stageBusy.value || onlineScope.value[component]) return
+  const saved = savedSources.value[component]
+  const type = sourcesSupported.value ? saved.type : 'release'
+  const ref = sourcesSupported.value && saved.type === 'branch' ? saved.ref : null
+  offlineFile.value = null
+  offlineDropActive.value = false
+  stageBusy.value = true
+  error.value = ''
+  staleCandidate.value[component] = ''
+  versionStale.value[component] = ''
+  try {
+    stage.value = await stageSystemUpdateVersion(component, row.version, row.commit)
+    stageRequest.value = { component, type, ref, oneOff: false }
+    allowDowngrade.value = false
+  } catch (err) {
+    if (isStaleCandidate(err)) {
+      versionStale.value[component] = VERSION_STALE_TEXT
+      loadVersions(component)
+      return
+    }
+    const limited = rateLimitFromError(err)
+    error.value = limited ? rateLimitWarning(limited, Date.now(), { format: formatCheckedAt }) : (err?.message || 'Unable to stage this version.')
+  } finally {
+    stageBusy.value = false
   }
 }
 
@@ -822,7 +911,7 @@ onMounted(async () => {
   const lists = sourcesSupported.value && canEditSource.value
     ? Promise.allSettled(['framework', 'ui'].map((component) => loadBranches(component, { quiet: true })))
     : Promise.resolve()
-  await Promise.all([refreshOnline(), lists])
+  await Promise.all([refreshOnline(), lists, ...['framework', 'ui'].map((component) => loadVersions(component))])
   // refresh=none: Core answers from its saved checks and asks GitHub only when one is old (one conditional request).
   // Never a forced refresh, and skipped while GitHub's limit is used up.
   releaseRefreshTimer.value = window.setInterval(refreshOnline, 60 * 60 * 1000)
@@ -1050,6 +1139,33 @@ onBeforeUnmount(() => {
         <div v-if="staleCandidate[component.id]" class="state-inline warning mt" role="alert" data-test="stale-candidate">
           {{ staleCandidate[component.id] }}
           <div class="mt"><button class="btn sm" type="button" :disabled="refreshBlocked(component.id)" :title="refreshTitle(component.id)" @click="refreshComponent(component.id, primaryScope(component.id))">{{ onlineScope[component.id] ? 'Checking…' : 'Refresh the check' }}</button></div>
+        </div>
+
+        <div class="section-divider">Choose a version</div>
+        <div class="version-picker" data-test="version-picker">
+          <div v-if="versionError[component.id]" class="state-inline denied" role="alert" data-test="version-error">
+            {{ versionError[component.id] }}
+            <div class="mt"><button class="btn sm" type="button" data-test="version-retry" :disabled="versionBusy[component.id]" @click="loadVersions(component.id)">{{ versionBusy[component.id] ? 'Loading…' : 'Retry' }}</button></div>
+          </div>
+          <template v-else>
+            <p v-if="versionBusy[component.id] && !versions[component.id].length" class="compact-copy muted">Loading versions…</p>
+            <p v-else-if="!versions[component.id].length" class="compact-copy muted" data-test="version-empty">Core lists no versions for this source.</p>
+            <div v-else class="advanced-source">
+              <label class="field compact-field">
+                <span>Version</span>
+                <select v-model="picked[component.id]" data-test="version-select" :disabled="stageBusy || versionBusy[component.id]">
+                  <option v-for="row in versions[component.id]" :key="row.version" :value="row.version" :disabled="row.installable === false">{{ versionLabel(row) }}</option>
+                </select>
+              </label>
+              <button class="btn" type="button" data-test="version-stage" :disabled="versionStageBlocked(component.id) || sourceBlocked(component.id)" @click="stageVersion(component.id)">Download &amp; inspect {{ picked[component.id] }}</button>
+            </div>
+            <p v-if="pickedRow(component.id) && pickedRow(component.id).installable === false && pickedRow(component.id).reason" class="compact-copy muted" data-test="version-reason">{{ pickedRow(component.id).reason }}</p>
+            <p v-if="versionInfo[component.id] && (versionInfo[component.id].installed || versionInfo[component.id].lowest)" class="compact-copy muted" data-test="version-info">
+              <template v-if="versionInfo[component.id].installed">Installed {{ versionInfo[component.id].installed }}. </template>Source: {{ describeUpdateSource(savedSources[component.id]) }}.<template v-if="versionInfo[component.id].lowest"> Oldest version you can install: {{ versionInfo[component.id].lowest }}.</template>
+            </p>
+            <div v-if="versionInfo[component.id] && versionInfo[component.id].rateLimit" class="state-inline warning" role="status" data-test="version-rate-limit">{{ versionInfo[component.id].rateLimit }}</div>
+          </template>
+          <div v-if="versionStale[component.id]" class="state-inline warning" role="alert" data-test="version-stale">{{ versionStale[component.id] }}</div>
         </div>
 
         <div class="section-divider">Advanced source (one-off)</div>

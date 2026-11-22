@@ -24,7 +24,7 @@ COUNT_CLICK="$(cat "${TRUST_FILES[@]}" | grep -oE '@click="(closeTrustPopover\(\
 [[ "$COUNT_CLICK" -ge 2 ]] || fail "trust popovers do not close on mouse click"
 COUNT_ESC="$(cat "${TRUST_FILES[@]}" | grep -oE '@keydown\.esc\.stop\.prevent="(closeTrustPopover\(\$event\)|emit\(.trust-close., \$event\))"' | wc -l)"
 [[ "$COUNT_ESC" -ge 2 ]] || fail "trust popovers do not close with Escape"
-cat "${TRUST_FILES[@]}" | grep -q 'role="tooltip"' || fail "trust tooltip role missing"
+grep -q 'role="tooltip"' "${TRUST_FILES[@]}" || fail "trust tooltip role missing"
 
 # L69: a client switch clears any pending site debounce, suppresses the watcher caused by clearing search,
 # and performs the one immediate fetch itself.

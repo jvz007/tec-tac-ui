@@ -617,6 +617,25 @@ export async function stageOnlineSystemUpdate(component, sourceType = null, ref 
   })
 }
 
+// 0.13.3 (Core 1.18.43, AD-77): the builds on the server's saved update source, newest first. Only the component is sent.
+export async function getSystemUpdateVersions(component) {
+  if (component !== 'framework' && component !== 'ui') throw new Error('Unknown component.')
+  const query = new URLSearchParams({ component })
+  return apiFetch(`/api/tfd/system/updates/versions/?${query.toString()}`)
+}
+
+// Stages one listed build. The body is the component, source_type 'version' and the version. The commit goes along only
+// when it is 40 hex characters (a release row has none). Never a ref, never allow_downgrade: that comes with Install.
+export async function stageSystemUpdateVersion(component, version, commit = null) {
+  const body = { component, source_type: 'version', version }
+  const pinned = typeof commit === 'string' && /^[0-9a-f]{40}$/i.test(commit.trim()) ? commit.trim().toLowerCase() : null
+  if (pinned) body.commit = pinned
+  return apiFetch('/api/tfd/system/updates/online/stage/', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+}
+
 export async function inspectSystemUpdatePackage(file) {
   const form = new FormData()
   form.append('package', file)
