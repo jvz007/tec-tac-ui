@@ -617,6 +617,11 @@ export async function stageOnlineSystemUpdate(component, sourceType = null, ref 
   })
 }
 
+// 0.13.4 (Core 1.18.45): one result check, paged. Only the person who started the check can read it; everyone else gets 404.
+export async function getResultCheck(checkId, { page = 1, pageSize = 50 } = {}) {
+  return apiFetch(`/api/tfd/ui/result-checks/${encodeURIComponent(checkId)}/?page=${Number(page)}&page_size=${Number(pageSize)}`)
+}
+
 // 0.13.3 (Core 1.18.43, AD-77): the builds on the server's saved update source, newest first. Only the component is sent.
 export async function getSystemUpdateVersions(component) {
   if (component !== 'framework' && component !== 'ui') throw new Error('Unknown component.')

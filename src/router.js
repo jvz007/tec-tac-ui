@@ -18,6 +18,7 @@ import PreferencesView from './views/PreferencesView.vue'
 import MyAccountView from './views/MyAccountView.vue'
 import MenuLayoutView from './views/MenuLayoutView.vue'
 import HelpView from './views/HelpView.vue'
+import ResultCheckView from './views/ResultCheckView.vue'
 import { requestLeave, unsavedState } from './unsaved'
 
 export const router = createRouter({
@@ -42,6 +43,7 @@ export const router = createRouter({
     { path: '/preferences/menu-layout', name: 'menu-layout', component: MenuLayoutView, meta: { title: 'Menu Layout' } },
     { path: '/help', name: 'help', component: HelpView, meta: { title: 'Help' } },
     { path: '/help/:articleId', name: 'help-article', component: HelpView, meta: { title: 'Help' } },
+    { path: '/results/:checkId', name: 'result-check', component: ResultCheckView, meta: { title: 'Results' } },
     { path: '/sso/callback', name: 'sso-callback', component: SsoCallbackView, meta: { title: 'SSO sign-in', public: true } },
     { path: '/public/:pathMatch(.*)*', name: 'public-pending', component: PublicPendingView, meta: { title: 'Public', public: true } },
     // Popup windows (0.12.95). Registered before the catch-all so a popup never lands on the dashboard. A module route

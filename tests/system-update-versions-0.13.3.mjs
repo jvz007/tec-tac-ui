@@ -118,7 +118,7 @@ assert.match(install, /const summary = installConfirmSummary\(plan\.value\)\s*if
 assert.match(install, /await runInstall\(\[\]\)/)
 
 // (f) LF endings and no storage
-for (const file of ['../src/api.js', '../src/system-update-versions.js', '../src/views/SystemUpdatesView.vue', '../src/help/articles/system-updates.md', '../tec_tac_package.json', '../RELEASE_NOTES_0.13.3.md', './system-update-versions-0.13.3.mjs']) {
+for (const file of ['../src/api.js', '../src/system-update-versions.js', '../src/views/SystemUpdatesView.vue', '../src/help/articles/system-updates.md', '../tec_tac_package.json', '../docs/releases/RELEASE_NOTES_0.13.3.md', './system-update-versions-0.13.3.mjs']) {
   assert.equal(read(file).includes('\r'), false, `${file} uses LF`)
 }
 assert.deepEqual(store, [], 'nothing was written to browser storage')

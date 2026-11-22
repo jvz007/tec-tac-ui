@@ -105,6 +105,12 @@ const versionRoutes=['/api/tfd/system/updates/versions/']
 for (const route of versionRoutes) routes.add(route)
 for (const route of versionRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
 
+// 0.13.4: the result check read route of Core 1.18.45 (GET ui/result-checks/<uuid:check_id>/). Added by name: the fixture is the 1.17.31
+// export and there is no 1.18.45 contract export on disk yet.
+const resultRoutes=['/api/tfd/ui/result-checks/<dynamic>/']
+for (const route of resultRoutes) routes.add(route)
+for (const route of resultRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
+
 const missing=[]
 for (const raw of used) {
   const normalized=cleanUsed(raw)
