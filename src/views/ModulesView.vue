@@ -13,8 +13,7 @@ import ModuleHotfixes from '../components/modules/ModuleHotfixes.vue'
 import ModuleInstallReview from '../components/modules/ModuleInstallReview.vue'
 import ModuleJobPanel from '../components/modules/ModuleJobPanel.vue'
 import ModulePackageIntake from '../components/modules/ModulePackageIntake.vue'
-import ModuleUpgradeRun from '../components/modules/ModuleUpgradeRun.vue'
-import { bulkEligibility, pruneSelection, toggleSelection, upgradeSelectedLabel } from '../module-bulk-upgrade'
+import { batchItems, bulkEligibility, pruneSelection, toggleSelection, upgradeSelectedLabel } from '../module-bulk-upgrade'
 import { useBulkUpgrade } from '../module-bulk-upgrade-state'
 import { INSTALLED_COLUMNS, ONLINE_COLUMNS, ONLINE_SELECT_COLUMNS, REPOSITORY_COLUMNS, installedCell, onlineCell, repositoryCell, sortRows } from '../module-manager-tables'
 import { readLicenceRefusal } from '../licensing'
@@ -44,6 +43,7 @@ import {
   listOnlineModuleCatalog,
   listModules,
   removeModule,
+  stageOnlineBatch,
   stageOnlineModulePackage,
   syncAllModuleRepositories,
   syncModuleRepository,
@@ -160,27 +160,24 @@ const installedRows = computed(() => sortRows(filtered.value, installedSort.valu
 const onlineRows = computed(() => sortRows(filteredOnline.value, onlineSort.value.key, onlineSort.value.dir))
 const repositoryRows = computed(() => sortRows(repositories.value, repositorySort.value.key, repositorySort.value.dir))
 const installedTableCell = installedCell((item) => moduleLoadDiagnostic(item), (item) => updateFor(item.id))
-// 0.13.1 (Core 1.18.35): bulk upgrade. A row can be ticked only when module-bulk-upgrade.js says so; the single Download update stays.
+// 0.13.2 (Core 1.18.42): bulk upgrade. A row can be ticked only when module-bulk-upgrade.js says so; the single Download update stays.
 const bulk = useBulkUpgrade({
   catalog: () => onlineCatalog.value,
   repositories: () => repositories.value,
   update: (item) => updateFor(item.id),
   canManage: () => canManage.value,
   busyElsewhere: () => ({ jobRunning: jobRunning.value, inspecting: inspecting.value, staged: staged.value }),
-  confirm: (options) => askConfirm(options),
-  reloadLists: () => Promise.all([refresh(selectedId.value), loadOnlineCatalog()]),
 })
-const { selectAllUpgradable, clearBulkSelection, closeBulkPlan, planBulkUpgrade, startBulkUpgrade, stopBulkRun, closeBulkRun } = bulk
-const { bulkCtx, bulkSelected, bulkPlan, bulkPlanBusy, bulkPlanError, bulkRun, bulkRunNotice, bulkRunError, bulkStarting, bulkStopBusy, bulkRunActive, upgradableCount, bulkDisabled, bulkPoller, bulkPlanGate } = bulk
+const { bulkCtx, bulkSelected, upgradableCount, bulkDisabled, bulkHint, selectAllUpgradable, clearBulkSelection } = bulk
 const onlineColumns = computed(() => (canManage.value ? ONLINE_SELECT_COLUMNS : ONLINE_COLUMNS))
 const onlineTableCell = onlineCell({
   stage: (item) => requestStageOnline(item),
-  blocked: (item) => !canManage.value || !item.latest_version || item.compatible === false || item.source_conflict || inspecting.value || bulkRunActive.value,
+  blocked: (item) => !canManage.value || !item.latest_version || item.compatible === false || item.source_conflict || inspecting.value,
   update: (item) => (item.update_available ? updateFor(item.id) : null),
   selectable: (item) => (canManage.value && item.update_available ? bulkEligibility(item, bulkCtx()) : null),
   selected: (item) => bulkSelected.value.includes(item.id),
   select: (item, on) => { bulkSelected.value = toggleSelection(bulkSelected.value, item.id, on) },
-  selectDisabled: () => bulkRunActive.value || inspecting.value || !!staged.value || !!jobRunning.value,
+  selectDisabled: () => inspecting.value || !!staged.value || !!jobRunning.value,
 })
 const repositoryTableCell = repositoryCell({ sync: (repo) => syncRepository(repo), disabled: (repo) => !canManage.value || repositoryBusy.value || !repo.enabled })
 const installedFooter = computed(() => `${filtered.value.length} of ${modules.value.length} modules`)
@@ -517,7 +514,6 @@ function sameOnlineVersion(item) {
 }
 
 function requestStageOnline(item) {
-  if (bulkRunActive.value) return
   // 0.12.125: a blocked update (Core 1.17.104 installable false) is never staged; the row shows the reason instead.
   if (item?.update_available && updateBlocked(updateFor(item.id))) return
   if (sameOnlineVersion(item)) {
@@ -548,6 +544,26 @@ async function stageOnline(item, licenceReason) {
   } catch (e) {
     error.value = e.message || 'Unable to download and inspect online module package.'
     noteLicenceRefusal(e, (reason) => stageOnline(item, reason), typeof licenceReason === 'string')
+  } finally {
+    inspecting.value = false
+  }
+}
+
+// 0.13.2: Upgrade selected stages the ticked rows as one batch; the Install button below does the rest. A refusal discards all.
+async function stageBulkUpgrade() {
+  if (bulkDisabled.value || !canManage.value || inspecting.value || jobRunning.value || staged.value) return
+  const items = batchItems(bulkSelected.value, onlineCatalog.value, bulkCtx())
+  if (!items.length) return
+  inspecting.value = true
+  error.value = ''
+  clearLicence()
+  try {
+    staged.value = await stageOnlineBatch(items)
+    installOrder.value = [...(plan.value?.order || stagedRows.value.map((row) => row.id))]
+    activeTab.value = 'installed'
+    bulkSelected.value = []
+  } catch (e) {
+    error.value = e.message || 'Unable to stage the selected modules.'
   } finally {
     inspecting.value = false
   }
@@ -1120,7 +1136,7 @@ async function poll() {
 }
 function reloadTecTac() { window.location.reload() }
 onMounted(async () => { await refresh(); await Promise.all([loadRepositories(), loadOnlineCatalog()]) })
-onBeforeUnmount(() => { bulkPoller.stop(); bulkPlanGate.begin(); hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); clearInterval(reloadTimer) })
+onBeforeUnmount(() => { hotfixRowsRequestGate.begin(); clearTimeout(pollTimer); clearTimeout(hotfixPollTimer); clearInterval(reloadTimer) })
 </script>
 
 <template>
@@ -1228,8 +1244,7 @@ onBeforeUnmount(() => { bulkPoller.stop(); bulkPlanGate.begin(); hotfixRowsReque
       <div class="cardhead"><div><span class="eyebrow">ONLINE MODULE CATALOG</span><h3>Available modules</h3></div><button class="btn" :disabled="!canManage || repositoryBusy" @click="syncAllRepositories">{{ repositoryBusy ? 'Syncing…' : 'Sync repositories' }}</button></div>
       <p class="compact-copy muted">Installed modules stay pinned to their recorded repository source. Tec-Tac will not silently switch an installed module to another repository.</p>
     </section>
-    <div class="toolbar"><label class="compact-input"><input v-model="onlineQuery" placeholder="Search online catalog…"></label><span class="muted mono">{{ filteredOnline.length }} shown</span><span class="spacer"></span><template v-if="canManage"><button class="btn sm" :disabled="bulkRunActive || !upgradableCount" @click="selectAllUpgradable">Select all upgradable</button><button v-if="bulkSelected.length" class="btn sm" :disabled="bulkRunActive" @click="clearBulkSelection">Clear selection</button><button class="btn sm primary" :disabled="bulkDisabled" @click="planBulkUpgrade">{{ upgradeSelectedLabel(bulkSelected.length) }}</button></template><button class="btn sm" :disabled="catalogBusy" @click="loadOnlineCatalog">{{ catalogBusy ? 'Loading…' : 'Refresh catalog' }}</button></div>
-    <ModuleUpgradeRun :plan="bulkPlan" :plan-busy="bulkPlanBusy" :plan-error="bulkPlanError" :run="bulkRun" :run-notice="bulkRunNotice" :run-error="bulkRunError" :stop-busy="bulkStopBusy" :starting="bulkStarting" @start="startBulkUpgrade" @close-plan="closeBulkPlan" @stop="stopBulkRun" @close-run="closeBulkRun" @reload="reloadTecTac" />
+    <div class="toolbar"><label class="compact-input"><input v-model="onlineQuery" placeholder="Search online catalog…"></label><span class="muted mono">{{ filteredOnline.length }} shown</span><span class="spacer"></span><template v-if="canManage"><button class="btn sm" :disabled="inspecting || !upgradableCount" @click="selectAllUpgradable">Select all upgradable</button><button v-if="bulkSelected.length" class="btn sm" :disabled="inspecting" @click="clearBulkSelection">Clear selection</button><button class="btn sm primary" :disabled="bulkDisabled" @click="stageBulkUpgrade">{{ upgradeSelectedLabel(bulkSelected.length) }}</button><span v-if="bulkHint" class="muted smalltext">{{ bulkHint }}</span></template><button class="btn sm" :disabled="catalogBusy" @click="loadOnlineCatalog">{{ catalogBusy ? 'Loading…' : 'Refresh catalog' }}</button></div>
     <div v-if="onlineInfo?.repositoriesLine" class="muted mono smalltext online-sync-line">{{ onlineInfo.repositoriesLine }}</div>
     <div v-if="onlineInfo?.message && !onlineCatalog.length" class="state-inline" :class="{warning: ['no_repository','not_synced','sync_failed'].includes(onlineInfo.state)}">{{ onlineInfo.message }}</div>
     <div v-else-if="!onlineInfo && !repositories.length" class="state-inline warning"><b>No repositories configured.</b> Add a module repository before using the online catalog.</div>

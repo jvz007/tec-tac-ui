@@ -119,9 +119,6 @@ export function applyModuleHotfix(uploadId){ return apiFetch(`/api/tfd/modules/h
 export function getModuleHotfixJob(jobId){ return apiFetch(`/api/tfd/modules/hotfixes/jobs/${encodeURIComponent(jobId)}/`,{rejectErrorPayload:false}) }
 export function listModuleHotfixes(moduleId){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/hotfixes/`) }
 export function rollbackModuleHotfix(moduleId,hotfixId){ return apiFetch(`/api/tfd/modules/v2/${encodeURIComponent(moduleId)}/hotfixes/${encodeURIComponent(hotfixId)}/rollback/`,{method:'POST',body:JSON.stringify({})}) }
-// 0.13.1 (Core 1.18.35): upgrade several modules from the Online catalog in one run. Core plans again on every call and runs the
-// order itself. Bodies are built by module-bulk-upgrade.js: module ids and purpose 'upgrade' only.
-export function planOnlineUpgrade(body){ return apiFetch('/api/tfd/modules/catalog/online/plan/',{method:'POST',body:JSON.stringify(body)}) }
-export function startOnlineUpgradeRun(body){ return apiFetch('/api/tfd/modules/catalog/online/install/',{method:'POST',body:JSON.stringify(body)}) }
-export function getOnlineUpgradeRun(runId){ return apiFetch(`/api/tfd/modules/catalog/online/install/${encodeURIComponent(runId)}/`,{rejectErrorPayload:false}) }
-export function stopOnlineUpgradeRun(runId){ return apiFetch(`/api/tfd/modules/catalog/online/install/${encodeURIComponent(runId)}/stop/`,{method:'POST',body:JSON.stringify({})}) }
+// 0.13.2 (Core 1.18.42): stage several online modules as one batch (1 to 50 items). Core plans, orders and refuses; a refusal
+// discards the whole batch. Items are built by module-bulk-upgrade.js: repository_id, module_id and version only.
+export function stageOnlineBatch(items){ return apiFetch('/api/tfd/modules/catalog/online/stage/batch/',{method:'POST',body:JSON.stringify({items})}) }
