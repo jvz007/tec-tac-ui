@@ -143,7 +143,6 @@ function extensionPermissionLabel(code, moduleId, groups = []) {
   if (tail.startsWith(prefix)) tail = tail.slice(prefix.length)
   const bits = tail.split('.').filter(Boolean).map((part) => part.replace(/[-_]/g, ' '))
   let action = bits.join(' ') || String(groups[0] || 'permission').replace(/[-_]/g, ' ')
-  if (bits.length === 1 && ['view', 'read', 'list'].includes(bits[0])) action = 'read'
   if (bits.length === 1 && bits[0] === 'manage') action = 'manage'
   return `${action} — ${moduleId}`
 }

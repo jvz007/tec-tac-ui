@@ -152,7 +152,7 @@ for (const cls of ['tt-panel', 'tt-tablewrap', 'tt-table', 'tt-table-foot', 'tt-
 for (const word of ['Endpoint', 'State', 'Exit code', 'Refresh', 'Retry', 'Previous', 'Next']) assert.ok(view.includes(word), `the view has ${word}`)
 
 // ---- (6) line endings: every touched file keeps LF ----
-for (const file of ['../src/api.js', '../src/router.js', '../src/result-check.js', '../src/views/ResultCheckView.vue', '../VERSION', '../package.json', '../tec_tac_package.json', '../RELEASE_NOTES_0.13.4.md', '../docs/releases/RELEASE_NOTES_0.13.3.md', './result-check-0.13.4.mjs', './release-0.13.4.mjs', './run-all.mjs', './api-contract-routes-0.12.58-1.mjs']) {
+for (const file of ['../src/api.js', '../src/router.js', '../src/result-check.js', '../src/views/ResultCheckView.vue', '../VERSION', '../package.json', '../tec_tac_package.json', '../docs/releases/RELEASE_NOTES_0.13.4.md', '../docs/releases/RELEASE_NOTES_0.13.3.md', './result-check-0.13.4.mjs', './release-0.13.5.mjs', './run-all.mjs', './api-contract-routes-0.12.58-1.mjs']) {
   assert.equal(read(file).includes('\r'), false, `${file} keeps LF`)
 }
 console.log('result-check-0.13.4: PASS')
