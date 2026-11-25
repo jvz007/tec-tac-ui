@@ -121,7 +121,7 @@ assert.doesNotMatch(read('../src/module-bulk-upgrade.js') + read('../src/module-
 assert.doesNotMatch(modulesSource.slice(modulesSource.indexOf('stageOnlineBatch')), /localStorage|sessionStorage|Authorization/)
 
 // (i) LF line endings
-for (const file of ['../src/modules.js', '../src/views/ModulesView.vue', '../src/module-bulk-upgrade.js', '../src/module-bulk-upgrade-state.js', '../tec_tac_package.json', '../VERSION', '../package.json', '../docs/releases/RELEASE_NOTES_0.13.2.md', './bulk-stage-0.13.2.mjs', './release-0.13.5.mjs']) {
+for (const file of ['../src/modules.js', '../src/views/ModulesView.vue', '../src/module-bulk-upgrade.js', '../src/module-bulk-upgrade-state.js', '../tec_tac_package.json', '../VERSION', '../package.json', '../docs/releases/RELEASE_NOTES_0.13.2.md', './bulk-stage-0.13.2.mjs', './release-0.13.6.mjs']) {
   assert.equal(read(file).includes('\r'), false, `${file} uses LF`)
 }
 console.log('bulk-stage-0.13.2: PASS')

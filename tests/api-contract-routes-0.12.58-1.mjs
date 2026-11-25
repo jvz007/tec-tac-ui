@@ -111,6 +111,13 @@ const resultRoutes=['/api/tfd/ui/result-checks/<dynamic>/']
 for (const route of resultRoutes) routes.add(route)
 for (const route of resultRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
 
+// 0.13.6: the console-certificates routes of Core 1.18.52 (framwork/tec_tac/urls.py). Added by name until a signed contract export carries
+// them. enrol/ is the Console's own route (no sign-in): src/ must not use it.
+const consoleCertRoutes=['/api/tfd/console-certificates/mine/','/api/tfd/console-certificates/mine/enrolment-code/','/api/tfd/console-certificates/','/api/tfd/console-certificates/issue/','/api/tfd/console-certificates/enrolments/<dynamic>/cancel/','/api/tfd/console-certificates/<dynamic>/revoke/','/api/tfd/console-certificates/ca/','/api/tfd/console-certificates/ca/replace/']
+for (const route of consoleCertRoutes) routes.add(route)
+for (const route of consoleCertRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
+assert.equal(used.map(cleanUsed).includes('/api/tfd/console-certificates/enrol/'), false, 'the browser never calls the Console enrol route')
+
 const missing=[]
 for (const raw of used) {
   const normalized=cleanUsed(raw)

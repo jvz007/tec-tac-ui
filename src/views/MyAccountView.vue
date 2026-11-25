@@ -6,6 +6,7 @@ import { clearTacticalSession, tecTacTotpIssuer } from '../api'
 import { useConfirm } from '../confirm-dialog'
 import { state } from '../state'
 import TacticalUiPreferencesCard from '../components/TacticalUiPreferencesCard.vue'
+import ConsoleCertificatesCard from '../components/ConsoleCertificatesCard.vue'
 import {
   changeMyPassword,
   getMyAccount,
@@ -144,5 +145,6 @@ onMounted(load)
     </section>
 
     <TacticalUiPreferencesCard :tactical-ui="tacticalUi" @saved="onTacticalUiSaved" />
+    <ConsoleCertificatesCard />
   </div>
 </template>

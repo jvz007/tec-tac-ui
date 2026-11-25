@@ -3,18 +3,22 @@ import { formatDateTime } from '../date-format'
 import { computed, inject, onMounted, ref } from 'vue'
 import {
   canEditRuntimeSettings,
+  canEditConsoleCertValidity,
   canEditSystemName,
   canEditUploadLimit,
   getRuntimeSettingsPayload,
+  normalizeConsoleCertValidity,
   normalizeRuntimeSettings,
   normalizeSystemName,
   normalizeUploadLimit,
   resetSystemName,
+  saveConsoleCertValidity,
   saveRegisterTimeout,
   saveSystemName,
   saveUploadLimit,
   uploadLimitDefaultText,
   uploadLimitRangeText,
+  validateConsoleCertValidity,
   validateRegisterTimeout,
   validateSystemName,
   validateUploadLimit,
@@ -23,6 +27,11 @@ import {
 const state = inject('tecTacState')
 const settings = ref(null)
 const uploadLimit = ref(null)
+const consoleCert = ref(null)
+const certDraft = ref(null)
+const certSaving = ref(false)
+const certError = ref('')
+const certSaved = ref(false)
 const systemName = ref(null)
 const nameDraft = ref('')
 const nameSaving = ref(false)
@@ -41,6 +50,13 @@ const uploadError = ref('')
 const uploadSaved = ref(false)
 
 const canEdit = computed(() => canEditRuntimeSettings(state?.context))
+const canEditCert = computed(() => canEditConsoleCertValidity(state?.context))
+const certValidation = computed(() => (
+  consoleCert.value
+    ? validateConsoleCertValidity(certDraft.value, { minimum: consoleCert.value.minimum, maximum: consoleCert.value.maximum })
+    : { valid: false, message: '' }
+))
+const certDirty = computed(() => consoleCert.value && certDraft.value !== consoleCert.value.value)
 const canEditName = computed(() => canEditSystemName(state?.context))
 const validation = computed(() => (
   settings.value
@@ -71,6 +87,8 @@ async function load() {
     draft.value = settings.value ? settings.value.value : null
     uploadLimit.value = normalizeUploadLimit(payload)
     uploadDraft.value = uploadLimit.value ? uploadLimit.value.value : null
+    consoleCert.value = normalizeConsoleCertValidity(payload)
+    certDraft.value = consoleCert.value ? consoleCert.value.value : null
     systemName.value = normalizeSystemName(payload)
     nameDraft.value = systemName.value ? systemName.value.value : ''
     // Keep the shell's copy (My Account reads it) in step with what Core holds.
@@ -120,6 +138,24 @@ async function saveUpload() {
     uploadError.value = error?.message || 'The setting could not be saved.'
   } finally {
     uploadSaving.value = false
+  }
+}
+
+async function saveCert() {
+  if (!certValidation.value.valid || certSaving.value) return
+  certSaving.value = true
+  certError.value = ''
+  certSaved.value = false
+  try {
+    await saveConsoleCertValidity(certDraft.value)
+    // Reload, so the value and who changed it come from Core.
+    await load()
+    certSaved.value = true
+  } catch (error) {
+    // Core's 400 and 403 messages are shown as returned.
+    certError.value = error?.message || 'The setting could not be saved.'
+  } finally {
+    certSaving.value = false
   }
 }
 
@@ -188,6 +224,26 @@ onMounted(load)
       <div v-if="uploadSaved" class="state-inline" role="status">Saved. The new limit applies from the next upload.</div>
     </form>
     <p v-else class="compact-copy muted">Only a superuser can change this limit.</p>
+  </section>
+  <!-- Core 1.18.52 and later. A Core that sends no console_certificate_validity_days leaves this card out. Only a superuser sees the form. -->
+  <section v-if="!loading && consoleCert" class="card runtime-settings-card mb" aria-labelledby="console-cert-validity-title">
+    <div class="cardhead"><div><span class="eyebrow">RUNTIME SETTINGS</span><h3 id="console-cert-validity-title">Engineer Console certificate validity</h3></div></div>
+    <p class="compact-copy muted">How many days a new Engineer Console certificate lasts. A change affects new certificates only, not ones already issued.</p>
+    <dl class="kvlist">
+      <dt>Current validity</dt><dd class="mono">{{ consoleCert.value }} days</dd>
+      <dt>Allowed range</dt><dd class="mono">{{ consoleCert.minimum }} to {{ consoleCert.maximum }} days</dd>
+      <dt>Default</dt><dd class="mono">{{ consoleCert.default }} days</dd>
+      <dt>Last changed by</dt><dd>{{ changed.updated_by || '—' }}</dd>
+      <dt>Last changed</dt><dd>{{ formatTime(changed.updated_at) }}</dd>
+    </dl>
+    <form v-if="canEditCert" class="runtime-settings-form" @submit.prevent="saveCert">
+      <label class="field"><span>Validity in days</span><input v-model.number="certDraft" type="number" inputmode="numeric" :min="consoleCert.minimum" :max="consoleCert.maximum" step="1" :disabled="certSaving" aria-describedby="console-cert-validity-help"></label>
+      <p id="console-cert-validity-help" class="field-help" :class="{ dangertext: certDirty && !certValidation.valid }">{{ certDirty && !certValidation.valid ? certValidation.message : `Whole days from ${consoleCert.minimum} to ${consoleCert.maximum}.` }}</p>
+      <div class="login-actions"><button class="btn primary" type="submit" :disabled="certSaving || !certDirty || !certValidation.valid">{{ certSaving ? 'Saving…' : 'Save' }}</button></div>
+      <div v-if="certError" class="auth-error" role="alert">{{ certError }}</div>
+      <div v-if="certSaved" class="state-inline" role="status">Saved. The new validity applies to certificates made from now on.</div>
+    </form>
+    <p v-else class="compact-copy muted">Only a superuser can change this.</p>
   </section>
   <!-- Core 1.17.23 and later. A Core that sends no system_name leaves this card out. -->
   <section v-if="!loading && systemName" class="card runtime-settings-card mb" aria-labelledby="system-name-title">

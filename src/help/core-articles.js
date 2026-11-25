@@ -13,6 +13,7 @@ import storage from './articles/storage.md?raw'
 import publicContracts from './articles/public-contracts.md?raw'
 import preferences from './articles/preferences.md?raw'
 import myAccount from './articles/my-account.md?raw'
+import consoleCertificates from './articles/console-certificates.md?raw'
 import helpArticle from './articles/help.md?raw'
 import troubleshootingDiagnostics from './articles/troubleshooting-diagnostics.md?raw'
 import troubleshootingMigrations from './articles/troubleshooting-migrations.md?raw'
@@ -34,6 +35,7 @@ const CORE_ARTICLES = [
   { id: 'core.troubleshooting-migrations', title: 'Migration drift', category: 'Troubleshooting', summary: 'Understand Core and module Django migration drift and the supported repair workflow.', order: 10, keywords: ['migration', 'makemigrations', 'drift', 'django'], routes: ['/system/diagnostics'], content: troubleshootingMigrations },
   { id: 'core.public-contracts', title: 'Public Contracts', category: 'Core Administration', summary: 'Developer contracts and safe cross-module integration boundaries.', order: 60, keywords: ['contracts', 'capabilities', 'api', 'integration'], routes: ['/contracts'], content: publicContracts },
   { id: 'core.my-account', title: 'My Account', category: 'Core UI', summary: 'Self-service password, two-factor, sessions and Tactical agent-action preferences.', order: 15, keywords: ['account', 'password', '2fa', 'mfa', 'sessions', 'double-click', 'url action'], routes: ['/account'], content: myAccount },
+  { id: 'core.console-certificates', title: 'Engineer Console certificates', category: 'Core Administration', summary: 'Certificates that let an engineer PC prove who is using the Engineer Console: the My Account card, the Console certificates page and the validity setting.', order: 16, keywords: ['console', 'certificate', 'certificates', 'engineer console', 'enrol', 'enrolment', 'ca', 'certificate authority', 'revoke', 'tunnel'], routes: ['/access/console-certificates'], content: consoleCertificates },
   { id: 'core.preferences', title: 'Preferences and Menu Layout', category: 'Core UI', summary: 'Per-user appearance, navigation ordering and menu layout.', order: 20, keywords: ['preferences', 'menu layout', 'navigation', 'theme'], routes: ['/preferences', '/preferences/menu-layout'], content: preferences },
   { id: 'core.help', title: 'Help and Knowledge Base', category: 'Getting Started', summary: 'Context Help, full-text search and module-provided articles.', order: 20, keywords: ['help', 'knowledge base', 'documentation'], routes: ['/help', '/help/*'], content: helpArticle },
 ]

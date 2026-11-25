@@ -19,6 +19,7 @@ import MyAccountView from './views/MyAccountView.vue'
 import MenuLayoutView from './views/MenuLayoutView.vue'
 import HelpView from './views/HelpView.vue'
 import ResultCheckView from './views/ResultCheckView.vue'
+import ConsoleCertificatesView from './views/ConsoleCertificatesView.vue'
 import { requestLeave, unsavedState } from './unsaved'
 
 export const router = createRouter({
@@ -31,6 +32,7 @@ export const router = createRouter({
     { path: '/schedules', name: 'schedules', component: SchedulesView, meta: { title: 'Schedules' } },
     { path: '/system/scheduler', name: 'scheduler-settings', component: SchedulerSettingsView, meta: { title: 'Scheduler Configuration' } },
     { path: '/access', name: 'access', component: AccessView, meta: { title: 'Access' } },
+    { path: '/access/console-certificates', name: 'console-certificates', component: ConsoleCertificatesView, meta: { title: 'Console certificates' } },
     { path: '/resources', name: 'resources', component: ResourcesView, meta: { title: 'Clients & Sites' } },
     { path: '/system/settings', name: 'system-settings', component: SystemSettingsView, meta: { title: 'System Configuration' } },
     { path: '/system/updates', name: 'system-updates', component: SystemUpdatesView, meta: { title: 'System Updates' } },

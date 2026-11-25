@@ -183,3 +183,49 @@ export async function resetSystemName({ api = apiFetch } = {}) {
     body: JSON.stringify({ [SYSTEM_NAME_KEY]: null }),
   }))
 }
+
+// Engineer Console certificate validity (Core 1.18.52): whole days, 1 to 730, 365 by default. It affects new certificates only.
+// Only an effective superuser changes it. Core refuses null and anyone else; the check here only saves a round trip and
+// Core's 400 and 403 text is shown as sent. There is no reset button, so null is never sent.
+export const CONSOLE_CERT_VALIDITY_KEY = 'console_certificate_validity_days'
+export const CONSOLE_CERT_VALIDITY_MIN = 1
+export const CONSOLE_CERT_VALIDITY_MAX = 730
+export const CONSOLE_CERT_VALIDITY_DEFAULT = 365
+
+// { value, minimum, maximum, default } from a runtime-settings answer, or null when the key is absent (an older Core).
+export function normalizeConsoleCertValidity(payload) {
+  const entry = payload && typeof payload === 'object' ? payload[CONSOLE_CERT_VALIDITY_KEY] : null
+  if (!entry || typeof entry !== 'object') return null
+  const number = (value, fallback) => (Number.isInteger(value) ? value : fallback)
+  return {
+    value: number(entry.value, CONSOLE_CERT_VALIDITY_DEFAULT),
+    minimum: number(entry.minimum, CONSOLE_CERT_VALIDITY_MIN),
+    maximum: number(entry.maximum, CONSOLE_CERT_VALIDITY_MAX),
+    default: number(entry.default, CONSOLE_CERT_VALIDITY_DEFAULT),
+  }
+}
+
+export function validateConsoleCertValidity(value, { minimum = CONSOLE_CERT_VALIDITY_MIN, maximum = CONSOLE_CERT_VALIDITY_MAX } = {}) {
+  if (typeof value !== 'number' || !Number.isInteger(value)) {
+    return { valid: false, message: `Enter a whole number of days from ${minimum} to ${maximum}.` }
+  }
+  if (value < minimum || value > maximum) {
+    return { valid: false, message: `The validity must be from ${minimum} to ${maximum} days.` }
+  }
+  return { valid: true, message: '' }
+}
+
+// Display only: the form shows for a superuser; Core refuses everyone else.
+export function canEditConsoleCertValidity(context = {}) {
+  return context?.user?.superuser === true
+}
+
+export async function saveConsoleCertValidity(days, { api = apiFetch } = {}) {
+  const check = validateConsoleCertValidity(days)
+  if (!check.valid) throw Object.assign(new Error(check.message), { status: 0, payload: null, code: null })
+  const payload = await api(RUNTIME_SETTINGS_PATH, {
+    method: 'PATCH',
+    body: JSON.stringify({ [CONSOLE_CERT_VALIDITY_KEY]: days }),
+  })
+  return normalizeConsoleCertValidity(payload)
+}

@@ -1,6 +1,7 @@
 import { canEditRuntimeSettings } from './runtime-settings.js'
 import { canSeeResourceDirectory } from './resource-directory-read.js'
 import { canListApiKeys } from './api-keys.js'
+import { canViewConsoleCertificates } from './console-certificates.js'
 import { badgeText, canSeeModuleUpdates } from './module-updates.js'
 
 export const DEFAULT_SECTION_ORDER = Object.freeze([
@@ -23,6 +24,7 @@ export function coreNavigation(context = {}, extras = {}) {
     { label: 'Schedules', icon: '◷', to: '/schedules', section: 'Operations', visible: capabilities.manage_schedules !== false, owner: 'core' },
     { label: 'Modules', icon: '▦', to: '/modules', section: 'Administration', visible: true, owner: 'core', ...(modulesBadge ? { badge: modulesBadge, badgeTitle: `${modulesBadge} module update${modulesBadge === '1' ? '' : 's'} available` } : {}) },
     { label: 'Access', icon: '⛨', to: '/access', section: 'Administration', visible: capabilities.list_accounts !== false || capabilities.list_roles !== false || canListApiKeys(context), owner: 'core' },
+    { label: 'Console certificates', icon: '⚿', to: '/access/console-certificates', section: 'Administration', visible: canViewConsoleCertificates(context), owner: 'core' },
     { label: 'Clients & Sites', icon: '▤', to: '/resources', section: 'Administration', visible: capabilities.list_clients === true || canSeeResourceDirectory(context), owner: 'core' },
     { label: 'Scheduler Configuration', icon: '◷', to: '/system/scheduler', section: 'Administration', visible: capabilities.manage_schedules === true || superuser, owner: 'core' },
     { label: 'System Configuration', icon: '⚙', to: '/system/settings', section: 'Administration', visible: canEditRuntimeSettings(context), owner: 'core' },
