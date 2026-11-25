@@ -86,9 +86,9 @@ async function enrol() {
 }
 
 async function copyCode() {
-  if (!issued.value?.code) return
-  const result = await copyTextWithFeedback(issued.value.code, { failureMessage: 'Could not copy the code.' })
-  notice.value = result.copied ? 'Code copied.' : result.error
+  if (!link.value) return
+  const result = await copyTextWithFeedback(link.value, { failureMessage: 'Could not copy the enrol link.' })
+  notice.value = result.copied ? 'Enrol link copied.' : result.error
 }
 
 async function onRevoked() {
@@ -122,7 +122,7 @@ onBeforeUnmount(clearCode)
         <p class="mono smalltext console-cert-code">{{ issued.code }}</p>
         <div class="editor-actions">
           <a v-if="link" class="btn primary" :href="link">Open the Engineer Console</a>
-          <button class="btn" type="button" @click="copyCode">Copy code</button>
+          <button v-if="link" class="btn" type="button" @click="copyCode">Copy enrol link</button>
         </div>
         <p v-if="!link" class="field-help">Open the Engineer Console, choose Enrol, and enter this host and code by hand.</p>
       </div>

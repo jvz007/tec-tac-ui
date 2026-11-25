@@ -56,7 +56,7 @@ export function normalizeCertificate(row) {
   if (!serial) return null
   return {
     serial,
-    short_serial: text(row.short_serial) || serial.slice(-8),
+    short_serial: text(row.short_serial) || serial.slice(0, 8),
     pc_label: text(row.pc_label),
     username: text(row.username),
     engineer_id: Number.isInteger(row.engineer_id) ? row.engineer_id : null,

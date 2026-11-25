@@ -27,7 +27,7 @@ async function revoke() {
   busy.value = true
   error.value = ''
   try {
-    const yes = await confirmAction({ question: REVOKE_QUESTION, target: props.label || props.serial.slice(-8), detail: REVOKE_DETAIL, danger: true, yesLabel: 'Yes', noLabel: 'No' })
+    const yes = await confirmAction({ question: REVOKE_QUESTION, target: props.label || props.serial.slice(0, 8), detail: REVOKE_DETAIL, danger: true, yesLabel: 'Yes', noLabel: 'No' })
     if (!yes) return
     await revokeConsoleCertificate(props.serial, reason.value)
     emit('revoked', props.serial)

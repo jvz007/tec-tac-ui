@@ -76,7 +76,7 @@ assert.match(card, /onBeforeUnmount\(clearCode\)/, 'cleared on unmount')
 assert.match(card, /secondsLeft\.value <= 0\) clearCode\(\)/, 'cleared when the countdown ends')
 assert.match(card, /async function enrol\(\) \{[\s\S]{0,120}clearCode\(\)/, 'cleared on a new request')
 assert.match(card, /status === 409\) await load\(\)|err\?\.status === 409/, '409 re-reads mine/')
-assert.match(card, /copyTextWithFeedback\(issued\.value\.code/, 'Copy code copies the code')
+assert.match(card, /copyTextWithFeedback\(link\.value/, 'Copy enrol link copies the whole link (0.13.7)')
 assert.match(card, /Manage my certificates/)
 assert.match(card, /Enrol this PC/)
 // No issue control and no revoke for others on the card: the only revoke is on the person's own rows.

@@ -162,7 +162,7 @@ export const ENTRIES = [
   'node tests/module-preferences-merged-result-0.12.109.mjs',
   'node tests/signin-parity-0.12.110.mjs',
   'bash tests/python-bin-0.12.110.sh',
-  'node tests/release-0.13.6.mjs',
+  'node tests/release-0.13.7.mjs',
   'node tests/online-catalog-availability-0.12.111.mjs',
   'node tests/shared-select-tags-0.12.111.mjs',
   'node tests/shared-components-docs-0.12.111.mjs',
@@ -233,6 +233,8 @@ export const ENTRIES = [
   'node tests/console-certificates-0.13.6.mjs',
   'node tests/console-certificates-page-0.13.6.mjs',
   'node tests/console-certificate-validity-0.13.6.mjs',
+  // 0.13.7
+  'node tests/console-certificates-enrol-link-0.13.7.mjs',
 ]
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
