@@ -229,6 +229,7 @@ async function beginSso(entry) {
   error.value = ''
   ssoBusyId.value = entry.id
   // Keep a valid Engineer Console route through the provider round trip (UI 0.13.8). Nothing is kept for any other hash.
+  clearPendingConsoleRoute()
   savePendingConsoleRoute(window.location.hash)
   try {
     await beginLoginSso(ssoProviders, entry, { return_to: window.location.href, location: window.location })

@@ -101,13 +101,14 @@ export function clearPendingConsoleRoute({ storage } = {}) {
 // Keeps the validated values for one sign-on round trip. No token, no code, no credential.
 export function savePendingConsoleRoute(hash, { storage, now = Date.now } = {}) {
   const parsed = parseConsoleHash(hash)
-  if (!parsed) return false
+  // Not a Console route: drop any earlier entry, so a later sign-on cannot land on a stale Console page.
+  if (!parsed) { clearPendingConsoleRoute({ storage }); return false }
   try {
     const target = store(storage)
-    if (!target) return false
+    if (!target) { clearPendingConsoleRoute({ storage }); return false }
     target.setItem(PENDING_KEY, JSON.stringify({ kind: parsed.kind, values: parsed.values, savedAt: now() }))
     return true
-  } catch { return false }
+  } catch { clearPendingConsoleRoute({ storage }); return false }
 }
 
 // Reads and deletes the entry. Returns the route hash to open, or '' when there is none, it is too old or it fails validation.

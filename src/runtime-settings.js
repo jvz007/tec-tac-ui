@@ -229,3 +229,40 @@ export async function saveConsoleCertValidity(days, { api = apiFetch } = {}) {
   })
   return normalizeConsoleCertValidity(payload)
 }
+
+// Console web address (Core 1.18.58): the Tec-Tac web address the Engineer Console opens for its sign-in. Core stays the
+// authority for the address rules (https only, no user name, query or fragment, path empty or /tec-tac). Here only the
+// length is checked, to save a round trip; Core's 400 text is shown as sent. Only a superuser changes it (display only).
+export const CONSOLE_UI_URL_KEY = 'console_ui_url'
+export const CONSOLE_UI_URL_MAX = 300
+
+// { value, maximum_length, default } from a runtime-settings answer, or null when the key is absent (an older Core).
+export function normalizeConsoleUiUrl(payload) {
+  const entry = payload && typeof payload === 'object' ? payload[CONSOLE_UI_URL_KEY] : null
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return null
+  return {
+    value: typeof entry.value === 'string' ? entry.value : '',
+    maximum_length: Number.isInteger(entry.maximum_length) ? entry.maximum_length : CONSOLE_UI_URL_MAX,
+    default: '',
+  }
+}
+
+export function validateConsoleUiUrl(text, { maximum = CONSOLE_UI_URL_MAX } = {}) {
+  const value = typeof text === 'string' ? text.trim() : ''
+  if (value.length > maximum) return { valid: false, message: `The address must be at most ${maximum} characters.` }
+  return { valid: true, message: '' }
+}
+
+export function canEditConsoleUiUrl(context = {}) {
+  return context?.user?.superuser === true
+}
+
+// One key only: Core refuses a mixed body whole for a non-superuser. Empty or blank text is sent as null, which resets it.
+export async function saveConsoleUiUrl(text, { api = apiFetch } = {}) {
+  const value = typeof text === 'string' ? text.trim() : ''
+  const payload = await api(RUNTIME_SETTINGS_PATH, {
+    method: 'PATCH',
+    body: JSON.stringify({ [CONSOLE_UI_URL_KEY]: value === '' ? null : value }),
+  })
+  return normalizeConsoleUiUrl(payload)
+}

@@ -31,7 +31,7 @@ await assert.rejects(() => saveConsoleCertValidity(null, { api }))
 await assert.rejects(() => saveConsoleCertValidity(731, { api }))
 assert.equal(calls.length, 1, 'nothing invalid or null is sent')
 assert.doesNotMatch(card, /saveConsoleCertValidity\(null/, 'null is never sent')
-const certSection = card.slice(card.indexOf('console-cert-validity-title'), card.indexOf('system-name-title'))
+const certSection = card.slice(card.indexOf('console-cert-validity-title'), card.indexOf('console-ui-url-title'))
 assert.doesNotMatch(certSection, /Reset to default/, 'no reset button on this card')
 
 assert.equal(canEditConsoleCertValidity({ user: { superuser: true } }), true)

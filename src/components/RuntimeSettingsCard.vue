@@ -4,21 +4,25 @@ import { computed, inject, onMounted, ref } from 'vue'
 import {
   canEditRuntimeSettings,
   canEditConsoleCertValidity,
+  canEditConsoleUiUrl,
   canEditSystemName,
   canEditUploadLimit,
   getRuntimeSettingsPayload,
   normalizeConsoleCertValidity,
+  normalizeConsoleUiUrl,
   normalizeRuntimeSettings,
   normalizeSystemName,
   normalizeUploadLimit,
   resetSystemName,
   saveConsoleCertValidity,
+  saveConsoleUiUrl,
   saveRegisterTimeout,
   saveSystemName,
   saveUploadLimit,
   uploadLimitDefaultText,
   uploadLimitRangeText,
   validateConsoleCertValidity,
+  validateConsoleUiUrl,
   validateRegisterTimeout,
   validateSystemName,
   validateUploadLimit,
@@ -32,6 +36,11 @@ const certDraft = ref(null)
 const certSaving = ref(false)
 const certError = ref('')
 const certSaved = ref(false)
+const consoleUi = ref(null)
+const uiUrlDraft = ref('')
+const uiUrlSaving = ref(false)
+const uiUrlError = ref('')
+const uiUrlSaved = ref('')
 const systemName = ref(null)
 const nameDraft = ref('')
 const nameSaving = ref(false)
@@ -57,6 +66,9 @@ const certValidation = computed(() => (
     : { valid: false, message: '' }
 ))
 const certDirty = computed(() => consoleCert.value && certDraft.value !== consoleCert.value.value)
+const canEditUiUrl = computed(() => canEditConsoleUiUrl(state?.context))
+const uiUrlValidation = computed(() => validateConsoleUiUrl(uiUrlDraft.value, { maximum: consoleUi.value?.maximum_length }))
+const uiUrlDirty = computed(() => consoleUi.value && uiUrlDraft.value.trim() !== consoleUi.value.value)
 const canEditName = computed(() => canEditSystemName(state?.context))
 const validation = computed(() => (
   settings.value
@@ -89,6 +101,8 @@ async function load() {
     uploadDraft.value = uploadLimit.value ? uploadLimit.value.value : null
     consoleCert.value = normalizeConsoleCertValidity(payload)
     certDraft.value = consoleCert.value ? consoleCert.value.value : null
+    consoleUi.value = normalizeConsoleUiUrl(payload)
+    uiUrlDraft.value = consoleUi.value ? consoleUi.value.value : ''
     systemName.value = normalizeSystemName(payload)
     nameDraft.value = systemName.value ? systemName.value.value : ''
     // Keep the shell's copy (My Account reads it) in step with what Core holds.
@@ -156,6 +170,25 @@ async function saveCert() {
     certError.value = error?.message || 'The setting could not be saved.'
   } finally {
     certSaving.value = false
+  }
+}
+
+async function changeUiUrl(action) {
+  if (uiUrlSaving.value) return
+  if (action !== 'reset' && !uiUrlValidation.value.valid) return
+  uiUrlSaving.value = true
+  uiUrlError.value = ''
+  uiUrlSaved.value = ''
+  try {
+    await saveConsoleUiUrl(action === 'reset' ? '' : uiUrlDraft.value)
+    // Reload, so the value and who changed it come from Core.
+    await load()
+    uiUrlSaved.value = action === 'reset' ? 'Reset to default.' : 'Saved. The Engineer Console uses this address from its next sign-in.'
+  } catch (error) {
+    // Core's 400 and 403 messages are shown as returned.
+    uiUrlError.value = error?.message || 'The address could not be saved.'
+  } finally {
+    uiUrlSaving.value = false
   }
 }
 
@@ -242,6 +275,28 @@ onMounted(load)
       <div class="login-actions"><button class="btn primary" type="submit" :disabled="certSaving || !certDirty || !certValidation.valid">{{ certSaving ? 'Saving…' : 'Save' }}</button></div>
       <div v-if="certError" class="auth-error" role="alert">{{ certError }}</div>
       <div v-if="certSaved" class="state-inline" role="status">Saved. The new validity applies to certificates made from now on.</div>
+    </form>
+    <p v-else class="compact-copy muted">Only a superuser can change this.</p>
+  </section>
+  <!-- Core 1.18.58 and later. A Core that sends no console_ui_url leaves this card out. Only a superuser sees the form. -->
+  <section v-if="!loading && consoleUi" class="card runtime-settings-card mb" aria-labelledby="console-ui-url-title">
+    <div class="cardhead"><div><span class="eyebrow">RUNTIME SETTINGS</span><h3 id="console-ui-url-title">Engineer Console web address</h3></div></div>
+    <p class="compact-copy muted">The Tec-Tac web address the Engineer Console opens for its sign-in. Leave it empty and Core uses the single https address in Tactical's CORS settings.</p>
+    <dl class="kvlist">
+      <dt>Current address</dt><dd class="mono">{{ consoleUi.value || "Not set: Core uses the single https address in Tactical's CORS settings" }}</dd>
+      <dt>Default</dt><dd class="mono">Not set</dd>
+      <dt>Last changed by</dt><dd>{{ changed.updated_by || '—' }}</dd>
+      <dt>Last changed</dt><dd>{{ formatTime(changed.updated_at) }}</dd>
+    </dl>
+    <form v-if="canEditUiUrl" class="runtime-settings-form" @submit.prevent="changeUiUrl('save')">
+      <label class="field"><span>Web address</span><input v-model="uiUrlDraft" type="text" :maxlength="consoleUi.maximum_length + 20" autocomplete="off" :disabled="uiUrlSaving" aria-describedby="console-ui-url-help"></label>
+      <p id="console-ui-url-help" class="field-help" :class="{ dangertext: uiUrlDirty && !uiUrlValidation.valid }">{{ uiUrlDirty && !uiUrlValidation.valid ? uiUrlValidation.message : `https only. No user name, query or fragment. The path must be empty, / , /tec-tac or /tec-tac/. Core stores the address with /tec-tac/ added. Empty text resets it, and then Core uses the single https address in Tactical's CORS settings. Up to ${consoleUi.maximum_length} characters.` }}</p>
+      <div class="login-actions">
+        <button class="btn primary" type="submit" :disabled="uiUrlSaving || !uiUrlDirty || !uiUrlValidation.valid">{{ uiUrlSaving ? 'Saving…' : 'Save' }}</button>
+        <button class="btn" type="button" :disabled="uiUrlSaving || !consoleUi.value" @click="changeUiUrl('reset')">Reset to default</button>
+      </div>
+      <div v-if="uiUrlError" class="auth-error" role="alert">{{ uiUrlError }}</div>
+      <div v-if="uiUrlSaved" class="state-inline" role="status">{{ uiUrlSaved }}</div>
     </form>
     <p v-else class="compact-copy muted">Only a superuser can change this.</p>
   </section>
