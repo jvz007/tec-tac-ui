@@ -20,6 +20,7 @@ import { startSessionActivityTracking, stopSessionActivityTracking } from './ses
 import { coreNavigation, DEFAULT_SECTION_ORDER } from './core-navigation'
 import { applyTacticalColours, tacticalColourKey } from './tactical-ui-apply'
 import { appHeaderItems, navItemPermitted } from './extension-surface-workflows'
+import { clearPendingConsoleRoute } from './console-handoff'
 
 const route = useRoute()
 const router = useRouter()
@@ -276,6 +277,7 @@ async function doSignOut() {
   if (signingOut.value) return
   signingOut.value = true
   confirmService?.cancelAll()
+  clearPendingConsoleRoute()
   try { await logoutTacticalSession() } finally { window.location.reload() }
 }
 function signOut() { requestLeave(doSignOut) }

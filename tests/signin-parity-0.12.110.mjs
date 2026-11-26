@@ -75,6 +75,7 @@ function callbackView({ query, search, exchange }) {
     'vue-router': { useRoute: () => ({ query }) },
     '../api': { completeTacticalSso: exchange },
     '../signin-notices': notices,
+    '../console-handoff': { clearPendingConsoleRoute: () => {}, takePendingConsoleRoute: () => '' },
   }
   win.location.search = search
   const body = script.replace(/^import \{([^}]*)\} from '([^']+)'\s*$/gm, (_, names, from) => `const {${names}} = __deps[${JSON.stringify(from)}]`)

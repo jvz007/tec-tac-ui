@@ -34,3 +34,7 @@ Add both permissions to a role on **Access > Roles & permissions**, in the Conso
 ## The validity setting
 
 **System Configuration** has a card for how many days a new certificate lasts: 1 to 730, 365 by default. A change affects new certificates only. Only a superuser can change it.
+
+## Finding a certificate in the audit log
+
+Open the **Audit** page and search for the certificate's serial (the long number that identifies it), or for the actions `custom:console-cert-issued`, `custom:console-cert-revoked` and `custom:console-cert-refused`. The issue row is under the engineer who enrolled. A person's own revoke is under that person. An administrator's revoke is under the administrator.

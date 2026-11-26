@@ -117,6 +117,9 @@ const consoleCertRoutes=['/api/tfd/console-certificates/mine/','/api/tfd/console
 for (const route of consoleCertRoutes) routes.add(route)
 for (const route of consoleCertRoutes) assert.ok(used.map(cleanUsed).includes(route), `src/ uses ${route}`)
 assert.equal(used.map(cleanUsed).includes('/api/tfd/console-certificates/enrol/'), false, 'the browser never calls the Console enrol route')
+// 0.13.8: the Engineer Console sign-in route of Core 1.18.56 (needs an interactive session, which the shell has). Added by name.
+routes.add('/api/tfd/console-sessions/authorise/')
+assert.ok(used.map(cleanUsed).includes('/api/tfd/console-sessions/authorise/'), 'src/ uses the authorise route')
 
 const missing=[]
 for (const raw of used) {

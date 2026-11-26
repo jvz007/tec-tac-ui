@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { completeTacticalSso } from '../api'
 import { SSO_PROVIDER_ERROR_MESSAGE, ssoCallbackError } from '../signin-notices'
+import { clearPendingConsoleRoute, takePendingConsoleRoute } from '../console-handoff'
 
 const route = useRoute()
 const state = ref('working')
@@ -16,8 +17,12 @@ async function complete() {
   try {
     await completeTacticalSso()
     state.value = 'complete'
-    window.location.replace('/tec-tac/#/dashboards')
+    // An Engineer Console sign-in or enrol that began before the provider round trip is picked up again (UI 0.13.8).
+    const resume = takePendingConsoleRoute()
+    if (resume) window.location.replace(`/tec-tac/${resume}`)
+    else window.location.replace('/tec-tac/#/dashboards')
   } catch (err) {
+    clearPendingConsoleRoute()
     state.value = 'failed'
     error.value = err?.message || 'SSO sign-in could not be completed.'
   }
@@ -26,6 +31,7 @@ async function complete() {
 // An error return from the provider never reaches the token exchange (0.12.110). The parameter's value is not shown.
 function start() {
   if (ssoCallbackError(route.query, window.location.search)) {
+    clearPendingConsoleRoute()
     providerError.value = true
     state.value = 'failed'
     error.value = SSO_PROVIDER_ERROR_MESSAGE

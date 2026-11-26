@@ -10,6 +10,7 @@ import ConsoleCertificateRevoke from '../components/ConsoleCertificateRevoke.vue
 import {
   CANCEL_ENROLMENT_DETAIL,
   CANCEL_ENROLMENT_QUESTION,
+  AUDIT_HINT,
   CONSOLE_CERT_STATES,
   canManageConsoleCertificates,
   canViewConsoleCertificates,
@@ -200,6 +201,7 @@ onMounted(() => { load(); loadUsers() })
 
   <section class="card mb" aria-labelledby="console-enrolments-title">
     <div class="cardhead"><div><span class="eyebrow">ENROLMENTS</span><h3 id="console-enrolments-title">Open enrolments</h3></div></div>
+    <p class="compact-copy muted">{{ AUDIT_HINT }}</p>
     <p class="compact-copy muted">An administrator allows an engineer to enrol for 7 days. The engineer then asks for a one-time code on My Account. The administrator never sees the code.</p>
     <form v-if="canManage" class="runtime-settings-form" @submit.prevent="issue">
       <label class="field"><span>Allow an engineer to enrol a PC</span>

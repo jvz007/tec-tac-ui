@@ -4,6 +4,7 @@ import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { clearTacticalSession, coreSessionFailureCode } from '../../api'
 import { listActiveLoginSessions, revokeAllLoginSessions, revokeLoginSession, revokeUserLoginSessions } from '../../access'
 import { useConfirm } from '../../confirm-dialog'
+import { consoleSessionLabel } from '../../console-certificates'
 import { createLatestRequestGate, revokeAllSessionsPrompt, revokeSessionPrompt, revokeUserSessionsPrompt } from '../../admin-session-state'
 
 const confirmAction = useConfirm()
@@ -131,7 +132,7 @@ onBeforeUnmount(() => { if (searchTimer) window.clearTimeout(searchTimer) })
         <thead><tr><th>User</th><th>Created</th><th>Last activity</th><th>IP</th><th>Expires</th><th>Observed by</th><th>Action</th></tr></thead>
         <tbody>
           <tr v-for="row in sessions" :key="row.id">
-            <td><b>{{ row.username }}</b><span class="sub"><span v-if="row.current" class="pill ok">CURRENT</span><span class="mono">{{ row.id.slice(0, 12) }}…</span></span></td>
+            <td><b>{{ row.username }}</b><span class="sub"><span v-if="row.current" class="pill ok">CURRENT</span><span class="mono">{{ row.id.slice(0, 12) }}…</span></span><span v-if="consoleSessionLabel(row)" class="sub"><span class="pill">{{ consoleSessionLabel(row).label }}</span><span v-if="consoleSessionLabel(row).serial" class="mono">{{ consoleSessionLabel(row).serial }}</span></span></td>
             <td class="mono smalltext">{{ when(row.created_at) }}</td>
             <td class="mono smalltext">{{ when(row.last_activity_at || row.last_seen_at) }}</td>
             <td class="mono smalltext">{{ row.last_ip || '—' }}</td>

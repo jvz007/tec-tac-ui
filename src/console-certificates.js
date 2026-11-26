@@ -19,6 +19,8 @@ export const REVOKE_REASON_VALUES = Object.freeze(REVOKE_REASONS.map((item) => i
 
 // Core's own words are used as sent. These are shown only when Core sends none.
 export const NO_CERTIFICATE_TEXT = 'Ask your administrator to issue you a Console certificate.'
+// Where to find every row of one certificate in the audit log (Core 1.18.55). Shown on the page; the help article says the same.
+export const AUDIT_HINT = "To find every row of one certificate, open the Audit page and search for its serial (the long number that identifies the certificate) or for the actions custom:console-cert-issued, custom:console-cert-revoked and custom:console-cert-refused. The issue row is under the engineer who enrolled. A person's own revoke is under that person. An administrator's revoke is under the administrator."
 export const OPEN_SESSION_NOTE = 'This does not end a session that is already open.'
 export const REVOKE_QUESTION = 'Revoke this Console certificate?'
 export const REVOKE_DETAIL = `Core marks the certificate revoked. ${OPEN_SESSION_NOTE}`
@@ -193,9 +195,17 @@ export async function getMyConsoleCertificates({ api = apiFetch } = {}) {
   }
 }
 
-// POST with no body. The answer holds the one-time code: the caller keeps it in a component ref and nowhere else.
-export function requestEnrolmentCode({ api = apiFetch } = {}) {
-  return api('/api/tfd/console-certificates/mine/enrolment-code/', { method: 'POST' })
+// POST with no body, or with { code_challenge } from the Console enrol page (Core 1.18.57; Core refuses any other key).
+// The answer holds the one-time code: the caller keeps it in a local variable and nowhere else.
+export function requestEnrolmentCode({ api = apiFetch, body } = {}) {
+  if (body === undefined) return api('/api/tfd/console-certificates/mine/enrolment-code/', { method: 'POST' })
+  return api('/api/tfd/console-certificates/mine/enrolment-code/', { method: 'POST', body: JSON.stringify(body) })
+}
+
+// The person's own active certificate with this serial, or null (also when it is revoked or expired).
+export function findActiveCertificate(mine, serial) {
+  const found = (mine?.certificates || []).find((cert) => cert.serial === serial)
+  return found && found.state === 'active' ? found : null
 }
 
 export async function listConsoleCertificates(query = {}, { api = apiFetch } = {}) {
@@ -222,4 +232,14 @@ export async function getConsoleCa({ api = apiFetch } = {}) {
 
 export function replaceConsoleCa({ api = apiFetch } = {}) {
   return api('/api/tfd/console-certificates/ca/replace/', { method: 'POST', body: JSON.stringify({ confirm: true }) })
+}
+
+// Access > Login sessions (Core 1.18.56): a row may carry console: { pc_label, short_serial } when the session was opened by an
+// Engineer Console. Returns { label, serial } or null. A missing key, null or a non-object changes nothing (older Core).
+export function consoleSessionLabel(row) {
+  const console_ = row && typeof row === 'object' ? row.console : null
+  if (!console_ || typeof console_ !== 'object' || Array.isArray(console_)) return null
+  const pc = typeof console_.pc_label === 'string' ? console_.pc_label.trim() : ''
+  const serial = typeof console_.short_serial === 'string' ? console_.short_serial : ''
+  return { label: pc ? `Engineer Console (${pc})` : 'Engineer Console', serial }
 }

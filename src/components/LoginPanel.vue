@@ -13,6 +13,7 @@ import { SETUP_SESSION_REQUIRED_CODE, enrollmentSetupErrorMessage, signInErrorMe
 import { loginSsoEntries, beginLoginSso } from '../extension-surface-workflows'
 import { state } from '../state'
 import { sessionEndedMessage } from '../signin-notices'
+import { clearPendingConsoleRoute, savePendingConsoleRoute } from '../console-handoff'
 import LoginSsoProviders from './LoginSsoProviders.js'
 
 const uiVersion = __TEC_TAC_UI_VERSION__
@@ -212,6 +213,8 @@ function backToCredentials() {
 }
 
 function finishLogin() {
+  // The hash survives the reload below, so a Console route needs no saved copy after a password sign-in.
+  clearPendingConsoleRoute()
   password.value = ''
   passwordRevealed.value = false
   twofactor.value = ''
@@ -225,6 +228,8 @@ async function beginSso(entry) {
   if (!entry || busy.value || ssoBusyId.value) return
   error.value = ''
   ssoBusyId.value = entry.id
+  // Keep a valid Engineer Console route through the provider round trip (UI 0.13.8). Nothing is kept for any other hash.
+  savePendingConsoleRoute(window.location.hash)
   try {
     await beginLoginSso(ssoProviders, entry, { return_to: window.location.href, location: window.location })
   } catch (err) {
