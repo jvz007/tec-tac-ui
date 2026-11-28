@@ -13,9 +13,10 @@ for (const bad of [null, undefined, {}, 'x', [], { console_ui_url: null }, { con
 
 assert.equal(validateConsoleUiUrl('').valid, true)
 assert.equal(validateConsoleUiUrl('   ').valid, true)
-assert.equal(validateConsoleUiUrl('x'.repeat(300)).valid, true)
-assert.equal(validateConsoleUiUrl('x'.repeat(301)).valid, false)
-assert.equal(validateConsoleUiUrl('http://example.org').valid, true, 'the address rules stay with Core')
+assert.equal(validateConsoleUiUrl('https://' + 'x'.repeat(292)).valid, true)
+assert.equal(validateConsoleUiUrl('https://' + 'x'.repeat(293)).valid, false)
+assert.equal(validateConsoleUiUrl('http://example.org').valid, false, 'changed in 0.13.10: http:// is refused in the card; Core stays the authority for the other rules')
+assert.equal(validateConsoleUiUrl('ftp://example.org').valid, true, 'other schemes go to Core')
 assert.equal(validateConsoleUiUrl('x'.repeat(11), { maximum: 10 }).valid, false)
 
 assert.equal(canEditConsoleUiUrl({ user: { superuser: true } }), true)
@@ -36,7 +37,10 @@ for (const empty of ['', '   ', null, undefined]) {
   assert.equal(calls[0][1].body, '{"console_ui_url":null}')
 }
 const refusal = Object.assign(new Error('Use https.'), { status: 400 })
-await assert.rejects(() => saveConsoleUiUrl('http://x', { api: async () => { throw refusal } }), (error) => error === refusal)
+await assert.rejects(() => saveConsoleUiUrl('https://x/other', { api: async () => { throw refusal } }), (error) => error === refusal)
+calls.length = 0
+await saveConsoleUiUrl('rmm.example.com', { api })
+assert.equal(calls[0][1].body, '{"console_ui_url":"https://rmm.example.com"}', 'a bare host gets https://')
 
 const card = read('../src/components/RuntimeSettingsCard.vue')
 assert.match(card, /<section v-if="!loading && consoleUi"/)

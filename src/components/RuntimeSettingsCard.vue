@@ -22,6 +22,7 @@ import {
   uploadLimitDefaultText,
   uploadLimitRangeText,
   validateConsoleCertValidity,
+  prepareConsoleUiUrl,
   validateConsoleUiUrl,
   validateRegisterTimeout,
   validateSystemName,
@@ -68,7 +69,9 @@ const certValidation = computed(() => (
 const certDirty = computed(() => consoleCert.value && certDraft.value !== consoleCert.value.value)
 const canEditUiUrl = computed(() => canEditConsoleUiUrl(state?.context))
 const uiUrlValidation = computed(() => validateConsoleUiUrl(uiUrlDraft.value, { maximum: consoleUi.value?.maximum_length }))
-const uiUrlDirty = computed(() => consoleUi.value && uiUrlDraft.value.trim() !== consoleUi.value.value)
+const uiUrlPrepared = computed(() => prepareConsoleUiUrl(uiUrlDraft.value))
+const uiUrlDirty = computed(() => consoleUi.value && uiUrlPrepared.value !== consoleUi.value.value)
+const uiUrlPreview = computed(() => (uiUrlPrepared.value !== '' && uiUrlPrepared.value !== uiUrlDraft.value.trim() ? `Will be saved as ${uiUrlPrepared.value}` : ''))
 const canEditName = computed(() => canEditSystemName(state?.context))
 const validation = computed(() => (
   settings.value
@@ -180,7 +183,7 @@ async function changeUiUrl(action) {
   uiUrlError.value = ''
   uiUrlSaved.value = ''
   try {
-    await saveConsoleUiUrl(action === 'reset' ? '' : uiUrlDraft.value)
+    await saveConsoleUiUrl(action === 'reset' ? '' : uiUrlPrepared.value)
     // Reload, so the value and who changed it come from Core.
     await load()
     uiUrlSaved.value = action === 'reset' ? 'Reset to default.' : 'Saved. The Engineer Console uses this address from its next sign-in.'
@@ -290,7 +293,8 @@ onMounted(load)
     </dl>
     <form v-if="canEditUiUrl" class="runtime-settings-form" @submit.prevent="changeUiUrl('save')">
       <label class="field"><span>Web address</span><input v-model="uiUrlDraft" type="text" :maxlength="consoleUi.maximum_length + 20" autocomplete="off" :disabled="uiUrlSaving" aria-describedby="console-ui-url-help"></label>
-      <p id="console-ui-url-help" class="field-help" :class="{ dangertext: uiUrlDirty && !uiUrlValidation.valid }">{{ uiUrlDirty && !uiUrlValidation.valid ? uiUrlValidation.message : `https only. No user name, query or fragment. The path must be empty, / , /tec-tac or /tec-tac/. Core stores the address with /tec-tac/ added. Empty text resets it, and then Core uses the single https address in Tactical's CORS settings. Up to ${consoleUi.maximum_length} characters.` }}</p>
+      <p id="console-ui-url-help" class="field-help" :class="{ dangertext: uiUrlDirty && !uiUrlValidation.valid }">{{ uiUrlDirty && !uiUrlValidation.valid ? uiUrlValidation.message : `Type the host name, for example rmm.example.com. A bare host is fine and https:// is added. https only. No user name, query or fragment. The path must be empty, / , /tec-tac or /tec-tac/. Core stores the address with /tec-tac/ added. Empty text resets it, and then Core uses the single https address in Tactical's CORS settings. Up to ${consoleUi.maximum_length} characters.` }}</p>
+      <p v-if="uiUrlPreview && uiUrlValidation.valid" class="field-help" role="status">{{ uiUrlPreview }}</p>
       <div class="login-actions">
         <button class="btn primary" type="submit" :disabled="uiUrlSaving || !uiUrlDirty || !uiUrlValidation.valid">{{ uiUrlSaving ? 'Saving…' : 'Save' }}</button>
         <button class="btn" type="button" :disabled="uiUrlSaving || !consoleUi.value" @click="changeUiUrl('reset')">Reset to default</button>
